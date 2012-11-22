@@ -1,0 +1,10 @@
+   # This file  is an awk program that gets the first component of the first atom in answer.bas
+
+
+      # for example using awk -f awk_Eparts ../fireball_runs/benzene/Eparts.dat
+   
+   #skip lines at the beginning
+   BEGIN  { lineskip = 3}   
+      / /    { count++; if (count==1+lineskip) xcomp = $2; 
+      		 }      
+   END { print xcomp  }

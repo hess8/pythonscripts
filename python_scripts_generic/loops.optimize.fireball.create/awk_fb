@@ -1,0 +1,9 @@
+   # This file (awk_fb)  is an awk program that gets final temp and etot from fireball output file
+   # for example using awk -f awk_fb ../fireball_runs/benzene/fb
+   
+      /inst/    { temp = $5 }      
+   /etotnew/  { etot = $6 }   
+   END { 
+   print "final T " , temp ;print "etot " , etot 
+   print "final T " , temp >> "summary" ;print "etot " , etot >> "summary"
+    }

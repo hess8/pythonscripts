@@ -1,0 +1,6 @@
+
+
+   /etotnew/  { etot = $6 }   
+   END { 
+   print  etot 
+    }

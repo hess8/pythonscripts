@@ -1,0 +1,232 @@
+#!/bin/sh  
+
+# Uses etot to minimize.  spd single numeric
+
+#  Loop to optimize
+#######################  functions
+get_temp()
+{ awk -f awk_Tfinal fireballrun/fb
+}
+
+get_etot()
+{ awk -f awk_etot fireballrun/fb
+}
+
+get_etrans()
+{ awk -f awk_etrans fireballrun/Eparts.dat
+}
+
+get_xcomp()
+{ awk -f awk_answer fireballrun/answer.bas
+}
+
+abs () {
+# Check for numeric input
+if expr $1 + 0 2>/dev/null 1>&2 ; then
+# Is the number negative?
+if [ $1 -lt 0 ] ; then
+echo `expr 0 - $1`
+else
+echo $1
+fi
+return 0 # OK
+else
+return 1 # Not a number
+fi
+}
+
+
+
+######################## Initialize
+n=0
+nmax=1000
+C="C"
+H="H"
+natoms=2
+nparam1=2  #H parameters
+nparam2=4  #C parameters
+nparam=`expr $nparam1 + $nparam2  ` 
+rm summary.dat
+echo 'H paramaters are fixed at' >summary.dat
+more input/begininput/startparam1 >>summary.dat
+echo 'Minimizing on xcomp of answer.bas!' >>summary.dat
+echo 'Run#' 'param1' 'param2' 'param3' 'param4'  'param5' 'param6' 'etot' 'Tfinal' 'Etrans' >>summary.dat
+echo 'Run#' 'param1' 'param2' 'param3' 'param4'  'param5' 'param6' 'etot' 'Tfinal' 'Etrans' 
+rm matout.dat
+rm *.eps
+rm ../output/*
+echo '0.00' > energy.dat  #start matlab...will wait until this nonzero
+
+## Make everything
+
+cd ../progs
+make
+cd ../cprogs
+make
+cd ../begin_2007.2
+make all
+
+
+##### Initialize Begin
+cd ../optimize/beginrun
+ifort -o optimizeinitial.x optimizeinitial.f90
+ifort -o joinparam.x joinparam.f90
+ifort -o splitparam.x splitparam.f90
+cp ../input/begininput/*.* ../beginrun
+rm begin.x
+ln -s ../../begin_2007.2/begin.x begin.x
+
+## Hydrogen
+cp ../input/begininput/startparam1 paramatom  #optimizeinitial uses paramatom
+#cp paramatom parameters1  #for joinparam.x (not joining)
+cp ../input/begininput/initial.run.inputHSN initial.run.input
+./optimizeinitial.x <initial.run.input >initialH.out
+cp begin.input begin.input1
+./begin.x >beginoutH
+gnuplot statesH.plt
+mv plot.eps "plot$H${n}.eps"
+cp "plot$H${n}.eps" ../output
+rm  "plot$H${n}.eps"
+## Carbon
+# input parameters for V0 r0
+cp ../input/begininput/startparam2 paramatom
+cp ../input/begininput/startparam2 parameters
+#cp paramatom parameters2  #for joinparam.x
+cp ../input/begininput/initial.run.inputspdSN initial.run.input
+#./joinparam.x  #create parameters file from the two files  only optimizing on C
+
+./optimizeinitial.x <initial.run.input >initialC.out
+cp begin.input begin.input2
+./begin.x >beginoutC   
+gnuplot statesSN.plt
+mv plot.eps "plot$C${n}.eps"
+cp "plot$C${n}.eps" ../output
+rm "plot$C${n}.eps"
+
+
+
+
+
+## get files to create
+cp 0* ../createrun/cin/3opt/  #files with name starting with zero including wavefunctions
+
+
+## create initialization
+cd ../createrun
+cp ../input/createinput/* ../createrun  #theory.input, create.input, etc (not folders)
+
+
+
+
+############################## Loop #######################################################
+while [ "$n" -lt "$nmax" ]
+do
+
+  echo "Run $n"
+
+###  
+rm coutput/*
+./create.x > output.log    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+######## Fireball
+cd ..
+rm Fdata
+
+ln -s createrun/coutput/ Fdata 
+cd fireballrun
+cp ../input/fireballinput/* ../fireballrun
+rm CHARGES
+cp benzene.bas answer.bas
+./fireball.x >fb   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+cp Eparts.dat "Eparts${n}.dat"
+mv  "Eparts${n}.dat" ../output
+cp answer.bas "answer${n}.xyz"
+mv   "answer${n}.xyz" ../output
+
+
+#######  Extract items of interest
+cd ..   #in optimize dir
+
+
+
+Tf=`get_temp`
+etot=`get_etot`
+etrans=`get_etrans`
+xcomp=`get_xcomp`
+echo 'xcomp' $xcomp
+ideal=1.2091
+echo 'ideal' $ideal
+
+diff=$(echo "scale=6;  $xcomp - $ideal" | bc)
+echo 'diff' $diff
+
+diff2=$(echo "scale=6; sqrt( $diff * $diff ) " | bc)
+echo 'diff2' $diff2
+echo $diff2 > energy.dat
+
+# Write out parameters, results to summary file
+{
+	m=0
+	while read param; do  #read returns exit eode 1 when reading is OK
+		m=`expr $m + 1`
+		piece[$m]=$param
+	#	echo $m $param
+	done
+} < beginrun/parameters
+echo $n ${piece[1]} ${piece[2]} ${piece[3]} ${piece[4]} ${piece[5]} ${piece[6]} $etot $Tf $etrans >>summary.dat
+echo $n ${piece[1]} ${piece[2]} ${piece[3]} ${piece[4]} ${piece[5]} ${piece[6]} $etot $Tf $etrans 
+######## Matlab
+# Matlab reads parameters for initial guess.  It will then go to function and write matout.dat aand wait for energy.dat to be nonzero.
+
+# script looks for energy.dat. If it equals zero it waits
+
+
+while [ ! -r matout.dat ]
+do
+	echo 'waiting for matout.dat'
+	sleep 1
+	ls mat*  #without this, loop never sees the file matout.dat
+done
+cp matout.dat  beginrun/parameters
+rm matout.dat
+echo 0.00 > energy.dat #replaces file with single zero so Matlab will wait for next energy 
+
+ 
+
+
+######## new initial.run.input files
+cd beginrun
+#./splitparam.x
+## Hydrogen
+#cp ../input/begininput/initial.run.inputHSN initial.run.input
+#cp parameters1 paramatom  #optimizeinitial uses paramatom
+#./optimizeinitial.x <initial.run.input >initialH.out   #uses paramatom
+#./begin.x >beginoutH
+#cp begin.input begin.input1
+#gnuplot statesH.plt
+#mv plot.eps "plot$H${n}.eps"
+#cp "plot$H${n}.eps" ../output
+#rm  "plot$H${n}.eps"
+
+## Carbon
+cp ../input/begininput/initial.run.inputspdSN initial.run.input
+cp parameters paramatom  #optimizeinitial uses paramatom
+./optimizeinitial.x <initial.run.input >initialC.out  #uses paramatom
+./begin.x >beginoutC 
+cp begin.input begin.input2
+gnuplot statesSN.plt
+mv plot.eps "plot$C${n}.eps"
+cp "plot$C${n}.eps" ../output
+rm "plot$C${n}.eps"
+cp 0* ../createrun/cin/3opt/  #files with name starting with zero including wavefunctions
+# get ready for create
+cd ../createrun
+
+n=`expr $n + 1`
+
+done  ######################### end of loop
+
+
+
+

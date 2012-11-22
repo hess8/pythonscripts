@@ -1,0 +1,19 @@
+
+
+#PBS -l nodes=1:ppn=4,walltime=250:00:00
+#PBS -N optmsplit3
+#PBS -m abe
+#PBS -M bret_hess@byu.edu
+
+# Common var - directory
+
+#cd into the directory where I typed qsub
+cd $PBS_O_WORKDIR
+rm PI*
+rm opt*.e*
+rm opt*.o*
+
+# Run the sucker !
+./mastergridsplit.py >out
+	 
+exit 0

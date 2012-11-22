@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# for test queue:    *  Pass "-q test" as a parameter to qsub
+#    * Put "#PBS -q test" in your job script    #PBS -q test
+
+#To see the list of jobs currently in the test queue, use the command "showq -w class=test"
+
+
+
+
+#PBS -l nodes=1:ppn=4,walltime=3:00:00
+#PBS -N optim
+#PBS -m abe
+#PBS -M bret_hess@byu.edu
+
+#PBS -q test
+
+# Common var - directory
+DIR="/fslhome/bch/compute/excited/optimize/loops"
+
+KILLTIME="15"
+TMPDIR="${MYH}/tmp/${PBS_JOBID}"
+#NP always = -l nodes * ppn
+NP=4
+
+#cd into the directory where I typed qsub
+cd $PBS_O_WORKDIR
+
+echo $NP > NP.info
+echo  $PBS_NODEFILE > pbs.info
+# Run the sucker !
+/opt/mpich/gnu/bin/mpirun \
+        -machinefile $PBS_NODEFILE \
+        -np $NP \
+	masterdmol.py >out
+	 
+exit 0

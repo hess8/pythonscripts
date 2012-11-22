@@ -1,0 +1,34 @@
+#!/bin/sh
+#PBS -l nodes=1:ppn=4,walltime=288:00:00
+#PBS -N optim
+#PBS -m abe
+#PBS -M bret_hess@byu.edu
+#
+
+# Common var - directory
+DIR="/fslhome/bch/compute/excited/optimize/loops"
+
+# Input file replacing keyboard input for create
+#IN_FILE="$DIR/create.run.input"
+
+
+#PROG="$DIR/create.x > output.log"
+#PROGARGS=" < $IN_FILE"
+KILLTIME="15"
+TMPDIR="${MYH}/tmp/${PBS_JOBID}"
+#NP always = -l nodes * ppn
+NP=4
+
+#cd into the directory where I typed qsub
+cd $PBS_O_WORKDIR
+
+# Run the sucker !
+#/opt/mpich/gnu/bin/mpirun \
+#        -machinefile $PBS_NODEFILE \
+#        -np $NP \
+#	masterloop.bash >out
+#        $PROG $PROGARGS
+# python masterloop.py 
+ python masterloop2.py > out
+	 
+exit 0

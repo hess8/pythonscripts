@@ -1,0 +1,180 @@
+#!/bin/sh
+#######################  functions
+get_temp()
+{ awk -f awk_Tfinal fireballrun/fb
+}
+
+get_etot()
+{ awk -f awk_etot fireballrun/fb
+}
+
+get_etrans()
+{ awk -f awk_etrans fireballrun/Eparts.dat
+}
+
+
+######################## Initialize
+n=0
+nmax=10
+C="C"
+H="H"
+natoms=2
+nparam1=2  #H parameters
+nparam2=4  #C parameters
+nparam=`expr $nparam1 + $nparam2  ` 
+rm summary.dat
+echo 'Run#' 'param1' 'param2' 'param3' 'param4'  'param5' 'param6' 'etot' 'Tfinal' 'Etrans' >summary.dat
+echo 'Run#' 'param1' 'param2' 'param3' 'param4'  'param5' 'param6' 'etot' 'Tfinal' 'Etrans' 
+rm matout.dat
+echo '0.00' > energy.dat  #start matlab...will wait until this nonzero
+
+## Make everything
+
+cd ../progs
+make
+cd ../cprogs
+make
+cd ../begin_2007
+make all
+
+
+##### Initialize Begin
+cd ../optimize/beginrun
+ifort -o joinparam.x joinparam.f90
+ifort -o splitparam.x splitparam.f90
+cp ../input/begininput/*.* ../beginrun
+rm begin.x
+rm optimizeinitial.x
+ln -s ../../begin_2007/optimizeinitial.x optimizeinitial.x
+ln -s ../../begin_2007/begin.x begin.x
+
+## Hydrogen
+cp ../input/begininput/startparam1 parameters1
+cp ../input/begininput/initial.run.inputHSN initial.run.input
+./optimizeinitial.x <initial.run.input >initialH.out
+./begin.x >beginoutH
+gnuplot statesH.plt
+mv plot.eps "plot$H${n}.eps"
+cp "plot$H${n}.eps" ../output
+
+## Carbon
+# input parameters for V0 r0
+cp ../input/begininput/startparam2 parameters2
+cp ../input/begininput/initial.run.inputsp initial.run.input
+./joinparam.x  #create parameters file from the two files
+
+./optimizeinitial.x <initial.run.input >initialC.out   
+./begin.x >beginoutC   
+gnuplot statesSNsp.plt
+mv plot.eps "plot$C${n}.eps"
+cp "plot$C${n}.eps" ../output
+
+
+################### Start Loop
+
+
+
+
+
+## get files to create
+cp 0* ../createrun/cin/3opt/  #files with name starting with zero including wavefunctions
+
+
+## create initialization
+cd ../createrun
+cp ../input/createinput/* ../createrun  #theory.input, create.input, etc (not folders)
+
+
+
+
+################### Loop
+while [ "$n" -lt "$nmax" ]
+do
+n=`expr $n + 1`
+  echo "Run $n"
+
+###  
+rm coutput/*
+./create.x > output.log    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+######## Fireball
+cd ..
+rm Fdata
+# ln -s ../datafiles/CH3_C_5.1_6.2_H_5.3_CPrc-1.5/ Fdata
+ln -s createrun/coutput/ Fdata 
+cd fireballrun
+cp ../input/fireballinput/* ../fireballrun
+cp benzene.bas answer.bas
+./fireball.x >fb   #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#######  Extract items of interest
+cd ..   #in optimize dir
+
+#awk -f awk_Eparts fireballrun/Eparts.dat   #will write to file
+#awk -f awk_Tfinal fireballrun/fb | Tf=$1 
+
+Tf=`get_temp`
+etot=`get_etot`
+etrans=`get_etrans` 
+echo $n $etot $Tf $etrans >>summary.dat
+echo $etot > energy.dat
+######## Matlab
+# Matlab reads parameters for initial guess.  It will then go to function and write matout.dat aand wait for energy.dat to be nonzero.
+
+# script looks for energy.dat. If it equals zero it waits
+
+
+while [ ! -f matout.dat ]
+do
+	echo 'waiting for matout.dat'
+	sleep 1
+	ls mat*
+done
+
+cp matout.dat  beginrun/parameters
+rm matout.dat
+echo 0.00 > energy.dat #replaces file with single zero so Matlab will wait for next energy 
+# Write out parameters, results to summary file
+{
+	m=0
+	while read param; do  #read returns exit code 1 when reading is OK
+		m=`expr $m + 1`
+		piece[$m]=$param
+	#	echo $m $param
+	done
+} < beginrun/parameters
+
+echo $n ${piece[1]} ${piece[2]} ${piece[3]} ${piece[4]} ${piece[5]} ${piece[6]} $etot $Tf $etrans >>summary.dat
+echo $n ${piece[1]} ${piece[2]} ${piece[3]} ${piece[4]} ${piece[5]} ${piece[6]} $etot $Tf $etrans  
+
+cd beginrun
+./splitparam.x
+cd ..
+######## new initial.run.input files
+cd beginrun
+
+## Hydrogen
+./optimizeinitial.x <initial.run.input >initialH.out   #uses parameter1
+./begin.x >beginoutH
+gnuplot statesH.plt
+mv plot.eps "plot$H${n}.eps"
+cp "plot$H${n}.eps" ../output
+
+## Carbon
+./optimizeinitial.x <initial.run.input >initialC.out  #uses , parameter2
+./begin.x >beginoutC   
+gnuplot statesSNsp.plt
+mv plot.eps "plot$C${n}.eps"
+cp "plot$C${n}.eps" ../output
+
+# get ready for create
+cd ../createrun
+
+
+
+
+
+done  ######################### end of loop
+
+

@@ -1,0 +1,6 @@
+ 
+   #skip lines at the beginning
+   BEGIN  { istate = 15 ; fstate = 16; count = 0 ;lineskip = 3}   
+      / /    { count++; if (count==istate+lineskip) Ei = $2; 
+      			if (count==fstate+lineskip) Ef = $2 }      
+   END { print Ef-Ei }

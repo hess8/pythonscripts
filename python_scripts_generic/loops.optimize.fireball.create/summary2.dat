@@ -1,0 +1,3 @@
+Benzene iexc 2
+iwalk, istep, n,  Vo, ro, Vo, ro, qpertDmol, qpertDmol, qpertPol,  Tfinal, etot, etrans, xcomp , fit
+Seven parameters are Vo, ro, Vo, ro, qpertDmol, qpertDmol, qpertPol,  (relative to same occupation as unexcited)

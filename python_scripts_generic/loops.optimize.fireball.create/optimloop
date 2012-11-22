@@ -1,0 +1,75 @@
+#!/bin/sh
+###### Initialize
+n=0
+nmax=10
+C="C"
+H="H"
+
+## Make everything
+cd ../progs
+make
+cd ../cprogs
+make
+cd ../begin_2007
+make all
+
+
+## Initialize Begin
+
+
+cp ../optimize/input/begininput/006* ../begin_2007   # pp files
+cp ../optimize/input/begininput/001* ../begin_2007
+## Carbon
+# input parameters for V0 r0
+cp ../optimize/input/begininput/startparam2 parameters
+cp ../optimize/input/begininput/initial.run.inputsp initial.run.input
+./optimizeinitial.x <initial.run.input
+./begin.x >beginoutC
+gnuplot statesSNsp.plt
+mv plot.eps "plot$C${n}.eps"
+cp "plot$C${n}.eps" ../optimize/output
+
+## Hydrogen
+cp ../optimize/input/begininput/startparam1 parameters
+cp ../optimize/input/begininput/initial.run.inputHSN initial.run.input
+./optimizeinitial.x <initial.run.input
+./begin.x >beginoutH
+gnuplot statesH.plt
+mv plot.eps "plot$H${n}.eps"
+cp "plot$H${n}.eps" ../optimize/output
+
+## get files to create
+cp ../optimize/input/createinput/wavefunctions/* ../create/cin/3opt    #pp files
+cp 006* ../create/cin/3opt    #copy from begin to cin
+cp 001* ../create/cin/3opt
+
+## create first run
+cd ../createOpt
+cp ../optimize/input/createinput/* ../createOpt #theory.input, create.input, etc (not folders)
+rm coutput/*
+./create.x > output.log
+
+
+
+
+################### Loop
+
+######## Fireball
+
+######## Matlab
+
+
+######## new initial.run.input files
+
+while [ "$n" -lt "$nmax" ]
+do
+n=`expr $n + 1`
+  echo "Hi there $n"
+  
+
+
+
+
+done
+
+
