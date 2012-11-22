@@ -1,3 +1,4 @@
+#Got git working!
 #Specify Directory to use
 mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
 
