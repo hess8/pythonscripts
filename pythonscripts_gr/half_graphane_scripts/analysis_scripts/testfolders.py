@@ -1,12 +1,12 @@
 #print the name of files to analyze
 #Specify Directory to use
-mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
+mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
 
 #Specify the subdir
 subdir = 'test/'
 dir = mainDir + subdir
 #Specify the name of the type of run
-runName = "relaxation"
+runName = 'relaxation'
 
 #Specify Poscar variables
 poscarVariables = {
@@ -19,8 +19,8 @@ import numpy as np
 
 
 run = runName
-newRun = "DOS"
-newRunFile = "DOSCAR" #Will check to see if higher level is already done, then skip it
+newRun = 'DOS'
+newRunFile = 'DOSCAR' #Will check to see if higher level is already done, then skip it
 
 global toCheckList
 global checkedList
@@ -31,16 +31,16 @@ def addToList(folder):
     print files
     for path in files:
 #        print path
-        if os.path.isdir(folder+path+"/"):
-            toCheckList.append(folder+path+"/")
-            addToList(folder+path+"/")
-#            print path+"/"
+        if os.path.isdir(folder+path+'/'):
+            toCheckList.append(folder+path+'/')
+            addToList(folder+path+'/')
+#            print path+'/'
 
 def checkFolders():
     for path in toCheckList:
-        print("CHECK NEXT LINE")
-        print(path.split("/")[-2])
-        if path.split("/")[-2] == run:
+        print('CHECK NEXT LINE')
+        print(path.split('/')[-2])
+        if path.split('/')[-2] == run:
             checkedList.append(path)
             
 def getDistance(folder):
@@ -52,7 +52,7 @@ def getDistance(folder):
     numions = int(newstring[0].split()[-1])
     proc3 = subprocess.Popen(['grep','-i','A3','OUTCAR'],stdout=subprocess.PIPE)
     newstring = proc3.communicate()
-    repeat = math.fabs(float(newstring[0].split()[-1].split(")")[0]))
+    repeat = math.fabs(float(newstring[0].split()[-1].split(')')[0]))
     proc2 = subprocess.Popen(['grep','-n','TOTAL-FORCE (eV/Angst)','OUTCAR'],stdout=subprocess.PIPE)
     line = proc2.communicate()[-2].split('\n')[-2].split(':')[0]
     outcar = open('OUTCAR','r')
@@ -71,67 +71,74 @@ def getDistance(folder):
     return mindistance
     
 
-print("\nInitializing...\n")
-print("Finding Directories to do %s on\n" % run)
-print("Searching all Directories in " + dir+"\n")
+print('\nInitializing...\n')
+print('Finding Directories to do %s on\n' % run)
+print('Searching all Directories in ' + dir+'\n')
 toCheckList = []
 checkedList = []
 toRunList = []
 addToList(dir)
 
 print toCheckList
-print("Checking to see which folders contain "+run+"\n")
+print('Checking to see which folders contain '+run+'\n')
 time.sleep(1)
 checkFolders()
 
-print "\nThe following folders are in checkedList:"
+print '\nThe following folders are in checkedList:'
 for i in checkedList:
-    print("checkedList contains : " + i)
+    print('checkedList contains : ' + i)
     
-#print "\nThe following folders are in checkedFolder:"
-#for i in toCheckList:
-#    print("toCheckList contains : " + i)
-#print "\nThe following folders will be run:"
-#for i in toRunList:
-#    print("toRunList contains : " + i)
+#write out energies from all runs
 os.chdir(dir)
-file = open("output.txt",'w')
+file = open('allenergies','w')
 for i in checkedList:
     os.chdir(i)
-    print("Testing OSZICAR in: " + i)
-    oszicar = open(i+"OSZICAR",'r')
-    file.write('\t\t'+ oszicar.readlines()[-1].split()[2] + "\n") #energy in last 
+    print('Testing OSZICAR in: ' + i)
+    oszicar = open(i+'OSZICAR','r')
+    file.write('\t\t'+ oszicar.readlines()[-1].split()[2] + '\n') #energy in last 
     oszicar.close()
 file.close()
+#Open output files
+elemfile = open('elements','w')
+enerfile = open('energies','w')
+distfile = open('distances','w')
 
-#Find distance of adelement for minimum energy
+
+#Find distance of adatom for minimum energy
 os.chdir(dir)
-resultsfile = open("output.txt",'r')
+resultsfile = open('allenergies','r')
 results = resultsfile.readlines()
 ndist = len(poscarVariables['@distance'])
 nelements = len(results)/ndist
-
-#print ("len(results) %d" % len(results))
-#print ("len(poscarVariables)) %d" % len(poscarVariables))
-for ielement in range(1,nelements+1):
-    print("ielement %d" % ielement)
-    elementstart = (ielement-1)*ndist
+for ielement in range(nelements):
+    print('ielement %d' % ielement)
+    elementstart = ielement*ndist
+    #get element name
+    path = checkedList[elementstart] # just the first folder in list
+    prefix = 'adatom_'
+    index1 = path.index(prefix) 
+    index2 = path.index('/',index1)
+    element = path[index1+len(prefix):index2]
+    print ('Element ' + element)
+    elemfile.write(element)
+    #get energies
     elementresults = results[elementstart:elementstart+ndist]
     energies=[float(str) for str in elementresults]
-    #the first energy is the farthest away, most likely to be finished
-    enerfar = energies[0]
+    enerfar = energies[0] #the first energy is the farthest away, most likely to be finished
     for i in range(len(energies)):
         if abs(energies[i]-enerfar) > 100: #throw away outliers
             energies[i] = 0
     minindex = np.argmin(energies)
-    print ("best energy %f" % energies[minindex])
-    print ("best index %d" % minindex)
+    print ('best energy %f' % energies[minindex])
+    enerfile.write(np.str(energies[minindex]))
+    print ('best index %d' % minindex)
     #get distance from OUTCAR
     bestfolder = checkedList[elementstart+minindex]
-    print ("getDistance(bestfolder) %s" % bestfolder )
+    print ('getDistance from %s' % bestfolder )
     print getDistance(bestfolder)
+    distfile.write(np.str(getDistance(bestfolder)))
     
 resultsfile.close()
     
 
-print "Done"
+print 'Done'

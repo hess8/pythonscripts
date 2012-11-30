@@ -123,7 +123,7 @@ def SymbolicLink():
     p = subprocess.check_call(['cp','.././../vasp.mpi','.'])
 
 
-def run():
+def run(): #gets energy in last line. 
     file = open("output.txt",'w')
     proc = subprocess.Popen(['mpirun','-np','8','vasp.mpi','>','output.txt'],stdout=subprocess.PIPE)
     while proc.poll() is None:
