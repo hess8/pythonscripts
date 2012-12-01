@@ -64,8 +64,6 @@ def run():
     file.write('\t'+str(mindistance)+'\n')
     
     
-
-
 def setup(folder):
     try:
         os.chdir(folder)
