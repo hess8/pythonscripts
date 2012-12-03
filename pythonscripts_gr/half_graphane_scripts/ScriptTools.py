@@ -40,21 +40,22 @@ class VaspTools:
 	def Run(self):
 		pass
 		
-	def _DescendPotcar(self,varmap):
+	def _DescendPotcar(self,varmap): #varmap is elementlist
 		varmap = copy.deepcopy(varmap)
 		
 		if not (os.path.isfile('POTCAR')):
 			try:
 				os.system('cp %s %s' % (self._Potcar,'POTCAR' ))
 			except:
-				print "File system error"
+				print "File system error trying to create Potcar"
 				
 		if len(varmap) == 0:
-			self._DescendPoscar(self._PoscarVars)
+			self._DescendPoscar(self._PoscarVars) # Why recursive?
 			return
 			
 		key = varmap.items()[0][0]
-		label = key[1:]
+		label = key[1:] #keyword @adatom
+		
 		varlist = varmap[key]
 		del varmap[key]
 		
@@ -224,8 +225,8 @@ class VaspTools:
 
 	def _AlterPotcar(self,element,tag):
 		curdir = os.getcwd()
-		os.chdir(self._PotcarDir)
-    		os.chdir(element)
+		os.chdir(self._PotcarDir+'/'+element)		
+		# don't know why these are indented; error without it
 	    	file=open("POTCAR",'r')
     		file2=file.readlines()
     		file.close()

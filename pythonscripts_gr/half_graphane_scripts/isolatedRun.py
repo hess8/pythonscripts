@@ -1,3 +1,6 @@
+''' For isolated atoms '''
+
+
 
 #Specify Directory to use
 mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
@@ -6,27 +9,27 @@ mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
 
 #Specify the type of run
-runType = ['relax']
+runType = ['isolated']
 
 #Specify the name of the type of run
 runName = "relaxation"
 
 #Specify a Poscar file
-poscar = mainDir + 'poscar/relax.poscar'
+poscar = mainDir + 'poscar/isolatedrun.poscar'
 
 #Specify a KPoints file
-kpoints = mainDir + 'kpoints/grapheneionicrun.kpoints'
+kpoints = mainDir + 'kpoints/isolatedrun.kpoints'
 
 #Specify an Incar file
-incar = mainDir + 'incar/grapheneionicrun.incar'
+incar = mainDir + 'incar/isolatedrun.incar'
 
 #Specify a Potcar file
-potcar = mainDir + 'potcar/graphene.potcar'
+potcar = mainDir + 'potcar/isolatedrun.potcar'
 
 #Specify Poscar variables
 poscarVariables = {
 '@distance':
-	[8,6,4,3,2,1]
+	[0]
 }
 
 #Specify KPoints variables
@@ -44,11 +47,7 @@ incarVariables = {
 
 }
 
-#Specify Potcar Elements
-#elementList = {
-#'@adatom':
-#	['Hf']
-#}
+
 
 elementList = {
 '@adatom':
@@ -74,27 +73,28 @@ elementList = {
 "Ca_pv", "Er_3", "H.5", "Lu", "Ni_pv", "Pr", "Si", "Tl_d"
 ]
 }
+
+#elementList = {
+#'@adatom':
+#[
+#"Ac", "Ca_sv"
+#]
+#}
 import ScriptTools
 
 tools = ScriptTools.VaspTools(mainDir,runName,runType,poscar,kpoints,incar,
 	potcar,poscarVariables,kpointVariables,incarVariables,elementList,potcardir)
+tools.BuildNewRun() #create folders
 
-tools.BuildNewRun()
-
-print "Done"
-raw_input()
+raw_input("Done creating folders.  Press enter to submit jobs")
 
 
 
 
-#script.py
 import os,subprocess,time,sys, shutil
-#mainDir = "/bluehome/bch/TransitionMetals/"
-run = runName
+
 newRun = "DOS"
 newRunFile = "DOSCAR" #Will check to see if higher level is already done, then skip it
-#kpoints = "Automatic mesh\n0\nGamma\n33 33 1\n0 0 0"
-#incar = "ENCUT=500\nPREC=Accurate\nEDIFF=1E-6\nISMEAR=-5\nSIGMA=0.12\nISPIN=2\nLORBIT=10\n"
 copyFiles = True
 
 global toCheckList
@@ -112,8 +112,9 @@ def checkFolders():
     for path in toCheckList:
         print("CHECK NEXT LINE")
         print(path.split("/")[-2])
-        if path.split("/")[-2] == run:
+        if path.split("/")[-2] == runName:
             checkedList.append(path)
+            toRunList.append(path)
             
 def checkForNewRun():
     for path in checkedList:
@@ -130,28 +131,30 @@ def checkForNewRun():
             toRunList.append(parpath+"/")
 
 print("\nInitializing...\n")
-print("Finding Directories to do %s on\n" % run)
-print("Searching all Directories in " + mainDir+"\n")
+print("Finding Directories to do %s on\n" % runName)
+dir = mainDir + runType[0] + "/"
+print("Searching all Directories in " + dir+"\n")
 toCheckList = []
 checkedList = []
 toRunList = []
-addToList(mainDir)
+addToList(dir)
 
-print("Checking to see which folders contain "+run+"\n")
+print("Checking to see which folders contain "+runName+"\n")
 time.sleep(1)
 checkFolders()
 
-print("Checking to see if any folders have already converged\n")
-time.sleep(1)
-checkForNewRun()
+#print("Checking to see if any folders have already converged\n")
+#time.sleep(1)
+#checkForNewRun()
 
+print "\nThe following folders are in checkedFolder:"
+for i in toCheckList:
+    print("toCheckList contains : " + i)
 print "\nThe following folders are in checkedList:"
 for i in checkedList:
     print("checkedList contains : " + i)
     
-print "\nThe following folders are in checkedFolder:"
-for i in toCheckList:
-    print("toCheckList contains : " + i)
+
 print "\nThe following folders will be run:"
 for i in toRunList:
     print("toRunList contains : " + i)
@@ -160,7 +163,7 @@ for i in toRunList:
 
 print"\n"
 for folder in toRunList:
-    newFolder = folder+run+"/"
+    newFolder = folder
     #print "Copying " + previousRun + " to " + newRun + " in folder " + folder
     #command = subprocess.check_call(['cp','-r',folder+previousRun,newFolder])
     #print "Copying CONTCAR to POSCAR"
@@ -177,7 +180,7 @@ for folder in toRunList:
     file = open(newFolder+"job",'w+')
     #print "made job in"
     #print newFolder + "job"
-    jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=60mb,walltime=06:00:00\n#PBS -N JOBNAME\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \nexit 0"
+    jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=200mb,walltime=06:00:00\n#PBS -N JOBNAME\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \nexit 0"
     file.write(jobData)
     file.close()
     file = open(newFolder+"outputJob.txt",'w')
@@ -186,6 +189,5 @@ for folder in toRunList:
         output = proc.stdout.readline()
         file.write(output)
         print output,folder
-    file.close()
-    
-
+    file.close()   
+print "Done with submitting jobs"

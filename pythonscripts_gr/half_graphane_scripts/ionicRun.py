@@ -6,27 +6,27 @@ mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
 
 #Specify the type of run
-runType = ['isolated']
-
+#runType = ['relax']
+runType = ['test2']
 #Specify the name of the type of run
 runName = "relaxation"
 
 #Specify a Poscar file
-poscar = mainDir + 'poscar/isolatedrun.poscar'
+poscar = mainDir + 'poscar/relax.poscar'
 
 #Specify a KPoints file
-kpoints = mainDir + 'kpoints/isolatedrun.kpoints'
+kpoints = mainDir + 'kpoints/grapheneionicrun.kpoints'
 
 #Specify an Incar file
-incar = mainDir + 'incar/isolatedrun.incar'
+incar = mainDir + 'incar/grapheneionicrun.incar'
 
 #Specify a Potcar file
-potcar = mainDir + 'potcar/isolatedrun.potcar'
+potcar = mainDir + 'potcar/graphene.potcar'
 
 #Specify Poscar variables
 poscarVariables = {
 '@distance':
-	[0]
+	[8,6,4,3,2,1]
 }
 
 #Specify KPoints variables
@@ -81,23 +81,27 @@ elementList = {
 "Ac", "Ca_sv"
 ]
 }
+
 import ScriptTools
 
 tools = ScriptTools.VaspTools(mainDir,runName,runType,poscar,kpoints,incar,
 	potcar,poscarVariables,kpointVariables,incarVariables,elementList,potcardir)
 
-tools.BuildNewRun()
+tools.BuildNewRun() #create folders
 
-print "Done with creating folders"
-raw_input() #Pause for response
-
+raw_input("Done creating folders.  Press enter to submit jobs")
 
 
 
+
+#script.py
 import os,subprocess,time,sys, shutil
-
+#mainDir = "/bluehome/bch/TransitionMetals/"
+run = runName
 newRun = "DOS"
 newRunFile = "DOSCAR" #Will check to see if higher level is already done, then skip it
+#kpoints = "Automatic mesh\n0\nGamma\n33 33 1\n0 0 0"
+#incar = "ENCUT=500\nPREC=Accurate\nEDIFF=1E-6\nISMEAR=-5\nSIGMA=0.12\nISPIN=2\nLORBIT=10\n"
 copyFiles = True
 
 global toCheckList
@@ -115,9 +119,8 @@ def checkFolders():
     for path in toCheckList:
         print("CHECK NEXT LINE")
         print(path.split("/")[-2])
-        if path.split("/")[-2] == runName:
+        if path.split("/")[-2] == run:
             checkedList.append(path)
-            toRunList.append(path)
             
 def checkForNewRun():
     for path in checkedList:
@@ -134,30 +137,28 @@ def checkForNewRun():
             toRunList.append(parpath+"/")
 
 print("\nInitializing...\n")
-print("Finding Directories to do %s on\n" % runName)
-dir = mainDir + runType[0] + "/"
-print("Searching all Directories in " + dir+"\n")
+print("Finding Directories to do %s on\n" % run)
+print("Searching all Directories in " + mainDir+"\n")
 toCheckList = []
 checkedList = []
 toRunList = []
-addToList(dir)
+addToList(mainDir)
 
-print("Checking to see which folders contain "+runName+"\n")
+print("Checking to see which folders contain "+run+"\n")
 time.sleep(1)
 checkFolders()
 
-#print("Checking to see if any folders have already converged\n")
-#time.sleep(1)
-#checkForNewRun()
+print("Checking to see if any folders have already converged\n")
+time.sleep(1)
+checkForNewRun()
 
-print "\nThe following folders are in checkedFolder:"
-for i in toCheckList:
-    print("toCheckList contains : " + i)
 print "\nThe following folders are in checkedList:"
 for i in checkedList:
     print("checkedList contains : " + i)
     
-
+print "\nThe following folders are in checkedFolder:"
+for i in toCheckList:
+    print("toCheckList contains : " + i)
 print "\nThe following folders will be run:"
 for i in toRunList:
     print("toRunList contains : " + i)
@@ -166,7 +167,7 @@ for i in toRunList:
 
 print"\n"
 for folder in toRunList:
-    newFolder = folder
+    newFolder = folder+run+"/"
     #print "Copying " + previousRun + " to " + newRun + " in folder " + folder
     #command = subprocess.check_call(['cp','-r',folder+previousRun,newFolder])
     #print "Copying CONTCAR to POSCAR"
@@ -192,5 +193,6 @@ for folder in toRunList:
         output = proc.stdout.readline()
         file.write(output)
         print output,folder
-    file.close()   
-print "Done with submitting jobs"
+    file.close()
+    
+
