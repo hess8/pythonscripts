@@ -3,54 +3,58 @@ import copy
 class VaspTools:
 
 	def __init__(self,mainFolder,runname,runtype,poscar,kpoints,incar,potcar,
-		poscarvar,kpointsvar,incarvar,potcarvar,potcardir):
+		poscarvar,kpointsvar,incarvar,potcarvar,potcardir,toCheckList, 
+		checkedList, toRunList ):
 		
-		self._MainFolder = mainFolder
-		self._RunName = runname
-		self._RunType = runtype
-		self._Poscar = poscar
-		self._PoscarVars = poscarvar
-		self._Kpoints = kpoints
-		self._KpointsVars = kpointsvar
-		self._Incar = incar
-		self._IncarVars = incarvar
-		self._Potcar = potcar
-		self._PotcarVars = potcarvar
-		self._PotcarDir = potcardir
+		self.MainFolder = mainFolder
+		self.RunName = runname
+		self.RunType = runtype
+		self.Poscar = poscar
+		self.PoscarVars = poscarvar
+		self.Kpoints = kpoints
+		self.KpointsVars = kpointsvar
+		self.Incar = incar
+		self.IncarVars = incarvar
+		self.Potcar = potcar
+		self.PotcarVars = potcarvar
+		self.PotcarDir = potcardir
 		
-		self._FolderList = []
+		self.FolderList = []
 
-		self._TotalRuns = 0
+		self.TotalRuns = 0
+		self.ToCheckList = toCheckList
+		self.CheckedList = checkedList
+		self.ToRunList = toRunList
 	
 	
 	def BuildNewRun(self):
-		os.chdir(self._MainFolder)
+		os.chdir(self.MainFolder)
 		
-		for folder in self._RunType:
+		for folder in self.RunType:
 			try:
 				os.chdir(folder)
 			except OSError:
 				os.system('mkdir %s' % folder)
 				os.chdir(folder)
-		self._DescendPotcar(self._PotcarVars)
+		self.DescendPotcar(self.PotcarVars)
 		print "Total Number of runs created:"
-		print self._TotalRuns
+		print self.TotalRuns
 		
 				
 	def Run(self):
 		pass
 		
-	def _DescendPotcar(self,varmap): #varmap is elementlist
+	def DescendPotcar(self,varmap): #varmap is elementlist
 		varmap = copy.deepcopy(varmap)
 		
 		if not (os.path.isfile('POTCAR')):
 			try:
-				os.system('cp %s %s' % (self._Potcar,'POTCAR' ))
+				os.system('cp %s %s' % (self.Potcar,'POTCAR' ))
 			except:
 				print "File system error trying to create Potcar"
 				
 		if len(varmap) == 0:
-			self._DescendPoscar(self._PoscarVars) # Why recursive?
+			self.DescendPoscar(self.PoscarVars) # Why recursive?
 			return
 			
 		key = varmap.items()[0][0]
@@ -69,25 +73,25 @@ class VaspTools:
 				os.system("cp ../POTCAR .")
 			except:
 				print 'File system error'
-			self._AlterPotcar(option,key)
-			self._DescendPotcar(copy.deepcopy(varmap))
+			self.AlterPotcar(option,key)
+			self.DescendPotcar(copy.deepcopy(varmap))
 			os.chdir('..')
 		try:
 			os.system('rm POTCAR')
 		except:
 			print "File system error"
 				
-	def _DescendPoscar(self,varmap):
+	def DescendPoscar(self,varmap):
 		varmap = copy.deepcopy(varmap)
 		
 		if not (os.path.isfile('POSCAR')):
 			try:
-				os.system('cp %s %s' % (self._Poscar,'POSCAR' ))
+				os.system('cp %s %s' % (self.Poscar,'POSCAR' ))
 			except:
 				print "File system error"
 				
 		if len(varmap) == 0:
-			self._DescendKpoints(self._KpointsVars)
+			self.DescendKpoints(self.KpointsVars)
 			return
 			
 		key = varmap.items()[0][0]
@@ -106,8 +110,8 @@ class VaspTools:
 				os.system("cp ../POTCAR .")
 			except:
 				print 'File system error'
-			self._AlterFile("POSCAR",key,option)
-			self._DescendPoscar(copy.deepcopy(varmap))
+			self.AlterFile("POSCAR",key,option)
+			self.DescendPoscar(copy.deepcopy(varmap))
 			os.chdir('..')
 		try:
 			os.system('rm POSCAR')
@@ -115,17 +119,17 @@ class VaspTools:
 		except:
 			print "File system error"
 			
-	def _DescendKpoints(self,varmap):
+	def DescendKpoints(self,varmap):
 		varmap = copy.deepcopy(varmap)
 		
 		if not (os.path.isfile('KPOINTS')):
 			try:
-				os.system('cp %s %s' % (self._Kpoints,'KPOINTS' ))
+				os.system('cp %s %s' % (self.Kpoints,'KPOINTS' ))
 			except:
 				print "File system error"
 				
 		if len(varmap) == 0:
-			self._DescendIncar(self._IncarVars)
+			self.DescendIncar(self.IncarVars)
 			return
 			
 		key = varmap.items()[0][0]
@@ -145,8 +149,8 @@ class VaspTools:
 				os.system("cp ../POTCAR .")
 			except:
 				print 'File system error'
-			self._AlterFile("KPOINTS",key,option)
-			self._DescendKpoints(copy.deepcopy(varmap))
+			self.AlterFile("KPOINTS",key,option)
+			self.DescendKpoints(copy.deepcopy(varmap))
 			os.chdir('..')
 		try:
 			os.system('rm KPOINTS')
@@ -156,25 +160,25 @@ class VaspTools:
 			print "File system error"
 
 			
-	def _DescendIncar(self,varmap):
+	def DescendIncar(self,varmap):
 		varmap = copy.deepcopy(varmap)
 		
 		if not (os.path.isfile('INCAR')):
 			try:
-				os.system('cp %s %s' % (self._Incar,'INCAR' ))
+				os.system('cp %s %s' % (self.Incar,'INCAR' ))
 			except:
 				print "File system error"
 				
 		if len(varmap) == 0:
-			if self._RunName in os.listdir(os.getcwd()):
-				print "Already found " + self._RunName + " in folder " + os.getcwd()
+			if self.RunName in os.listdir(os.getcwd()):
+				print "Already found " + self.RunName + " in folder " + os.getcwd()
 				return
-			self._TotalRuns += 1
-			os.system('mkdir %s' % self._RunName)
-			os.system('mv INCAR %s' % (self._RunName + '/INCAR' ))
-			os.system('mv KPOINTS %s' % (self._RunName + '/KPOINTS'))
-			os.system('mv POSCAR %s' % (self._RunName + '/POSCAR'))
-			os.system('mv POTCAR %s' % (self._RunName + '/POTCAR'))
+			self.TotalRuns += 1
+			os.system('mkdir %s' % self.RunName)
+			os.system('mv INCAR %s' % (self.RunName + '/INCAR' ))
+			os.system('mv KPOINTS %s' % (self.RunName + '/KPOINTS'))
+			os.system('mv POSCAR %s' % (self.RunName + '/POSCAR'))
+			os.system('mv POTCAR %s' % (self.RunName + '/POTCAR'))
 			return
 			
 		key = varmap.items()[0][0]
@@ -195,8 +199,8 @@ class VaspTools:
 				os.system("cp ../POTCAR .")
 			except:
 				print 'File system error'
-			self._AlterFile("INCAR",key,option)
-			self._DescendIncar(copy.deepcopy(varmap))
+			self.AlterFile("INCAR",key,option)
+			self.DescendIncar(copy.deepcopy(varmap))
 			os.chdir('..')
 		try:
 			os.system('rm INCAR')
@@ -207,7 +211,7 @@ class VaspTools:
 			print "File system error"
 			
 			
-	def _AlterFile(self,filepath,frommatch,tomatch):	
+	def AlterFile(self,filepath,frommatch,tomatch):	
 		import re
 		try:
 			fileread = open(filepath,'r')
@@ -223,9 +227,9 @@ class VaspTools:
 			print "This is likely due to " + frommatch + " tag not being present in the file."
 			print tomatch
 
-	def _AlterPotcar(self,element,tag):
+	def AlterPotcar(self,element,tag):
 		curdir = os.getcwd()
-		os.chdir(self._PotcarDir+'/'+element)		
+		os.chdir(self.PotcarDir+'/'+element)		
 		# don't know why these are indented; error without it
 	    	file=open("POTCAR",'r')
     		file2=file.readlines()
@@ -250,12 +254,41 @@ class VaspTools:
 			print tomatch
 			
 		
-	def _FindFolders(self,folder):
+	def FindFolders(self,folder):
 		files = os.listdir(folder)
 		for path in files:
 			if os.path.isdir(folder+path+"/"):
-				self._FolderList.append(folder+path+"/")
-				self._FindFolders(folder+path+"/")
+				self.FolderList.append(folder+path+"/")
+				self.FindFolders(folder+path+"/")
+
+	def AddToList(self,folder):
+	    files = os.listdir(folder)
+	    for path in files:
+	        if os.path.isdir(folder+path+"/"):
+	            self.ToCheckList.append(folder+path+"/")
+	            self.AddToList(folder+path+"/")
+	
+	def CheckFolders(self):
+	    for path in self.ToCheckList:
+	        print("CHECK NEXT LINE")
+	        print(path.split("/")[-2])
+	        if path.split("/")[-2] == self.RunName:
+	            self.CheckedList.append(path)
+	            self.ToRunList.append(path)
+	            
+	def CheckForNewRun(self):
+	    for path in self.CheckedList:
+	        parpath =  os.path.abspath(os.path.join(path, os.path.pardir))
+	        if os.path.exists(os.path.join(parpath,newRun)):
+	            print os.path.join(parpath,newRun) + " already exists."
+	            if copyFiles:
+	                print "Copying " + newRunFile +" from path to current directory."
+	                newPath = os.path.join(parpath,newRun) + "/" + newRunFile
+	                array = parpath.split("/")
+	                newFileName = array[len(array)-2]+array[len(array)-1]+".dat"
+	                shutil.copyfile(newPath,mainDir+newFileName)
+	        else:
+	            self.ToRunList.append(parpath+"/")
 	
 		
 class ContinuationRunSet:
