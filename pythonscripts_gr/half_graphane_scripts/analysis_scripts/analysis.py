@@ -1,5 +1,7 @@
 #analysis script
-import os, string
+import os, sys, string
+sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/')
+from ScriptTools import nstrip
 #Specify Directory to use
 mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
 #Specify the subdir
@@ -7,14 +9,14 @@ subdir = 'initial_relax'
 dir = mainDir + subdir
 os.chdir(dir)
 
-def nstrip(list):
-    import string
-    list2 = []
-    for string1 in list:   
-        string2 = string1.strip("\n")
-        list2.append(string2)
-    return list2
-    
+#def nstrip(list):
+#    import string
+#    list2 = []
+#    for string1 in list:   
+#        string2 = string1.strip("\n")
+#        list2.append(string2)
+#    return list2
+#    
 
 
 outfile = open('half_graphane_initial.csv','w')

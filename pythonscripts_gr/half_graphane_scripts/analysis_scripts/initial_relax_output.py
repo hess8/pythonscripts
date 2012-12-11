@@ -4,6 +4,7 @@ mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
 
 #Specify the subdir
 subdir = 'initial_relax'
+
 dir = mainDir + '/' + subdir + '/'
 #Specify the name of the type of run
 runName = 'relaxation' 
@@ -35,14 +36,14 @@ def addToList(folder):
             toCheckList.append(folder+path+'/')
             addToList(folder+path+'/')
 #            print path+'/'
-
+#
 def checkFolders():
     for path in toCheckList:
 #        print('CHECK NEXT LINE')
 #        print(path.split('/')[-2])
         if path.split('/')[-2] == run:
             checkedList.append(path)
-            
+#            
 def getDistance(folder):
     lastfolder = os.getcwd()
     os.chdir(folder)
@@ -108,6 +109,7 @@ elemfile = open('elements','w')
 enerfile = open('energies','w')
 distfile = open('distances','w')
 strchfile = open('stretch','w')
+bestpathfile = open('bestpath','w')
 
 
 #Find distance of adatom for minimum energy
@@ -148,16 +150,19 @@ for ielement in range(nelements):
     print ('best index %d' % minindex)
     #get distance from OUTCAR
     bestfolder = checkedList[elementstart+minindex]
+    bestpathfile.write(bestfolder+'\n')
     print ('getDistance from %s' % bestfolder )
     print getDistance(bestfolder)
     elemfile.write(element +'\n')
     distfile.write(np.str(getDistance(bestfolder)) +'\n')
     enerfile.write(np.str(energies[minindex]) +'\n')
     strchfile.write(np.str(enerstretch) +'\n')
+    
 resultsfile.close()
 elemfile.close()
 enerfile.close()
 distfile.close()
-strchfile.close() 
+strchfile.close()
+bestpathfile.close() 
 
 print 'Done'

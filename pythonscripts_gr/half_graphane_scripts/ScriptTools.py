@@ -1,5 +1,15 @@
-import os
-import copy
+import os, subprocess, copy, string
+
+#Generic 
+def nstrip(list):
+#	'''Strips off /n'''
+    import string
+    list2 = []
+    for string1 in list:   
+        string2 = string1.strip("\n")
+        list2.append(string2)
+    return list2
+
 class VaspTools:
 
 	def __init__(self,mainFolder,runname,runtype,poscar,kpoints,incar,potcar,
@@ -17,10 +27,8 @@ class VaspTools:
 		self.IncarVars = incarvar
 		self.Potcar = potcar
 		self.PotcarVars = potcarvar
-		self.PotcarDir = potcardir
-		
+		self.PotcarDir = potcardir	
 		self.FolderList = []
-
 		self.TotalRuns = 0
 		self.ToCheckList = toCheckList
 		self.CheckedList = checkedList
@@ -37,14 +45,14 @@ class VaspTools:
 				os.system('mkdir %s' % folder)
 				os.chdir(folder)
 		self.DescendPotcar(self.PotcarVars)
-		print "Total Number of runs created:"
+		print "Total Number of run folders created:"
 		print self.TotalRuns
 		
 				
 	def Run(self):
 		pass
 		
-	def DescendPotcar(self,varmap): #varmap is elementlist
+	def DescendPotcar(self,varmap): #varmap is elementlist. Creates run folder if needed
 		varmap = copy.deepcopy(varmap)
 		
 		if not (os.path.isfile('POTCAR')):
@@ -254,7 +262,7 @@ class VaspTools:
 			print tomatch
 			
 		
-	def FindFolders(self,folder):
+	def FindFolders(self,folder): #Finds all subdirectories
 		files = os.listdir(folder)
 		for path in files:
 			if os.path.isdir(folder+path+"/"):
@@ -270,11 +278,15 @@ class VaspTools:
 	
 	def CheckFolders(self):
 	    for path in self.ToCheckList:
-	        print("CHECK NEXT LINE")
-	        print(path.split("/")[-2])
+#	        print("CHECK NEXT LINE")
+#	        print(path.split("/")[-2])
 	        if path.split("/")[-2] == self.RunName:
-	            self.CheckedList.append(path)
-	            self.ToRunList.append(path)
+	        	self.CheckedList.append(path)
+	        	if os.path.exists(path + 'OUTCAR') and self.FinishCheck(path): 
+	        		print ('Will skip (finished):'+path)	
+        		else:
+        			self.ToRunList.append(path)        	 #run only unfinished ones
+
 	            
 	def CheckForNewRun(self):
 	    for path in self.CheckedList:
@@ -289,7 +301,28 @@ class VaspTools:
 	                shutil.copyfile(newPath,mainDir+newFileName)
 	        else:
 	            self.ToRunList.append(parpath+"/")
-	
+
+	def FinishCheck(self,folder):
+	#		"""Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""
+	    lastfolder = os.getcwd()
+	    os.chdir(folder)
+	    print folder
+	    proc = subprocess.Popen(['grep', 'Voluntary', 'OUTCAR'],stdout=subprocess.PIPE)
+	    newstring = proc.communicate()
+	    print newstring[0]
+	    os.chdir(lastfolder)	
+	    return newstring[0].find('Voluntary') > -1 #True/False
+
+	def Contcar2Poscar(self,bestfolder,folder):
+		lastfolder = os.getcwd()
+		os.system('cp ', bestfolder + 'CONTCAR POSCAR')
+#	    lastfolder = os.getcwd()
+#	    os.chdir(folder)
+#		os.system('cp ', bestfolder + 'CONTCAR POSCAR')
+#	    os.chdir(lastfolder)		
+    	
+	    
+
 		
 class ContinuationRunSet:
 	def __init__(self):
