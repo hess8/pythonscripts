@@ -1,0 +1,32 @@
+#analysis script
+import os
+#Specify Directory to use
+mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
+#Specify the subdir
+subdir = 'test/'
+dir = mainDir + subdir
+os.chdir(dir)
+
+outfile = open('half_graphane_initial.csv','w')
+
+file = open('elements','r')
+elements = file.readlines()
+file.close()
+
+file = open('energies','r')
+energies = file.readlines()
+file.close()
+
+file = open('stretch','r')
+stretch = file.readlines()
+file.close()
+
+file = open('distances','r')
+distances = file.readlines()
+file.close()
+
+outfile.write('Element,Calculated Energy,Stretch Energy,Distance\n')
+for i in range(elements):
+    linei = elements[i]+','+energies[i]+','+stretch[i]+','+distances[i]+'\n'
+outfile.close()
+print "done"
