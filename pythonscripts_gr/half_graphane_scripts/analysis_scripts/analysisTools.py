@@ -20,7 +20,7 @@ def writeEnergiesOszicar(checkedList):
     enerfile = open('energies','w')
     for i in checkedList:
         os.chdir(i)
-        print('Testing OSZICAR in: ' + i+'\n')
+#        print('Testing OSZICAR in: ' + i+'\n')
         oszicar = open(i+'OSZICAR','r')
         try:
         	energy = oszicar.readlines()[-1].split()[2]
@@ -39,41 +39,44 @@ def writeDistances(checkedList):
         distfile.write(str(getDistance(ipath)) +'\n')
     distfile.close()
     os.chdir(lastfolder)
-        
-def getDistance(folder):
+
+def getDistance(folder): 
+
     os.chdir(folder)
-    print folder
+    outcar = open('OUTCAR','r')
+    text = outcar.readlines()
     proc = subprocess.Popen(['grep','-i','nion','OUTCAR'],stdout=subprocess.PIPE)
     newstring = proc.communicate()
     try:
         numions = int(newstring[0].split()[-1])
     except:
         return 100 # can't read distance
-    proc3 = subprocess.Popen(['grep','-i','A3','OUTCAR'],stdout=subprocess.PIPE)
-    newstring = proc3.communicate()
-    repeat = math.fabs(float(newstring[0].split()[-1].split(')')[0]))
+    proc3 = subprocess.Popen(['grep','-n','lattice vectors','OUTCAR'],stdout=subprocess.PIPE)
+    nline = proc3.communicate()[-2].split('\n')[-2].split(':')[0] #returns one line after grep
+    repvector=[float(text[int(nline)+2].split()[0]),float(text[int(nline)+2].split()[1]),float(text[int(nline)+2].split()[2])]
+    repeat = repvector[2]
     proc2 = subprocess.Popen(['grep','-n','TOTAL-FORCE (eV/Angst)','OUTCAR'],stdout=subprocess.PIPE)
     try:
-        line = proc2.communicate()[-2].split('\n')[-2].split(':')[0]
+        nline = proc2.communicate()[-2].split('\n')[-2].split(':')[0] 
     except:
         return 100 #can't read distance
-    outcar = open('OUTCAR','r')
-    text = outcar.readlines()
     outcar.close()
-    carbon1=[float(text[int(line)+1].split()[0]),float(text[int(line)+1].split()[1]),float(text[int(line)+1].split()[2])]
-    adatom1=[float(text[int(line)+3].split()[0]),float(text[int(line)+3].split()[1]),float(text[int(line)+3].split()[2])]
-    distance1 = math.sqrt(math.pow(carbon1[0]-adatom1[0],2)+math.pow(carbon1[1]-adatom1[1],2)+math.pow(carbon1[2]-adatom1[2],2))
+    carbon1=[float(text[int(nline)+1].split()[0]),float(text[int(nline)+1].split()[1]),float(text[int(nline)+1].split()[2])]
+    adatom1=[float(text[int(nline)+3].split()[0]),float(text[int(nline)+3].split()[1]),float(text[int(nline)+3].split()[2])]
+    distance1 = distance(carbon1,adatom1)
     adatom1[2] = adatom1[2]-repeat
-    distance2 = math.sqrt(math.pow(carbon1[0]-adatom1[0],2)+math.pow(carbon1[1]-adatom1[1],2)+math.pow(carbon1[2]-adatom1[2],2))
+    distance2 = distance(carbon1,adatom1)
     adatom1[2] = adatom1[2] + repeat
     carbon1[2] = carbon1[2] - repeat
-    distance3 = math.sqrt(math.pow(carbon1[0]-adatom1[0],2)+math.pow(carbon1[1]-adatom1[1],2)+math.pow(carbon1[2]-adatom1[2],2))
-    mindistance =  min(distance1,distance2,distance3)
-    return mindistance
+    distance3 = distance(carbon1,adatom1)
+    return min(distance1, distance2, distance3)
+
+def distance(vec1, vec2):
+	return math.sqrt(math.pow(vec1[0]-vec2[0],2)+math.pow(vec1[1]-vec2[1],2)+math.pow(vec1[2]-vec2[2],2))
 
 def writeCCDistances(checkedList):
-    lastfolder = os.getcwd()
     '''write distances of C-C expansions to file'''
+    lastfolder = os.getcwd()
     ccdistfile = open('ccdistances','w')
     for ielement,ipath in enumerate(checkedList):
         newdist = getCCDistance(ipath)  
@@ -84,34 +87,33 @@ def writeCCDistances(checkedList):
         
 def getCCDistance(folder):
     os.chdir(folder)
+    outcar = open('OUTCAR','r')
+    text = outcar.readlines()
     proc = subprocess.Popen(['grep','-i','nion','OUTCAR'],stdout=subprocess.PIPE)
     newstring = proc.communicate()
     try:
         numions = int(newstring[0].split()[-1])
     except:
         return 100 # can't read distance
-    proc3 = subprocess.Popen(['grep','-i','A3','OUTCAR'],stdout=subprocess.PIPE)
-    newstring = proc3.communicate()
-    repeat = math.fabs(float(newstring[0].split()[-1].split(")")[0]))
+    proc3 = subprocess.Popen(['grep','-n','lattice vectors','OUTCAR'],stdout=subprocess.PIPE)
+    nline = proc3.communicate()[-2].split('\n')[-2].split(':')[0] #returns one line after grep
+    repvector=[float(text[int(nline)+2].split()[0]),float(text[int(nline)+2].split()[1]),float(text[int(nline)+2].split()[2])]
+    repeat = repvector[2]
     proc2 = subprocess.Popen(['grep','-n','TOTAL-FORCE (eV/Angst)','OUTCAR'],stdout=subprocess.PIPE)
     try:
-        line = proc2.communicate()[-2].split('\n')[-2].split(':')[0]
+        nline = proc2.communicate()[-2].split('\n')[-2].split(':')[0]
     except:
         return 100 #can't read distance
-    outcar = open('OUTCAR','r')
-    text = outcar.readlines()
     outcar.close()
-    carbon1=[float(text[int(line)+1].split()[0]),float(text[int(line)+1].split()[1]),float(text[int(line)+1].split()[2])]
-    carbon2=[float(text[int(line)+2].split()[0]),float(text[int(line)+2].split()[1]),float(text[int(line)+2].split()[2])]
-    distance1 = math.sqrt(math.pow(carbon1[2]-carbon2[2],2))
+    carbon1=[float(text[int(nline)+1].split()[0]),float(text[int(nline)+1].split()[1]),float(text[int(nline)+1].split()[2])]
+    carbon2=[float(text[int(nline)+2].split()[0]),float(text[int(nline)+2].split()[1]),float(text[int(nline)+2].split()[2])]
+    distance1 = distance(carbon1,carbon2)
     carbon1[2] = carbon1[2]-repeat
-    distance2 = math.sqrt(math.pow(carbon1[2]-carbon2[2],2))
+    distance2 = distance(carbon1,carbon2)
     carbon1[2] = carbon1[2] + repeat
     carbon2[2] = carbon2[2] - repeat
-    distance3 = math.sqrt(math.pow(carbon1[2]-carbon2[2],2))
-    mindistance =  min(distance1,distance2,distance3)
-    return mindistance
-
+    distance3 = distance(carbon1,carbon2)
+    return min(distance1, distance2, distance3)
              
 def getElement(prefix,path):    
     index1 = path.index(prefix) 

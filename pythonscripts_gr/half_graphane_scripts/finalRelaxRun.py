@@ -144,9 +144,11 @@ file.close()
 print "\nThe following folders are in checkedList (contain the run type):"
 for i,j in enumerate(checkedList):
     print("CONTCAR to POSCAR " + bestpaths[i])
-    os.system('cp ' + bestpaths[i] + 'CONTCAR ' + j +'POSCAR')
-
+#    os.system('cp ' + bestpaths[i] + 'CONTCAR ' + j +'POSCAR')
+    os.system('cp ' + j + 'CONTCAR ' + j +'POSCAR')
+raw_input('Pausing to remind you to change line 147 back in Contcar copy')
     
+raw_input('Pausing to remind you to change line 285 in ScripTools for checkfinish')
 
 print "\nThe following folders will be run:"
 for i in toRunList:

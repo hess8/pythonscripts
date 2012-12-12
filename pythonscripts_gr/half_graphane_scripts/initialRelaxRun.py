@@ -12,13 +12,13 @@ runType = ['test2']
 runName = "relaxation"
 
 #Specify a Poscar file
-poscar = mainDir + 'poscar/relax.poscar'
+poscar = mainDir + 'poscar/initialRelax.poscar'
 
 #Specify a KPoints file
-kpoints = mainDir + 'kpoints/grapheneionicrun.kpoints'
+kpoints = mainDir + 'kpoints/initialRelax.kpoints'
 
 #Specify an Incar file
-incar = mainDir + 'incar/grapheneionicrun.incar'
+incar = mainDir + 'incar/initialRelax.incar'
 
 #Specify a Potcar file
 potcar = mainDir + 'potcar/graphene.potcar'

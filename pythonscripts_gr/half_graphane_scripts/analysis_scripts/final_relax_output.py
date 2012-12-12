@@ -4,7 +4,7 @@ mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
 
 #Specify the subdir
 subdir = 'final_relax'
-
+#subdir = 'test2'
 dir = mainDir + subdir + '/'
 #Specify the name of the type of run
 runName = 'relax' 
@@ -25,7 +25,6 @@ incarVariables = {
 	['2'],
 '@ISIF':
 	['4']
-
 }
 
 import os,subprocess,math,time 
@@ -68,7 +67,7 @@ writeDistances(checkedList)
 #Write C-C expansion
 writeCCDistances(checkedList)
 
-################# spreadsheet #################
+################# summary spreadsheet #################
 #Open data files
 
 os.chdir(dir)
@@ -91,13 +90,18 @@ ccdistances = nstrip(file.readlines())
 file.close()
 
 
-outfile = open('isolated_atoms.csv','w')
-outfile.write('Element,Calculated Energy,Distance, CC Distance\n')
+outfile = open('final_relax.csv','w')
+outfile.write('Element,Calculated Energy,Distance,CC Distance\n')
 for i in range(len(elements)):
     linei = elements[i]+','+energies[i]+','+distances[i]+','+ccdistances[i]+'\n'
     outfile.write(linei)
 outfile.close()
 
-print 'Done'
+print 'Done with summary'
+
+################# spreadsheet #################
+#Bring in data from other runs
+
+print 'Done with analysis'
 
 

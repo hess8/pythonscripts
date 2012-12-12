@@ -282,7 +282,7 @@ class VaspTools:
 #	        print(path.split("/")[-2])
 	        if path.split("/")[-2] == self.RunName:
 	        	self.CheckedList.append(path)
-	        	if os.path.exists(path + 'OUTCAR') and self.FinishCheck(path): 
+	        	if os.path.exists(path + 'OUTCAR'): # and self.FinishCheck(path): 
 	        		print ('Will skip (finished):'+path)	
         		else:
         			self.ToRunList.append(path)        	 #run only unfinished ones
