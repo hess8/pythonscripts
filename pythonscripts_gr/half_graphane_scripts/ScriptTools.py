@@ -37,7 +37,6 @@ class VaspTools:
 	
 	def BuildNewRun(self):
 		os.chdir(self.MainFolder)
-		
 		for folder in self.RunType:
 			try:
 				os.chdir(folder)
@@ -84,10 +83,10 @@ class VaspTools:
 			self.AlterPotcar(option,key)
 			self.DescendPotcar(copy.deepcopy(varmap))
 			os.chdir('..')
-		try:
-			os.system('rm POTCAR')
-		except:
-			print "File system error"
+#		try:
+#			os.system('rm POTCAR')
+#		except:
+#			print "File system error"
 				
 	def DescendPoscar(self,varmap):
 		varmap = copy.deepcopy(varmap)
@@ -121,11 +120,11 @@ class VaspTools:
 			self.AlterFile("POSCAR",key,option)
 			self.DescendPoscar(copy.deepcopy(varmap))
 			os.chdir('..')
-		try:
-			os.system('rm POSCAR')
-			os.system('rm POTCAR')
-		except:
-			print "File system error"
+#		try:
+#			os.system('rm POSCAR')
+#			os.system('rm POTCAR')
+#		except:
+#			print "File system error"
 			
 	def DescendKpoints(self,varmap):
 		varmap = copy.deepcopy(varmap)
@@ -160,12 +159,12 @@ class VaspTools:
 			self.AlterFile("KPOINTS",key,option)
 			self.DescendKpoints(copy.deepcopy(varmap))
 			os.chdir('..')
-		try:
-			os.system('rm KPOINTS')
-			os.system('rm POSCAR')
-			os.system('rm POTCAR')
-		except:
-			print "File system error"
+#		try:
+#			os.system('rm KPOINTS')
+#			os.system('rm POSCAR')
+#			os.system('rm POTCAR')
+#		except:
+#			print "File system error"
 
 			
 	def DescendIncar(self,varmap):
@@ -210,13 +209,13 @@ class VaspTools:
 			self.AlterFile("INCAR",key,option)
 			self.DescendIncar(copy.deepcopy(varmap))
 			os.chdir('..')
-		try:
-			os.system('rm INCAR')
-			os.system('rm KPOINTS')
-			os.system('rm POSCAR')
-			os.system('rm POTCAR')
-		except:
-			print "File system error"
+#		try:
+#			os.system('rm INCAR')
+#			os.system('rm KPOINTS')
+#			os.system('rm POSCAR')
+#			os.system('rm POTCAR')
+#		except:
+#			print "File system error"
 			
 			
 	def AlterFile(self,filepath,frommatch,tomatch):	
@@ -272,6 +271,7 @@ class VaspTools:
 	def AddToList(self,folder):
 	    files = os.listdir(folder)
 	    for path in files:
+	    	print 'path', path
 	        if os.path.isdir(folder+path+"/"):
 	            self.ToCheckList.append(folder+path+"/")
 	            self.AddToList(folder+path+"/")
@@ -282,7 +282,7 @@ class VaspTools:
 #	        print(path.split("/")[-2])
 	        if path.split("/")[-2] == self.RunName:
 	        	self.CheckedList.append(path)
-	        	if os.path.exists(path + 'OUTCAR'): # and self.FinishCheck(path): 
+	        	if os.path.exists(path + 'OUTCAR') and self.FinishCheck(path): 
 	        		print ('Will skip (finished):'+path)	
         		else:
         			self.ToRunList.append(path)        	 #run only unfinished ones

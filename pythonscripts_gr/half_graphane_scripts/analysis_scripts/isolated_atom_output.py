@@ -11,12 +11,10 @@ runName = 'relaxation'
 
 import os,subprocess,math,time 
 import numpy as np 
-from analysisTools import addToList, checkFolders, energyOszicar, getElement, writeElements, nstrip
+from analysisTools import addToList, checkFolders, writeEnergiesOszicar, getElement, writeElements, nstrip
 
 run = runName
 
-
-from analysisTools import addToList, checkFolders, energyOszicar, getElement, writeElements, nstrip
 #            
 print('\nInitializing...\n')
 print('Finding Directories to do %s on\n' % run)
@@ -30,7 +28,7 @@ toCheckList = addToList(dir,toCheckList)
 
 print('Checking to see which folders contain '+run+'\n')
 time.sleep(1)
-checkedList=checkFolders(toCheckList,checkedList,run)
+checkedList=sorted(checkFolders(toCheckList,checkedList,run))
 
 print '\nThe following folders are in checkedList:'
 for i in checkedList:
@@ -40,7 +38,7 @@ for i in checkedList:
 writeElements(checkedList)
 
 #write out energies from all elements
-energyOszicar(checkedList)
+writeEnergiesOszicar(checkedList)
 
 
 ################# spreadsheet #################

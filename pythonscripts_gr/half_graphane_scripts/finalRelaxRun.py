@@ -8,7 +8,7 @@ mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
 
 #Specify the type of run
-#runType = ['relax']
+#runType = ['test2']
 runType = ['final_relax']
 #Specify the name of run
 runName ='relax'
@@ -29,7 +29,10 @@ potcar = mainDir + 'potcar/graphene.potcar'
 
 #Specify Poscar variables
 poscarVariables = {
+#'@distance':
+#	[0]
 }
+
 
 #Specify KPoints variables
 kpointVariables = {
@@ -117,16 +120,18 @@ newRunFile = "DOSCAR" #Will check to see if higher level is already done, then s
 #incar = "ENCUT=500\nPREC=Accurate\nEDIFF=1E-6\nISMEAR=-5\nSIGMA=0.12\nISPIN=2\nLORBIT=10\n"
 copyFiles = True
 
-
 print("\nInitializing...\n")
 print("Finding Directories to do %s on\n" % run)
-print("Searching all Directories in " + mainDir+"\n")
-
+print("Searching all Directories in " + dir+"\n")
 
 print("Checking to see which folders contain "+run+"\n")
 time.sleep(1)
-tools.CheckFolders()
+os.chdir(dir)
+print("Searching all Directories in " + dir+"\n")
 
+tools.CheckFolders()
+checkedList=sorted(checkedList)
+toRunList=sorted(toRunList)
 #print("Checking to see if any folders have already converged\n")
 #time.sleep(1)
 #checkForNewRun()
@@ -142,14 +147,16 @@ bestpaths = ScriptTools.nstrip(file.readlines())
 file.close()
 
 print "\nThe following folders are in checkedList (contain the run type):"
+for i in checkedList:
+    print('checkedList contains : ' + i+'\n')
+print 'length bestpaths', len(bestpaths), 'length checkedList', len(checkedList)
+
+
 for i,j in enumerate(checkedList):
     print("CONTCAR to POSCAR " + bestpaths[i])
-#    os.system('cp ' + bestpaths[i] + 'CONTCAR ' + j +'POSCAR')
-    os.system('cp ' + j + 'CONTCAR ' + j +'POSCAR')
-raw_input('Pausing to remind you to change line 147 back in Contcar copy')
-    
-raw_input('Pausing to remind you to change line 285 in ScripTools for checkfinish')
+    os.system('cp ' + bestpaths[i] + 'CONTCAR ' + j +'POSCAR')
 
+os.chdir(dir)
 print "\nThe following folders will be run:"
 for i in toRunList:
     print("toRunList contains : " + i)
@@ -160,6 +167,7 @@ for i in toRunList:
 print"\n"
 for folder in toRunList:
     newFolder = folder
+    print folder
     #print "Copying " + previousRun + " to " + newRun + " in folder " + folder
     #command = subprocess.check_call(['cp','-r',folder+previousRun,newFolder])
     #print "Copying CONTCAR to POSCAR"
@@ -178,7 +186,7 @@ for folder in toRunList:
     #print newFolder + "job"
     prefix = 'adatom_'
     element = newFolder[newFolder.index(prefix)+len(prefix):newFolder.index('/',newFolder.index(prefix))]
-    jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=2gb,walltime=36:00:00\n#PBS -N fin_rel_" + element+ "\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \n date > finish.txt \n exit 0"
+    jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=200mb,walltime=36:00:00\n#PBS -N fin_rel_" + element+ "\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \n date > finish.txt \n exit 0"
     file.write(jobData)
     file.close()
     file = open(newFolder+"outputJob.txt",'w')

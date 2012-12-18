@@ -87,7 +87,7 @@ print toCheckList
 print('Checking to see which folders contain '+run+'\n')
 time.sleep(1)
 checkFolders()
-
+checkedList=sorted(checkedList)
 print '\nThe following folders are in checkedList:'
 for i in checkedList:
     print('checkedList contains : ' + i+'\n')
