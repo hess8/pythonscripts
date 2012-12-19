@@ -33,7 +33,7 @@ incarVariables = {
 import os,subprocess,math,time 
 import numpy as np 
 from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  \
-    writeElements, nstrip, writeDistances, writeCCDistances
+    writeElements, nstrip, writeDistances, writeCCDistances, writeConverge
 
 
 run = runName
@@ -73,6 +73,9 @@ writeDistances(checkedList)
 #Write C-C expansion
 writeCCDistances(checkedList)
 
+#Check convergence
+writeConverge(checkedList) 
+
 ################# summary spreadsheet #################
 #Open data files
 
@@ -95,11 +98,14 @@ file = open('ccdistances','r')
 ccdistances = nstrip(file.readlines())
 file.close()
 
+file = open('converge','r')
+converged = nstrip(file.readlines())
+file.close()
 
 outfile = open('final_relax.csv','w')
-outfile.write('Element,Calculated Energy,Distance,CC Distance\n')
+outfile.write('Element,Calculated Energy,Distance,CC Distance,Converged\n')
 for i in range(len(elements)):
-    linei = elements[i]+','+energies[i]+','+distances[i]+','+ccdistances[i]+'\n'
+    linei = elements[i]+','+energies[i]+','+distances[i]+','+ccdistances[i]+','+converged[i]+'\n'
     outfile.write(linei)
 outfile.close()
 
@@ -127,19 +133,23 @@ for i in range(len(elements)):
 		binde[i] = float(energies[i]) - float(isolenergies[i])-eIsolatedH - 2* eIsolatedC -bindEnergyGraphane 
 	except:
 		binde[i] = 100 #can't read energy
-	if elements[i] == 'Ti':
-		print float(energies[i]) , float(isolenergies[i]), binde[i]
+#	if elements[i] == 'Ti':
+#		print float(energies[i]) , float(isolenergies[i]), binde[i]
 outfile = open('half_graphane_analysis_run_again_after_finalRelax2.csv','w')
-outfile.write('Element,Binding Energy,Calculated Energy,Distance,CC expansion, Stretch energy\n')
+outfile.write('Element,Binding Energy,Calculated Energy,Distance,CC expansion,Stretch energy,Converged\n')
 
 # write spreadsheet
+
 for i in range(len(elements)):
-	#compare ccdistances to graphane
-    linei = elements[i]+','+str(binde[i])+','+energies[i]+','+distances[i]+','+str(float(ccdistances[i])/1.467)+','+strenergies[i]+'\n'
-    outfile.write(linei)
+	try:
+		ccratio = str(float(ccdistances[i])/1.467) #compare to graphane 
+	except:
+		ccratio = 'null'
+ 	linei = elements[i]+','+str(binde[i])+','+energies[i]+','+distances[i]+','+ccratio+','+strenergies[i]+','+converged[i]+'\n'
+ 	outfile.write(linei)
 outfile.close()
 
-ccratio = str(float(ccdistances[i])/1.467) #compare to graphane
+
 
 print 'Done with analysis'
 

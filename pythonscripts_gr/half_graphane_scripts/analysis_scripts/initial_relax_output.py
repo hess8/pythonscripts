@@ -4,8 +4,9 @@ mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
 
 #Specify the subdir
 subdir = 'initial_relax'
+#subdir = 'test'
 
-dir = mainDir + '/' + subdir + '/'
+dir = mainDir + subdir + '/'
 #Specify the name of the type of run
 runName = 'relaxation' 
 
@@ -118,9 +119,9 @@ resultsfile = open('allenergies','r')
 results = resultsfile.readlines()
 ndist = len(poscarVariables['@distance'])
 nelements = len(results)/ndist
-energies = [0]*nelements
+energies = [0]*ndist
 for ielement in range(nelements):
-    print('ielement %d \n' % ielement)
+#    print('ielement %d \n' % ielement)
     elementstart = ielement*ndist
     #get element name
     path = checkedList[elementstart] # just the first folder in list
@@ -129,21 +130,24 @@ for ielement in range(nelements):
     index2 = path.index('/',index1)
     element = path[index1+len(prefix):index2]
     print ('Element ' + element)
-    
     #get energies
     elementresults = results[elementstart:elementstart+ndist]
-    print 'elementresults',elementresults
+#    if element == 'Ti':
+#	    print 'Ti energies', elementresults
+#    print 'elementresults',elementresults
     for i in range(len(elementresults)):
         try:
             energies[i]=float(elementresults[i])
         except:
             energies[i]=0.0 #if text, etc
-    enerfar = energies[0] #the first energy is the farthest away, most likely to be finished
+    enerfar = energies[ndist-1] #the last energy (sorted checkedlist) is the farthest away, most likely to be finished
     for i in range(len(energies)):
         if abs(energies[i]-enerfar) > 100: #throw away outliers
             energies[i] = 0
     minindex = np.argmin(energies)
-    print ('best energy %f' % energies[minindex])
+#    if element == 'Ti':
+#	    print 'Ti energies', energies, minindex
+#    print ('best energy %f' % energies[minindex])
     
     enerstretch = enerfar - energies[minindex]
     
@@ -164,5 +168,36 @@ enerfile.close()
 distfile.close()
 strchfile.close()
 bestpathfile.close() 
+
+############ Spreadsheet 
+import os, sys, string
+sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/')
+from ScriptTools import nstrip
+
+os.chdir(dir)
+outfile = open('half_graphane_initial.csv','w')
+
+file = open('elements','r')  
+elements = nstrip(file.readlines())
+file.close()
+print elements
+
+file = open('energies','r')
+energies = nstrip(file.readlines())
+file.close()
+
+file = open('stretch','r')
+stretch = nstrip(file.readlines())
+file.close()
+
+file = open('distances','r')
+distances = nstrip(file.readlines())
+file.close()
+
+outfile.write('Element,Calculated Energy,Stretch Energy,Distance\n')
+for i in range(len(elements)):
+    linei = elements[i]+','+energies[i]+','+stretch[i]+','+distances[i]+'\n'
+    outfile.write(linei)
+outfile.close()
 
 print 'Done'

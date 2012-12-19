@@ -137,4 +137,61 @@ def nstrip(list):
         string2 = string1.strip("\n")
         list2.append(string2)
     return list2
+
+def xxxconvergeCheck(folder,NSW):
+#        """Tests whether force converges is done by whether the last line of Oszicar is less than NSW."""
+    lastfolder = os.getcwd()
+    os.chdir(folder)
+    if not os.path.exists('OSZICAR'):
+        return False
+    oszicar = open('OSZICAR','r')
+    lines = oszicar.readlines
+    print lines
+#    for i1,j1 in enumerate(lines):
+#        print  oszicar.readlines()[i]
+    print folder
+    lastline = oszicar.readlines()[-1].split
+    print  lastline
+#    lastline = oszicar.readlines()[-1].split()
+    oszicar.close()
+    os.chdir(lastfolder)      
+    try:
+        value = int(lastline[0])
+        return int(lastline[0])< NSW #True/False
+    except:
+        return False #True/False
+    
+def convergeCheck(folder,NSW):
+#        """Tests whether force converges is done by whether the last line of Oszicar is less than NSW."""
+    lastfolder = os.getcwd()
+    os.chdir(folder)
+    if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0:
+        return False
+    laststep = oszicar.readlines()[-1].split()[0]
+    oszicar.close()
+    os.chdir(lastfolder)  
+    try:
+        value = int(laststep[0])
+        return int(laststep[0])< NSW #True/False
+    except:
+        return False #True/False
+
+def writeConverge(checkedList):    
+    '''Writes Y or N depending on convergence'''
+    convergefile = open('converge','w')
+    #get NSW, the max ionic steps allowed in the run.  Using first directory in checkedList
+    proc = subprocess.Popen(['grep','-i','NSW',checkedList[0]+'/INCAR'],stdout=subprocess.PIPE)
+    NSW = int(proc.communicate()[0].split('=')[-1])
+    for element,path in enumerate(checkedList):
+        #get element name
+        if convergeCheck(path,NSW):
+            convergefile.write('Y' +'\n')
+        else:
+            convergefile.write('N' +'\n')
+    convergefile.close()
+
+
+
+
+
    

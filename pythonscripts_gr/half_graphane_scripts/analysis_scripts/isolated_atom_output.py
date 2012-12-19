@@ -61,6 +61,37 @@ for i in range(len(elements)):
     outfile.write(linei)
 outfile.close()
 
+############ Spreadsheet 
+outfile = open('half_graphane_initial.csv','w')
+
+file = open('elements','r')  
+elements = nstrip(file.readlines())
+file.close()
+print elements
+
+file = open('energies','r')
+energies = nstrip(file.readlines())
+file.close()
+
+file = open('stretch','r')
+stretch = nstrip(file.readlines())
+file.close()
+
+file = open('distances','r')
+distances = nstrip(file.readlines())
+file.close()
+
+outfile.write('Element,Calculated Energy,Stretch Energy,Distance\n')
+for i in range(len(elements)):
+    linei = elements[i]+','+energies[i]+','+stretch[i]+','+distances[i]+'\n'
+    outfile.write(linei)
+outfile.close()
+print "done"
+
+
+
+
+
 print "done"
 
 
