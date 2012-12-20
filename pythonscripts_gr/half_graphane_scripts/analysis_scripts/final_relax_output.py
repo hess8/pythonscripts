@@ -33,7 +33,8 @@ incarVariables = {
 import os,subprocess,math,time 
 import numpy as np 
 from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  \
-    writeElements, nstrip, writeDistances, writeCCDistances, writeConverge
+    writeElements, nstrip, writeDistances, writeCCDistances, writeConverge, \
+    FinishCheck
 
 
 run = runName
@@ -135,21 +136,21 @@ for i in range(len(elements)):
 		binde[i] = 100 #can't read energy
 #	if elements[i] == 'Ti':
 #		print float(energies[i]) , float(isolenergies[i]), binde[i]
-outfile = open('half_graphane_analysis_run_again_after_finalRelax2.csv','w')
-outfile.write('Element,Binding Energy,Calculated Energy,Distance,CC expansion,Stretch energy,Converged\n')
-
+outfile = open('half_graphane_analysis.csv','w')
+outfile.write('Element,Binding Energy,Calculated Energy,Distance,CC expansion %,Stretch energy,Converged\n')
 # write spreadsheet
 
 for i in range(len(elements)):
-	try:
-		ccratio = str(float(ccdistances[i])/1.467) #compare to graphane 
-	except:
-		ccratio = 'null'
- 	linei = elements[i]+','+str(binde[i])+','+energies[i]+','+distances[i]+','+ccratio+','+strenergies[i]+','+converged[i]+'\n'
- 	outfile.write(linei)
+    try:
+        ccexpand = str(round(100*(float(ccdistances[i])/1.53391 -1),1)) #compare to graphane 
+    except:
+        ccexpand = 'null'
+    if converged[i] =='Y':
+         linei = elements[i]+','+str(binde[i])+','+energies[i]+','+distances[i]+','+ccexpand+','+strenergies[i]+','+converged[i]+'\n'
+    else:
+         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+distances[i]+'*,'+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'\n'        
+    outfile.write(linei)
 outfile.close()
-
-
 
 print 'Done with analysis'
 

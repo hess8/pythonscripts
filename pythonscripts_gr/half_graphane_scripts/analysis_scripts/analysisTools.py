@@ -80,8 +80,7 @@ def writeCCDistances(checkedList):
     ccdistfile = open('ccdistances','w')
     for ielement,ipath in enumerate(checkedList):
         newdist = getCCDistance(ipath)  
-        ratio = newdist #/1.46724  #for graphene
-        ccdistfile.write(str(ratio) +'\n')
+        ccdistfile.write(str(newdist) +'\n')
     ccdistfile.close()
     os.chdir(lastfolder)  
         
@@ -137,36 +136,14 @@ def nstrip(list):
         string2 = string1.strip("\n")
         list2.append(string2)
     return list2
-
-def xxxconvergeCheck(folder,NSW):
-#        """Tests whether force converges is done by whether the last line of Oszicar is less than NSW."""
-    lastfolder = os.getcwd()
-    os.chdir(folder)
-    if not os.path.exists('OSZICAR'):
-        return False
-    oszicar = open('OSZICAR','r')
-    lines = oszicar.readlines
-    print lines
-#    for i1,j1 in enumerate(lines):
-#        print  oszicar.readlines()[i]
-    print folder
-    lastline = oszicar.readlines()[-1].split
-    print  lastline
-#    lastline = oszicar.readlines()[-1].split()
-    oszicar.close()
-    os.chdir(lastfolder)      
-    try:
-        value = int(lastline[0])
-        return int(lastline[0])< NSW #True/False
-    except:
-        return False #True/False
     
 def convergeCheck(folder,NSW):
-#        """Tests whether force converges is done by whether the last line of Oszicar is less than NSW."""
+#        """Tests whether force convergence is done by whether the last line of Oszicar is less than NSW."""
     lastfolder = os.getcwd()
     os.chdir(folder)
     if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0:
         return False
+    oszicar = open('OSZICAR','r')
     laststep = oszicar.readlines()[-1].split()[0]
     oszicar.close()
     os.chdir(lastfolder)  
@@ -177,20 +154,27 @@ def convergeCheck(folder,NSW):
         return False #True/False
 
 def writeConverge(checkedList):    
-    '''Writes Y or N depending on convergence'''
+    '''Writes Y or N depending on convergence AND vasp finishing'''
     convergefile = open('converge','w')
     #get NSW, the max ionic steps allowed in the run.  Using first directory in checkedList
     proc = subprocess.Popen(['grep','-i','NSW',checkedList[0]+'/INCAR'],stdout=subprocess.PIPE)
     NSW = int(proc.communicate()[0].split('=')[-1])
     for element,path in enumerate(checkedList):
         #get element name
-        if convergeCheck(path,NSW):
+        if convergeCheck(path,NSW) and FinishCheck(path):
             convergefile.write('Y' +'\n')
         else:
             convergefile.write('N' +'\n')
     convergefile.close()
 
-
+def FinishCheck(folder):
+#        """Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""
+    lastfolder = os.getcwd()
+    os.chdir(folder)
+    proc = subprocess.Popen(['grep', 'Voluntary', 'OUTCAR'],stdout=subprocess.PIPE)
+    newstring = proc.communicate()
+    os.chdir(lastfolder)    
+    return newstring[0].find('Voluntary') > -1 #True/False
 
 
 
