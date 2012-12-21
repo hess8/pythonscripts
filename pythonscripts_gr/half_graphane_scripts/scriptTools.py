@@ -63,13 +63,10 @@ class VaspTools:
             self.DescendPoscar(self.PoscarVars) 
             return           
         key = varmap.items()[0][0]
-        print key
         label = key[1:] #keyword @adatom        
         varlist = varmap[key]
         del varmap[key]
-        print key
         for option in varlist:
-            print (option)
             try:
                 os.chdir(str(label) + '_' + str(option))
             except OSError:
