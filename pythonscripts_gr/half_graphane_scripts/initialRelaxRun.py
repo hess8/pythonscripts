@@ -1,15 +1,13 @@
-
 #Specify Directory to use
-mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
+mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
+#Specify the subdir
+runType  = ['initial_relax']
 
 #Specify Potcar Directory
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
 
-#Specify the type of run
-#runType = ['relax']
-runType = ['test2']
 #Specify the name of the type of run
-runName = "relaxation"
+runName = 'relax' 
 
 #Specify a Poscar file
 poscar = mainDir + 'poscar/initialRelax.poscar'
@@ -21,7 +19,7 @@ kpoints = mainDir + 'kpoints/initialRelax.kpoints'
 incar = mainDir + 'incar/initialRelax.incar'
 
 #Specify a Potcar file
-potcar = mainDir + 'potcar/graphene.potcar'
+potcar = mainDir + 'potcar/C.potcar'
 
 #Specify Poscar variables
 poscarVariables = {
@@ -43,12 +41,6 @@ incarVariables = {
 	['4']
 
 }
-
-#Specify Potcar Elements
-#elementList = {
-#'@adatom':
-#	['Hf']
-#}
 
 #elementList = {
 #'@adatom':
@@ -82,12 +74,23 @@ elementList = {
 ]
 }
 
-import ScriptTools
+import scriptTools
+toCheckList = []
+checkedList = []
+toRunList = []
 
-tools = ScriptTools.VaspTools(mainDir,runName,runType,poscar,kpoints,incar,
-	potcar,poscarVariables,kpointVariables,incarVariables,elementList,potcardir)
+tools = scriptTools.VaspTools(mainDir,runName,runType,poscar,kpoints,incar,
+    potcar,poscarVariables,kpointVariables,incarVariables,elementList,potcardir,
+    toCheckList, checkedList, toRunList )
 
+print("\nInitializing...\n")
+print("Finding Directories to do %s on\n" % runName)
+dir = mainDir + runType[0] + "/"
+print("Searching all Directories in " + dir+"\n")
+tools.AddToList(dir)
+print 'test1'
 tools.BuildNewRun() #create folders
+
 
 raw_input("Done creating folders.  Press enter to submit jobs")
 
@@ -104,53 +107,20 @@ newRunFile = "DOSCAR" #Will check to see if higher level is already done, then s
 #incar = "ENCUT=500\nPREC=Accurate\nEDIFF=1E-6\nISMEAR=-5\nSIGMA=0.12\nISPIN=2\nLORBIT=10\n"
 copyFiles = True
 
-global toCheckList
-global checkedList
-global toRunList
-
-def addToList(folder):
-    files = os.listdir(folder)
-    for path in files:
-        if os.path.isdir(folder+path+"/"):
-            toCheckList.append(folder+path+"/")
-            addToList(folder+path+"/")
-
-def checkFolders():
-    for path in toCheckList:
-        print("CHECK NEXT LINE")
-        print(path.split("/")[-2])
-        if path.split("/")[-2] == run:
-            checkedList.append(path)
-            
-def checkForNewRun():
-    for path in checkedList:
-        parpath =  os.path.abspath(os.path.join(path, os.path.pardir))
-        if os.path.exists(os.path.join(parpath,newRun)):
-            print os.path.join(parpath,newRun) + " already exists."
-            if copyFiles:
-                print "Copying " + newRunFile +" from path to current directory."
-                newPath = os.path.join(parpath,newRun) + "/" + newRunFile
-                array = parpath.split("/")
-                newFileName = array[len(array)-2]+array[len(array)-1]+".dat"
-                shutil.copyfile(newPath,mainDir+newFileName)
-        else:
-            toRunList.append(parpath+"/")
 
 print("\nInitializing...\n")
 print("Finding Directories to do %s on\n" % run)
 print("Searching all Directories in " + mainDir+"\n")
-toCheckList = []
-checkedList = []
-toRunList = []
-addToList(mainDir)
+tools.AddToList(mainDir)
 
 print("Checking to see which folders contain "+run+"\n")
 time.sleep(1)
-checkFolders()
-
+tools.CheckFolders()
+checkedList=sorted(checkedList)
+toRunList=sorted(toRunList)
 print("Checking to see if any folders have already converged\n")
-time.sleep(1)
-checkForNewRun()
+#time.sleep(1)
+#checkForNewRun()
 
 print "\nThe following folders are in checkedList:"
 for i in checkedList:
@@ -163,11 +133,11 @@ print "\nThe following folders will be run:"
 for i in toRunList:
     print("toRunList contains : " + i)
 
-#print "\nThe script is at line 134\n"
-
 print"\n"
+
 for folder in toRunList:
-    newFolder = folder+run+"/"
+    newFolder = folder
+    print folder
     #print "Copying " + previousRun + " to " + newRun + " in folder " + folder
     #command = subprocess.check_call(['cp','-r',folder+previousRun,newFolder])
     #print "Copying CONTCAR to POSCAR"
@@ -184,7 +154,10 @@ for folder in toRunList:
     file = open(newFolder+"job",'w+')
     #print "made job in"
     #print newFolder + "job"
-    jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=60mb,walltime=06:00:00\n#PBS -N JOBNAME\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \nexit 0"
+    prefix = 'adatom_'
+    element = newFolder[newFolder.index(prefix)+len(prefix):newFolder.index('/',newFolder.index(prefix))]
+    print element
+    jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=1gb,walltime=06:00:00\n#PBS -N fin_rel_" + element+ "\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \nexit 0"
     file.write(jobData)
     file.close()
     file = open(newFolder+"outputJob.txt",'w')
@@ -195,4 +168,4 @@ for folder in toRunList:
         print output,folder
     file.close()
     
-
+print "Done with submitting jobs"

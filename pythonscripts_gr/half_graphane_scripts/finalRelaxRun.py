@@ -8,8 +8,8 @@ mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
 
 #Specify the type of run
-#runType = ['test2']
-runType = ['final_relax']
+runType = ['test2']
+#runType = ['final_relax']
 #Specify the name of run
 runName ='relax'
 
