@@ -20,7 +20,7 @@ kpoints = mainDir + 'Kpoints/grapheneionicrun.kpoints'
 incar = mainDir + 'Incar/grapheneionicrun.incar'
 
 #Specify a Potcar file
-potcar = mainDir + 'Potcar/graphene.potcar'
+potcar = mainDir + 'Potcar/CH.potcar'
 
 #Specify Poscar variables
 poscarVariables = {

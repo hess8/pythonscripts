@@ -3,7 +3,9 @@
 
 #print the name of files to analyze
 #Specify Directory to use
-mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
+mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane/'
+#mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
+
 
 #Specify the subdir
 subdir = 'final_relax'
@@ -30,8 +32,9 @@ incarVariables = {
 	['4']
 }
 
-import os,subprocess,math,time 
+import os,sys,subprocess,math,time 
 import numpy as np 
+sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
 from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  \
     writeElements, nstrip, writeDistances, writeCCDistances, writeConverge, \
     FinishCheck
@@ -99,14 +102,18 @@ file = open('ccdistances','r')
 ccdistances = nstrip(file.readlines())
 file.close()
 
+file = open('diffz','r')
+diffz = nstrip(file.readlines())
+file.close()
+
 file = open('converge','r')
 converged = nstrip(file.readlines())
 file.close()
 
 outfile = open('final_relax.csv','w')
-outfile.write('Element,Calculated Energy,Distance,CC Distance,Converged\n')
+outfile.write('Element,Calculated Energy,Distance,CC Distance,CC Diffz,Converged\n')
 for i in range(len(elements)):
-    linei = elements[i]+','+energies[i]+','+distances[i]+','+ccdistances[i]+','+converged[i]+'\n'
+    linei = elements[i]+','+energies[i]+','+distances[i]+','+ccdistances[i]+','+diffz[i]+','+converged[i]+'\n'
     outfile.write(linei)
 outfile.close()
 
@@ -115,12 +122,16 @@ print 'Done with summary'
 ################# spreadsheet #################
 #Bring in data from other runs
 os.chdir(mainDir)
-file = open('isolated/energies','r')
+file = open('/bluehome/bch/vasprun/graphene.structures/half_graphane/isolated/energies','r')
+mainDir 
 isolenergies = nstrip(file.readlines())
 file.close()
 
-file = open('initial_relax/stretch','r')
-strenergies = nstrip(file.readlines())
+try:
+	file = open('initial_relax/stretch','r')
+	strenergies = nstrip(file.readlines())
+except:
+	strenergies = ['']*len(elements)
 file.close()
 
 eIsolatedH = -1.115
@@ -131,24 +142,29 @@ bindEnergyGraphane = energyGraphane - 2*eIsolatedH - 2* eIsolatedC
 binde = [0]*len(elements)
 for i in range(len(elements)):
 	try:
-		binde[i] = float(energies[i]) - float(isolenergies[i])-eIsolatedH - 2* eIsolatedC -bindEnergyGraphane 
+		#for half graphane:
+		benergy_system = float(energies[i]) - float(isolenergies[i]) - eIsolatedH - 2*eIsolatedC 
+#		binde[i] = float(energies[i]) - 2*float(isolenergies[i])-2* eIsolatedC 
+		binde[i] = benergy_system - bindEnergyGraphane #relative to graphane
+		#for double sided (no H) diamond_like, not relative
+#		binde[i] = float(energies[i]) - 2*float(isolenergies[i])-2* eIsolatedC 		
 	except:
 		binde[i] = 100 #can't read energy
 #	if elements[i] == 'Ti':
 #		print float(energies[i]) , float(isolenergies[i]), binde[i]
-outfile = open('half_graphane_analysis.csv','w')
-outfile.write('Element,Binding Energy,Calculated Energy,Distance,CC expansion %,Stretch energy,Converged\n')
+outfile = open('analysis.csv','w')
+outfile.write('Element,Binding Energy,Calc Energy,Distance,CC Diffz,CC expans %,Stretch energy,Converged\n')
 # write spreadsheet
 
 for i in range(len(elements)):
     try:
-        ccexpand = str(round(100*(float(ccdistances[i])/1.53391 -1),1)) #compare to graphane 
+        ccexpand = str(round(100*(float(ccdistances[i])/1.53391 - 1),1)) #compare to graphane 
     except:
         ccexpand = 'null'
     if converged[i] =='Y':
-         linei = elements[i]+','+str(binde[i])+','+energies[i]+','+distances[i]+','+ccexpand+','+strenergies[i]+','+converged[i]+'\n'
+         linei = elements[i]+','+str(binde[i])+','+energies[i]+','+distances[i]+','+diffz[i]+','+ccexpand+','+strenergies[i]+','+converged[i]+'\n'
     else:
-         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+distances[i]+'*,'+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'\n'        
+         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'\n'        
     outfile.write(linei)
 outfile.close()
 

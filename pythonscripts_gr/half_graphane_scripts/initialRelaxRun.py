@@ -90,11 +90,7 @@ print("Searching all Directories in " + dir+"\n")
 tools.AddToList(dir)
 tools.BuildNewRun() #create folders
 
-
 raw_input("Done creating folders.  Press enter to submit jobs")
-
-
-
 
 #script.py
 import os,subprocess,time,sys, shutil

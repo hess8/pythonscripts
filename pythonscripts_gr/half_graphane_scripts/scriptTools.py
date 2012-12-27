@@ -35,7 +35,6 @@ class VaspTools:
     def AddToList(self,folder):
         files = os.listdir(folder)
         for path in files:
-            print 'path', path
             if os.path.isdir(folder+path+"/"):
                 self.ToCheckList.append(folder+path+"/")
                 self.AddToList(folder+path+"/")        
@@ -220,7 +219,6 @@ class VaspTools:
     def AlterPotcar(self,element,tag):
         curdir = os.getcwd()
         os.chdir(self.PotcarDir+'/'+element)        
-        # don't know why these are indented; error without it
         file=open("POTCAR",'r')
         file2=file.readlines()
         file.close()
@@ -252,8 +250,6 @@ class VaspTools:
     
     def CheckFolders(self):
         for path in self.ToCheckList:
-#            print("CHECK NEXT LINE")
-#            print(path.split("/")[-2])
             if path.split("/")[-2] == self.RunName:
                 self.CheckedList.append(path)
                 if os.path.exists(path + 'OUTCAR') and self.FinishCheck(path): 
@@ -277,20 +273,43 @@ class VaspTools:
                 self.ToRunList.append(parpath+"/")
 
     def FinishCheck(self,folder):
-    #        """Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""
+        """Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""
         lastfolder = os.getcwd()
         os.chdir(folder)
-        print folder
         proc = subprocess.Popen(['grep', 'Voluntary', 'OUTCAR'],stdout=subprocess.PIPE)
         newstring = proc.communicate()
-        print newstring[0]
         os.chdir(lastfolder)    
         return newstring[0].find('Voluntary') > -1 #True/False
 
-    def Contcar2Poscar(self,bestfolder,folder):
-        lastfolder = os.getcwd()
-        os.system('cp ', bestfolder + 'CONTCAR POSCAR')
-        lastfolder = os.getcwd()
-        os.chdir(folder)
-        os.system('cp ', bestfolder + 'CONTCAR POSCAR')
-        os.chdir(lastfolder)
+    def addHToPOSCAR(self,path):
+       '''Takes a POSCAR (in CONTCAR direct coordinates), and adds an H above the adatom (last line)'''
+       file=open(path + 'POSCAR','r')
+       lines=file.readlines()
+       file.close()
+#       #add H to element list  #only needed if H is not already there
+       try:
+           elemsString = lines[5]
+       except:
+       	return
+#       len1 = len(elemsString)
+#       elem = elemsString.split()[-1]
+#       lenelem = len(elem) # last element (adatom) string
+#       newstr = elemsString[:len1-lenelem-2]+'H   '+ elem +'\n'#adds H in element list
+#       lines[5] = newstr
+#       #add to numbers of atoms
+       lines[6] ='    2     2     1\n'  # 2 replaces 1 in 2nd (H) spot, in 6th line
+       #add position of new H (must scale position to direct coordinates
+       repeatz = float(lines[4].split()[-1])
+       newHz = str(float(lines[11].split()[2])+1.1/repeatz)
+       newHline = '  '+ lines[11].split()[0]+'  '+lines[11].split()[1] +'  ' + newHz+'\n'
+       list1 = lines[0:12] #includes up to 11
+       list1.insert(11,newHline) #inserts after 11
+       #replace old POSCAR
+       file=open(path + 'POSCAR','w')
+       for i, linei in enumerate(list1):
+           file.writelines(linei)
+       file.close()
+       return
+               
+    
+    

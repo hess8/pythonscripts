@@ -2,19 +2,22 @@
 
 ################## Directories ################## 
 #Specify Directory to use
-mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
-
+mainDir = "/bluehome/bch/vasprun/graphene.structures/h.half_graphane/"
+#mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
+#mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
 #Specify Potcar Directory
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
+contcardir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
+
 
 #Specify the type of run
-runType = ['test2']
-#runType = ['final_relax']
+#runType = ['test2']
+runType = ['final_relax']
 #Specify the name of run
 runName ='relax'
 
 #Specify a Poscar file
-poscar = mainDir + 'poscar/relax.poscar' #will be replaced
+poscar = mainDir + 'poscar/initialRelax.poscar' #will be replaced by contcar from best initial run
 
 #Specify a KPoints file
 kpoints = mainDir + 'kpoints/finalRelax.kpoints'
@@ -23,7 +26,7 @@ kpoints = mainDir + 'kpoints/finalRelax.kpoints'
 incar = mainDir + 'incar/finalRelax.incar'
 
 #Specify a Potcar file
-potcar = mainDir + 'potcar/graphene.potcar'
+potcar = mainDir + 'potcar/CH.potcar'
 
 ################## Variables ################## 
 
@@ -79,19 +82,19 @@ elementList = {
 #elementList = {
 #'@adatom':
 #[
-#"Cr", "H"
+#"Cr", "H", "Na_pv"
 #]
 #}
 
 ################## Build run folders ################## 
 
-import ScriptTools
+import scriptTools
 toCheckList = []
 checkedList = []
 toRunList = []
 
 
-tools = ScriptTools.VaspTools(mainDir,runName,runType,poscar,kpoints,incar,
+tools = scriptTools.VaspTools(mainDir,runName,runType,poscar,kpoints,incar,
 	potcar,poscarVariables,kpointVariables,incarVariables,elementList,potcardir,
 	toCheckList, checkedList, toRunList )
 
@@ -112,6 +115,7 @@ raw_input("Done creating folders.  Press enter to submit jobs")
 
 #script.py
 import os,subprocess,time,sys, shutil
+sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
 #mainDir = "/bluehome/bch/TransitionMetals/"
 run = runName
 newRun = "DOS"
@@ -141,28 +145,41 @@ toRunList=sorted(toRunList)
 #    print("toCheckList contains : " + i)
 
 #Copy POSCAR to CONTCAR in all run folders
-os.chdir(mainDir)
-file = open('initial_relax/bestpath','r')
-bestpaths = ScriptTools.nstrip(file.readlines())
-file.close()
+#os.chdir(mainDir)
+#file = open('initial_relax/bestpath','r')
+#bestpaths = scriptTools.nstrip(file.readlines())
+#file.close()
+#
+#print "\nThe following folders are in checkedList (contain the run type):"
+#for i in checkedList:
+#    print('checkedList contains : ' + i+'\n')
+#print 'length bestpaths', len(bestpaths), 'length checkedList', len(checkedList)
 
-print "\nThe following folders are in checkedList (contain the run type):"
-for i in checkedList:
-    print('checkedList contains : ' + i+'\n')
-print 'length bestpaths', len(bestpaths), 'length checkedList', len(checkedList)
-
-
-for i,j in enumerate(checkedList):
-    print("CONTCAR to POSCAR " + bestpaths[i])
-    os.system('cp ' + bestpaths[i] + 'CONTCAR ' + j +'POSCAR')
-
+#Copy contcars to poscars
+from analysisTools import getElement
+pathparts2 = contcardir.split('/')
+nparts2 = len(pathparts2)
+print nparts2
+for path1 in checkedList:
+#	element = getElement('adatom_',path)
+    pathparts1 = path1.split('/')
+#    print pathparts1
+    nparts1 = len(pathparts1)#getting num of parts after main dir end
+#    print nparts1    
+    path2 = contcardir
+#    print (pathparts1[nparts2-1:nparts1-1])
+    for i, parti in enumerate(pathparts1[nparts2-1:nparts1-1]):
+#        print i
+#        print path2, parti
+        path2 += parti+'/'
+    print("CONTCAR to POSCAR " + path2)
+    os.system('cp ' + path2 + 'CONTCAR ' + path1 +'POSCAR')
+    tools.addHToPOSCAR(path1) #Alter POSCAR so there is one more H in a position of 1.1 ang above the adatom
 os.chdir(dir)
+
 print "\nThe following folders will be run:"
 for i in toRunList:
     print("toRunList contains : " + i)
-
-
-
 
 print"\n"
 for folder in toRunList:
@@ -182,8 +199,6 @@ for folder in toRunList:
     #file.close()
     os.chdir(newFolder)
     file = open(newFolder+"job",'w+')
-    #print "made job in"
-    #print newFolder + "job"
     prefix = 'adatom_'
     element = newFolder[newFolder.index(prefix)+len(prefix):newFolder.index('/',newFolder.index(prefix))]
     jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=1gb,walltime=36:00:00\n#PBS -N fin_rel_" + element+ "\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \n date > finish.txt \n exit 0"

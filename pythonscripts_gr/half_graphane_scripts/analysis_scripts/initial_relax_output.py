@@ -1,6 +1,7 @@
 #print the name of files to analyze
 #Specify Directory to use
-mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
+#mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
+mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
 
 #Specify the subdir
 subdir = 'initial_relax'
@@ -8,7 +9,7 @@ subdir = 'initial_relax'
 
 dir = mainDir + subdir + '/'
 #Specify the name of the type of run
-runName = 'relaxation' 
+runName = 'relax' 
 
 #Specify Poscar variables
 poscarVariables = {
@@ -30,14 +31,11 @@ global toRunList
 
 def addToList(folder):
     files = os.listdir(folder)
-#    print files
     for path in files:
-#        print path
         if os.path.isdir(folder+path+'/'):
             toCheckList.append(folder+path+'/')
             addToList(folder+path+'/')
-#            print path+'/'
-#
+
 def checkFolders():
     for path in toCheckList:
 #        print('CHECK NEXT LINE')

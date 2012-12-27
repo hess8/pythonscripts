@@ -11,6 +11,7 @@ runName = 'relaxation'
 
 import os,subprocess,math,time 
 import numpy as np 
+sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
 from analysisTools import addToList, checkFolders, writeEnergiesOszicar, getElement, writeElements, nstrip
 
 run = runName
