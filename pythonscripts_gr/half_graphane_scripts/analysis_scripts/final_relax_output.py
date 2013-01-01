@@ -143,9 +143,15 @@ binde = [0]*len(elements)
 for i in range(len(elements)):
 	try:
 		#for half graphane:
-		benergy_system = float(energies[i]) - float(isolenergies[i]) - eIsolatedH - 2*eIsolatedC 
-#		binde[i] = float(energies[i]) - 2*float(isolenergies[i])-2* eIsolatedC 
-		binde[i] = benergy_system - bindEnergyGraphane #relative to graphane
+#		benergy_system = float(energies[i]) - float(isolenergies[i]) - eIsolatedH - 2*eIsolatedC 
+#		binde[i] = benergy_system - bindEnergyGraphane #relative to graphane
+
+        # for h.half_graphane:
+#		benergy_system = float(energies[i]) - float(isolenergies[i]) - 2*eIsolatedH - 2*eIsolatedC 
+		binde[i] = float(energies[i]) - energyGraphane - float(isolenergies[i]) #energy to bring adatoms from far away to beneath H layer of graphane
+		#		binde[i] = float(energies[i]) - 2*float(isolenergies[i])-2* eIsolatedC 
+#		binde[i] = benergy_system - bindEnergyGraphane #relative to graphane
+		#For binding E of adatom relative to 
 		#for double sided (no H) diamond_like, not relative
 #		binde[i] = float(energies[i]) - 2*float(isolenergies[i])-2* eIsolatedC 		
 	except:
@@ -153,7 +159,7 @@ for i in range(len(elements)):
 #	if elements[i] == 'Ti':
 #		print float(energies[i]) , float(isolenergies[i]), binde[i]
 outfile = open('analysis.csv','w')
-outfile.write('Element,Binding Energy,Calc Energy,Distance,CC Diffz,CC expans %,Stretch energy,Converged\n')
+outfile.write('Element,BE.adatom.underh,Calc Energy,Distance,CC Diffz,CC expans %,Stretch energy,Converged\n')
 # write spreadsheet
 
 for i in range(len(elements)):

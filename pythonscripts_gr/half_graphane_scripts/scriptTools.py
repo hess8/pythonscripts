@@ -286,6 +286,8 @@ class VaspTools:
        file=open(path + 'POSCAR','r')
        lines=file.readlines()
        file.close()
+       if len(lines) == 0:
+       	   return
 #       #add H to element list  #only needed if H is not already there
        try:
            elemsString = lines[5]
