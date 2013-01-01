@@ -3,7 +3,7 @@
 
 #print the name of files to analyze
 #Specify Directory to use
-mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane/'
+mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
 
 
@@ -37,7 +37,7 @@ import numpy as np
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
 from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  \
     writeElements, nstrip, writeDistances, writeCCDistances, writeConverge, \
-    FinishCheck
+    FinishCheck, writeSteps
 
 
 run = runName
@@ -62,24 +62,25 @@ checkedList=sorted(checkFolders(toCheckList,checkedList,run))
 print '\nThe following folders are in checkedList:'
 for i in checkedList:
     print('checkedList contains : ' + i+'\n')
-
-
    
 #write out elements list    
 writeElements(checkedList)
-
+print 'elements', os.getcwd() 
 #write out energies from all elements
 writeEnergiesOszicar(checkedList)
-
+print 'energies', os.getcwd() 
 #Write distance of adatoms
 writeDistances(checkedList)
-
+print 'distances', os.getcwd() 
 #Write C-C expansion
 writeCCDistances(checkedList)
-
+print 'CCdist', os.getcwd() 
 #Check convergence
 writeConverge(checkedList) 
-
+print 'converge', os.getcwd() 
+#number of relaxation steps
+writeSteps(checkedList)
+print 'writeSteps', os.getcwd() 
 ################# summary spreadsheet #################
 #Open data files
 
@@ -108,6 +109,10 @@ file.close()
 
 file = open('converge','r')
 converged = nstrip(file.readlines())
+file.close()
+
+file = open('steps','r')
+steps = nstrip(file.readlines())
 file.close()
 
 outfile = open('final_relax.csv','w')
@@ -159,18 +164,19 @@ for i in range(len(elements)):
 #	if elements[i] == 'Ti':
 #		print float(energies[i]) , float(isolenergies[i]), binde[i]
 outfile = open('analysis.csv','w')
-outfile.write('Element,BE.adatom.underh,Calc Energy,Distance,CC Diffz,CC expans %,Stretch energy,Converged\n')
+outfile.write('Element,BE.adatom.underh,Calc Energy,Distance,CC Diffz,CC expans %,Stretch energy,Converged,Steps\n')
 # write spreadsheet
 
 for i in range(len(elements)):
+#    print elements[i]
     try:
         ccexpand = str(round(100*(float(ccdistances[i])/1.53391 - 1),1)) #compare to graphane 
     except:
         ccexpand = 'null'
     if converged[i] =='Y':
-         linei = elements[i]+','+str(binde[i])+','+energies[i]+','+distances[i]+','+diffz[i]+','+ccexpand+','+strenergies[i]+','+converged[i]+'\n'
+         linei = elements[i]+','+str(binde[i])+','+energies[i]+','+distances[i]+','+diffz[i]+','+ccexpand+','+strenergies[i]+','+converged[i]+','+steps[i]+'\n'
     else:
-         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'\n'        
+         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
     outfile.write(linei)
 outfile.close()
 

@@ -41,7 +41,6 @@ def writeDistances(checkedList):
     os.chdir(lastfolder)
 
 def getDistance(folder): 
-
     os.chdir(folder)
     try:
         outcar = open('OUTCAR','r')
@@ -53,8 +52,11 @@ def getDistance(folder):
         return 100 # can't read distance
     proc3 = subprocess.Popen(['grep','-n','lattice vectors','OUTCAR'],stdout=subprocess.PIPE)
     nline = proc3.communicate()[-2].split('\n')[-2].split(':')[0] #returns one line after grep
-    repvector=[float(text[int(nline)+2].split()[0]),float(text[int(nline)+2].split()[1]),float(text[int(nline)+2].split()[2])]
-    repeat = repvector[2]
+    try:
+        repvector=[float(text[int(nline)+2].split()[0]),float(text[int(nline)+2].split()[1]),float(text[int(nline)+2].split()[2])]
+        repeat = repvector[2]
+    except:
+        repeat = 100.0
     proc2 = subprocess.Popen(['grep','-n','TOTAL-FORCE (eV/Angst)','OUTCAR'],stdout=subprocess.PIPE)
     try:
         nline = proc2.communicate()[-2].split('\n')[-2].split(':')[0] 
@@ -99,8 +101,11 @@ def getCCDistance(folder):
         return [100,100] # can't read distance
     proc3 = subprocess.Popen(['grep','-n','lattice vectors','OUTCAR'],stdout=subprocess.PIPE)
     nline = proc3.communicate()[-2].split('\n')[-2].split(':')[0] #returns one line after grep
-    repvector=[float(text[int(nline)+2].split()[0]),float(text[int(nline)+2].split()[1]),float(text[int(nline)+2].split()[2])]
-    repeat = repvector[2]
+    try:
+        repvector=[float(text[int(nline)+2].split()[0]),float(text[int(nline)+2].split()[1]),float(text[int(nline)+2].split()[2])]
+        repeat = repvector[2]
+    except:
+        repeat = 100.0
     proc2 = subprocess.Popen(['grep','-n','TOTAL-FORCE (eV/Angst)','OUTCAR'],stdout=subprocess.PIPE)
     try:
         nline = proc2.communicate()[-2].split('\n')[-2].split(':')[0]
@@ -144,29 +149,49 @@ def nstrip(list):
     return list2
     
 def convergeCheck(folder,NSW):
-#        """Tests whether force convergence is done by whether the last line of Oszicar is less than NSW."""
+    """Tests whether force convergence is done by whether the last line of Oszicar is less than NSW."""
+    try:
+        value = getSteps(folder)
+#        print value
+        return value < NSW #True/False
+    except:
+        return False #True/False
+
+def getSteps(folder):
+    '''number of steps in relaxation, as an integer'''
     lastfolder = os.getcwd()
     os.chdir(folder)
     if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0:
-        return False
+        os.chdir(lastfolder) 
+        return 0
     oszicar = open('OSZICAR','r')
     laststep = oszicar.readlines()[-1].split()[0]
     oszicar.close()
     os.chdir(lastfolder)  
     try:
-        value = int(laststep[0])
-        return int(laststep[0])< NSW #True/False
+        value = int(laststep)
+        return value
     except:
-        return False #True/False
+        return 9999
 
-def writeConverge(checkedList):    
+def writeSteps(checkedList):    
+    '''writes number of steps to output file for each folder'''
+    stepsfile = open('steps','w')
+    for ielement,path in enumerate(checkedList):
+        stepsfile.write(str(getSteps(path))+'\n')
+    stepsfile.close()
+   
+def writeConverge(checkedList): 
     '''Writes Y or N depending on convergence AND vasp finishing'''
     convergefile = open('converge','w')
     #get NSW, the max ionic steps allowed in the run.  Using first directory in checkedList
     proc = subprocess.Popen(['grep','-i','NSW',checkedList[0]+'/INCAR'],stdout=subprocess.PIPE)
     NSW = int(proc.communicate()[0].split('=')[-1])
-    for element,path in enumerate(checkedList):
+#    print 'NSW',NSW
+    for ielement,path in enumerate(checkedList):
         #get element name
+#        element = getElement('adatom_',path)
+#        print element      
         if convergeCheck(path,NSW) and FinishCheck(path):
             convergefile.write('Y' +'\n')
         else:

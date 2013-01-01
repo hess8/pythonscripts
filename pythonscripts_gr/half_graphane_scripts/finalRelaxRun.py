@@ -2,10 +2,12 @@
 
 ################## Directories ################## 
 #Specify Directory to use
-mainDir = "/bluehome/bch/vasprun/graphene.structures/h.half_graphane/"
+mainDir = "/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/"
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
 #Specify Potcar Directory
+HAdDist = 2.1
+
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
 contcardir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
 
@@ -174,7 +176,7 @@ for path1 in checkedList:
         path2 += parti+'/'
     print("CONTCAR to POSCAR " + path2)
     os.system('cp ' + path2 + 'CONTCAR ' + path1 +'POSCAR')
-    tools.addHToPOSCAR(path1) #Alter POSCAR so there is one more H in a position of 1.1 ang above the adatom
+    tools.addHToPOSCAR(path1, HAdDist) #Alter POSCAR so there is one more H above the adatom
 os.chdir(dir)
 
 print "\nThe following folders will be run:"

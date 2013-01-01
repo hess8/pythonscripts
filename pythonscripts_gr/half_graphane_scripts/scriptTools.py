@@ -281,7 +281,7 @@ class VaspTools:
         os.chdir(lastfolder)    
         return newstring[0].find('Voluntary') > -1 #True/False
 
-    def addHToPOSCAR(self,path):
+    def addHToPOSCAR(self,path,HAdDist):
        '''Takes a POSCAR (in CONTCAR direct coordinates), and adds an H above the adatom (last line)'''
        file=open(path + 'POSCAR','r')
        lines=file.readlines()
@@ -300,9 +300,9 @@ class VaspTools:
 #       lines[5] = newstr
 #       #add to numbers of atoms
        lines[6] ='    2     2     1\n'  # 2 replaces 1 in 2nd (H) spot, in 6th line
-       #add position of new H (must scale position to direct coordinates
+       #add position of new H (must scale position to direct coordinates)
        repeatz = float(lines[4].split()[-1])
-       newHz = str(float(lines[11].split()[2])+1.1/repeatz)
+       newHz = str(float(lines[11].split()[2])+HAdDist/repeatz)
        newHline = '  '+ lines[11].split()[0]+'  '+lines[11].split()[1] +'  ' + newHz+'\n'
        list1 = lines[0:12] #includes up to 11
        list1.insert(11,newHline) #inserts after 11
