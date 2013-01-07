@@ -31,7 +31,7 @@ class VaspTools:
         self.ToCheckList = toCheckList
         self.CheckedList = checkedList
         self.ToRunList = toRunList
-        
+       
     def AddToList(self,folder):
         files = os.listdir(folder)
         for path in files:
@@ -256,7 +256,6 @@ class VaspTools:
                     print ('Will skip (finished):'+path)    
                 else:
                     self.ToRunList.append(path)             #run only unfinished ones
-
                 
     def CheckForNewRun(self):
         for path in self.CheckedList:

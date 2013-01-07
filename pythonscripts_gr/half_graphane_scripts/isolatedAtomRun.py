@@ -29,8 +29,6 @@ potcar = mainDir + 'potcar/isolatedrun.potcar'
 
 #Specify Poscar variables
 poscarVariables = {
-'@distance':
-	[0]
 }
 
 #Specify KPoints variables
@@ -39,13 +37,6 @@ kpointVariables = {
 
 #Specify Incar variables
 incarVariables = {
-'@ISPIN':
-	['2'],
-'@IBRION':
-	['2'],
-'@ISIF':
-	['4']
-
 }
 
 
@@ -90,7 +81,7 @@ checkedList = []
 toRunList = []
 tools = ScriptTools.VaspTools(mainDir,runName,runType,poscar,kpoints,incar,
 	potcar,poscarVariables,kpointVariables,incarVariables,elementList,potcardir,
-	toCheckList, checkedList, toRunList )
+	toCheckList, checkedList, toRunList)
 tools.BuildNewRun() #create folders
 
 raw_input("Press enter to submit jobs")
@@ -107,6 +98,8 @@ print("\nInitializing...\n")
 print("Finding Directories to do %s on\n" % runName)
 dir = mainDir + runType[0] + "/"
 print("Searching all Directories in " + dir+"\n")
+if os.path.exists(dir+'energies'):
+    os.system('cp',dir+'energies', dir+'oldenergies')
 
 tools.AddToList(dir)
 

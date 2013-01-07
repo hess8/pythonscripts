@@ -1,6 +1,6 @@
 #print the name of files to analyze
 #Specify Directory to use
-mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
+mainDir = '/bluehome/bch/vasprun/graphene.structures/'
 
 #Specify the subdir
 subdir = 'isolated'
