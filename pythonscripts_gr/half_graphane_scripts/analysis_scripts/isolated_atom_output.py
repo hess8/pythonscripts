@@ -9,10 +9,10 @@ dir = mainDir + subdir + '/'
 #Specify the name of the type of run
 runName = 'relaxation' 
 
-import os,subprocess,math,time 
+import os,subprocess,math,time,sys
 import numpy as np 
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
-from analysisTools import addToList, checkFolders, writeEnergiesOszicar, getElement, writeElements, nstrip
+from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  writeFinish, getElement, writeElements, nstrip
 
 run = runName
 
@@ -41,6 +41,8 @@ writeElements(checkedList)
 #write out energies from all elements
 writeEnergiesOszicar(checkedList)
 
+#Check Vasp finish
+writeFinish(checkedList) 
 
 ################# spreadsheet #################
 #Open data files
@@ -50,10 +52,14 @@ outfile = open('isolated_atoms.csv','w')
 file = open('elements','r')  
 elements = nstrip(file.readlines())
 file.close()
-print elements
+#print elements
 
 file = open('energies','r')
 energies = nstrip(file.readlines())
+file.close()
+
+file = open('finish','r')
+finish = nstrip(file.readlines())
 file.close()
 
 outfile.write('Element,Calculated Energy\n')
@@ -74,25 +80,18 @@ file = open('energies','r')
 energies = nstrip(file.readlines())
 file.close()
 
-file = open('stretch','r')
-stretch = nstrip(file.readlines())
-file.close()
+#file = open('stretch','r')
+#stretch = nstrip(file.readlines())
+#file.close()
+#
+#file = open('distances','r')
+#distances = nstrip(file.readlines())
+#file.close()
 
-file = open('distances','r')
-distances = nstrip(file.readlines())
-file.close()
-
-outfile.write('Element,Calculated Energy,Stretch Energy,Distance\n')
+outfile.write('Element,Calculated Energy, Finish\n')
 for i in range(len(elements)):
-    linei = elements[i]+','+energies[i]+','+stretch[i]+','+distances[i]+'\n'
+    linei = elements[i]+','+energies[i]+','+finish[i]+'\n'
     outfile.write(linei)
 outfile.close()
 print "done"
-
-
-
-
-
-print "done"
-
 

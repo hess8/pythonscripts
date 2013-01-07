@@ -2,11 +2,11 @@
 
 ################## Directories ################## 
 #Specify Directory to use
-mainDir = "/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/"
+mainDir = "/bluehome/bch/vasprun/graphene.structures/h.half_graphane1.1/"
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
 #Specify Potcar Directory
-HAdDist = 2.1
+HAdDist = 1.1
 
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
 contcardir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
@@ -116,7 +116,7 @@ raw_input("Done creating folders.  Press enter to submit jobs")
 ################## submit jobs ################## 
 
 #script.py
-import os,subprocess,time,sys, shutil
+import os,subprocess,time,sys,shutil
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
 #mainDir = "/bluehome/bch/TransitionMetals/"
 run = runName

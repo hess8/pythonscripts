@@ -31,16 +31,17 @@ def writeEnergiesOszicar(checkedList):
     enerfile.close()
     os.chdir(lastfolder) 
         
-def writeDistances(checkedList):
+def writeDistances(checkedList,structure):
     '''write distances of adatoms to file'''
     lastfolder = os.getcwd()
     distfile = open('distances','w')
     for ielement,ipath in enumerate(checkedList):
-        distfile.write(str(getDistance(ipath)) +'\n')
+        distfile.write(str(getDistance(ipath,structure)) +'\n')
     distfile.close()
     os.chdir(lastfolder)
 
-def getDistance(folder): 
+def getDistance(folder,structure): 
+    '''gets adatom-carbon distance'''
     os.chdir(folder)
     try:
         outcar = open('OUTCAR','r')
@@ -63,15 +64,32 @@ def getDistance(folder):
     except:
         return 100 #can't read distance
     outcar.close()
-    carbon1=[float(text[int(nline)+1].split()[0]),float(text[int(nline)+1].split()[1]),float(text[int(nline)+1].split()[2])]
-    adatom1=[float(text[int(nline)+3].split()[0]),float(text[int(nline)+3].split()[1]),float(text[int(nline)+3].split()[2])]
-    distance1 = distance(carbon1,adatom1)
-    adatom1[2] = adatom1[2]-repeat
-    distance2 = distance(carbon1,adatom1)
-    adatom1[2] = adatom1[2] + repeat
-    carbon1[2] = carbon1[2] - repeat
-    distance3 = distance(carbon1,adatom1)
-    return min(distance1, distance2, distance3)
+    if structure == 'h.':
+        adatomline = 5           
+    elif structure == 'diam':
+        adatomline = 4     #actually 2 adatoms here, could be 3 or 4
+    elif structure == 'half_gr': #half_graphane
+        adatomline = 4
+    else:
+        print "UNKNOWN STRUCTURE"
+    carbon1line = int(nline)+1   
+    carbon2line = int(nline)+2
+    adatomline = int(nline)+adatomline
+    carbon1=[float(text[carbon1line].split()[0]),float(text[carbon1line].split()[1]),float(text[carbon1line].split()[2])]
+    carbon2=[float(text[carbon2line].split()[0]),float(text[carbon2line].split()[1]),float(text[carbon2line].split()[2])]
+    adatom1=[float(text[adatomline].split()[0]),float(text[adatomline].split()[1]),float(text[adatomline].split()[2])]
+    distancemin = 100
+    for i in [-1,1]:
+        for j in [-1,1]:
+            for carbon in [carbon1, carbon2]:
+                carbontry = [carbon[0], carbon[1], carbon[2] + i*repeat]
+                adatomtry = [adatom1[0], adatom1[1], adatom1[2] + j*repeat]
+                distancenew = distance(carbontry,adatomtry)
+                print distancenew
+                if distancenew < distancemin:
+                    distancemin = distancenew              
+    return distancemin
+
 
 def distance(vec1, vec2):
 	return math.sqrt(math.pow(vec1[0]-vec2[0],2)+math.pow(vec1[1]-vec2[1],2)+math.pow(vec1[2]-vec2[2],2))
@@ -163,7 +181,7 @@ def getSteps(folder):
     os.chdir(folder)
     if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0:
         os.chdir(lastfolder) 
-        return 0
+        return -9999
     oszicar = open('OSZICAR','r')
     laststep = oszicar.readlines()[-1].split()[0]
     oszicar.close()
@@ -180,6 +198,18 @@ def writeSteps(checkedList):
     for ielement,path in enumerate(checkedList):
         stepsfile.write(str(getSteps(path))+'\n')
     stepsfile.close()
+    
+    
+def writeFinish(checkedList): 
+    '''Writes Y or N depending on vasp finishing, for runs other than relaxation'''
+    finishfile = open('finish','w')
+    for ielement,path in enumerate(checkedList):
+        #get element name     
+        if FinishCheck(path):
+            finishfile.write('Y' +'\n')
+        else:
+            finishfile.write('N' +'\n')
+    finishfile.close()
    
 def writeConverge(checkedList): 
     '''Writes Y or N depending on convergence AND vasp finishing'''

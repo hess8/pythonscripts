@@ -5,11 +5,19 @@
 #Specify Directory to use
 mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
-
+#mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
+#get type of structure
+lastdir = mainDir.split('/')[-2]
+if 'h.' in lastdir:
+    structure = 'h.'
+elif 'diam' in lastdir:
+    structure = 'diam' #doublesided diamondlike
+else: #half_graphane
+    structure = 'half_gr'
 
 #Specify the subdir
 subdir = 'final_relax'
-#subdir = 'test2'
+#subdir = 'test1'
 dir = mainDir + subdir + '/'
 #Specify the name of the type of run
 runName = 'relax' 
@@ -70,7 +78,7 @@ print 'elements', os.getcwd()
 writeEnergiesOszicar(checkedList)
 print 'energies', os.getcwd() 
 #Write distance of adatoms
-writeDistances(checkedList)
+writeDistances(checkedList, structure)
 print 'distances', os.getcwd() 
 #Write C-C expansion
 writeCCDistances(checkedList)
@@ -132,6 +140,12 @@ mainDir
 isolenergies = nstrip(file.readlines())
 file.close()
 
+os.chdir(mainDir)
+file = open('/bluehome/bch/vasprun/graphene.structures/half_graphane/isolated/finish','r')
+mainDir 
+isolatedFinish = nstrip(file.readlines())
+file.close()
+
 try:
 	file = open('initial_relax/stretch','r')
 	strenergies = nstrip(file.readlines())
@@ -145,26 +159,32 @@ energyGraphane = -25.63
 bindEnergyGraphane = energyGraphane - 2*eIsolatedH - 2* eIsolatedC
 
 binde = [0]*len(elements)
-for i in range(len(elements)):
-	try:
-		#for half graphane:
-#		benergy_system = float(energies[i]) - float(isolenergies[i]) - eIsolatedH - 2*eIsolatedC 
-#		binde[i] = benergy_system - bindEnergyGraphane #relative to graphane
-
+for i in range(len(elements)):  
+    try:
         # for h.half_graphane:
-#		benergy_system = float(energies[i]) - float(isolenergies[i]) - 2*eIsolatedH - 2*eIsolatedC 
-		binde[i] = float(energies[i]) - energyGraphane - float(isolenergies[i]) #energy to bring adatoms from far away to beneath H layer of graphane
-		#		binde[i] = float(energies[i]) - 2*float(isolenergies[i])-2* eIsolatedC 
-#		binde[i] = benergy_system - bindEnergyGraphane #relative to graphane
-		#For binding E of adatom relative to 
-		#for double sided (no H) diamond_like, not relative
-#		binde[i] = float(energies[i]) - 2*float(isolenergies[i])-2* eIsolatedC 		
-	except:
-		binde[i] = 100 #can't read energy
-#	if elements[i] == 'Ti':
-#		print float(energies[i]) , float(isolenergies[i]), binde[i]
+        if structure == 'h.':
+            binde[i] = float(energies[i]) - energyGraphane - float(isolenergies[i]) #energy to bring adatoms from far away to beneath H layer of graphane
+            BEString = 'BE.adatom.underh'
+#not used:        benergy_system = float(energies[i]) - float(isolenergies[i]) - 2*eIsolatedH - 2*eIsolatedC 
+
+        #for double sided (no H) diamond_like, not relative
+        elif structure == 'diam':
+            binde[i] = float(energies[i]) - 2*float(isolenergies[i])-2* eIsolatedC     
+            BEString = 'BE absolute'
+        #for half graphane:
+        elif structure == 'half_gr': 
+            benergy_system = float(energies[i]) - float(isolenergies[i]) - eIsolatedH - 2*eIsolatedC 
+            binde[i] = benergy_system - bindEnergyGraphane #relative to graphane 
+            BEString = 'BE.vs.graphane'
+        else:
+            print "UNKNOWN STRUCTURE"
+            BEString = 'unknown structure'
+    except:
+        binde[i] = 100 #can't read energy or structure not right
+#    if elements[i] == 'Ti':
+#        print float(energies[i]) , float(isolenergies[i]), binde[i]
 outfile = open('analysis.csv','w')
-outfile.write('Element,BE.adatom.underh,Calc Energy,Distance,CC Diffz,CC expans %,Stretch energy,Converged,Steps\n')
+outfile.write('Element,'+BEString+',Calc Energy,Isol atom,Distance,CC Diffz,CC expans %,Stretch energy,Converged,Steps\n')
 # write spreadsheet
 
 for i in range(len(elements)):
@@ -173,10 +193,13 @@ for i in range(len(elements)):
         ccexpand = str(round(100*(float(ccdistances[i])/1.53391 - 1),1)) #compare to graphane 
     except:
         ccexpand = 'null'
-    if converged[i] =='Y':
-         linei = elements[i]+','+str(binde[i])+','+energies[i]+','+distances[i]+','+diffz[i]+','+ccexpand+','+strenergies[i]+','+converged[i]+','+steps[i]+'\n'
+    if converged[i] =='Y' and isolatedFinish[i] == "Y":
+        linei = elements[i]+','+str(binde[i])+','+energies[i]+','+isolenergies[i]+','+distances[i]+','+diffz[i]+','+ccexpand+','+strenergies[i]+','+converged[i]+','+steps[i]+'\n'
+    elif isolatedFinish[i] == "N":
+        linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+'not done'+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
     else:
-         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
+        linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+isolenergies[i]+'*,'+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
+
     outfile.write(linei)
 outfile.close()
 
