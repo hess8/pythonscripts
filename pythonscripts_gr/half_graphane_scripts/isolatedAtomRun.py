@@ -74,12 +74,12 @@ elementList = {
 #}
 
 ################## Buitd run folders ################## 
-import ScriptTools
+import scriptTools
 
 toCheckList = []
 checkedList = []
 toRunList = []
-tools = ScriptTools.VaspTools(mainDir,runName,runType,poscar,kpoints,incar,
+tools = scriptTools.VaspTools(mainDir,runName,runType,poscar,kpoints,incar,
 	potcar,poscarVariables,kpointVariables,incarVariables,elementList,potcardir,
 	toCheckList, checkedList, toRunList)
 tools.BuildNewRun() #create folders
@@ -99,7 +99,7 @@ print("Finding Directories to do %s on\n" % runName)
 dir = mainDir + runType[0] + "/"
 print("Searching all Directories in " + dir+"\n")
 if os.path.exists(dir+'energies'):
-    os.system('cp',dir+'energies', dir+'oldenergies')
+    os.system('cp '+dir+'energies '+ dir+'oldenergies')
 
 tools.AddToList(dir)
 
@@ -107,18 +107,13 @@ print("Checking to see which folders contain "+runName+"\n")
 time.sleep(1)
 tools.CheckFolders()
 checkedList = sorted(checkedList)
-toRunList=sorted(toRunList)
-#print("Checking to see if any folders have already converged\n")
-#time.sleep(1)
-#tools.checkForNewRun()
+#toRunList=sorted(toRunList)
+toRunList=checkedList #run all folders for convergence checks
 
-#print "\nThe following folders are in toCheckList:"
-#for i in toCheckList:
-#    print("toCheckList contains : " + i)
     
-print "\nThe following folders are in checkedList:"
-for i in checkedList:
-    print("checkedList contains : " + i)
+#print "\nThe following folders are in checkedList:"
+#for i in checkedList:
+#    print("checkedList contains : " + i)
     
 
 print "\nThe following folders will be run:"

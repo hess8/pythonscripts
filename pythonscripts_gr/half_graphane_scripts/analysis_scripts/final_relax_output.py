@@ -136,13 +136,14 @@ print 'Done with summary'
 #Bring in data from other runs
 os.chdir(mainDir)
 file = open('/bluehome/bch/vasprun/graphene.structures/half_graphane/isolated/energies','r')
-mainDir 
 isolenergies = nstrip(file.readlines())
 file.close()
 
-os.chdir(mainDir)
 file = open('/bluehome/bch/vasprun/graphene.structures/half_graphane/isolated/finish','r')
-mainDir 
+isolatedFinish = nstrip(file.readlines())
+file.close()
+
+file = open('/bluehome/bch/vasprun/graphene.structures/half_graphane/isolated/finish','r')
 isolatedFinish = nstrip(file.readlines())
 file.close()
 

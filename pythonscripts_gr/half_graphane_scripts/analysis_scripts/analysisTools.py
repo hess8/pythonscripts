@@ -174,6 +174,39 @@ def convergeCheck(folder,NSW):
         return value < NSW #True/False
     except:
         return False #True/False
+    
+def elConvergeCheck(folder,NSW):
+    """Tests electronic convergence is done by whether the electronic step is less than NELM."""
+    try:
+        value = getElSteps(folder)
+#        print value
+        return value < NSW #True/False
+    except:
+        return False #True/False
+
+def getElSteps(folder):
+    '''number of electronic steps for isolated runs'''
+    lastfolder = os.getcwd()
+    os.chdir(folder)
+    if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0:
+        os.chdir(lastfolder) 
+        return -9999
+    oszicar = open('OSZICAR','r')
+    laststep = oszicar.readlines()[-2].split()[1] # Next to last line, 2nd entry
+    oszicar.close()
+    os.chdir(lastfolder)  
+    try:
+        value = int(laststep)
+        return value
+    except:
+        return 9999
+    
+def writeElSteps(checkedList):    
+    '''writes number of steps to output file for each folder'''
+    stepsfile = open('elsteps','w')
+    for ielement,path in enumerate(checkedList):
+        stepsfile.write(str(getElSteps(path))+'\n')
+    stepsfile.close()
 
 def getSteps(folder):
     '''number of steps in relaxation, as an integer'''
@@ -191,7 +224,8 @@ def getSteps(folder):
         return value
     except:
         return 9999
-
+    
+    
 def writeSteps(checkedList):    
     '''writes number of steps to output file for each folder'''
     stepsfile = open('steps','w')
@@ -227,6 +261,20 @@ def writeConverge(checkedList):
         else:
             convergefile.write('N' +'\n')
     convergefile.close()
+    
+def writeElConverge(checkedList): 
+    '''Writes Y or N depending on convergence AND vasp finishing'''
+    elconvergefile = open('elconverge','w')
+    #get NELM, the max electronic steps allowed in the run.  Using first directory in checkedList
+    proc = subprocess.Popen(['grep','-i','NELM',checkedList[0]+'/INCAR'],stdout=subprocess.PIPE)
+    result =  proc.communicate()[0]
+    NELM = int(result.split('=')[1].split()[0])
+    for ielement,path in enumerate(checkedList):  
+        if elConvergeCheck(path,NELM) and FinishCheck(path):
+            elconvergefile.write('Y' +'\n')
+        else:
+            elconvergefile.write('N' +'\n')
+    elconvergefile.close()
 
 def FinishCheck(folder):
 #        """Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""

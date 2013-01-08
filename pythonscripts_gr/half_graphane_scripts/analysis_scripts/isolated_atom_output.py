@@ -1,6 +1,6 @@
 #print the name of files to analyze
 #Specify Directory to use
-mainDir = '/bluehome/bch/vasprun/graphene.structures/'
+mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
 
 #Specify the subdir
 subdir = 'isolated'
@@ -12,7 +12,8 @@ runName = 'relaxation'
 import os,subprocess,math,time,sys
 import numpy as np 
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
-from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  writeFinish, getElement, writeElements, nstrip
+from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  writeFinish, getElement,\
+                            writeElements, nstrip, writeElSteps, writeElConverge
 
 run = runName
 
@@ -41,8 +42,14 @@ writeElements(checkedList)
 #write out energies from all elements
 writeEnergiesOszicar(checkedList)
 
+#Check number of electronic steps
+writeElSteps(checkedList) 
+
 #Check Vasp finish
 writeFinish(checkedList) 
+
+#Check Number of electronic steps finish
+writeElConverge(checkedList) 
 
 ################# spreadsheet #################
 #Open data files
@@ -52,46 +59,45 @@ outfile = open('isolated_atoms.csv','w')
 file = open('elements','r')  
 elements = nstrip(file.readlines())
 file.close()
-#print elements
 
 file = open('energies','r')
 energies = nstrip(file.readlines())
+file.close()
+
+file = open('elsteps','r')
+elsteps = nstrip(file.readlines())
+file.close()
+
+file = open('elconverge','r')
+elconverge = nstrip(file.readlines())
 file.close()
 
 file = open('finish','r')
 finish = nstrip(file.readlines())
 file.close()
 
-outfile.write('Element,Calculated Energy\n')
+
+if os.path.exists(dir+'oldenergies'):
+    file = open('finish','r')
+    oldenergies = nstrip(file.readlines())
+    file.close()
+else:
+    oldenergies = ['0.0']*len(elements)       
+diffe = ['0.0']*len(elements)     
+outfile.write('Element,Calculated Energy,Diff Ener (conv),Electr Steps, Converge & Finish\n')
 for i in range(len(elements)):
-    linei = elements[i]+','+energies[i]+'\n'
+    diffe[i] = str(float(energies[i]) - float(oldenergies[i]))
+    if finish[i] == 'Y' and elconverge[i] == 'Y':
+        converge = 'Y'
+    else:
+        converge = 'N'
+    linei = elements[i]+','+energies[i]+','+diffe[i]+','+elsteps[i]+','+ converge+'\n'
     outfile.write(linei)
 outfile.close()
 
-############ Spreadsheet 
-outfile = open('half_graphane_initial.csv','w')
+print 'Done'
 
-file = open('elements','r')  
-elements = nstrip(file.readlines())
-file.close()
-print elements
 
-file = open('energies','r')
-energies = nstrip(file.readlines())
-file.close()
 
-#file = open('stretch','r')
-#stretch = nstrip(file.readlines())
-#file.close()
-#
-#file = open('distances','r')
-#distances = nstrip(file.readlines())
-#file.close()
 
-outfile.write('Element,Calculated Energy, Finish\n')
-for i in range(len(elements)):
-    linei = elements[i]+','+energies[i]+','+finish[i]+'\n'
-    outfile.write(linei)
-outfile.close()
-print "done"
 
