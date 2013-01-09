@@ -188,17 +188,15 @@ def getElSteps(folder):
     '''number of electronic steps for isolated runs'''
     lastfolder = os.getcwd()
     os.chdir(folder)
-    if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0:
-        os.chdir(lastfolder) 
-        return -9999
-    oszicar = open('OSZICAR','r')
-    laststep = oszicar.readlines()[-2].split()[1] # Next to last line, 2nd entry
-    oszicar.close()
-    os.chdir(lastfolder)  
     try:
+        oszicar = open('OSZICAR','r') 
+        laststep = oszicar.readlines()[-2].split()[1] # Next to last line, 2nd entry
+        oszicar.close()
+        os.chdir(lastfolder) 
         value = int(laststep)
-        return value
+        return value         
     except:
+        os.chdir(lastfolder)         
         return 9999
     
 def writeElSteps(checkedList):    

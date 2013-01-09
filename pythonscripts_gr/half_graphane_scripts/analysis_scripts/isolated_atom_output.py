@@ -78,7 +78,7 @@ file.close()
 
 
 if os.path.exists(dir+'oldenergies'):
-    file = open('finish','r')
+    file = open('oldenergies','r')
     oldenergies = nstrip(file.readlines())
     file.close()
 else:
@@ -86,7 +86,12 @@ else:
 diffe = ['0.0']*len(elements)     
 outfile.write('Element,Calculated Energy,Diff Ener (conv),Electr Steps, Converge & Finish\n')
 for i in range(len(elements)):
-    diffe[i] = str(float(energies[i]) - float(oldenergies[i]))
+#    print elements[i]
+#    print energies[i], oldenergies[i]
+    try:
+        diffe[i] = str(float(energies[i]) - float(oldenergies[i]))
+    except:
+        diffe[i] = '99'
     if finish[i] == 'Y' and elconverge[i] == 'Y':
         converge = 'Y'
     else:
