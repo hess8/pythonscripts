@@ -2,7 +2,7 @@
 ################## Directories ################## 
 #Specify Directory to use
 mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
-
+bmix = '0.0001'
 #Specify Potcar Directory
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
 
@@ -69,11 +69,11 @@ elementList = {
 #elementList = {
 #'@adatom':
 #[
-#"Ac", "Ca_sv"
+#"Ag"
 #]
 #}
 
-################## Buitd run folders ################## 
+################## Build run folders ################## 
 import scriptTools
 
 toCheckList = []
@@ -110,6 +110,14 @@ checkedList = sorted(checkedList)
 #toRunList=sorted(toRunList)
 toRunList=checkedList #run all folders for convergence checks
 
+#copy INCAR back into relax folder
+print incar
+for folder in toRunList:
+    subprocess.call(['cp',incar,folder+'INCAR'])
+    subprocess.call(['ls','-l',folder+'/'+'INCAR']) 
+#    subprocess.call(['cat',folder+'/'+'INCAR'])    
+#modify mixing
+tools.replaceParamIncar(toRunList, 'BMIX', bmix) # may be needed for convergence in isolated atoms
     
 #print "\nThe following folders are in checkedList:"
 #for i in checkedList:
@@ -119,8 +127,6 @@ toRunList=checkedList #run all folders for convergence checks
 print "\nThe following folders will be run:"
 for i in toRunList:
     print("toRunList contains : " + i)
-
-#print "\nThe script is at line 134\n"
 
 print"\n"
 for folder in toRunList:

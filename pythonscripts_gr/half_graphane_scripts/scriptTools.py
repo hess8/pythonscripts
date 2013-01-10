@@ -310,7 +310,22 @@ class VaspTools:
        for i, linei in enumerate(list1):
            file.writelines(linei)
        file.close()
-       return
-               
+       return                
     
-    
+    def replaceParamIncar(self,pathlist, param, value):
+        """Replaces a parameter value in Incar with a new value"""
+        lastfolder = os.getcwd()
+        for path in pathlist:
+                os.chdir(path)
+                incarfile = open('INCAR', 'r')
+                lines = incarfile.readlines()
+                incarfile.close()                
+                incarfile = open('INCAR', 'w')                
+                for line in lines:
+                    line2 = line         
+                    if param in line2:
+                        line2 = param + ' = ' + value + '\n'
+                    incarfile.writelines(line2)
+                incarfile.close()
+        os.chdir(lastfolder)    
+        return

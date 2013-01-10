@@ -14,4 +14,11 @@
 	<natures>
 		<nature>org.python.pydev.pythonNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>.metadata</name>
+			<type>2</type>
+			<location>/~/workspaceDec2012/.metadata</location>
+		</link>
+	</linkedResources>
 </projectDescription>
