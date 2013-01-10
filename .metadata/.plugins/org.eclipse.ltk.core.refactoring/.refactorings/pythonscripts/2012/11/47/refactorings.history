@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Rename resource &apos;pythonscripts/README.md&apos; to &apos;README.2&apos;" description="Rename resource &apos;README.md&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="README.md" name="README.2" stamp="1353563653437" updateReferences="true"/>
-</session>

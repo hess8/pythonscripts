@@ -9,7 +9,7 @@ dir = mainDir + subdir + '/'
 #Specify the name of the type of run
 runName = 'relaxation' 
 
-import os,subprocess,math,time,sys
+import os,subprocess,math,time,sys,datetime
 import numpy as np 
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
 from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  writeFinish, getElement,\
@@ -83,13 +83,18 @@ if os.path.exists(dir+'oldenergies'):
     file.close()
 else:
     oldenergies = ['0.0']*len(elements)       
-diffe = ['0.0']*len(elements)     
+diffe = ['0.0']*len(elements) 
+diffFile = open('convdiff','w')   
 outfile.write('Element,Calculated Energy,Diff Ener (conv),Electr Steps, Converge & Finish\n')
 for i in range(len(elements)):
 #    print elements[i]
 #    print energies[i], oldenergies[i]
     try:
         diffe[i] = str(float(energies[i]) - float(oldenergies[i]))
+        if float(diffe[i])<1.0e-4:
+            diffe[i] = 'done' 
+            fileconv = open('converged.txt', 'w') #create a file to indicate it's converged
+            fileconv.close()              
     except:
         diffe[i] = '99'
     if finish[i] == 'Y' and elconverge[i] == 'Y':
@@ -98,7 +103,9 @@ for i in range(len(elements)):
         converge = 'N'
     linei = elements[i]+','+energies[i]+','+diffe[i]+','+elsteps[i]+','+ converge+'\n'
     outfile.write(linei)
+    diffFile.write(diffe[i]+'\n')
 outfile.close()
+diffFile.close()
 
 print 'Done'
 

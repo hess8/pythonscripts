@@ -20,7 +20,6 @@ def writeEnergiesOszicar(checkedList):
     enerfile = open('energies','w')
     for i in checkedList:
         os.chdir(i)
-#        print('Testing OSZICAR in: ' + i+'\n')
         try:
         	oszicar = open(i+'OSZICAR','r')
         	energy = oszicar.readlines()[-1].split()[2]
@@ -85,7 +84,6 @@ def getDistance(folder,structure):
                 carbontry = [carbon[0], carbon[1], carbon[2] + i*repeat]
                 adatomtry = [adatom1[0], adatom1[1], adatom1[2] + j*repeat]
                 distancenew = distance(carbontry,adatomtry)
-                print distancenew
                 if distancenew < distancemin:
                     distancemin = distancenew              
     return distancemin
@@ -170,7 +168,6 @@ def convergeCheck(folder,NSW):
     """Tests whether force convergence is done by whether the last line of Oszicar is less than NSW."""
     try:
         value = getSteps(folder)
-#        print value
         return value < NSW #True/False
     except:
         return False #True/False
@@ -179,7 +176,6 @@ def elConvergeCheck(folder,NSW):
     """Tests electronic convergence is done by whether the electronic step is less than NELM."""
     try:
         value = getElSteps(folder)
-#        print value
         return value < NSW #True/False
     except:
         return False #True/False
@@ -249,7 +245,6 @@ def writeConverge(checkedList):
     #get NSW, the max ionic steps allowed in the run.  Using first directory in checkedList
     proc = subprocess.Popen(['grep','-i','NSW',checkedList[0]+'/INCAR'],stdout=subprocess.PIPE)
     NSW = int(proc.communicate()[0].split('=')[-1])
-#    print 'NSW',NSW
     for ielement,path in enumerate(checkedList):
         #get element name
 #        element = getElement('adatom_',path)

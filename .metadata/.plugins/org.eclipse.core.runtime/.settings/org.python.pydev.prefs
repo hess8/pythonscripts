@@ -1,8 +1,0 @@
-#Mon Dec 03 15:20:58 MST 2012
-NUMBER_COLOR=156,49,49
-org.python.pydev.OUTLINE_ALPHA_SORT=true
-STRING_COLOR=2,116,2
-eclipse.preferences.version=1
-FUNC_NAME_COLOR=147,6,235
-INTERPRETER_PATH_NEW=Name\:python26\:EndName\:Version2.6Executable\:/usr/bin/python2.6|/usr/lib/python2.6/site-packages|/usr/lib/python2.6/site-packages/setuptools-0.6c11-py2.6.egg-info|/usr/lib64/python2.6|/usr/lib64/python2.6/lib-dynload|/usr/lib64/python2.6/lib-old|/usr/lib64/python2.6/lib-tk|/usr/lib64/python2.6/plat-linux2|/usr/lib64/python2.6/site-packages|/usr/lib64/python26.zip@$|Image|OpenGL|__builtin__|__main__|_ast|_bisect|_bytesio|_codecs|_codecs_cn|_codecs_hk|_codecs_iso2022|_codecs_jp|_codecs_kr|_codecs_tw|_collections|_csv|_fileio|_functools|_heapq|_hotshot|_json|_locale|_lsprof|_md5|_multibytecodec|_random|_sha|_sha256|_sha512|_sre|_struct|_subprocess|_symtable|_warnings|_weakref|_winreg|array|audioop|binascii|cPickle|cStringIO|cmath|datetime|email|errno|exceptions|future_builtins|gc|imageop|imp|itertools|marshal|math|mmap|msvcrt|nt|numpy|operator|os|os.path|parser|posix|pwd|signal|strop|sys|thread|time|wx|wxPython|xxsubtype|zipimport|zlib&&&&&
-COMMENT_COLOR=224,89,89
