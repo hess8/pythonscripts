@@ -262,6 +262,9 @@ def writeElConverge(checkedList):
     proc = subprocess.Popen(['grep','-i','NELM',checkedList[0]+'/INCAR'],stdout=subprocess.PIPE)
     result =  proc.communicate()[0]
     NELM = int(result.split('=')[1].split()[0])
+    file1 = open('nelm','w')
+    file1.write(str(NELM))
+    file1.close()
     for ielement,path in enumerate(checkedList):  
         if elConvergeCheck(path,NELM) and FinishCheck(path):
             elconvergefile.write('Y' +'\n')

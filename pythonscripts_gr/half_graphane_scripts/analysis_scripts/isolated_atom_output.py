@@ -93,7 +93,8 @@ for i in range(len(elements)):
         diffe[i] = str(float(energies[i]) - float(oldenergies[i]))
         if float(diffe[i])<1.0e-4:
             diffe[i] = 'done' 
-            fileconv = open('converged.txt', 'w') #create a file to indicate it's converged
+            fileconv = open(checkedList[i]+'converged.txt', 'w') #create a file to indicate it's converged
+            fileconv.write('converged')
             fileconv.close()              
     except:
         diffe[i] = '99'

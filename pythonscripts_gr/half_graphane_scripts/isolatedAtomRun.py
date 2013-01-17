@@ -111,19 +111,27 @@ checkedList = sorted(checkedList)
 toRunList=checkedList #run all folders for convergence checks
 
 #copy INCAR back into relax folder
-print incar
+
 for folder in toRunList:
     subprocess.call(['cp',incar,folder+'INCAR'])
-    subprocess.call(['ls','-l',folder+'/'+'INCAR']) 
+#    subprocess.call(['rm',folder+'converged.txt'])
+#    subprocess.call(['ls','-l',folder+'/'+'INCAR']) 
 #    subprocess.call(['cat',folder+'/'+'INCAR'])    
 #modify mixing
 tools.replaceParamIncar(toRunList, 'BMIX', bmix) # may be needed for convergence in isolated atoms
-    
+   
 #print "\nThe following folders are in checkedList:"
 #for i in checkedList:
 #    print("checkedList contains : " + i)
     
-
+print "Skipping the following files, isolated atom converged:"
+templist = toRunList[:] #create new list, not just a tag
+for i, path in enumerate(toRunList):
+    if os.path.exists(path+'converged.txt'):
+        templist.remove(path)
+        print 'Already converged', path
+toRunList = templist[:] 
+             
 print "\nThe following folders will be run:"
 for i in toRunList:
     print("toRunList contains : " + i)
@@ -131,18 +139,6 @@ for i in toRunList:
 print"\n"
 for folder in toRunList:
     newFolder = folder
-    #print "Copying " + previousRun + " to " + newRun + " in folder " + folder
-    #command = subprocess.check_call(['cp','-r',folder+previousRun,newFolder])
-    #print "Copying CONTCAR to POSCAR"
-    #command = subprocess.check_call(['cp',newFolder+"CONTCAR",newFolder+"POSCAR"])
-    #print "Setting up KPOINTS file"
-    #file=open(newFolder+"KPOINTS",'w')
-    #file.write(kpoints)
-    #file.close()
-    #print "Setting up INCAR file"
-    #file=open(newFolder+"INCAR",'w')
-    #file.write("System = "+newRun+"\n"+incar)
-    #file.close()
     os.chdir(newFolder)
     file = open(newFolder+"job",'w+')
     prefix = 'adatom_'
@@ -150,11 +146,5 @@ for folder in toRunList:
     jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=2gb,walltime=36:00:00\n#PBS -N " + element+"\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \n date > finish.txt \n exit 0"
     file.write(jobData)
     file.close()
-    file = open(newFolder+"outputJob.txt",'w')
-    proc = subprocess.Popen(['qsub','job'],stdout=subprocess.PIPE)
-    while proc.poll() is None:
-        output = proc.stdout.readline()
-        file.write(output)
-        print output,folder
-    file.close()   
+    subprocess.check_call(['qsub','job']) #waits to get response 
 print "Done with submitting jobs"

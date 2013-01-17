@@ -3,10 +3,10 @@
 
 #print the name of files to analyze
 #Specify Directory to use
-mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
+#mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
-#mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
-isolatedDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/isolated'
+mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
+isolatedDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/isolated/'
 #get type of structure
 lastdir = mainDir.split('/')[-2]
 if 'h.' in lastdir:
@@ -136,18 +136,26 @@ print 'Done with summary'
 ################# spreadsheet #################
 #Bring in data from other runs
 os.chdir(mainDir)
-file = open(isolatedDir+'/energies','r')
+file = open(isolatedDir+'energies','r')
 isolenergies = nstrip(file.readlines())
 file.close()
 
-file = open(isolatedDir+'/convdiff','r')
+
+file = open(isolatedDir+'convdiff','r')
 isolconvdiff = nstrip(file.readlines())
 file.close()
 
-file = open('/bluehome/bch/vasprun/graphene.structures/half_graphane/isolated/finish','r')
+file = open(isolatedDir+'finish','r')
 isolatedFinish = nstrip(file.readlines())
 file.close()
 
+file = open(isolatedDir+'elsteps','r')
+isolatedElSteps = nstrip(file.readlines())
+file.close()
+
+file = open(isolatedDir+'nelm','r')
+NELM = nstrip(file.readlines())[0]
+file.close()
 
 try:
 	file = open('initial_relax/stretch','r')
@@ -191,14 +199,14 @@ outfile.write('Element,'+BEString+',Calc Energy,Isol atom,IsolConvDiff,Distance,
 # write spreadsheet
 
 for i in range(len(elements)):
-#    print elements[i]
+#    print i, elements[i], isolenergies[i]
     try:
         ccexpand = str(round(100*(float(ccdistances[i])/1.53391 - 1),1)) #compare to graphane 
     except:
         ccexpand = 'null'
-    if converged[i] =='Y' and isolatedFinish[i] == "Y":
+    if converged[i] =='Y' and isolatedFinish[i] == "Y" and float(isolatedElSteps[i]) < NELM:
         linei = elements[i]+','+str(binde[i])+','+energies[i]+','+isolenergies[i]+','+isolconvdiff[i]+','+distances[i]+','+diffz[i]+','+ccexpand+','+strenergies[i]+','+converged[i]+','+steps[i]+'\n'
-    elif isolatedFinish[i] == "N":
+    elif isolatedFinish[i] == "N" or float(isolatedElSteps[i]) == NELM:
         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+'not done'+','+isolconvdiff[i]+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
     else:
         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+isolenergies[i]+'*,'+isolconvdiff[i]+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
