@@ -218,7 +218,8 @@ class VaspTools:
 
     def AlterPotcar(self,element,tag):
         curdir = os.getcwd()
-        os.chdir(self.PotcarDir+'/'+element)        
+        dir2 = self.PotcarDir+'/'+element+'/'
+        os.chdir(dir2)        
         file=open("POTCAR",'r')
         file2=file.readlines()
         file.close()
@@ -237,7 +238,7 @@ class VaspTools:
             filewrite.write(text)
             filewrite.close()
         except:            
-            print "There was an error in processing file " + filepath
+            print "There was an error in processing file " + dir2+"POTCAR"+'/'
             print "This is likely due to " + frommatch + " tag not being present in the file."
             print tomatch
 

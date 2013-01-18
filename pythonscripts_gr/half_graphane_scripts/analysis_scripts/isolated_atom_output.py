@@ -1,9 +1,9 @@
 #print the name of files to analyze
 #Specify Directory to use
-mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
+mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/"
 
 #Specify the subdir
-subdir = 'isolated'
+subdir = 'electron_relax'
 
 dir = mainDir + subdir + '/'
 #Specify the name of the type of run

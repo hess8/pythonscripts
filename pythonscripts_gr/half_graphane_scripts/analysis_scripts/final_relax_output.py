@@ -5,8 +5,16 @@
 #Specify Directory to use
 #mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
-mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
-isolatedDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/isolated/'
+mainDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/'
+isolatedDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/electron_relax/'
+
+#Specify the subdir
+subdir = 'final_relax'
+#subdir = 'test1'
+dir = mainDir + subdir + '/'
+#Specify the name of the type of run
+runName = 'relax' 
+
 #get type of structure
 lastdir = mainDir.split('/')[-2]
 if 'h.' in lastdir:
@@ -15,13 +23,6 @@ elif 'diam' in lastdir:
     structure = 'diam' #doublesided diamondlike
 else: #half_graphane
     structure = 'half_gr'
-
-#Specify the subdir
-subdir = 'final_relax'
-#subdir = 'test1'
-dir = mainDir + subdir + '/'
-#Specify the name of the type of run
-runName = 'relax' 
 
 #Specify Poscar variables
 poscarVariables = {
