@@ -1,11 +1,12 @@
 ''' For isolated atoms '''
 ################## Directories ################## 
-#Specify Directory to use
+#Specify Directories to use
 mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/"
+#vasp input directory
 a = mainDir.split('/')
 del a[-2]  #removes last part of path 
-inputDir = '/'.join(a) 
-print inputDir
+inputDir = '/'.join(a) + 'vasp.input/'
+
 bmix = '0.001'
 #Specify Potcar Directory
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
@@ -18,16 +19,16 @@ runType = ['electron_relax']
 runName = "relaxation"
 
 #Specify a Poscar file
-poscar = inputDir + 'vasp.input/poscar/isolatedrun.poscar'
+poscar = inputDir + 'poscar/isolatedrun.poscar'
 
 #Specify a KPoints file
-kpoints = inputDir + 'vasp.input/kpoints/isolatedrun.kpoints'
+kpoints = inputDir + 'kpoints/isolatedrun.kpoints'
 
 #Specify an Incar file
-incar = inputDir + 'vasp.input/incar/isolatedrun.incar'
+incar = inputDir + 'incar/isolatedrun.incar'
 
 #Specify a Potcar file
-potcar = inputDir + 'vasp.input/potcar/isolatedrun.potcar'
+potcar = inputDir + 'potcar/isolatedrun.potcar'
 
 ################## Variables ################## 
 
