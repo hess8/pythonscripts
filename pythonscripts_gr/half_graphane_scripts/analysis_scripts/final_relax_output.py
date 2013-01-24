@@ -1,5 +1,3 @@
-#### Bug: doesn't submit jobs on the same run as it creates folders.  Must run twice if starting 
-# with an empty directory.
 
 #print the name of files to analyze
 #Specify Directory to use

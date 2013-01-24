@@ -1,21 +1,17 @@
-#### Bug: doesn't submit jobs on the same run as it creates folders.  Must run twice if starting 
-# with an empty directory.
-
-#print the name of files to analyze
 #Specify Directory to use
 #mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
-mainDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/'
+mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
 
 
 isolatedDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/electron_relax/'
 
 #Specify the subdir
-subdir = 'final_relax'
+subdir = 'dos'
 #subdir = 'test1'
 dir = mainDir + subdir + '/'
 #Specify the name of the type of run
-runName = 'relax' 
+runName = 'dos' 
 
 #get type of structure
 lastdir = mainDir.split('/')[-2]
@@ -37,11 +33,11 @@ kpointVariables = {
 #Specify Incar variables
 incarVariables = {
 '@ISPIN':
-	['2'],
+    ['2'],
 '@IBRION':
-	['2'],
+    ['2'],
 '@ISIF':
-	['4']
+    ['4']
 }
 
 import os,sys,subprocess,math,time 
@@ -161,10 +157,10 @@ NELM = nstrip(file.readlines())[0]
 file.close()
 
 try:
-	file = open('initial_relax/stretch','r')
-	strenergies = nstrip(file.readlines())
+    file = open('initial_relax/stretch','r')
+    strenergies = nstrip(file.readlines())
 except:
-	strenergies = ['']*len(elements)
+    strenergies = ['']*len(elements)
 file.close()
 
 eIsolatedH = -1.115
@@ -202,7 +198,7 @@ outfile.write('Element,'+BEString+',Calc Energy,Isol atom,IsolConvDiff,Distance,
 # write spreadsheet
 
 for i in range(len(elements)):
-    print i, elements[i], isolenergies[i], isolatedFinish[i] 
+#    print i, elements[i], isolenergies[i], isolatedFinish[i] 
     try:
         ccexpand = str(round(100*(float(ccdistances[i])/1.53391 - 1),1)) #compare to graphane 
     except:
