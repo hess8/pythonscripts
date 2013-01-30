@@ -1,17 +1,3 @@
-#import numpy
-#import pylab
-#
-#t = numpy.arange(0.0, 1.0+0.01, 0.01)
-#s = numpy.cos(2*2*numpy.pi*t)
-#pylab.plot(t, s)
-#pylab.xlabel('time (s)')
-#pylab.ylabel('voltage (mV)')
-#pylab.title('About as simple as it gets, folks')
-#pylab.grid(True)
-#pylab.savefig('simple_plot')
-#pylab.show()
-#pylab.draw()
-
 # -*- coding: utf-8 -*-
 # vim: set fileencoding=utf-8
 # Copyright (c) 2008, 2009, 2010 Janne Blomqvist
@@ -28,18 +14,20 @@ import warnings
 
 class LDOS(object):
     """Class for representing a set of local DOS.
-DOS data is stored in the instance variable self.dos, which is a 3D
-ndarray, as follows:
-1st dim: Which atom.
-2nd dim: Selects the DOS grid point.
-3rd dim: 0 is the energy, 1-3 s, p, d DOS.
-"""
+    
+    DOS data is stored in the instance variable self.dos, which is a 3D 
+    ndarray, as follows:
+    1st dim: Which atom.
+    2nd dim: Selects the DOS grid point.
+    3rd dim: 0 is the energy, 1-3 s, p, d DOS.
+        
+    """
 
     def __init__(self, doscar="DOSCAR", efermi=0.0):
         """Initialize LDOS."""
         warnings.warn('vasputil.dos.LDOS is deprecated, please use \
-ase.calculators.vasp.VaspDos instead, which is an improved version if this \
-class', DeprecationWarning)
+ ase.calculators.vasp.VaspDos instead, which is an improved version if this \
+ class', DeprecationWarning)
         self._efermi = 0.0
         self.read_doscar(doscar)
         self.efermi = efermi
@@ -48,7 +36,7 @@ class', DeprecationWarning)
         """Read a VASP DOSCAR file."""
         f = open(fname)
         natoms = int(f.readline().split()[0])
-        [f.readline() for nn in range(4)] # Skip next 4 lines.
+        [f.readline() for nn in range(4)]  # Skip next 4 lines.
         dos = []
         for na in xrange(natoms + 1):
             try:
@@ -103,14 +91,16 @@ class', DeprecationWarning)
 
     def get_dos(self, atom, orbital):
         """Return an NDOSx1 array with dos for the chosen atom and orbital.
-If spin-unpolarized calculation, no phase factors:
-s = 1, p = 2, d = 3
-Spin-polarized, no phase factors:
-s-up = 1, s-down = 2, p-up = 3, p-down = 4, d-up = 5, d-down = 6
-If phase factors have been calculated, orbitals are
-s, py, pz, px, dxy, dyz, dz2, dxz, dx2
-double in the above fashion if spin polarized.
-"""
+        
+        If spin-unpolarized calculation, no phase factors:
+        s = 1, p = 2, d = 3
+        Spin-polarized, no phase factors:
+        s-up = 1, s-down = 2, p-up = 3, p-down = 4, d-up = 5, d-down = 6
+        If phase factors have been calculated, orbitals are
+        s, py, pz, px, dxy, dyz, dz2, dxz, dx2
+        double in the above fashion if spin polarized.
+        
+        """
         return self.dos[atom, :, orbital]
 
 

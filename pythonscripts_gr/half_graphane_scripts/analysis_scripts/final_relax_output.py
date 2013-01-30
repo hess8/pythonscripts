@@ -1,9 +1,9 @@
 
 #print the name of files to analyze
 #Specify Directory to use
-#mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
+mainDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
-mainDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/'
+#mainDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/'
 
 
 isolatedDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/electron_relax/'
@@ -195,12 +195,12 @@ for i in range(len(elements)):
         binde[i] = 100 #can't read energy or structure not right
 #    if elements[i] == 'Ti':
 #        print float(energies[i]) , float(isolenergies[i]), binde[i]
-outfile = open('analysis.csv','w')
+outfile = open('final_relax_analysis.csv','w')
 outfile.write('Element,'+BEString+',Calc Energy,Isol atom,IsolConvDiff,Distance,CC Diffz,CC expans %,Stretch energy,Converged,Steps\n')
 # write spreadsheet
 
 for i in range(len(elements)):
-    print i, elements[i], isolenergies[i], isolatedFinish[i] 
+#    print i, elements[i], isolenergies[i], isolatedFinish[i] 
     try:
         ccexpand = str(round(100*(float(ccdistances[i])/1.53391 - 1),1)) #compare to graphane 
     except:
@@ -212,7 +212,7 @@ for i in range(len(elements)):
         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+'not done'+','+isolconvdiff[i]+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
     else:
         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+isolenergies[i]+'*,'+isolconvdiff[i]+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
-
+    print i,linei
     outfile.write(linei)
 outfile.close()
 

@@ -6,6 +6,7 @@ mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
+firstRun = False
 
 #vasp input directory
 a = mainDir.split('/')
@@ -17,7 +18,8 @@ inputDir = '/'.join(a) + 'vasp.input/'
 HAdDist = 1.1
 
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
-contcardir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
+#contcardir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
+contcardir = mainDir
 
 #get type of structure
 lastdir = mainDir.split('/')[-2]
@@ -162,20 +164,21 @@ nparts2 = len(pathparts2)
 print nparts2
 for path1 in checkedList:
 #	element = getElement('adatom_',path)
-    pathparts1 = path1.split('/')
-#    print pathparts1
-    nparts1 = len(pathparts1)#getting num of parts after main dir end
-#    print nparts1    
-    path2 = contcardir
-#    print (pathparts1[nparts2-1:nparts1-1])
-    for i, parti in enumerate(pathparts1[nparts2-1:nparts1-1]):
-#        print i
-#        print path2, parti
-        path2 += parti+'/'
-    print("CONTCAR to POSCAR " + path2)
-    os.system('cp ' + path2 + 'CONTCAR ' + path1 +'POSCAR')
-    if structure =='h.':
+    if structure =='h.' and firstRun:
         tools.addHToPOSCAR(path1, HAdDist) #Alter POSCAR so there is one more H above the adatom
+    elif not firstRun:
+        pathparts1 = path1.split('/')
+    #    print pathparts1
+        nparts1 = len(pathparts1)#getting num of parts after main dir end
+    #    print nparts1    
+        path2 = contcardir
+    #    print (pathparts1[nparts2-1:nparts1-1])
+        for i, parti in enumerate(pathparts1[nparts2-1:nparts1-1]):
+    #        print i
+    #        print path2, parti
+            path2 += parti+'/'
+        print("CONTCAR to POSCAR " + path2)
+        os.system('cp ' + path2 + 'CONTCAR ' + path1 +'POSCAR')
 os.chdir(dir)
 
 print "\nThe following folders will be run:"
@@ -202,7 +205,7 @@ for folder in toRunList:
     file = open(newFolder+"job",'w+')
     prefix = 'adatom_'
     element = newFolder[newFolder.index(prefix)+len(prefix):newFolder.index('/',newFolder.index(prefix))]
-    jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=1gb,walltime=36:00:00\n#PBS -N fin_rel_" + element+ "\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \n exit 0"
+    jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=1gb,walltime=48:00:00\n#PBS -N fin_rel_" + element+ "\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \n exit 0"
     file.write(jobData)
     file.close()
     subprocess.check_call(['qsub','job']) #waits to get response 

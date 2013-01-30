@@ -1,8 +1,8 @@
 #Specify Directory to use
 #mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
-mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
-
+#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
+mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
 
 isolatedDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/electron_relax/'
 
@@ -44,8 +44,8 @@ import os,sys,subprocess,math,time
 import numpy as np 
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
 from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  \
-    writeElements, nstrip, writeDistances, writeCCDistances, writeConverge, \
-    FinishCheck, writeSteps
+    writeElements, nstrip, writeDistances, writeCCDistances, \
+    FinishCheck, writeElSteps, writeElConverge
 
 
 run = runName
@@ -66,7 +66,6 @@ print('Checking to see which folders contain '+run+'\n')
 time.sleep(1)
 checkedList=sorted(checkFolders(toCheckList,checkedList,run))
 
-
 print '\nThe following folders are in checkedList:'
 for i in checkedList:
     print('checkedList contains : ' + i+'\n')
@@ -84,11 +83,23 @@ print 'distances', os.getcwd()
 writeCCDistances(checkedList)
 print 'CCdist', os.getcwd() 
 #Check convergence
-writeConverge(checkedList) 
-print 'converge', os.getcwd() 
+writeElConverge(checkedList) 
+print 'ElConverge', os.getcwd() 
 #number of relaxation steps
-writeSteps(checkedList)
-print 'writeSteps', os.getcwd() 
+writeElSteps(checkedList)
+print 'writeElSteps', os.getcwd() 
+###### plot DOS #####
+sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts/plotting/')
+print 'Plotting DOS'
+from vasputil_dosplot_fun import vasputil_dosplot 
+for path in checkedList:
+    try:
+        vasputil_dosplot([], ["DOSCAR"], path) #options, args, dir
+    except:
+        print 'Fail:'+ path
+print 'Collating plots'
+    collate
+
 ################# summary spreadsheet #################
 #Open data files
 
@@ -115,15 +126,15 @@ file = open('diffz','r')
 diffz = nstrip(file.readlines())
 file.close()
 
-file = open('converge','r')
+file = open('elconverge','r')
 converged = nstrip(file.readlines())
 file.close()
 
-file = open('steps','r')
+file = open('elsteps','r')
 steps = nstrip(file.readlines())
 file.close()
 
-outfile = open('final_relax.csv','w')
+outfile = open('dos.csv','w')
 outfile.write('Element,Calculated Energy,Distance,CC Distance,CC Diffz,Converged\n')
 for i in range(len(elements)):
     linei = elements[i]+','+energies[i]+','+distances[i]+','+ccdistances[i]+','+diffz[i]+','+converged[i]+'\n'
@@ -131,6 +142,7 @@ for i in range(len(elements)):
 outfile.close()
 
 print 'Done with summary'
+
 
 ################# spreadsheet #################
 #Bring in data from other runs
@@ -193,7 +205,7 @@ for i in range(len(elements)):
         binde[i] = 100 #can't read energy or structure not right
 #    if elements[i] == 'Ti':
 #        print float(energies[i]) , float(isolenergies[i]), binde[i]
-outfile = open('analysis.csv','w')
+outfile = open('dos_analysis.csv','w')
 outfile.write('Element,'+BEString+',Calc Energy,Isol atom,IsolConvDiff,Distance,CC Diffz,CC expans %,Stretch energy,Converged,Steps\n')
 # write spreadsheet
 
@@ -210,10 +222,8 @@ for i in range(len(elements)):
         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+'not done'+','+isolconvdiff[i]+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
     else:
         linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+isolenergies[i]+'*,'+isolconvdiff[i]+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
-
+    print i,linei
     outfile.write(linei)
 outfile.close()
 
 print 'Done with analysis'
-
-

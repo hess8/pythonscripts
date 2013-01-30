@@ -253,7 +253,7 @@ class VaspTools:
         for path in self.ToCheckList:
             if path.split("/")[-2] == self.RunName:
                 self.CheckedList.append(path)
-                if os.path.exists(path + 'OUTCAR') and self.FinishCheck(path): 
+                if os.path.exists(path + 'OUTCAR') and self.FinishCheck(path) and self.StepsLessThanNSW(path): 
                     print ('Will skip (finished):'+path)    
                 else:
                     self.ToRunList.append(path)             #run only unfinished ones
@@ -280,7 +280,31 @@ class VaspTools:
         newstring = proc.communicate()
         os.chdir(lastfolder)    
         return newstring[0].find('Voluntary') > -1 #True/False
+    
+    def StepsLessThanNSW(self,folder):
+        '''Get number of steps in relaxation, and check vs NSW'''
+        #get number of steps
+        lastfolder = os.getcwd()
+        os.chdir(folder)
+        if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0: 
+            os.chdir(lastfolder) 
+            steps = -9999
+        oszicar = open('OSZICAR','r')
+        laststep = oszicar.readlines()[-1].split()[0]
+        oszicar.close()
+        os.chdir(lastfolder)  
+        try:
+            value = int(laststep)
+            steps =  value
+        except:
+            steps =  9999
+        #check vs NSW
+        proc = subprocess.Popen(['grep','-i','NSW',self.CheckedList[0]+'/INCAR'],stdout=subprocess.PIPE)
+        NSW = int(proc.communicate()[0].split('=')[-1])
+        return steps < NSW # True/False
 
+        
+        
     def addHToPOSCAR(self,path,HAdDist):
        '''Takes a POSCAR (in CONTCAR direct coordinates), and adds an H above the adatom (last line)'''
        file=open(path + 'POSCAR','r')

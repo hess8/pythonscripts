@@ -1,0 +1,105 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# vim: set fileencoding=utf-8
+# Copyright (c) 2008, 2009, 2010 Janne Blomqvist
+
+# This source code file is subject to the terms of the MIT (Expat)
+# License. See the file LICENSE for details.
+
+"""Example plotting script demonstrating how to use the vasputil.dos module
+and the ase.calculators.vasp.VaspDos class."""
+
+import vasputil.dos as d
+import ase.calculators.vasp as v
+import matplotlib.pyplot as plt
+from optparse import OptionParser
+
+usage = """%prog [options] DOSCAR atom
+
+atom is the index of the atom, starting from 0. If omitted, plots the total
+DOS, or the integrated total DOS if additionally the -i option is present.
+"""
+parser = OptionParser(usage)
+parser.add_option("-f", "--fermi", dest="fermi", help="Fermi energy")
+parser.add_option("-o", "--orbital", dest="orb", help="Orbital, either \
+string or integer. For non-spin polarized s=0, p=1, \
+d=2, if spin polarized s+=0, s-=1 etc. If phase factors: s, py, pz, px, \
+dxy, dyz, dz2, dxz, dx2, and equivalent as previous for spin polarized etc.")
+parser.add_option('-i', '--integrated', dest='integ', action='store_true',
+                  help='Show the integrated total DOS')
+(options, args) = parser.parse_args()
+
+# By default VaspDos constructor tries to read a file called "DOSCAR".
+dc = v.VaspDos(args[0])
+if options.fermi:
+    fermi = float(options.fermi)
+    dc.efermi = fermi
+if options.orb:
+    try:
+        orb = int(options.orb)
+    except ValueError:
+        orb = options.orb
+else:
+    orb = 0
+
+en = dc.energy # This is the x-axis in a typical DOS plot.
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+
+if len(args) == 2:
+    atom = int(args[1])
+    label = "Atom " + str(atom) + " orbital " + str(orb)
+    ax.plot(en, dc.site_dos(atom, orb), label=label)
+elif options.integ:
+    label = 'Integrated total DOS'
+    if len(dc.integrated_dos.shape) == 1:
+        ax.plot(en, dc.integrated_dos, label=label)
+    else:
+        ul = label + ' spin up'
+        ax.plot(en, dc.integrated_dos[0, :], label=ul)
+        dl = label + ' spin down'
+        ax.plot(en, dc.integrated_dos[1, :], label=dl)
+else:
+    label = 'Total DOS'
+    if len(dc.dos.shape) == 1:
+        ax.plot(en, dc.dos, label=label)
+    else:
+        ul = label + ' spin up'
+        ax.plot(en, dc.dos[0, :], label=ul)
+        dl = label + ' spin down'
+        ax.plot(en, dc.dos[1, :], label=dl)
+d.set_labels()
+plt.show()
+
+# For a more involved plot, create your own plot script or run interactively
+# via 'ipython -pylab'
+# Below are some example pylab commands for plotting
+
+# For good plots in PS or PDF formats begin your script with
+# from matplotlib import rc
+# rc('ps', usedistiller='xpdf')
+# rc('text', usetex=True)
+
+#subplot(211)
+# Get the s and p DOS of atom 1.
+#plot(en, dc.site_dos(1, 0), "k-", label="Al s")
+#plot(en, dc.site_dos(1, 1), "k-.", label="Al p")
+#legend()
+#xlim(-15,5)
+#xticks(arange(0))
+#subplot(212)
+# s-DOS of atom 2. 
+#plot(en, dc.site_dos(2, 0), "k-", label="Al s")
+#xlim(-15,5)
+#ylim(0,.29)
+
+# And to save the figs in EPS/PDF, use
+# d.set_labels()
+# savefig('tex_demo.eps')
+# Fonts in legend touch upper border, test with your version of matplotlib
+# savefig('tex_demo_xpdf.pdf')
+# os.system('epstopdf tex_demo.eps')
+
+# Finally, show picture
+# show()

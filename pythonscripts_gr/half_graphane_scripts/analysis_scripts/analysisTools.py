@@ -21,12 +21,12 @@ def writeEnergiesOszicar(checkedList):
     for i in checkedList:
         os.chdir(i)
         try:
-        	oszicar = open(i+'OSZICAR','r')
-        	energy = oszicar.readlines()[-1].split()[2]
+            oszicar = open(i+'OSZICAR','r')          
+            energy = oszicar.readlines()[-1].split()[2]
+            oszicar.close()
         except:
     		energy = '0'
         enerfile.write(energy + '\n') #energy in last line
-        oszicar.close()
     enerfile.close()
     os.chdir(lastfolder) 
         
@@ -141,7 +141,8 @@ def getCCDistance(folder):
     diffz3 =  abs(carbon1[2] - carbon2[2])
     return [min(distance1, distance2, distance3), min(diffz1,diffz2,diffz3)]
              
-def getElement(prefix,path):    
+def getElement(prefix,path):
+    '''Prefix is e.g. adatom_'''   
     index1 = path.index(prefix) 
     index2 = path.index('/',index1)
     element = path[index1+len(prefix):index2]

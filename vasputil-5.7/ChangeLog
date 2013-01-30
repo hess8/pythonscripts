@@ -1,0 +1,1257 @@
+2012-07-20  Janne Blomqvist <Janne.Blomqvist@aalto.fi>
+
+	* : commit c61d6d984736560c1a1266eb46de3991dd9f05a7 Merge: 2ba49bf
+	8f958c1 Author: Janne Blomqvist <Janne.Blomqvist@aalto.fi> Date:
+	Fri Jul 20 11:06:07 2012 +0300
+
+2012-07-20  Janne Blomqvist <Janne.Blomqvist@aalto.fi>
+
+	* : commit 2ba49bf8b156cfe0e975749b8cd7919880c20236 Author: Janne
+	Blomqvist <Janne.Blomqvist@aalto.fi> Date:   Fri Jul 20 10:59:00
+	2012 +0300
+
+2012-07-20  Janne Blomqvist <Janne.Blomqvist@aalto.fi>
+
+	* COPYING, LICENSE, MANIFEST.in, NEWS, runtests.py,
+	scripts/vasputil_atomsdistance, scripts/vasputil_atomsmoved,
+	scripts/vasputil_chgarith, scripts/vasputil_chgplaneplot,
+	scripts/vasputil_direct2cartesian, scripts/vasputil_dosplot,
+	scripts/vasputil_interpolate, scripts/vasputil_nearestneighbors,
+	scripts/vasputil_plane2atom, scripts/vasputil_poscar2xyz,
+	scripts/vasputil_zlayers, setup.py, vasputil/chg.py,
+	vasputil/dos.py, vasputil/geometry.py, vasputil/supercell.py,
+	vasputil/tests/test_dos.py, vasputil/tests/test_geometry.py,
+	vasputil/tests/test_supercell.py: Change license to MIT, version
+	5.7.  Vasputil is now available under the terms of the MIT (Expat)
+	license. The MIT license is a simple and permissive license.
+
+2012-03-26  Janne Blomqvist <Janne.Blomqvist@aalto.fi>
+
+	* runtests.py: Use UTF-8 encoding
+
+2012-03-26  Janne Blomqvist <Janne.Blomqvist@aalto.fi>
+
+	* COPYING, NEWS, runtests.py, scripts/vasputil_atomsdistance,
+	scripts/vasputil_atomsmoved, scripts/vasputil_chgarith,
+	scripts/vasputil_chgplaneplot, scripts/vasputil_direct2cartesian,
+	scripts/vasputil_dosplot, scripts/vasputil_interpolate,
+	scripts/vasputil_nearestneighbors, scripts/vasputil_plane2atom,
+	scripts/vasputil_poscar2xyz, scripts/vasputil_zlayers,
+	vasputil/chg.py, vasputil/dos.py, vasputil/geometry.py,
+	vasputil/supercell.py, vasputil/tests/test_dos.py,
+	vasputil/tests/test_geometry.py, vasputil/tests/test_supercell.py: 
+	Change license to LGPL 2.1
+
+2012-02-06  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* MANIFEST.in: Fix correct README file name
+
+2012-02-06  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* AUTHORS, NEWS, README.rst, scripts/vasputil_atomsmoved, setup.py,
+	vasputil/supercell.py: vasputil_atomsmoved can now print out the
+	distance vector, version 5.6.
+
+2011-12-13  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/supercell.py: Incorrect ordering of matrix multiplication
+	operands.  Another bugfix from Noam Bernstein.
+
+2011-12-13  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README.rst: Update ASE requirement
+
+2011-12-13  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* MANIFEST.in: Move README.html to root
+
+2011-12-13  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS: 5.5 release
+
+2011-12-13  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_atomsmoved, scripts/vasputil_nearestneighbors,
+	scripts/vasputil_zlayers: Remove non-ASCII help strings.  With some python versions, parsing arguments with the OptionParser
+	module fails if the help text contains non-ASCII characters.
+	Bugreport from Noam Bernstein.
+
+2010-10-04  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS: typo
+
+2010-10-03  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS: Mention new website
+
+2010-09-29  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* .cvsignore: Remove obsolete file
+
+2010-09-24  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README.rst: Fix URLs, take 2
+
+2010-09-24  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README.rst: Fix URLs
+
+2010-09-24  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS, README.rst, setup.py: Update version numbers and web page
+	addr
+
+2010-09-24  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/geometry.py: Simplify vec_pbc(), don't call it in
+	norm_pbc()
+
+2010-09-11  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README.rst: Clarify web page location
+
+2010-09-11  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README.rst: Add web page to README.rst
+
+2010-09-10  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README, README.rst, copydist.sh: Rename README to README.rst to
+	make github understand RST markup
+
+2010-09-09  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* copydist.sh: Create README.html in root dir
+
+2010-09-09  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* INSTALL: Forgot INSTALL from deleting Fortran stuff commit
+
+2010-09-09  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* Makefile.am, Makefile.in, aclocal.m4, config/acx_blas.m4,
+	config/acx_blas95.m4, config/acx_f90_config_header.m4,
+	config/acx_f90_mpi.m4, config/acx_fc_command_line.m4,
+	config/acx_fc_library_setup.m4, config/acx_fc_search_path.m4,
+	config/acx_getkw.m4, config/acx_lapack.m4, config/acx_lapack95.m4,
+	config/acx_mpi.m4, config/acx_subst_fcflags.m4,
+	config/ax_f90_header.m4, config/ax_f90_internal_headmod.m4,
+	config/ax_f90_library.m4, config/ax_f90_library_setup.m4,
+	config/ax_f90_module.m4, config/ax_f90_module_extension.m4,
+	config/ax_f90_module_flag.m4, config/ax_fc_search_path.m4,
+	config/check_gnu_make.m4, config/config.guess, config/config.sub,
+	config/install-sh, config/missing, config/mkinstalldirs,
+	configure.ac, oldmake/Makefile.common, oldmake/Makefile.lf95,
+	oldmake/Makefile.no-auto, oldmake/Makefile.pgf90,
+	oldmake/Makefile.xlf, oldmake/comp-ifort9.mk, oldmake/comp-lf95.mk,
+	oldmake/comp-pathf90.mk, oldmake/comp-pgf90.mk,
+	oldmake/comp-xlf95.mk, src/Makefile.am, src/Makefile.in,
+	src/conf.f90, src/config.h.in, src/depend.mk, src/f77_lapack.f90,
+	src/f95_lapack.f90, src/geometry.f90, src/kind_params.f90,
+	src/la_auxmod.f90, src/la_dgesdd.f90, src/la_dgesv.f90,
+	src/la_erinfo.f90, src/la_precision.f90, src/lattice.f90,
+	src/mathconst.f90, src/poscar_io.f90, src/sc_file_convert.f90,
+	src/supercell_core.f90, src/supercell_generator.f90,
+	src/supercell_measure.f90, src/supercell_modify.f90,
+	src/supercell_utils.f90, src/vasputil.F90: Finally delete old
+	Fortran code from repo
+
+2010-09-08  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS, scripts/vasputil_dosplot, vasputil/dos.py: Fix
+	dos.set_labels
+
+2010-09-08  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/tests/test_supercell.py: Fix deprecation warnings in
+	testsuite
+
+2010-08-10  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/dos.py: Better left space for DOS labels
+
+2010-07-16  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS, vasputil/dos.py: Remove dos.showdp and dos.save_and_show,
+	simplify dos.set_labels
+
+2010-07-15  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS: Mention new module in NEWS
+
+2010-07-15  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot, vasputil/__init__.py,
+	vasputil/chg.py: Move reading of lev00 chg plane file to module
+
+2010-07-07  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/dos.py: Improvements to dos displaying
+
+2010-06-29  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS, README, setup.py: Update docs and version numbers
+
+2010-06-29  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/geometry.py, vasputil/supercell.py: Numpy is no longer
+	optional
+
+2010-06-29  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgarith, scripts/vasputil_chgplaneplot,
+	scripts/vasputil_dosplot, scripts/vasputil_zlayers: Replace pylab
+	with pyplot
+
+2010-06-29  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_atomsdistance, scripts/vasputil_atomsmoved,
+	scripts/vasputil_direct2cartesian, scripts/vasputil_interpolate,
+	scripts/vasputil_nearestneighbors, scripts/vasputil_plane2atom,
+	scripts/vasputil_poscar2xyz, scripts/vasputil_zlayers: Switch from
+	ase.read/write to ase.io.read/write
+
+2010-06-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_atomsdistance, scripts/vasputil_atomsmoved,
+	scripts/vasputil_chgarith, scripts/vasputil_chgplaneplot,
+	scripts/vasputil_direct2cartesian, scripts/vasputil_dosplot,
+	scripts/vasputil_interpolate, scripts/vasputil_nearestneighbors,
+	scripts/vasputil_plane2atom, scripts/vasputil_poscar2xyz,
+	scripts/vasputil_zlayers, vasputil/dos.py, vasputil/geometry.py,
+	vasputil/supercell.py, vasputil/tests/test_dos.py,
+	vasputil/tests/test_geometry.py, vasputil/tests/test_supercell.py: 
+	Switch encoding to UTF-8
+
+2010-06-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot: Use pyplot instead of pylab
+
+2010-03-29  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README: Mention SUSE wonkyness in install instructions
+
+2010-03-16  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/tests/test_supercell.py: Bug in array equality test
+
+2010-02-24  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/dos.py: Explicitly import matplotlib instead of using
+	pylab, use fig objects
+
+2010-01-21  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS: Mention chgarith improvements
+
+2010-01-21  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS, README: Update NEWS and README
+
+2010-01-21  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/tests/test_dos.py, vasputil/tests/test_geometry.py,
+	vasputil/tests/test_supercell.py: Remove usage of numpy testing
+	framework
+
+2010-01-05  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README: Describe vasputil_dosplot
+
+2010-01-05  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/dos.py: Allow using a provided figure object
+
+2009-10-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot: Allow choosing levels for contour
+	plots
+
+2009-10-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS, README, setup.py: Update to version number of current
+	development
+
+2009-10-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot: Enable BW contour plots
+
+2009-08-11  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgarith: Bugfix in selecting image to take atoms
+	from
+
+2009-08-05  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgarith: Allow choosing supercell from specific
+	charge density file
+
+2009-08-03  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS, README, scripts/vasputil_dosplot, setup.py, vasputil/dos.py: 
+	Release 5.2, use improved DOSCAR handling from ASE
+
+2009-08-03  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* setup.py: Fix url, correct url this time?
+
+2009-08-03  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot: Fix merge mess
+
+2009-08-03  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot, setup.py: Fix url
+
+2009-08-03  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot: Change default colormap for charge
+	density plot
+
+2009-03-15  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS: Final fix for 5.1
+
+2009-02-19  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/dos.py: New method to save file and show, fix setting
+	font size on labels
+
+2009-01-12  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot: Axis labels, fix normalization
+
+2009-01-12  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot: Add option to inverse colormap
+
+2009-01-12  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot: Add option to normalize color map
+
+2009-01-12  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_chgplaneplot: Add option to specify color map
+
+2009-01-05  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_dosplot, vasputil/dos.py: Some documentation
+	about making DOS figures
+
+2009-01-05  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS, README, scripts/vasputil_chgarith, setup.py: Some work
+	towards 5.1, use improved chg handling committed to ASE 3.1
+
+2008-11-17  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* copydist.sh, setup.py: Avoid distributing/installing emacs backup
+	files
+
+2008-11-17  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README: Fix requirements doc.
+
+2008-11-16  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* MANIFEST.in: Forgot the POSCAR files for the testsuite.
+
+2008-11-16  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* MANIFEST.in, copydist.sh, setup.py: Some more fixes into
+	distribution stuff.
+
+2008-11-16  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* copydist.sh: Don't create generated changelog in public_html.
+
+2008-11-16  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* ChangeLog.old, copydist.sh: Changelog fixes, generate
+	automagically.
+
+2008-11-16  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* ChangeLog, ChangeLog.old: Rename changelog.
+
+2008-11-16  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* MANIFEST.in, NEWS, README, copydist.sh, setup.py: Fixups,
+	documentation for 5.0 release.
+
+2008-11-16  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* vasputil/chg.py, vasputil/dos.py, vasputil/supercell.py: Change
+	numpy import to np, delete chg (committed to ASE instead)
+
+2008-11-16  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* vasputil/geometry.py: New distance method to Plane class.
+
+2008-11-16  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* scripts/vasputil_plane2atom: New utility, distance method to class
+	Plane.
+
+2008-11-16  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* MANIFEST.in: Add MANIFEST.in to include files.
+
+2008-11-16  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* NEWS: Add separator line.
+
+2008-11-15  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* ChangeLog, NEWS, README, scripts/vasputil_chgarith: chgarith can
+	now calculate average, update misc files.
+
+2008-11-14  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README, scripts/vasputil_chgarith: New utility, arithmetic on
+	charge density.
+
+2008-11-14  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README, scripts/vasputil_chgplaneplot: New utility, for plotting
+	charge density.
+
+2008-10-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/chg.py: Fix import of read_vasp.
+
+2008-10-21  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* scripts/vasputil_zlayers, vasputil/supercell.py: Use positions
+	property rather than get_positions()
+
+2008-10-19  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* scripts/vasputil_atomsdistance, scripts/vasputil_atomsmoved,
+	scripts/vasputil_direct2cartesian, scripts/vasputil_interpolate,
+	scripts/vasputil_nearestneighbors, scripts/vasputil_poscar2xyz,
+	scripts/vasputil_zlayers, vasputil/chg.py, vasputil/supercell.py,
+	vasputil/tests/test_supercell.py: Change from Cell to ase Atoms
+	class.
+
+2008-10-19  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* Makefile.am, Makefile.in: Fix path to unit test runner.
+
+2008-10-18  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* vasputil/dos.py: update setup.py to new dir structure.
+
+2008-10-18  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* setup.py: update setup.py to new dir structure.
+
+2008-10-15  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_atomsdistance, bin/vasputil_atomsmoved,
+	bin/vasputil_direct2cartesian, bin/vasputil_dosplot,
+	bin/vasputil_interpolate, bin/vasputil_nearestneighbors,
+	bin/vasputil_poscar2xyz, bin/vasputil_zlayers,
+	scripts/vasputil_atomsdistance, scripts/vasputil_atomsmoved,
+	scripts/vasputil_direct2cartesian, scripts/vasputil_dosplot,
+	scripts/vasputil_interpolate, scripts/vasputil_nearestneighbors,
+	scripts/vasputil_poscar2xyz, scripts/vasputil_zlayers: Change
+	scripts to standard python dir.
+
+2008-10-15  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, lib/python/runtests.py,
+	lib/python/vasputil/__init__.py, lib/python/vasputil/chg.py,
+	lib/python/vasputil/dos.py, lib/python/vasputil/geometry.py,
+	lib/python/vasputil/supercell.py, lib/python/vasputil/tests/POSCAR,
+	lib/python/vasputil/tests/POSCAR2,
+	lib/python/vasputil/tests/__init__.py,
+	lib/python/vasputil/tests/test_dos.py,
+	lib/python/vasputil/tests/test_geometry.py,
+	lib/python/vasputil/tests/test_supercell.py, runtests.py,
+	vasputil/__init__.py, vasputil/chg.py, vasputil/dos.py,
+	vasputil/geometry.py, vasputil/supercell.py, vasputil/tests/POSCAR,
+	vasputil/tests/POSCAR2, vasputil/tests/__init__.py,
+	vasputil/tests/test_dos.py, vasputil/tests/test_geometry.py,
+	vasputil/tests/test_supercell.py: Change to standard python package
+	directory layout.
+
+2008-10-15  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/dos.py: Don't clobber numpy import.
+
+2008-10-15  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS: Add date to NEWS.
+
+2008-10-02  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py,
+	lib/python/vasputil/tests/test_supercell.py: Store basis vectors as
+	row vectors.
+
+2008-10-02  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/chg.py: Read charge density in correct order.
+
+2008-10-02  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Add volume property.
+
+2008-10-02  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* : commit dfbc1881d1ecc1cd1e0cd3b9dd53a1d138e07dfd Author: Janne
+	Blomqvist <blomqvist.janne@gmail.com> Date:   Thu Oct 2 00:39:43
+	2008 +0300
+
+2008-10-02  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* bin/vasputil_zlayers, lib/python/vasputil/supercell.py: Make
+	imports consistent, create empty arrays instead of zeroing.
+
+2008-10-01  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* lib/python/vasputil/supercell.py: Allow read_poscar to read from a
+	file object.
+
+2008-09-29  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_interpolate: add options to docstring.
+
+2008-09-28  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* ChangeLog, README, bin/vasputil_interpolate,
+	lib/python/vasputil/supercell.py,
+	lib/python/vasputil/tests/test_supercell.py: interpolate_cells
+	stuff.
+
+2008-09-26  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* bin/vasputil_zlayers: Only import matplotlib just before making
+	pic.
+
+2008-09-25  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* ChangeLog, NEWS, README, bin/vasputil_nearestneighbors,
+	lib/python/vasputil/geometry.py, lib/python/vasputil/supercell.py,
+	lib/python/vasputil/tests/test_geometry.py,
+	lib/python/vasputil/tests/test_supercell.py, setup.py: 2008-09-25
+	Janne Blomqvist  <Janne.Blomqvist@tkk.fi>     * bin/vasputil_nearestneighbors: New file.      * lib/python/vasputil/geometry.py (vec_pbc): New function.      (norm_pbc): Likewise.      * lib/python/vasputil/tests/test_geometry.py (NormPbcTestCase):
+	    New class.      * lib/python/vasputil/supercell.py: Use above functions.      (nearest_neighbors): New method.      * lib/python/vasputil/tests/test_supercell.py (test_nndist): New
+	    test.  (test_nndist_nn): New test.
+
+2008-09-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* ChangeLog, NEWS, README, bin/vasputil_direct2cartesian, setup.py: 
+	New python utility.
+
+2008-09-23  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* NEWS: Fix NEWS, forgot vasputil_poscar2xyz.
+
+2008-09-23  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* ChangeLog, NEWS, README, bin/vasputil_atomsmoved,
+	lib/python/vasputil/supercell.py,
+	lib/python/vasputil/tests/POSCAR2,
+	lib/python/vasputil/tests/test_supercell.py: vasputil_atomsmoved
+	added.
+
+2008-09-23  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* : commit 8d6bf2622bfa0e80e78afbd8f18b5cc284fb8477 Author: Janne
+	Blomqvist <Janne.Blomqvist@tkk.fi> Date:   Tue Sep 23 21:12:36 2008
+	+0300
+
+2008-09-23  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* ChangeLog, lib/python/vasputil/supercell.py: Bugfix in write_xyz
+
+2008-09-23  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* README, bin/vasputil_poscar2xyz, setup.py: New python utility.
+
+2008-09-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS, bin/vasputil_atomsdistance, copydist.sh,
+	lib/python/runtests.py: Misc.
+
+2008-09-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* configure: Don't keep configure in repo.
+
+2008-09-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/tests/test_supercell.py: New test for
+	atoms_distance using PBC.
+
+2008-09-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_dosplot, bin/vasputil_interpolate: Remove extra
+	newline.
+
+2008-09-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_atomsdistance, lib/python/vasputil/supercell.py: 
+	Better instructions, take into account PBC.
+
+2008-09-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, NEWS, README, configure.ac, setup.py: Bump version to
+	4.3.
+
+2008-09-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_dosplot, bin/vasputil_interpolate,
+	bin/vasputil_zlayers: Switch to using optparse.
+
+2008-09-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_atomsdistance: New python utility.
+
+2008-09-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py,
+	lib/python/vasputil/tests/test_supercell.py: atoms_distance with
+	vector proj.
+
+2008-09-22  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Bugfix for atoms_distance, test
+	passes.
+
+2008-09-20  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: some more atoms_distance stuff.
+
+2008-09-19  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/tests/POSCAR: Add POSCAR for unit tests.
+
+2008-09-19  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py,
+	lib/python/vasputil/tests/test_supercell.py: atoms_distance work
+	started.
+
+2008-09-19  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README: Add doc about running testsuite.
+
+2008-09-19  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, Makefile.am, Makefile.in, setup.py: Some stuff for
+	running unit tests.
+
+2008-09-09  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/runtests.py, lib/python/vasputil/tests/__init__.py,
+	lib/python/vasputil/tests/test_dos.py,
+	lib/python/vasputil/tests/test_geometry.py,
+	lib/python/vasputil/tests/test_supercell.py: Unit tests.
+
+2008-09-09  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/dos.py, lib/python/vasputil/geometry.py,
+	lib/python/vasputil/supercell.py: Try to import numpy directly
+	before pylab.
+
+2008-09-05  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, Makefile.am, Makefile.in, README, copydist.sh,
+	doc/README.html: More doc fixes; rename robodoc stuff to fortrandoc
+	etc.
+
+2008-09-05  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, Makefile.am, Makefile.in, README, doc/README.html: 
+	Convert README to ReST format, generated html version.
+
+2008-09-03  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/dos.py: Optional arg for showdp().
+
+2008-09-03  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/__init__.py, lib/python/vasputil/geometry.py: 
+	Add new python module, geometry.
+
+2008-08-29  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: One more PEP-8 fix.
+
+2008-08-29  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_zlayers, lib/python/vasputil/supercell.py: Make
+	python supercell code conform to PEP-8.
+
+2008-08-29  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_dosplot, lib/python/vasputil/dos.py: Make dos.py
+	conform to PEP-8.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README: Fix2 README.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README: Fix README.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, Makefile.in, NEWS, README: Final wrapup before 4.2
+	release.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* Makefile.am, lib/m/printcoords.m, lib/m/rotate_molecule.m,
+	lib/m/translate_molecule.m: Remove MATLAB scripts superceded by
+	python.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_interpolate: Add copyright statement to
+	vasputil_interpolate.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* Makefile.in, configure: automatically regenerated.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* configure.ac: Remove bin directory.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* Makefile.am, bin/Makefile.am, bin/Makefile.in, bin/layers.in: 
+	Remove layers script and associated makefile stuff.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_dosplot: Add argument for Efermi.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, README, bin/dosplot_example, bin/vasputil_dosplot,
+	setup.py: Rename dosplot_example to vasputil_dosplot.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/dosplot_example: Make dosplot useful.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README: Add stuff about python utilities.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, bin/dosplot_example, lib/python/vasputil/dos.py: Update
+	DOS utilities.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/__init__.py, lib/python/vasputil/dos.py,
+	lib/python/vasputil/dosplot.py: Renamce dosplot module to dos.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* NEWS, bin/vasputil_zlayers: Add copyright, add relaxation output.
+
+2008-08-28  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_zlayers, setup.py: New utility, vasputil_zlayers.
+
+2008-08-27  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog: Fix write_xyz formatting.
+
+2008-08-27  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Fix write_xyz formatting.
+
+2008-08-27  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, lib/python/vasputil/supercell.py: Make poscar output
+	format match vasp.
+
+2008-08-27  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Make nAtoms property methods
+	private, fix comments.
+
+2008-08-27  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Add methods to combine cells,
+	various bugfixes.
+
+2008-08-27  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/Makefile.in: Regenerated.
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* README: Correct name for python(x,y)
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_interpolate: Better usage instructions.
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_interpolate: comment fix.
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_interpolate: comment fix.
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, README: Add some info about python stuff to README.
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/Makefile.am, bin/interpolate4.in, setup.py: Remove old
+	interpolate4.
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/vasputil_interpolate: Reimplement and improve interpolate4.
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: use cartesian flag to represent
+	relativeness too.
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Don't import pylab into
+	namespace, use xrange.
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Fix comment
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Fix comment
+
+2008-08-26  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Don't store transposed coords,
+	add rotate_molecule
+
+2008-08-25  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Bugfixes, quick-and-dirty
+	showVMD function.
+
+2008-08-25  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Make nAtoms a property.
+
+2008-08-25  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: Fix Cell.__init__ to not init
+	default values if they will be overridden anyway.
+
+2008-08-25  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* Makefile.am, Makefile.in: Yet one more autotools-distutils fix.
+
+2008-08-25  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* Makefile.am, Makefile.in: Fix autotools-distutils to
+	distribute/install correct stuff.
+
+2008-08-25  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* bin/dosplot_example, setup.py: Add example script for dos
+	plotting.
+
+2008-08-25  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/supercell.py: docutils comment for module.
+
+2008-08-25  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* ChangeLog, Makefile.am, Makefile.in, NEWS, README, aclocal.m4,
+	bin/Makefile.in, configure, configure.ac, src/Makefile.in: Use
+	distutils to install python stuff via autotools.
+
+2008-08-25  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* lib/python/vasputil/__init__.py, lib/python/vasputil/dosplot.py,
+	lib/python/vasputil/supercell.py, python/vasputil/__init__.py,
+	python/vasputil/dosplot.py, python/vasputil/supercell.py, setup.py: 
+	Move python libs to lib dir.
+
+2008-08-25  Janne Blomqvist <Janne.Blomqvist@tkk.fi>
+
+	* : Merge ../vasppy2
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* python/vasputil/supercell.py: XYZ stuff for supercell.
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* python/vasputil/dosplot.py, python/vasputil/supercell.py: fix
+	copyright notice.
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* python/vasputil/__init__.py, python/vasputil/dosplot.py: add
+	supercell to package, fix dosplot comment.
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* python/vasputil/supercell.py: Add supercell utils.
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* python/vasputil/__init__.py: package init file
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* dosplot.py, python/vasputil/dosplot.py: Move dosplot.py to correct
+	dir.
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* setup.py: distutils setup file.
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* dosplot.py: cleanup
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* dosplot.py: optional argument to set font size.
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* dosplot.py: cleanup.
+
+2008-08-24  Janne Blomqvist <blomqvist.janne@gmail.com>
+
+	* dosplot.py: initial version.
+
+2008-08-20  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, src/supercell_modify.f90: Fix unnormalize git-svn-id: file:///home/job/svnrepo/trunk/vasputil@71
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-15  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* src/supercell_generator.f90: Change tabs to spaces.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@70
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-15  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* configure: automatically regenerated.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@69
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, config/acx_subst_fcflags.m4: allow gfortran to be
+	called gfortran* git-svn-id: file:///home/job/svnrepo/trunk/vasputil@68
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* COPYING, NEWS, README, configure, configure.ac, src/geometry.f90,
+	src/lattice.f90, src/poscar_io.f90, src/sc_file_convert.f90,
+	src/supercell_core.f90, src/supercell_generator.f90,
+	src/supercell_measure.f90, src/supercell_modify.f90,
+	src/supercell_utils.f90, src/vasputil.F90: Upgrade to GPL3.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@67
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* configure: Don't use fullwarn for pathscale.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@66
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* AUTHORS: Change email address.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@65
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* src/vasputil.F90: Add FC_COMMAND_LINE_INCLUDE to vasputil.F90 git-svn-id: file:///home/job/svnrepo/trunk/vasputil@64
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* config/acx_subst_fcflags.m4: Don't use fullwarn for pathscale,
+	compile error with CPP git-svn-id: file:///home/job/svnrepo/trunk/vasputil@63
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* README: Improve README git-svn-id: file:///home/job/svnrepo/trunk/vasputil@62
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* src/vasputil.F90: Line length fixes.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@61
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* config/acx_subst_fcflags.m4, configure: Make ifort use F2003 git-svn-id: file:///home/job/svnrepo/trunk/vasputil@60
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* NEWS, README, src/vasputil.F90: Bump version number to 4.0.3 git-svn-id: file:///home/job/svnrepo/trunk/vasputil@59
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, Makefile.in, aclocal.m4, bin/Makefile.in,
+	config/acx_fc_command_line.m4, config/acx_subst_fcflags.m4,
+	configure, configure.ac, src/Makefile.am, src/Makefile.in,
+	src/config.h.in, src/depend.mk, src/f2kcli.f90, src/vasputil.F90: 
+	2008-08-07  Janne Blomqvist  <Janne.Blomqvist@tkk.fi>         * config/acx_subst_fcflags.m4: More checking for ifort, use
+		f2003 mode for gfortran.  	* config/acx_fc_command_line.m4: New file, autoconf macro for
+	        checking command line support. Copied from octopus (tddft.org).          * configure.ac: Run ACX_FC_COMMAND_LINE_ARGUMENTS macro, new
+	        contact info.          * src/f2kcli.f90: Delete.  	* src/vasputil.f90: Rename to vasputil.F90.  	* src/vasputil.F90: Use results of acx_fc_command_line_arguments
+		macro to call correct procedures for getting command line
+		arguments.  * src/Makefile.am: Remove f2kcli.f90, change to vasputil.F90.  	* src/config.h.in: Regenerate.  	* src/Makefile.in: Regenerate.  	* bin/Makefile.in: Regenerate.  	* aclocal.m4: Regenerate.  	* Makefile.in: Regenerate.  	* configure: Regenerate.  	* src/depend.mk: Regenerate.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@58
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* src/vasputil.F90, src/vasputil.f90: Change file extension to .F90
+	to run CPP git-svn-id: file:///home/job/svnrepo/trunk/vasputil@57
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* config/acx_subst_fcflags.m4, configure: Add preprocessor flag for
+	specifying whether compiler supports F2003 command line intrinsics git-svn-id: file:///home/job/svnrepo/trunk/vasputil@56
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, config/acx_subst_fcflags.m4, configure: More interface
+	checking for ifort.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@55
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-02-28  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* NEWS: Add Mr. Ravi who also reported the scgenerator bug.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@54
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-02-27  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* src/supercell_generator.f90, src/vasputil.f90: Update copyright
+	years and fix version printing for 4.0.2.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@53
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2008-02-27  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, NEWS, README, configure, configure.ac,
+	src/supercell_generator.f90: Bugfix in supercell_generator, vasputil
+	4.0.2.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@52
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2007-10-10  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, src/supercell_generator.f90: Workaround for gfortran
+	bug #32881.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@51
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2007-07-23  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* : Remove old binaries.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@50
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2007-07-21  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, Makefile.am, Makefile.in, NEWS, README, configure,
+	lib/m/rotate.m, lib/m/rotate_molecule.m, lib/m/rotatez.m,
+	lib/m/translate.m, lib/m/translate_molecule.m, src/Makefile.am,
+	src/Makefile.in, src/poscar_io.f90, src/vasputil.f90: 4.0.1 relase,
+	misc changes.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@49
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2007-07-21  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* Makefile.no-auto, comp-ifort9.mk, comp-lf95.mk, comp-pathf90.mk,
+	comp-pgf90.mk, comp-xlf95.mk, oldmake/Makefile.no-auto,
+	oldmake/comp-ifort9.mk, oldmake/comp-lf95.mk,
+	oldmake/comp-pathf90.mk, oldmake/comp-pgf90.mk,
+	oldmake/comp-xlf95.mk: Move old Makefile stuff to oldmake directory.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@48
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2007-07-21  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* srcbak/conf.f90, srcbak/f2kcli.f90, srcbak/f77_lapack.f90,
+	srcbak/f95_lapack.f90, srcbak/geometry.f90, srcbak/kind_params.f90,
+	srcbak/la_auxmod.f90, srcbak/la_dgesdd.f90, srcbak/la_dgesv.f90,
+	srcbak/la_erinfo.f90, srcbak/la_precision.f90, srcbak/lattice.f90,
+	srcbak/mathconst.f90, srcbak/supercell_core.f90,
+	srcbak/supercell_io.f90, srcbak/vasputil.f90: Remove old src backup
+	directory.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@47
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2007-07-21  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* Makefile.in, NEWS, README, aclocal.m4, bin/Makefile.in,
+	configure, configure.ac, lib/m/printcoords.m, src/Makefile.in,
+	src/poscar_io.f90, src/vasputil.f90: Commit to prepare cvs->svn
+	migration.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@46
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-12-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* configure.ac: Trick to override FCFLAGS, disabled for the moment
+	since it doesn't work with makedepf90.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@45
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-12-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* configure: Regenerated.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@44
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-12-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, NEWS, configure.ac: Test more mature commercial
+	compilers before gfortran. Misc changes preparing for 4.0.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@43
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-12-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* config/acx_subst_fcflags.m4: Fix typo.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@42
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-12-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* Makefile.am, Makefile.in, src/poscar_io.f90,
+	src/sc_file_convert.f90: Fix doc target in Makefile.am, Fix
+	precision in poscar output to match vasp.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@41
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-12-06  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* src/Makefile.in, src/depend.mk: Add depend.mk to CVS.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@40
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-12-06  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, Makefile.am, NEWS, README, config/acx_blas95.m4,
+	config/acx_f90_config_header.m4, config/acx_f90_mpi.m4,
+	config/acx_fc_library_setup.m4, config/acx_fc_search_path.m4,
+	config/acx_subst_fcflags.m4, config/ax_f90_header.m4,
+	config/ax_f90_internal_headmod.m4, config/ax_f90_library.m4,
+	config/ax_f90_library_setup.m4, config/ax_f90_module.m4,
+	config/ax_f90_module_extension.m4, config/ax_f90_module_flag.m4,
+	config/ax_fc_search_path.m4, lib/m/rotate.m, lib/m/translate.m,
+	src/sc_file_convert.f90, src/vasputil.f90: Some changes towards 4.0
+	release.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@39
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* Makefile, Makefile.am, Makefile.in, Makefile.no-auto,
+	acinclude.m4, aclocal.m4, bin/Makefile.am, bin/Makefile.in,
+	bin/interpolate4, bin/interpolate4.in, bin/layers, bin/layers.in,
+	config/acx_blas.m4, config/acx_f90.m4, config/acx_f90_libdir.m4,
+	config/acx_f90_modname.m4, config/acx_f90_module.m4,
+	config/acx_f90_module_naming.m4, config/acx_getkw.m4,
+	config/acx_lapack.m4, config/acx_lapack95.m4, config/acx_mpi.m4,
+	config/alpha_linux.conf, config/config.guess, config/config.sub,
+	config/dec_osf.conf, config/hp_hpux.conf, config/i386_linux.conf,
+	config/ia64_linux.conf, config/ibm_aix.conf, config/install-sh,
+	config/missing, config/mkdep90.py, config/mkinstalldirs,
+	config/sgi_irix.conf, config/sun_solaris.conf, config/unknown.conf,
+	config/x86_64-linux.conf, configure, configure.ac, configure.in,
+	src/Makefile.am, src/Makefile.in, src/config.h.in: Convert to use
+	autotools.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@38
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-08-07  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, NEWS, autom4te.cache/output.0,
+	autom4te.cache/requests, autom4te.cache/traces.0, src/conf.f90,
+	src/supercell_generator.f90: Changes for vasputil 3.3.1 git-svn-id: file:///home/job/svnrepo/trunk/vasputil@37
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-07-28  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, Makefile, NEWS, README, lib/m/rotatez.m, src/conf.f90,
+	src/supercell_generator.f90, src/supercell_modify.f90,
+	src/vasputil.f90: centercell stuff, beginning of 3.3.1 bugfix git-svn-id: file:///home/job/svnrepo/trunk/vasputil@36
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2006-03-29  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, Makefile, NEWS, README, src/poscar_io.f90,
+	src/sc_file_convert.f90, src/supercell_core.f90,
+	src/supercell_generator.f90, src/supercell_io.f90,
+	src/supercell_measure.f90, src/supercell_modify.f90,
+	src/supercell_utils.f90, src/vasputil.f90: Src directory
+	reorganization git-svn-id: file:///home/job/svnrepo/trunk/vasputil@33
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2005-12-21  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* NEWS: Update date of vasputil 3.2 release.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@22
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2005-12-21  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* ChangeLog, NEWS, src/supercell_core.f90, src/supercell_io.f90: 
+	Final changes for vasputil 3.2 git-svn-id: file:///home/job/svnrepo/trunk/vasputil@21
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2005-12-15  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* depend.mk: Removing automatically generated file from repo.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@20
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2005-12-15  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* doc/vasputil.css, doc/vasputil.html: Yet more automatically
+	generated stuff removed from repo.  git-svn-id: file:///home/job/svnrepo/trunk/vasputil@19
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2005-12-15  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* .cvsignore, Makefile, doc/vasputil.html: Some more administrative
+	gunk git-svn-id: file:///home/job/svnrepo/trunk/vasputil@18
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2005-12-15  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* : Removed vasputil binary from CVS git-svn-id: file:///home/job/svnrepo/trunk/vasputil@17
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2005-12-15  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* src/conf.lst, src/f2kcli.lst, src/f77_lapack.lst,
+	src/f95_lapack.lst, src/geometry.lst, src/kind_params.lst,
+	src/la_auxmod.lst, src/la_dgesdd.lst, src/la_dgesv.lst,
+	src/la_erinfo.lst, src/la_precision.lst, src/lattice.lst,
+	src/mathconst.lst, src/supercell_core.lst, src/supercell_io.lst,
+	src/vasputil.lst: Removing src/*.lst and src/*.mod git-svn-id: file:///home/job/svnrepo/trunk/vasputil@16
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2005-12-15  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* Makefile, doc/vasputil.html, src/conf.lst, src/f2kcli.lst,
+	src/f77_lapack.lst, src/f95_lapack.lst, src/geometry.lst,
+	src/kind_params.lst, src/la_auxmod.lst, src/la_dgesdd.lst,
+	src/la_dgesv.lst, src/la_erinfo.lst, src/la_precision.lst,
+	src/lattice.lst, src/mathconst.lst, src/supercell_core.lst,
+	src/supercell_io.lst, src/vasputil.lst: Some changes to Makefile git-svn-id: file:///home/job/svnrepo/trunk/vasputil@15
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
+2005-12-15  job <job@b0c3e244-3a7d-4e07-9544-620d84adf7a0>
+
+	* Initial revision git-svn-id: file:///home/job/svnrepo/trunk/vasputil@11
+	b0c3e244-3a7d-4e07-9544-620d84adf7a0
+
