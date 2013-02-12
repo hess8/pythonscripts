@@ -32,11 +32,18 @@
 
 import pylab as p
 import numpy as n
+import matplotlib
+import matplotlib.backends.backend_tkagg
+import matplotlib.backends.backend_gtk
+#import matplotlib.backends.backend_gtk3agg
 p.ion()
-p.figure(1)
+p.interactive(True)
+fig = p.figure()
 a = n.array([1,2,3])
 p.clf()
 p.plot(a)
+p.draw()
 p.show()
-
-
+print p.get_backend()
+#raw_input()
+#matplotlib.interactive()

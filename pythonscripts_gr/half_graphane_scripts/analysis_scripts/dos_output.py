@@ -1,8 +1,8 @@
 #Specify Directory to use
 #mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
-#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
-mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
+mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
+#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
 
 isolatedDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/electron_relax/'
 
@@ -45,12 +45,9 @@ import numpy as np
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
 from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  \
     writeElements, nstrip, writeDistances, writeCCDistances, \
-    FinishCheck, writeElSteps, writeElConverge
-
+    FinishCheck, writeElSteps, writeElConverge, getElement
 
 run = runName
-
-
 
 print('\nInitializing...\n')
 print('Finding Directories to do %s on\n' % run)
@@ -91,14 +88,15 @@ print 'writeElSteps', os.getcwd()
 ###### plot DOS #####
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts/plotting/')
 print 'Plotting DOS'
-from vasputil_dosplot_fun import vasputil_dosplot 
+from plotTools import vasputil_dosplot, collate_plots
 for path in checkedList:
     try:
         vasputil_dosplot([], ["DOSCAR"], path) #options, args, dir
     except:
         print 'Fail:'+ path
 print 'Collating plots'
-    collate
+os.chdir(mainDir)
+collate_plots(checkedList,'dos.png')
 
 ################# summary spreadsheet #################
 #Open data files

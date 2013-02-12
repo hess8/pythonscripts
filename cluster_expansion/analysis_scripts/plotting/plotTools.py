@@ -1,12 +1,44 @@
 
-def collate_plots(checkedlist,plotName):
+def collate_plots(checkedList,plotName):
+    import sys, os, subprocess
+    import numpy as num
+    sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
+    from analysisTools import getElement
+    
     '''Creates an HTML page with the plots and labels'''
-    collatefile  = open('plots.htm','w')
-    for ielement,ipath in enumerate(checkedList):
+    if not os.path.exists('plots'):
+        subprocess.call(['mkdir','plots'])
+    nRow = 7  # put in periodic table order, with duplicates at end
+    plotType = plotName.split('.')[-2]
+    print plotType
+    collatefile  = open('%splots.htm' % plotType,'w')
+    collatefile.write(' <html>\n <HEAD>\n<TITLE> %s </TITLE>\n</HEAD>\n' % plotType)
+    collatefile.write(' <BODY>\n <p style="font-size:20px"> <table border="1">\n <tr>\n') #start row
+    iImage = 0        
+    for path in checkedList:
+        element = getElement('adatom_',path)
+        elementPlotName = element + plotName
+        try: 
+            subprocess.call(['cp','%s%s' % (path,plotName),'plots/'+elementPlotName])     
+        except:
+            print 'copy plot failed', path      
+        if not element in ['Cr_pv', 'Mn_pv']: # don't want these in first table
+            iImage += 1            
+            collatefile.write('<td><p><img src="plots/%s" ></p><p>%s</p></td>\n' % (elementPlotName,element))#Image and element under it
+            if num.mod(iImage,nRow) == 0: 
+                collatefile.write('</tr>\n<tr>\n') #end of row, begin new
+    collatefile.write(' </tr></table> \n') #end of row and table                
+    for path in checkedList:
         #get element name
-        element = getElement('adatom_',ipath)
-        elemfile.write(element +'\n')
-    elemfile.close()
+        element = getElement('adatom_',path)
+        elementPlotName = element + plotName              
+        if element  in ['Cr_pv', 'Mn_pv']: # put these last            
+            collatefile.write('<td><p><img src="plots/%s" ></p><p>%s</p></td>\n' % (elementPlotName,element))#Image and element under it  
+    collatefile.write(' </BODY> </html>') #end of file 
+    collatefile.close() 
+
+
+    
 def vasputil_dosplot(options, args, dir):
 #!/usr/bin/python
 # -*- coding: utf-8 -*-

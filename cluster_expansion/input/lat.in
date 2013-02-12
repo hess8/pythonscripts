@@ -1,0 +1,49 @@
+#
+# This file contains the basic information about the lattice
+#
+#--------------------------------------------------------------------------------
+# General information
+# - name of the system
+# - type of CE: bulk / surface / adsorbate
+# - rank of CE: 1 / 2 / 3
+# - number of observables of CE: 1 
+# - epsilon for finite precision checking of real space coordinates
+#
+fcc parent lattice input for new CE
+bulk
+2  #binary
+1  #observables (energy here)
+.001  #epsilon accuracy parameter
+#
+#--------------------------------------------------------------------------------
+# Lattice information
+# - lattice vectors in cartesian coordinates:
+#   * a1
+#   * a2
+#   * a3
+# - basis (aka dvectors)
+#   * number of dvectors
+#   * coordinate system of dvectors: direct / cartesian
+#   * for each dvector: 3 coordinates
+#
+# |--- fcc ---| ## |--- bcc ---| |--- sc ---| |---------- hcp ----------|
+   .5 .5 0      ##  -.5  .5  .5   1. 0. 0.     1.  0.       0.
+   0 .5 .5      ##   .5  .5 -.5   0. 0. 1.     0.  0.       1.63			  
+   .5 0. .5     ##   .5 -.5  .5   0. 1. 0.     0.5 0.866025 0. 	  
+   1            ##  1             1            2			  
+   direct       ##  direct        direct       direct			  
+   0. 0. 0.     ##  0. 0. 0.      0. 0. 0.     0. 0. 0.             
+   #            ##  #             #            .333333333 .333333333 .5     
+#
+#--------------------------------------------------------------------------------
+# Number pairs, triplets, 4-bodies...
+@N2BODY @N3BODY @N4BODY @N5BODY @N6BODY 0 0 0 0 0 0
+#
+#--------------------------------------------------------------------------------
+# Number of references
+# default: 0
+0  #no changes needed
+#
+#--------------------------------------------------------------------------------
+# GSS span (obsolete, not read in)
+2 4 #no changes needed

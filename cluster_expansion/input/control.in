@@ -1,0 +1,17 @@
+#
+#
+#   Realspace input generator for UNCLE
+#
+#   Project name:
+UNCLE test input
+#
+#   Options:
+#   1 - generate figures only
+#   2 - generate figures, read input structures and calculate correlations
+#   3 - Do all of 2 and then make a fit
+#   4 - Enumerate superstructures of a given parent lattice
+#   5 - Calculate energies for all structures in struct_enum.out
+#   6 - Perform MC simulation 
+3
+#
+#
