@@ -9,23 +9,17 @@ def nstrip(list):
         list2.append(string2)
     return list2
 
-class VaspTools:
+class ceTools:
 
-    def __init__(self,mainFolder,runname,runtype,poscar,kpoints,incar,potcar,
-        poscarvar,kpointsvar,incarvar,potcarvar,potcardir,toCheckList, 
+    def __init__(self,mainFolder,runname,runtype,csInFile,latInFile,csInVar,latInVar,toCheckList, 
         checkedList, toRunList ):
         self.MainFolder = mainFolder
         self.RunName = runname
         self.RunType = runtype
-        self.Poscar = poscar
-        self.PoscarVars = poscarvar
-        self.Kpoints = kpoints
-        self.KpointsVars = kpointsvar
-        self.Incar = incar
-        self.IncarVars = incarvar
-        self.Potcar = potcar
-        self.PotcarVars = potcarvar
-        self.PotcarDir = potcardir    
+        self.CsInFile = csInFile 
+        self.LatInFile = latInFile
+        self.CsInVar = CsInVar  
+        self.LatInVar = latInVar         
         self.FolderList = []
         self.TotalRuns = 0
         self.ToCheckList = toCheckList
@@ -47,19 +41,19 @@ class VaspTools:
             except OSError:
                 os.system('mkdir %s' % folder)
                 os.chdir(folder)
-        self.DescendPotcar(self.PotcarVars) 
+        self.DescendCsIn(self.CsInVars) 
         print "Total Number of run folders created:"
         print self.TotalRuns
         
-    def DescendPotcar(self,varmap): #varmap is elementlist. Creates run folder if needed
+    def DescendCsIn(self,varmap): #"outer loop" of file structure. Creates run folder if needed
         varmap = copy.deepcopy(varmap)        
-        if not (os.path.isfile('POTCAR')):
+        if not (os.path.isfile('CS.in')):
             try:
-                os.system('cp %s %s' % (self.Potcar,'POTCAR' ))
+                os.system('cp %s %s' % (self.CsInFile,'CS.in' ))
             except:
-                print "File system error trying to create Potcar"               
+                print "File system error trying to create CsInFile"               
         if len(varmap) == 0:
-            self.DescendPoscar(self.PoscarVars) 
+            self.DescendLatIn(self.LatInrVars) 
             return           
         key = varmap.items()[0][0]
         label = key[1:] #keyword @adatom        
@@ -72,23 +66,23 @@ class VaspTools:
                 os.system('mkdir %s' % str(label) + '_' + str(option))
                 os.chdir(str(label) + '_' + str(option))
             try:
-                os.system("cp ../POTCAR .")
+                os.system("cp ../CS.in .")
             except:
                 print 'File system error'
-            self.AlterPotcar(option,key)
-            self.DescendPotcar(copy.deepcopy(varmap))
+            self.AlterCsIn(option,key)
+            self.DescendCsIn(copy.deepcopy(varmap))
             os.chdir('..')
         try:
-            os.system('rm POTCAR')
+            os.system('rm CS.in')
         except:
             print "File system error\n"
                             
-    def DescendPoscar(self,varmap):
+    def DescendLatIn(self,varmap):
         varmap = copy.deepcopy(varmap)
         
         if not (os.path.isfile('POSCAR')):
             try:
-                os.system('cp %s %s' % (self.Poscar,'POSCAR' ))
+                os.system('cp %s %s' % (self.LatInfile,'POSCAR' ))
             except:
                 print "File system error"                
         if len(varmap) == 0:
@@ -106,15 +100,15 @@ class VaspTools:
                 os.chdir(str(label) + '_' + str(option))
             try:
                 os.system("cp ../POSCAR .")
-                os.system("cp ../POTCAR .")
+                os.system("cp ../CS.in .")
             except:
                 print 'File system error'
             self.AlterFile("POSCAR",key,option)
-            self.DescendPoscar(copy.deepcopy(varmap))
+            self.DescendLatIn(copy.deepcopy(varmap))
             os.chdir('..')
         try:
             os.system('rm POSCAR')
-            os.system('rm POTCAR')
+            os.system('rm CS.in')
         except:
             print "File system error"
             
@@ -141,7 +135,7 @@ class VaspTools:
             try:
                 os.system("cp ../KPOINTS .")
                 os.system("cp ../POSCAR .")
-                os.system("cp ../POTCAR .")
+                os.system("cp ../CS.in .")
             except:
                 print 'File system error'
             self.AlterFile("KPOINTS",key,option)
@@ -150,7 +144,7 @@ class VaspTools:
         try:
             os.system('rm KPOINTS')
             os.system('rm POSCAR')
-            os.system('rm POTCAR')
+            os.system('rm CS.in')
         except:
             print "File system error"
                         
@@ -170,7 +164,7 @@ class VaspTools:
             os.system('mv INCAR %s' % (self.RunName + '/INCAR' ))
             os.system('mv KPOINTS %s' % (self.RunName + '/KPOINTS'))
             os.system('mv POSCAR %s' % (self.RunName + '/POSCAR'))
-            os.system('mv POTCAR %s' % (self.RunName + '/POTCAR'))
+            os.system('mv CS.in %s' % (self.RunName + '/CS.in'))
             return            
         key = varmap.items()[0][0]
         label = key[1:]
@@ -186,7 +180,7 @@ class VaspTools:
                 os.system("cp ../INCAR .")
                 os.system("cp ../KPOINTS .")
                 os.system("cp ../POSCAR .")
-                os.system("cp ../POTCAR .")
+                os.system("cp ../CS.in .")
             except:
                 print 'File system error'
             self.AlterFile("INCAR",key,option)
@@ -196,7 +190,7 @@ class VaspTools:
             os.system('rm INCAR')
             os.system('rm KPOINTS')
             os.system('rm POSCAR')
-            os.system('rm POTCAR')
+            os.system('rm CS.in')
         except:
             print "File system error"
 
@@ -216,11 +210,11 @@ class VaspTools:
             print "This is likely due to " + frommatch + " tag not being present in the file."
             print tomatch
 
-    def AlterPotcar(self,element,tag):
+    def AlterCsIn(self,element,tag):
         curdir = os.getcwd()
-        dir2 = self.PotcarDir+'/'+element+'/'
+        dir2 = self.CsInFileDir+'/'+element+'/'
         os.chdir(dir2)        
-        file=open("POTCAR",'r')
+        file=open("CS.in",'r')
         file2=file.readlines()
         file.close()
         file2string=""
@@ -229,16 +223,16 @@ class VaspTools:
         os.chdir(curdir)
         import re
         try:
-            fileread = open('POTCAR','r')
+            fileread = open('CS.in','r')
             text = fileread.read()
             fileread.close()
-            filewrite = open('POTCAR','w')
+            filewrite = open('CS.in','w')
             regex = re.compile(str(tag))
             text = regex.sub(str(file2string),text)
             filewrite.write(text)
             filewrite.close()
         except:            
-            print "There was an error in processing file " + dir2+"POTCAR"+'/'
+            print "There was an error in processing file " + dir2+"CS.in"+'/'
             print "This is likely due to " + frommatch + " tag not being present in the file."
             print tomatch
 

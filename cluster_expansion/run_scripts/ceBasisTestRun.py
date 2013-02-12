@@ -1,68 +1,57 @@
 ''' For isolated atoms '''
 ################## Directories ################## 
 #Specify Directories to use
-mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/"
-#vasp input directory
+mainDir = "/fslhome/bch/cluster_expansion/cluster_size_test/agpt/"
+# input files directory
 a = mainDir.split('/')
 del a[-2]  #removes last part of path 
-inputDir = '/'.join(a) + 'vasp.input/'
+inputDir = '/'.join(a) + 'input/'
 
-bmix = '0.001'
-#Specify Potcar Directory
-potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
 
 #Specify the type of run
-runType = ['electron_relax']
+runType = ['nclu_ntra']
 #runType = ['test']
 
 #Specify the name of the type of run
-runName = "relaxation"
+runName = "run_10_15" #make clusters
 
-#Specify a Poscar file
-poscar = inputDir + 'poscar/isolatedrun.poscar'
+#Specify a lat.in file
+latInFile = inputDir + 'lat.in'
 
-#Specify a KPoints file
-kpoints = inputDir + 'kpoints/isolatedrun.kpoints'
-
-#Specify an Incar file
-incar = inputDir + 'incar/isolatedrun.incar'
-
-#Specify a Potcar file
-potcar = inputDir + 'potcar/isolatedrun.potcar'
+#Specify a CS.in file
+csInFile = inputDir + 'SC.in'
 
 ################## Variables ################## 
 
-#Specify Poscar variables
-poscarVariables = {
-}
+#csInVariables = {
+#                  '@NFITSTRUC':[4,8,16,32,64,128,256,512,1024],
+#                  '@NFITS':[10]
+#                  }
 
-#Specify KPoints variables
-kpointVariables = {
-}
+csInVariables = {
+                  '@NFITSTRUC':[64,128],
+                  '@NFITS':[10]
+                  }
 
-#Specify Incar variables
-incarVariables = {
-}
+#latInVariables = {
+#                  '@N2BODY':[4,16,64,256,1024],
+#                  '@N3BODY':[4,16,64,256,1024],
+#                  '@N4BODY':[4,16,64,256,1024],
+#                  '@N5BODY':[4,16,64,256,1024],
+#                  '@N6BODY':[4,16,64,256,1024],
+#                
 
+latInVariables = {
+                  '@N2BODY':[4,16],
+                  '@N3BODY':[4,16],
+                  '@N4BODY':[4,16],
+                  '@N5BODY':[4,16],
+                  '@N6BODY':[4,16],
+                  }
 
-
-elementList = {
-'@adatom':
-[
-'Co','Cr','Cr_pv','Fe','Hf','Ir','Mn','Mn_pv','Mo','Nb_pv','Ni','Os',
-'Pd','Pt','Re','Rh','Ru','Ta','Tc','Ti','V','W','Zr'
-]
-}
-
-#elementList = {
-#'@adatom':
-#[
-#"Os"
-#]
-#}
 
 ################## Build run folders ################## 
-import scriptTools
+import crScriptTools
 
 toCheckList = []
 checkedList = []
