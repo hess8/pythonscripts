@@ -9,17 +9,17 @@ inputDir = '/'.join(a) + 'input/'
 
 
 #Specify the type of run
-runType = ['nclu_ntra']
-#runType = ['test']
+runtype = 'ncl_ntr'
+#runtype = ['test']
 
 #Specify the name of the type of run
-runName = "run_10_15" #make clusters
+runname = 'run_10_15' #make clusters
 
 #Specify a lat.in file
 latInFile = inputDir + 'lat.in'
 
 #Specify a CS.in file
-csInFile = inputDir + 'SC.in'
+csInFile = inputDir + 'CS.in'
 
 ################## Variables ################## 
 
@@ -28,37 +28,37 @@ csInFile = inputDir + 'SC.in'
 #                  '@NFITS':[10]
 #                  }
 
-csInVariables = {
-                  '@NFITSTRUC':[64,128],
-                  '@NFITS':[10]
-                  }
+csInVariables = [
+                 ['@NFITSTRUC','CS.in',[64,128]],
+                 ['@NFITS','CS.in',[10]]
+                  ]
 
 #latInVariables = {
-#                  '@N2BODY':[4,16,64,256,1024],
+#                  '@N2BODY':['CS.in'4,16,64,256,1024],
 #                  '@N3BODY':[4,16,64,256,1024],
 #                  '@N4BODY':[4,16,64,256,1024],
 #                  '@N5BODY':[4,16,64,256,1024],
 #                  '@N6BODY':[4,16,64,256,1024],
 #                
 
-latInVariables = {
-                  '@N2BODY':[4,16],
-                  '@N3BODY':[4,16],
-                  '@N4BODY':[4,16],
-                  '@N5BODY':[4,16],
-                  '@N6BODY':[4,16],
-                  }
+clusterlist = [4,16]
+latInVariables = [
+                  ['@N2BODY','lat.in',clusterlist],
+                  ['@N3BODY','lat.in',clusterlist],
+                  ['@N4BODY','lat.in',clusterlist],
+                  ['@N5BODY','lat.in',clusterlist],
+                  ['@N6BODY','lat.in',clusterlist]                
+                  ]
 
+inputlist = [csInVariables,latInVariables]
 
 ################## Build run folders ################## 
-import crScriptTools
+import ceScriptTools
 
 toCheckList = []
 checkedList = []
 toRunList = []
-tools = scriptTools.VaspTools(mainDir,runName,runType,poscar,kpoints,incar,
-	potcar,poscarVariables,kpointVariables,incarVariables,elementList,potcardir,
-	toCheckList, checkedList, toRunList)
+tools = ceScriptTools.ceTools(mainDir,inputDir,runname,runtype,inputlist,toCheckList,checkedList,toRunList)
 tools.BuildNewRun() #create folders
 
 raw_input("Press enter to submit jobs")

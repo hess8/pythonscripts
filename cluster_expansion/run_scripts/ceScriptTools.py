@@ -11,15 +11,12 @@ def nstrip(list):
 
 class ceTools:
 
-    def __init__(self,mainFolder,runname,runtype,csInFile,latInFile,csInVar,latInVar,toCheckList, 
-        checkedList, toRunList ):
-        self.MainFolder = mainFolder
+    def __init__(self,mainDir,inputDir,runname,runtype,inputlist,toCheckList,checkedList, toRunList ):
+        self.MainDir = mainDir
+        self.InputDir = inputDir
         self.RunName = runname
         self.RunType = runtype
-        self.CsInFile = csInFile 
-        self.LatInFile = latInFile
-        self.CsInVar = CsInVar  
-        self.LatInVar = latInVar         
+        self.InputList = inputlist       
         self.FolderList = []
         self.TotalRuns = 0
         self.ToCheckList = toCheckList
@@ -34,16 +31,39 @@ class ceTools:
                 self.AddToList(folder+path+"/")        
     
     def BuildNewRun(self):
-        os.chdir(self.MainFolder)
-        for folder in self.RunType:
-            try:
-                os.chdir(folder)
-            except OSError:
-                os.system('mkdir %s' % folder)
-                os.chdir(folder)
-        self.DescendCsIn(self.CsInVars) 
+        os.chdir(self.MainDir)
+#        folder 
+#        try:
+#            os.chdir(folder)
+#        except OSError:
+#            os.system('mkdir %s' % folder)
+#            os.chdir(folder)
+        self.DirLoop(self.InputList) 
         print "Total Number of run folders created:"
         print self.TotalRuns
+        
+    def DirLoop(self,inputlist):
+        junk1 = {'@NFITSTRUC': [64, 128], '@NFITS': [10]}
+        junk2 = {'@N5BODY': [4, 16], '@N2BODY': [4, 16], '@N4BODY': [4, 16], '@N3BODY': [4, 16], '@N6BODY': [4, 16]}
+        
+
+        
+#        filesIn = inputlist[0] #list of file paths
+#        varsIn = inputlist[1] #list of dictionaries with tag, values
+        path1 = self.MainDir+self.RunType+'/'
+        os.system('mkdir %s' % path1)
+        os.chdir(path1)
+        varSets= []
+        for list1 in inputlist:
+            varSets = varSets + list1  #flatten the inputlist. Each  is of the form  ['@NFITSTRUC','CS.in',[64,128]],  Includes tag and file, vars
+        for list2 in varSets:
+            self.DescendOption(list2)
+            
+
+                        
+    def DescendOption(self,list): #"outer loop" of file structure. Creates run folder if needed
+        
+
         
     def DescendCsIn(self,varmap): #"outer loop" of file structure. Creates run folder if needed
         varmap = copy.deepcopy(varmap)        
@@ -53,12 +73,19 @@ class ceTools:
             except:
                 print "File system error trying to create CsInFile"               
         if len(varmap) == 0:
-            self.DescendLatIn(self.LatInrVars) 
-            return           
-        key = varmap.items()[0][0]
-        label = key[1:] #keyword @adatom        
-        varlist = varmap[key]
-        del varmap[key]
+            self.DescendLatIn(self.LatInrvar) #next loop
+            return    
+        print varmap#       
+        options = varmap.keys()
+        print options
+        values = varmap.values()
+        print values
+#        label = key[1:] #everything after first @
+#        print label#
+#        varlist = varmap[key]
+#        print varlist#
+#        del varmap[key]
+        print varmap
         for option in varlist:
             try:
                 os.chdir(str(label) + '_' + str(option))
@@ -80,13 +107,13 @@ class ceTools:
     def DescendLatIn(self,varmap):
         varmap = copy.deepcopy(varmap)
         
-        if not (os.path.isfile('POSCAR')):
+        if not (os.path.isfile('lat.in')):
             try:
-                os.system('cp %s %s' % (self.LatInfile,'POSCAR' ))
+                os.system('cp %s %s' % (self.LatInfile,'lat.in' ))
             except:
                 print "File system error"                
         if len(varmap) == 0:
-            self.DescendKpoints(self.KpointsVars)
+            #self.DescendKpoints(self.Kpointsvar)
             return            
         key = varmap.items()[0][0]
         label = key[1:]
@@ -99,15 +126,15 @@ class ceTools:
                 os.system('mkdir %s' % str(label) + '_' + str(option))
                 os.chdir(str(label) + '_' + str(option))
             try:
-                os.system("cp ../POSCAR .")
+                os.system("cp ../lat.in .")
                 os.system("cp ../CS.in .")
             except:
                 print 'File system error'
-            self.AlterFile("POSCAR",key,option)
+            self.AlterFile("lat.in",key,option)
             self.DescendLatIn(copy.deepcopy(varmap))
             os.chdir('..')
         try:
-            os.system('rm POSCAR')
+            os.system('rm lat.in')
             os.system('rm CS.in')
         except:
             print "File system error"
@@ -120,7 +147,7 @@ class ceTools:
             except:
                 print "File system error"                
         if len(varmap) == 0:
-            self.DescendIncar(self.IncarVars)
+            self.DescendIncar(self.Incarvar)
             return            
         key = varmap.items()[0][0]
         label = key[1:]
@@ -134,7 +161,7 @@ class ceTools:
                 os.chdir(str(label) + '_' + str(option))
             try:
                 os.system("cp ../KPOINTS .")
-                os.system("cp ../POSCAR .")
+                os.system("cp ../lat.in .")
                 os.system("cp ../CS.in .")
             except:
                 print 'File system error'
@@ -143,7 +170,7 @@ class ceTools:
             os.chdir('..')
         try:
             os.system('rm KPOINTS')
-            os.system('rm POSCAR')
+            os.system('rm lat.in')
             os.system('rm CS.in')
         except:
             print "File system error"
@@ -163,7 +190,7 @@ class ceTools:
             os.system('mkdir %s' % self.RunName)
             os.system('mv INCAR %s' % (self.RunName + '/INCAR' ))
             os.system('mv KPOINTS %s' % (self.RunName + '/KPOINTS'))
-            os.system('mv POSCAR %s' % (self.RunName + '/POSCAR'))
+            os.system('mv lat.in %s' % (self.RunName + '/lat.in'))
             os.system('mv CS.in %s' % (self.RunName + '/CS.in'))
             return            
         key = varmap.items()[0][0]
@@ -179,7 +206,7 @@ class ceTools:
             try: #copy input files from previous level
                 os.system("cp ../INCAR .")
                 os.system("cp ../KPOINTS .")
-                os.system("cp ../POSCAR .")
+                os.system("cp ../lat.in .")
                 os.system("cp ../CS.in .")
             except:
                 print 'File system error'
@@ -189,7 +216,7 @@ class ceTools:
         try:
             os.system('rm INCAR')
             os.system('rm KPOINTS')
-            os.system('rm POSCAR')
+            os.system('rm lat.in')
             os.system('rm CS.in')
         except:
             print "File system error"
@@ -210,9 +237,9 @@ class ceTools:
             print "This is likely due to " + frommatch + " tag not being present in the file."
             print tomatch
 
-    def AlterCsIn(self,element,tag):
+    def AlterCsIn(self,option,tag):
         curdir = os.getcwd()
-        dir2 = self.CsInFileDir+'/'+element+'/'
+        dir2 = self.CsInFile+'/'+option+'/'
         os.chdir(dir2)        
         file=open("CS.in",'r')
         file2=file.readlines()
@@ -295,42 +322,8 @@ class ceTools:
         #check vs NSW
         proc = subprocess.Popen(['grep','-i','NSW',self.CheckedList[0]+'/INCAR'],stdout=subprocess.PIPE)
         NSW = int(proc.communicate()[0].split('=')[-1])
-        return steps < NSW # True/False
+        return steps < NSW # True/False      
 
-        
-        
-    def addHToPOSCAR(self,path,HAdDist):
-       '''Takes a POSCAR (in CONTCAR direct coordinates), and adds an H above the adatom (last line)'''
-       file=open(path + 'POSCAR','r')
-       lines=file.readlines()
-       file.close()
-       if len(lines) == 0:
-       	   return
-#       #add H to element list  #only needed if H is not already there
-       try:
-           elemsString = lines[5]
-       except:
-       	return
-#       len1 = len(elemsString)
-#       elem = elemsString.split()[-1]
-#       lenelem = len(elem) # last element (adatom) string
-#       newstr = elemsString[:len1-lenelem-2]+'H   '+ elem +'\n'#adds H in element list
-#       lines[5] = newstr
-#       #add to numbers of atoms
-       lines[6] ='    2     2     1\n'  # 2 replaces 1 in 2nd (H) spot, in 6th line
-       #add position of new H (must scale position to direct coordinates)
-       repeatz = float(lines[4].split()[-1])
-       newHz = str(float(lines[11].split()[2])+HAdDist/repeatz)
-       newHline = '  '+ lines[11].split()[0]+'  '+lines[11].split()[1] +'  ' + newHz+'\n'
-       list1 = lines[0:12] #includes up to 11
-       list1.insert(11,newHline) #inserts after 11
-       #replace old POSCAR
-       file=open(path + 'POSCAR','w')
-       for i, linei in enumerate(list1):
-           file.writelines(linei)
-       file.close()
-       return                
-    
     def replaceParamIncar(self,pathlist, param, value):
         """Replaces a parameter value in Incar with a new value"""
         lastfolder = os.getcwd()
