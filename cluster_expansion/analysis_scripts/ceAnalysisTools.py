@@ -1,4 +1,4 @@
-import os, string, subprocess, math
+import os, string, subprocess, math, numpy as np
 
 def addToList(folder,toCheckList):
     files = os.listdir(folder)
@@ -15,6 +15,23 @@ def checkFolders(toCheckList,checkedList,run):
             checkedList.append(path)
     return checkedList            
             
+def fillRunArray(checkedList):
+    '''Multidimensional array with results of runs:  runArray[nstruc, n2body,growvar] '''
+    dim_nstruc = 4  #these need to match run dimensions
+    dim_n2body = 10
+    dim_growvar = 5
+    runArray = np.zeros((dim_nstruc,dim_n2body,dim_growvar), dtype=float) 
+    print 'runArray done'
+    for path in checkedList:
+        getNFits(path)
+        os.chdir(path)
+        resultsfile = open('results.out','r')
+        results = resultsfile.readlines(1:) #remove header
+        
+def getNfits(path):
+    if 'nfits' in        
+        
+    
 def writeEnergiesOszicar(checkedList):           
     lastfolder = os.getcwd()
     enerfile = open('energies','w')

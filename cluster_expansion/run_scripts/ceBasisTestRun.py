@@ -106,10 +106,11 @@ for folder in toRunList:
     jobData = '#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=4gb,walltime=4:00:00\n#PBS -N ' + jobname +'\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n' + execLines + 'date > finish.txt \n exit 0'
     file.write(jobData)
     file.close()
-print '%s jobs will be submited' % len(toRunList)
+print '%s jobs will be submitted' % len(toRunList)
 raw_input('Press enter to submit jobs')
 
 for folder in toRunList:
     os.chdir(folder)
     subprocess.check_call(['qsub','job']) #waits to get response 
+    time.sleep(1)
 print 'Done with submitting jobs'
