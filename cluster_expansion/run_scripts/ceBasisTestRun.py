@@ -6,11 +6,10 @@ mainDir = '/fslhome/bch/cluster_expansion/cluster_size_test/agpt/'
 a = mainDir.split('/')
 del a[-2]  #removes last part of path 
 inputDir = '/'.join(a) + 'input/'
-
+vaspDataDir = mainDir+'vasp_data/'
 
 #Specify the type of run
 runtype = 'ncl_ntr'
-
 
 #Specify the name of the type of run
 uncleParam = [10,15]
@@ -26,35 +25,33 @@ csInFile = inputDir + 'CS.in'
 
 ################## Variables ################## 
 
-#csInVariables = {
-#                  '@NFITSTRUC':[4,8,16,32,64,128,256,512,1024],
-#                  '@NFITS':[10]
-#                  }
+#                
+
+clusterlist = [4,8,16,32,64,128,256,512,1024,2048] 
+#clusterlist = [4,8,16,32] #,64,128,256,512,1024,2048] 
+#latInVariables = [
+#                  ['@N2BODY','lat.in',clusterlist],
+#                  ['@N3BODY','lat.in',clusterlist],
+#                  ['@N4BODY','lat.in',clusterlist],
+#                  ['@N5BODY','lat.in',clusterlist],
+#                  ['@N6BODY','lat.in',clusterlist]                
+#                  ]
+
+latInVariables = [
+                  ['@N2BODY','lat.in',clusterlist] #will calculate others from growVars                              
+                  ]
+
+growVariables = [
+                  ['*grow','lat.in',[0.56,0.76,1.0,1.3,1.8,]]  #for finding n3body, etc...                              
+                  ] # use anything but @ for calculated value
+
 
 csInVariables = [
-                 ['@NFITSTRUC','CS.in',[64,128]],
+                 ['@NFITSTRUC','CS.in',[64,128,256,512]],
                  ['@NFITS','CS.in',[10]]
                   ]
 
-#latInVariables = {
-#                  '@N2BODY':['CS.in'4,16,64,256,1024],
-#                  '@N3BODY':[4,16,64,256,1024],
-#                  '@N4BODY':[4,16,64,256,1024],
-#                  '@N5BODY':[4,16,64,256,1024],
-#                  '@N6BODY':[4,16,64,256,1024],
-#                
-
-#clusterlist = [4,16]
-clusterlist = [4]
-latInVariables = [
-                  ['@N2BODY','lat.in',clusterlist],
-                  ['@N3BODY','lat.in',clusterlist],
-                  ['@N4BODY','lat.in',clusterlist],
-                  ['@N5BODY','lat.in',clusterlist],
-                  ['@N6BODY','lat.in',clusterlist]                
-                  ]
-
-inputlist = [csInVariables,latInVariables]
+inputlist = [csInVariables,latInVariables,growVariables]
 
 ################## Build run folders ################## 
 import ceScriptTools
@@ -62,8 +59,10 @@ import ceScriptTools
 toCheckList = []
 checkedList = []
 toRunList = []
-tools = ceScriptTools.ceTools(mainDir,inputDir,runname,runtype,inputlist,toCheckList,checkedList,toRunList)
+tools = ceScriptTools.ceTools(mainDir,inputDir,vaspDataDir,runname,runtype,inputlist,toCheckList,checkedList,toRunList)
+print 'Building run'
 tools.BuildNewRun() #create folders
+
 
 import os,subprocess,time,sys, shutil
 
@@ -76,8 +75,8 @@ tools.AddToList(dir)
 print('Checking to see which folders contain '+runname+'\n')
 tools.CheckFolders()
 #checkedList = sorted(checkedList)
-toRunList=checkedList #run all folders for convergence checks
-
+#toRunList=checkedList  
+toRunList = tools.RemoveBadRuns(checkedList) #Removes folders from list and deletes if number of structures is greater than number of clusters
 print '\nThe following folders are in checkedList:'
 for i in checkedList:
     print('checkedList contains : ' + i)
@@ -104,10 +103,10 @@ print execLines
 for folder in toRunList:
     os.chdir(folder)
     file = open(folder+'job','w+')    
-    jobData = '#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=1gb,walltime=1:00:00\n#PBS -N ' + jobname +'\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n cd \'$PBS_O_WORKDIR\'\n' + execLines + 'date > finish.txt \n exit 0'
+    jobData = '#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=4gb,walltime=4:00:00\n#PBS -N ' + jobname +'\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n' + execLines + 'date > finish.txt \n exit 0'
     file.write(jobData)
     file.close()
-
+print '%s jobs will be submited' % len(toRunList)
 raw_input('Press enter to submit jobs')
 
 for folder in toRunList:

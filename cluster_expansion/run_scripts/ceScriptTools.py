@@ -11,9 +11,10 @@ def nstrip(list):
 
 class ceTools:
 
-    def __init__(self,mainDir,inputDir,runname,runtype,inputlist,toCheckList,checkedList, toRunList ):
+    def __init__(self,mainDir,inputDir,vaspDataDir, runname,runtype,inputlist,toCheckList,checkedList, toRunList ):
         self.MainDir = mainDir
         self.InputDir = inputDir
+        self.VaspDataDir = vaspDataDir
         self.RunName = runname
         self.RunType = runtype
         self.InputList = inputlist       
@@ -22,6 +23,13 @@ class ceTools:
         self.ToCheckList = toCheckList
         self.CheckedList = checkedList
         self.ToRunList = toRunList
+        self.nstruc = 0
+        self.nfit = 0 
+        self.n2 = 0 
+        self.n3 = 0 
+        self.n4 = 0 
+        self.n5 = 0 
+        self.n6 = 0       
        
     def AddToList(self,folder):
         files = os.listdir(folder)
@@ -44,10 +52,9 @@ class ceTools:
         for list1 in varSets:
             inputpath = self.InputDir+list1[1] #file path
             os.system('cp '+ inputpath + ' .')         # copy inputfiles to first level
-        self.DescendOption(varSets) 
+        self.DescendOption(varSets)
         print "Number of run folders created:", self.DirsCreated
-
-                        
+ 
     def DescendOption(self,listRemain):
         '''Creates dir structure if needed and copies input files into run folders'''
         if len(listRemain) == 0: #done
@@ -56,17 +63,19 @@ class ceTools:
                 return
             self.DirsCreated += 1
             os.system('mkdir %s' % self.RunName)
-            os.system('ls')
-            os.system('mv *.in %s/' % self.RunName)                                  
+            os.system('mv *.in %s/' % self.RunName)
+#            print 'copy',  self.VaspDataDir, os.getcwd()
+            os.system('cp %s* %s/' % (self.VaspDataDir,self.RunName))    #move structure data from vasp to run folder                                                     
             return               
         tempList = listRemain[0] #for this level of dirs
         tag = tempList[0]
-        print tag
         tagtext= tag.lower()[1:] #drops the @ symbol and uses only lowercase for dir name
         filename = tempList[1]
         filepath = self.InputDir+'/'+filename
         levelVars = tempList[2]
-        for var in levelVars:        
+        for var in levelVars:
+            if tagtext == 'n2body': #need to seed n2 for other levels if using "grow" method
+                self.n2 = var       
             dirVar = str(tagtext) + '.' + str(var)
             try:
                 os.chdir(dirVar)
@@ -77,7 +86,10 @@ class ceTools:
                 os.system('cp ../*.in .')
             except:
                 print 'File system error'
-            self.AlterFile(filename,tag,var)
+            if tag[0] == '@':
+                self.AlterFile(filename,tag,var) #alters input files for uncle
+            else:
+                self.CalculateAndAlter(tag,var)
             self.DescendOption(listRemain[1:]) #removes the option that is done, then does recursion.
             os.chdir('..')
         try:
@@ -85,6 +97,54 @@ class ceTools:
         except:
             print "File system error\n"                           
 
+    def CalculateAndAlter(self,tag, var):
+        '''Calculates values and alters files'''
+        if tag == '*grow': # means need to calculate
+            for order in [3,4,5,6]:
+                temptag = '@N%sBODY' % str(order)
+                norder = str(int(self.n2*var**(order-2)))
+                self.AlterFile('lat.in',temptag,norder) #alters input files for uncle
+                      
+    def RemoveBadRuns(self,templist1):
+        '''Removes folders if number of structures is greater than number of clusters'''
+        templist = templist1[:]
+        ndrop = 0
+        for path in self.ToRunList:
+            self.getRunValues(path)
+            if self.nstruc > self.n2+self.n3+self.n4+self.n5+self.n6:
+                print 'Removing bad run', path
+                templist.remove(path)
+                os.system('rm -r %s' %path) 
+                ndrop += 1             
+#        templist1 = templist[:]
+        print '\nRemoved %s folders from list and file structure' % ndrop
+        return templist[:]
+                           
+    def getRunValues(self, path):
+        '''gets each tag's value from the path'''
+        for segment in path.split('/'):
+            testsplit = segment.split('.')
+            if 'nfitstruc' in testsplit:
+                self.nstruc = int(testsplit[1])
+            if 'nfits' in testsplit:
+                self.nfit = int(testsplit[1])                
+            if 'n2body' in testsplit:
+                self.n2 = int(testsplit[1])                        
+            if 'n3body' in testsplit:
+                self.n3 = int(testsplit[1]) 
+            if 'n4body' in testsplit:
+                self.n4 = int(testsplit[1]) 
+            if 'n5body' in testsplit:
+                self.n5 = int(testsplit[1]) 
+            if 'n6body' in testsplit:
+                self.n6 = int(testsplit[1])
+            if 'grow' in testsplit:  
+                growVar = testsplit[1]
+                self.n3 = self.n2 * float(growVar)
+                self.n4 = self.n3 * float(growVar)                                                                                          
+                self.n5 = self.n4 * float(growVar)
+                self.n6 = self.n5 * float(growVar)               
+                                                               
     def AlterFile(self,filepath,frommatch,tomatch):    
         '''Substitutes input tags with values'''
         import re
@@ -101,8 +161,6 @@ class ceTools:
             print "There was an error in processing file " + filepath
             print "This is likely due to " + frommatch + " tag not being present in the file."
             print tomatch
-
-
 
     def FindFolders(self,folder): #Finds all subdirectories
         files = os.listdir(folder)

@@ -39,7 +39,7 @@ def writeDistances(checkedList,structure):
     distfile.close()
     os.chdir(lastfolder)
 
-def getDistance(folder,structure): 
+def readResultsOut(folder,structure): 
     '''gets adatom-carbon distance'''
     os.chdir(folder)
     try:
