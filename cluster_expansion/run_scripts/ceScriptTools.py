@@ -76,7 +76,7 @@ class ceTools:
         for var in levelVars:
             if tagtext == 'n2body': #need to seed n2 for other levels if using "grow" method
                 self.n2 = var       
-            dirVar = str(tagtext) + '.' + str(var)
+            dirVar = str(tagtext) + '_' + str(var)
             try:
                 os.chdir(dirVar)
             except OSError:
@@ -123,11 +123,11 @@ class ceTools:
     def getRunValues(self, path):
         '''gets each tag's value from the path'''
         for segment in path.split('/'):
-            testsplit = segment.split('.')
+            testsplit = segment.split('_')
             if 'nfitstruc' in testsplit:
                 self.nstruc = int(testsplit[1])
             if 'nfits' in testsplit:
-                self.nfit = int(testsplit[1])                
+                self.nfits = int(testsplit[1])                
             if 'n2body' in testsplit:
                 self.n2 = int(testsplit[1])                        
             if 'n3body' in testsplit:
@@ -140,10 +140,10 @@ class ceTools:
                 self.n6 = int(testsplit[1])
             if 'grow' in testsplit:  
                 growVar = testsplit[1]
-                self.n3 = self.n2 * float(growVar)
-                self.n4 = self.n3 * float(growVar)                                                                                          
-                self.n5 = self.n4 * float(growVar)
-                self.n6 = self.n5 * float(growVar)               
+                self.n3 = int(self.n2 * float(growVar))
+                self.n4 = int(self.n3 * float(growVar))                                                                                          
+                self.n5 = int(self.n4 * float(growVar))
+                self.n6 = int(self.n5 * float(growVar))               
                                                                
     def AlterFile(self,filepath,frommatch,tomatch):    
         '''Substitutes input tags with values'''
@@ -173,52 +173,52 @@ class ceTools:
         for path in self.ToCheckList:
             if path.split("/")[-2] == self.RunName:
                 self.CheckedList.append(path)
-                if os.path.exists(path + 'OUTCAR') and self.FinishCheck(path) and self.StepsLessThanNSW(path): 
-                    print ('Will skip (finished):'+path)    
+                if os.path.exists(path + 'complete.txt'): 
+                    print ('Will skip (complete):'+path)    
                 else:
                     self.ToRunList.append(path)             #run only unfinished ones
                 
-    def CheckForNewRun(self):
-        for path in self.CheckedList:
-            parpath =  os.path.abspath(os.path.join(path, os.path.pardir))
-            if os.path.exists(os.path.join(parpath,newRun)):
-                print os.path.join(parpath,newRun) + " already exists."
-                if copyFiles:
-                    print "Copying " + newRunFile +" from path to current directory."
-                    newPath = os.path.join(parpath,newRun) + "/" + newRunFile
-                    array = parpath.split("/")
-                    newFileName = array[len(array)-2]+array[len(array)-1]+".dat"
-                    shutil.copyfile(newPath,mainDir+newFileName)
-            else:
-                self.ToRunList.append(parpath+"/")
-
-    def FinishCheck(self,folder):
-        """Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""
-        lastfolder = os.getcwd()
-        os.chdir(folder)
-        proc = subprocess.Popen(['grep', 'Voluntary', 'OUTCAR'],stdout=subprocess.PIPE)
-        newstring = proc.communicate()
-        os.chdir(lastfolder)    
-        return newstring[0].find('Voluntary') > -1 #True/False
-    
-    def StepsLessThanNSW(self,folder):
-        '''Get number of steps in relaxation, and check vs NSW'''
-        #get number of steps
-        lastfolder = os.getcwd()
-        os.chdir(folder)
-        if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0: 
-            os.chdir(lastfolder) 
-            steps = -9999
-        oszicar = open('OSZICAR','r')
-        laststep = oszicar.readlines()[-1].split()[0]
-        oszicar.close()
-        os.chdir(lastfolder)  
-        try:
-            value = int(laststep)
-            steps =  value
-        except:
-            steps =  9999
-        #check vs NSW
-        proc = subprocess.Popen(['grep','-i','NSW',self.CheckedList[0]+'/INCAR'],stdout=subprocess.PIPE)
-        NSW = int(proc.communicate()[0].split('=')[-1])
-        return steps < NSW # True/False      
+#    def CheckForNewRun(self):
+#        for path in self.CheckedList:
+#            parpath =  os.path.abspath(os.path.join(path, os.path.pardir))
+#            if os.path.exists(os.path.join(parpath,newRun)):
+#                print os.path.join(parpath,newRun) + " already exists."
+#                if copyFiles:
+#                    print "Copying " + newRunFile +" from path to current directory."
+#                    newPath = os.path.join(parpath,newRun) + "/" + newRunFile
+#                    array = parpath.split("/")
+#                    newFileName = array[len(array)-2]+array[len(array)-1]+".dat"
+#                    shutil.copyfile(newPath,mainDir+newFileName)
+#            else:
+#                self.ToRunList.append(parpath+"/")
+#
+#    def FinishCheck(self,folder):
+#        """Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""
+#        lastfolder = os.getcwd()
+#        os.chdir(folder)
+#        proc = subprocess.Popen(['grep', 'Voluntary', 'OUTCAR'],stdout=subprocess.PIPE)
+#        newstring = proc.communicate()
+#        os.chdir(lastfolder)    
+#        return newstring[0].find('Voluntary') > -1 #True/False
+#    
+#    def StepsLessThanNSW(self,folder):
+#        '''Get number of steps in relaxation, and check vs NSW'''
+#        #get number of steps
+#        lastfolder = os.getcwd()
+#        os.chdir(folder)
+#        if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0: 
+#            os.chdir(lastfolder) 
+#            steps = -9999
+#        oszicar = open('OSZICAR','r')
+#        laststep = oszicar.readlines()[-1].split()[0]
+#        oszicar.close()
+#        os.chdir(lastfolder)  
+#        try:
+#            value = int(laststep)
+#            steps =  value
+#        except:
+#            steps =  9999
+#        #check vs NSW
+#        proc = subprocess.Popen(['grep','-i','NSW',self.CheckedList[0]+'/INCAR'],stdout=subprocess.PIPE)
+#        NSW = int(proc.communicate()[0].split('=')[-1])
+#        return steps < NSW # True/False      

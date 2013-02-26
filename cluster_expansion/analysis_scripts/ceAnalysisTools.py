@@ -20,18 +20,70 @@ def fillRunArray(checkedList):
     dim_nstruc = 4  #these need to match run dimensions
     dim_n2body = 10
     dim_growvar = 5
+    nComplete = 0
     runArray = np.zeros((dim_nstruc,dim_n2body,dim_growvar), dtype=float) 
-    print 'runArray done'
     for path in checkedList:
-        getNFits(path)
+#        print path
+        [nstruc, nfits, n2, growvar] = getValues(path)
+#        print [nstruc, nfits, n2, growvar]
         os.chdir(path)
-        resultsfile = open('results.out','r')
-        results = resultsfile.readlines(1:) #remove header
-        
-def getNfits(path):
-    if 'nfits' in        
-        
-    
+        [avgErr,stdevErr] = [0,0]
+        try:
+            resultsfile = open('results.out','r')
+            results = resultsfile.readlines()[1:] #remove header
+            if len(results) == nfits:
+                os.system('date > complete.txt')
+                [avgErr,stdevErr] = getAvgStdev(results) #over the nfits cases 
+                nComplete += 1
+                
+                        
+            else:
+                print 'results.out length is %s in [nstruc, n2, growvar]: %s' % (len(results),[nstruc, n2, round(growvar,2)])
+#            print avgErr, stdevErr            
+        except:
+            print 'no results.out in %s' % [nstruc, n2, round(growvar,2)]
+            
+    print 'number of incomplete jobs', len(checkedList)-nComplete
+    print 'runArray done'
+            
+def getAvgStdev(list1):
+    '''Gets avg and stdev from column 4 of results.out'''
+    sumlist = 0.0
+    for line in list1:
+        sumlist += float(line.split()[3])
+    avg = sumlist/len(list1)
+    stdev = 0.0
+    for line in list1:
+        stdev += (float(line.split()[3])-avg)**2
+    stdev = math.sqrt(stdev)/len(list1)
+    return [avg, stdev]
+
+def getValues(path): 
+    '''gets each tag's value from the path'''
+    for segment in path.split('/'):
+        testsplit = segment.split('_')
+        if 'nfitstruc' in testsplit:
+            nstruc = int(testsplit[1])
+        if 'nfits' in testsplit:
+            nfits = int(testsplit[1])                
+        if 'n2body' in testsplit:
+            n2 = int(testsplit[1])                        
+        if 'n3body' in testsplit:
+            n3 = int(testsplit[1]) 
+        if 'n4body' in testsplit:
+            n4 = int(testsplit[1]) 
+        if 'n5body' in testsplit:
+            n5 = int(testsplit[1]) 
+        if 'n6body' in testsplit:
+            n6 = int(testsplit[1])
+        if 'grow' in testsplit:  
+            growVar = round(float(testsplit[1]),2)
+            n3 = int(n2 * growVar)
+            n4 = int(n3 * growVar)                                                                                       
+            n5 = int(n4 * growVar)
+            n6 = int(n5 * growVar)
+    return [nstruc, nfits, n2, growVar] 
+           
 def writeEnergiesOszicar(checkedList):           
     lastfolder = os.getcwd()
     enerfile = open('energies','w')

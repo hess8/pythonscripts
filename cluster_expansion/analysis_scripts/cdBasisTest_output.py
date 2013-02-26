@@ -2,16 +2,16 @@
 mainDir = '/fslhome/bch/cluster_expansion/cluster_size_test/agpt/'
 #Specify the type of run
 runtype = 'ncl_ntr'
-#Specify Directory to use
-mainDir = "/fslhome/bch/cluster_expansion/cluster_size_test/agpt/"
+#runtype = 'test'
+
 
 dir = mainDir + runtype + '/'
 #Specify the name of the type of run
 runName = 'run_10_15' 
 
 import os,subprocess,math,time,sys,datetime
-import numpy as np 
-from ceAnalysisTools import addToList, checkFolders, fillRunArray,  writeFinish, getElement,\
+#import numpy as np 
+from ceAnalysisTools import addToList, checkFolders, fillRunArray, writeFinish, getElement,\
                             writeElements, nstrip, writeElSteps, writeElConverge
 
 run = runName
@@ -31,12 +31,19 @@ print('Checking to see which folders contain '+run+'\n')
 time.sleep(1)
 checkedList=sorted(checkFolders(toCheckList,checkedList,run))
 
-print '\nThe following folders are in checkedList:'
-for i in checkedList:
-    print('checkedList contains : ' + i+'\n')
-print '%s folders will be analyzed' % len(checkedList)  
+#print '\nThe following folders are in checkedList:'
+#for i in checkedList:
+#    print('checkedList contains : ' + i+'\n')
+print '%s folders will be analyzed' % len(checkedList) 
 
-fillRunArray(checkedList) 
+
+os.chdir(dir)
+varsFile = open('variables.out','r')
+print round(0.56000000000000005,2)
+varsList= varsFile.readlines()  #read variables list written during run creation
+print varsList
+
+fillRunArray(checkedList) #also writes complete.txt if results.out has correct Nfits lines. 
 
 ##write out elements list
 #writeElements(checkedList)
