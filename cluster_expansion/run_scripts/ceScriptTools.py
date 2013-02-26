@@ -9,6 +9,14 @@ def nstrip(list):
         list2.append(string2)
     return list2
 
+def writeList(dir,wlist, wlistname):
+    os.chdir(dir)
+    file1 = open(wlistname,'w')
+    for item in wlist:
+        file1.writelines(str(item)+'\n')  #write variables list which will be read during analysis
+    file1.close()        
+                      
+
 class ceTools:
 
     def __init__(self,mainDir,inputDir,vaspDataDir, runname,runtype,inputlist,toCheckList,checkedList, toRunList ):
@@ -104,7 +112,7 @@ class ceTools:
                 temptag = '@N%sBODY' % str(order)
                 norder = str(int(self.n2*var**(order-2)))
                 self.AlterFile('lat.in',temptag,norder) #alters input files for uncle
-                      
+ 
     def RemoveBadRuns(self,templist1):
         '''Removes folders if number of structures is greater than number of clusters'''
         templist = templist1[:]

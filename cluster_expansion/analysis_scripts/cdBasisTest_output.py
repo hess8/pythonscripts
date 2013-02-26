@@ -11,7 +11,7 @@ runName = 'run_10_15'
 
 import os,subprocess,math,time,sys,datetime
 #import numpy as np 
-from ceAnalysisTools import addToList, checkFolders, fillRunArray, writeFinish, getElement,\
+from ceAnalysisTools import addToList, checkFolders, fillRunArray, readList, writeFinish, getElement,\
                             writeElements, nstrip, writeElSteps, writeElConverge
 
 run = runName
@@ -38,12 +38,11 @@ print '%s folders will be analyzed' % len(checkedList)
 
 
 os.chdir(dir)
-varsFile = open('variables.out','r')
-print round(0.56000000000000005,2)
-varsList= varsFile.readlines()  #read variables list written during run creation
-print varsList
-
-fillRunArray(checkedList) #also writes complete.txt if results.out has correct Nfits lines. 
+structureslist=readList('structureslist.dat')
+clusterlist=readList('clusterlist.dat')
+growlist=readList('growlist.dat')
+varsList = [structureslist,clusterlist,growlist]
+fillRunArray(checkedList, varsList) #also writes complete.txt if results.out has correct Nfits lines. 
 
 ##write out elements list
 #writeElements(checkedList)

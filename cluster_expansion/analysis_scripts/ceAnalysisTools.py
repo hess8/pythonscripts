@@ -15,12 +15,15 @@ def checkFolders(toCheckList,checkedList,run):
             checkedList.append(path)
     return checkedList            
             
-def fillRunArray(checkedList):
+def fillRunArray(checkedList, varsList):
     '''Multidimensional array with results of runs:  runArray[nstruc, n2body,growvar] '''
     dim_nstruc = 4  #these need to match run dimensions
     dim_n2body = 10
     dim_growvar = 5
     nComplete = 0
+    structureslist = int(varsList[0])
+    clusterlist = int(varsList[1])
+    growlist = float(varsList[2])
     runArray = np.zeros((dim_nstruc,dim_n2body,dim_growvar), dtype=float) 
     for path in checkedList:
 #        print path
@@ -46,6 +49,12 @@ def fillRunArray(checkedList):
     print 'number of incomplete jobs', len(checkedList)-nComplete
     print 'runArray done'
             
+def readList(listname):
+    file1 = open(listname,'r')
+    list1 = file1.readlines()
+    file1.close()
+    return list1
+
 def getAvgStdev(list1):
     '''Gets avg and stdev from column 4 of results.out'''
     sumlist = 0.0

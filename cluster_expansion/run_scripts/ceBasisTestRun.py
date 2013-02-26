@@ -1,5 +1,6 @@
 ''' For isolated atoms '''
-import sys, os
+import sys,os,subprocess,time,sys,shutil
+import ceScriptTools
 sys.path.append("/fslhome/bch/pythonscripts/cluster_expansion/analysis_scripts/")
 ################## Directories ################## 
 #Specify Directories to use
@@ -24,6 +25,7 @@ latInFile = inputDir + 'lat.in'
 
 #Specify a CS.in file
 csInFile = inputDir + 'CS.in'
+
 
 ################## Variables ################## 
 
@@ -58,24 +60,21 @@ csInVariables = [
                   ]
 
 inputlist = [csInVariables,latInVariables,growVariables]
-
-os.chdir(dir)
-varsFile = open('variables.out','w')
-print [round(i,2) for i in growlist]
-varsFile.writelines(str([structureslist,clusterlist,[round(i,2) for i in growlist]]))  #write variables list which will be read during analysis
-varsFile.close()
-################## Build run folders ################## 
-import ceScriptTools
-
+################## Initialize  ################## 
 toCheckList = []
 checkedList = []
 toRunList = []
 tools = ceScriptTools.ceTools(mainDir,inputDir,vaspDataDir,runname,runtype,inputlist,toCheckList,checkedList,toRunList)
+
+ceScriptTools.writeList(dir,structureslist, 'structureslist.dat')
+ceScriptTools.writeList(dir,structureslist, 'clusterlist.dat')
+ceScriptTools.writeList(dir,growlist, 'growlist.dat')
+################## Build run folders ################## 
 print 'Building run'
 tools.BuildNewRun() #create folders
 
 
-import os,subprocess,time,sys, shutil
+
 
 print('Finding Directories to do %s on\n' % runname)
 
@@ -106,7 +105,6 @@ print'\n'
 jobname = runtype
 outfile = ['out1.txt', 'out2.txt']
 execPath = '/fslhome/bch/cluster_expansion/theunclebeta/uncle/trunk/uncle.x'
-#execLines = 'export LD_LIBRARY_PATH=/opt/intel/mkl/10.2.5.035/lib/em64t:$LD_LIBRARY_PATH\n' #initializing
 execLines = '' #initializing
 for i,par in enumerate(uncleParam):
     execLines += execPath+' '+str(par)+ ' > ' + outfile[i] + '\n'
@@ -126,8 +124,12 @@ for folder in toRunList:
 print '%s jobs will be submitted' % len(toRunList)
 raw_input('Press enter to submit jobs')
 ################## Submit jobs ################## 
+## remove all ".out files before running"
+
 for folder in toRunList:
     os.chdir(folder)
+    os.system('rm *.out') #so it will write to them later
+    os.system('rm fort.*') 
     subprocess.check_call(['qsub','job']) #waits to get response 
     time.sleep(0.1)
 print 'Done with submitting jobs'
