@@ -1,5 +1,5 @@
 ''' For isolated atoms '''
-import sys,os,subprocess,time,sys,shutil
+import sys,os,subprocess,time,sys,shutil, numpy as np
 import ceScriptTools
 sys.path.append("/fslhome/bch/pythonscripts/cluster_expansion/analysis_scripts/")
 ################## Directories ################## 
@@ -66,8 +66,12 @@ checkedList = []
 toRunList = []
 tools = ceScriptTools.ceTools(mainDir,inputDir,vaspDataDir,runname,runtype,inputlist,toCheckList,checkedList,toRunList)
 
+os.chdir(dir)
+np.save('structureslist',structureslist)
+np.save('clusterlist',clusterlist)
+np.save('growlist',growlist)
 ceScriptTools.writeList(dir,structureslist, 'structureslist.dat')
-ceScriptTools.writeList(dir,structureslist, 'clusterlist.dat')
+ceScriptTools.writeList(dir,clusterlist, 'clusterlist.dat')
 ceScriptTools.writeList(dir,growlist, 'growlist.dat')
 ################## Build run folders ################## 
 print 'Building run'

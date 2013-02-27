@@ -1,4 +1,4 @@
-import os, string, subprocess, math, numpy as np
+import os, string, subprocess, math, numpy as np, matplotlib as p
 
 def addToList(folder,toCheckList):
     files = os.listdir(folder)
@@ -17,41 +17,80 @@ def checkFolders(toCheckList,checkedList,run):
             
 def fillRunArray(checkedList, varsList):
     '''Multidimensional array with results of runs:  runArray[nstruc, n2body,growvar] '''
-    dim_nstruc = 4  #these need to match run dimensions
+    dim_nstruc = 5  #these need to match run dimensions
     dim_n2body = 10
     dim_growvar = 5
     nComplete = 0
-    structureslist = int(varsList[0])
-    clusterlist = int(varsList[1])
-    growlist = float(varsList[2])
-    runArray = np.zeros((dim_nstruc,dim_n2body,dim_growvar), dtype=float) 
+    structureslist = [int(i) for i in varsList[0]]
+    clusterlist = [int(i) for i in varsList[1]]
+    growlist = [round(float(i),2) for i in varsList[2]]
+    print structureslist
+    print clusterlist
+    print growlist
+    
+    runArray = np.zeros((dim_nstruc,dim_n2body,dim_growvar,2), dtype=float)
     for path in checkedList:
-#        print path
         [nstruc, nfits, n2, growvar] = getValues(path)
-#        print [nstruc, nfits, n2, growvar]
+#        print [nstruc, n2, growvar]
         os.chdir(path)
         [avgErr,stdevErr] = [0,0]
         try:
             resultsfile = open('results.out','r')
             results = resultsfile.readlines()[1:] #remove header
             if len(results) == nfits:
-                os.system('date > complete.txt')
-                [avgErr,stdevErr] = getAvgStdev(results) #over the nfits cases 
-                nComplete += 1
-                
-                        
+                nComplete += 1            
+                try:
+                    os.system('date > complete.txt')
+                    [avgErr,stdevErr] = getAvgStdev(results) #over the nfits cases
+#                    print [avgErr,stdevErr]
+                    i1 = structureslist.index(nstruc)
+                    i2 = clusterlist.index(n2)
+                    i3 = growlist.index(growvar)
+#                    print i1,i2,i3
+                    runArray[i1,i2,i3,0]=avgErr
+                    runArray[i1,i2,i3,1]=stdevErr 
+                except: 
+                    print 'failed to analyze %s' % [nstruc, n2, growvar]                      
             else:
-                print 'results.out length is %s in [nstruc, n2, growvar]: %s' % (len(results),[nstruc, n2, round(growvar,2)])
+                print 'results.out length is %s in [nstruc, n2, growvar]: %s' % (len(results),[nstruc, n2,growvar])
 #            print avgErr, stdevErr            
         except:
-            print 'no results.out in %s' % [nstruc, n2, round(growvar,2)]
-            
+            print 'no results.out in %s' % [nstruc, n2, growvar]
+#    print runArray[2,3,:,1]   
+#    plotArray(runArray)     
     print 'number of incomplete jobs', len(checkedList)-nComplete
     print 'runArray done'
+    return runArray
+
+def plotArray(x,y,matrix1,plotfile1,title1,xlabel1,ylabel1):
+    '''plots colored matrix for 2 d array'''
+#    from __future__ import division
+    from matplotlib.patches import Patch
+    from pylab import *
+    X,Y = meshgrid(x, y)
+    Z = matrix1
+#    print x, y
+#    print X
+#    print
+#    print Y
+#    print Z
+    fig = figure()
+    pcolor(X, Y, Z, cmap=cm.RdBu)
+    title(title1)
+    xlabel(xlabel1)
+    ylabel(ylabel1)
+    colorbar()
+    show()
+    print plotfile1
+    fig.savefig(plotfile1)
+
+#pylab.ylabel('voltage (mV)')
+#pylab.title('About as simple as it gets, folks')    
+    
             
 def readList(listname):
     file1 = open(listname,'r')
-    list1 = file1.readlines()
+    list1 = nstrip(file1.readlines())       
     file1.close()
     return list1
 
@@ -236,6 +275,15 @@ def writeElements(checkedList):
     
 def nstrip(list):
 #	'''Strips off /n'''
+    import string
+    list2 = []
+    for string1 in list:   
+        string2 = string1.strip("\n")
+        list2.append(string2)
+    return list2
+
+def nstripfloat(list):
+#    '''Strips off /n and converts to float'''
     import string
     list2 = []
     for string1 in list:   

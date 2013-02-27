@@ -9,9 +9,9 @@ dir = mainDir + runtype + '/'
 #Specify the name of the type of run
 runName = 'run_10_15' 
 
-import os,subprocess,math,time,sys,datetime
+import os,subprocess,math,time,sys,datetime,numpy as np
 #import numpy as np 
-from ceAnalysisTools import addToList, checkFolders, fillRunArray, readList, writeFinish, getElement,\
+from ceAnalysisTools import addToList, checkFolders, fillRunArray, readList, plotArray,writeFinish, getElement,\
                             writeElements, nstrip, writeElSteps, writeElConverge
 
 run = runName
@@ -35,86 +35,26 @@ checkedList=sorted(checkFolders(toCheckList,checkedList,run))
 #for i in checkedList:
 #    print('checkedList contains : ' + i+'\n')
 print '%s folders will be analyzed' % len(checkedList) 
-
-
 os.chdir(dir)
-structureslist=readList('structureslist.dat')
-clusterlist=readList('clusterlist.dat')
-growlist=readList('growlist.dat')
+structureslist=np.load('structureslist.npy')
+clusterlist=np.load('clusterlist.npy')
+growlist=np.load('growlist.npy')
+#clusterlist=readList('clusterlist.dat')
+#growlist=readList('growlist.dat')
 varsList = [structureslist,clusterlist,growlist]
-fillRunArray(checkedList, varsList) #also writes complete.txt if results.out has correct Nfits lines. 
+runArray = fillRunArray(checkedList, varsList) #also writes complete.txt if results.out has correct Nfits lines. 
 
-##write out elements list
-#writeElements(checkedList)
-#
-##write out energies from all elements
-#writeEnergiesOszicar(checkedList)
-#
-##Check number of electronic steps
-#writeElSteps(checkedList) 
-#
-##Check Vasp finish
-#writeFinish(checkedList) 
-#
-##Check Number of electronic steps finish
-#writeElConverge(checkedList) 
-#
-################## spreadsheet #################
-##Open data files
-#os.chdir(dir)
-#outfile = open('isolated_atoms.csv','w')
-#
-#file = open('elements','r')  
-#elements = nstrip(file.readlines())
-#file.close()
-#
-#file = open('energies','r')
-#energies = nstrip(file.readlines())
-#file.close()
-#
-#file = open('elsteps','r')
-#elsteps = nstrip(file.readlines())
-#file.close()
-#
-#file = open('elconverge','r')
-#elconverge = nstrip(file.readlines())
-#file.close()
-#
-#file = open('finish','r')
-#finish = nstrip(file.readlines())
-#file.close()
-#
-#
-#if os.path.exists(dir+'oldenergies'):
-#    file = open('oldenergies','r')
-#    oldenergies = nstrip(file.readlines())
-#    file.close()
-#else:
-#    oldenergies = ['0.0']*len(elements)       
-#diffe = ['0.0']*len(elements) 
-#diffFile = open('convdiff','w')   
-#outfile.write('Element,Calculated Energy,Diff Ener (conv),Electr Steps, Converge & Finish\n')
-#for i in range(len(elements)):
-##    print elements[i]
-##    print energies[i], oldenergies[i]
-#    try:
-#        diffe[i] = str(float(energies[i]) - float(oldenergies[i]))
-#        if float(diffe[i])<1.0e-4:
-#            diffe[i] = 'done' 
-#            fileconv = open(checkedList[i]+'converged.txt', 'w') #create a file to indicate it's converged
-#            fileconv.write('converged')
-#            fileconv.close()              
-#    except:
-#        diffe[i] = '99'
-#    if finish[i] == 'Y' and elconverge[i] == 'Y':
-#        converge = 'Y'
-#    else:
-#        converge = 'N'
-#    linei = elements[i]+','+energies[i]+','+diffe[i]+','+elsteps[i]+','+ converge+'\n'
-#    outfile.write(linei)
-#    diffFile.write(diffe[i]+'\n')
-#outfile.close()
-#diffFile.close()
+x = varsList[2] # choose 0,1,2
+y = np.log2(varsList[1])
+print runArray[0,:,:,0]
+os.chdir(dir)
+#plotArray(x,y,runArray[0,:,:,0],'testfig')
+for i,nstruct in enumerate(structureslist):
+    plotfile = 'nstruct%s' % nstruct
+    title1 = 'Validation error for %s AgPt structures in training set' % nstruct
+    xlabel1 = 'Growth factor for orders above pairs'
+    ylabel1 = 'Log2 of N-pairs'
+    plotArray(x,y,runArray[i,:,:,0],plotfile,title1,xlabel1,ylabel1)
 
 print 'Done'
 
