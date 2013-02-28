@@ -1,5 +1,5 @@
 ''' For isolated atoms '''
-import sys,os,subprocess,time,sys,shutil, numpy as np
+import sys,os,subprocess,time,sys,shutil, numpy as np, copy
 import ceScriptTools
 sys.path.append("/fslhome/bch/pythonscripts/cluster_expansion/analysis_scripts/")
 ################## Directories ################## 
@@ -26,12 +26,11 @@ latInFile = inputDir + 'lat.in'
 #Specify a CS.in file
 csInFile = inputDir + 'CS.in'
 
-
 ################## Variables ################## 
 
 #                
 
-clusterlist = [4,8,16,32,64,128,256,512,1024,2048] 
+clusterlist = [4,8,6,16,23,32,45,64,90,128,181,256,362,512,724,1024,1448,2048] #n-2body
 #clusterlist = [64,128] 
 
 #latInVariables = [
@@ -46,13 +45,13 @@ latInVariables = [
                   ['@N2BODY','lat.in',clusterlist] #will calculate others from growVars                              
                   ]
 
-growlist = [0.56,0.76,1.0,1.3,1.8]
+growlist = [0.0,0.1,0.2,0.3,0.4,0.5,0.56,0.76,1.0,1.3,1.8]
 #growlist = [1.0]
 growVariables = [
                   ['*grow','lat.in',growlist]  #for finding n3body, etc...                              
                   ] # use anything but @ for calculated value
 
-structureslist=[64,128,256,512,800]
+structureslist=[32,64,128,256,512,800]
 #structureslist=[64]
 csInVariables = [
                  ['@NFITSTRUC','CS.in',structureslist],
@@ -89,20 +88,8 @@ tools.AddToList(dir)
 print('Checking to see which folders contain '+runname+'\n')
 tools.CheckFolders()
  
-toRunList = tools.RemoveBadRuns(toRunList) #Removes folders from list and deletes if number of structures is greater than number of clusters
-#print '\nThe following folders are in checkedList:'
-#for i in checkedList:
-#    print('checkedList contains : ' + i)
-    
-#print 'Skipping the following files, found finish.txt:'
-#templist = toRunList[:] #create new list, not just a tag
-#for i, path in enumerate(toRunList):
-#    if os.path.exists(path+'finish.txt'):
-#        templist.remove(path)
-#        print 'Already finished', path
-#toRunList = templist[:] 
-################## Prepare jobs ##################              
-print '\nThe following folders will be run:'
+toRunList = sorted(tools.RemoveBadRuns(toRunList)) #Removes folders from list and deletes if number of structures is greater than number of clusters
+print '\nFolders after remove bad runs:'
 for i in toRunList:
     print('toRunList contains : ' + i)
 print'\n'
@@ -114,17 +101,32 @@ for i,par in enumerate(uncleParam):
     execLines += execPath+' '+str(par)+ ' > ' + outfile[i] + '\n'
 print execLines
 from ceAnalysisTools import getValues
+from ceScriptTools import runningJobs
+runninglist = runningJobs()
+templist = toRunList[:]
 for folder in toRunList:
+#    print 'in templist loop', i, folder[-50:]
     nameList = getValues(folder)
     name = ''
     for item in nameList:
         name += str(item)+'_'
-    print name
-    os.chdir(folder)    
-    file = open(folder+'job','w+')    
-    jobData = '#!/bin/bash\n#PBS -l nodes=1:beta,ppn=1,pmem=16gb,walltime=36:00:00\n#PBS -N ' + name +'\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n' + execLines + 'exit 0'
-    file.write(jobData)
-    file.close()
+#    print name
+    if name not in runninglist:        
+        os.chdir(folder)    
+        file = open(folder+'job','w+')    
+        jobData = '#!/bin/bash\n#PBS -l nodes=1:beta,ppn=1,pmem=16gb,walltime=4:20:00\n#PBS -N ' + name +'\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n' + execLines + 'exit 0'
+        file.write(jobData)
+        file.close()
+    else:
+        print 'already running', name
+        templist.remove(folder)
+toRunList = templist[:]
+
+print '\nThe following folders will be run:'
+for i in toRunList:
+    print('toRunList contains : ' + i[-50:])
+print'\n'
+
 print '%s jobs will be submitted' % len(toRunList)
 raw_input('Press enter to submit jobs')
 ################## Submit jobs ################## 
@@ -132,8 +134,9 @@ raw_input('Press enter to submit jobs')
 
 for folder in toRunList:
     os.chdir(folder)
+    print getValues(folder)
     os.system('rm *.out') #so it will write to them later
-    os.system('rm fort.*') 
-    subprocess.check_call(['qsub','job']) #waits to get response 
+    #os.system('rm fort.*') 
+    subprocess.check_call(['qsub','job'],stderr=subprocess.STDOUT) #waits to get response 
     time.sleep(0.1)
 print 'Done with submitting jobs'

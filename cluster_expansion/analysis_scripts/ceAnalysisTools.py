@@ -17,9 +17,7 @@ def checkFolders(toCheckList,checkedList,run):
             
 def fillRunArray(checkedList, varsList):
     '''Multidimensional array with results of runs:  runArray[nstruc, n2body,growvar] '''
-    dim_nstruc = 5  #these need to match run dimensions
-    dim_n2body = 10
-    dim_growvar = 5
+
     nComplete = 0
     structureslist = [int(i) for i in varsList[0]]
     clusterlist = [int(i) for i in varsList[1]]
@@ -27,7 +25,9 @@ def fillRunArray(checkedList, varsList):
     print structureslist
     print clusterlist
     print growlist
-    
+    dim_nstruc = len(structureslist)  #these need to match run dimensions
+    dim_n2body = len(clusterlist)
+    dim_growvar = len(growlist)   
     runArray = np.zeros((dim_nstruc,dim_n2body,dim_growvar,2), dtype=float)
     for path in checkedList:
         [nstruc, nfits, n2, growvar] = getValues(path)
@@ -62,20 +62,16 @@ def fillRunArray(checkedList, varsList):
     print 'runArray done'
     return runArray
 
-def plotArray(x,y,matrix1,plotfile1,title1,xlabel1,ylabel1):
+def plotArray(x,y,matrix1,plotfile1,title1,xlabel1,ylabel1,plotmax):
     '''plots colored matrix for 2 d array'''
 #    from __future__ import division
     from matplotlib.patches import Patch
     from pylab import *
     X,Y = meshgrid(x, y)
     Z = matrix1
-#    print x, y
-#    print X
-#    print
-#    print Y
-#    print Z
     fig = figure()
-    pcolor(X, Y, Z, cmap=cm.RdBu)
+    pcolor(X, Y, Z, cmap=cm.hot, vmax = plotmax)
+    xlim((x.min(),x.max()+0.2))
     title(title1)
     xlabel(xlabel1)
     ylabel(ylabel1)

@@ -1,4 +1,23 @@
 import os, subprocess, copy, string  
+from subprocess import Popen, PIPE
+
+def runningJobs():
+    '''Finds names of jobs running on fsl'''
+    str1='squeue -o "%.7i %.9P %.18j %.8u %.2t %.10M %.6D %R" -u bch'
+    p = Popen(str1, stdout=PIPE, stderr=PIPE, shell=True)
+    stdout, stderr = p.communicate()
+#    print stdout
+    list1=stdout.split('\n')[1:]
+    list2=[]
+    for item in list1[:len(list1)-1]:
+        try:
+            list2.append(item.split()[2]) #3rd column
+        except:
+            list2 # do nothing
+            print item, 'cannot be split'
+    return list2
+
+#    return qList
 
 def nstrip(list):
     '''Strips off /n'''
@@ -152,7 +171,7 @@ class ceTools:
                 self.n4 = int(self.n3 * float(growVar))                                                                                          
                 self.n5 = int(self.n4 * float(growVar))
                 self.n6 = int(self.n5 * float(growVar))               
-                                                               
+                                                                       
     def AlterFile(self,filepath,frommatch,tomatch):    
         '''Substitutes input tags with values'''
         import re

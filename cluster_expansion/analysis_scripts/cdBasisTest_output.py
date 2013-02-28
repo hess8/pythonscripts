@@ -48,13 +48,28 @@ x = varsList[2] # choose 0,1,2
 y = np.log2(varsList[1])
 print runArray[0,:,:,0]
 os.chdir(dir)
-#plotArray(x,y,runArray[0,:,:,0],'testfig')
+################## Plotting ############
+plotmax = np.amax(runArray)
 for i,nstruct in enumerate(structureslist):
     plotfile = 'nstruct%s' % nstruct
     title1 = 'Validation error for %s AgPt structures in training set' % nstruct
-    xlabel1 = 'Growth factor for orders above pairs'
+    xlabel1 = 'Growth factor for orders above 2-body'
     ylabel1 = 'Log2 of N-pairs'
-    plotArray(x,y,runArray[i,:,:,0],plotfile,title1,xlabel1,ylabel1)
+    plotArray(x,y,runArray[i,:,:,0],plotfile,title1,xlabel1,ylabel1,plotmax)
+    
+for i,npairs in enumerate(clusterlist):
+    plotfile = 'npairs%s' % npairs
+    title1 = 'Validation error for %s pairs in cluster basis, AgPt ' % npairs
+    xlabel1 = 'Growth factor for orders above 2-body'
+    ylabel1 = 'Number of structures in training set'
+    plotArray(x,y,runArray[:,i,:,0],plotfile,title1,xlabel1,ylabel1,plotmax)
+    
+for i,growvar in enumerate(growlist):
+    plotfile = 'growvar%s' % growvar
+    title1 = 'Validation error for N(o) =%s*N(o-1) , AgPt ' % growvar
+    xlabel1 = 'Growth factor for orders above 2-body'
+    ylabel1 = 'Number of structures in training set'
+    plotArray(x,y,runArray[:,:,i,0],plotfile,title1,xlabel1,ylabel1,plotmax)
 
 print 'Done'
 
