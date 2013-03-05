@@ -28,12 +28,12 @@ def fillRunArray(checkedList, varsList):
     dim_nstruc = len(structureslist)  #these need to match run dimensions
     dim_n2body = len(clusterlist)
     dim_growvar = len(growlist)   
-    runArray = np.zeros((dim_nstruc,dim_n2body,dim_growvar,2), dtype=float)
+    runArray = np.zeros((dim_nstruc,dim_n2body,dim_growvar,4), dtype=float)
     for path in checkedList:
         [nstruc, nfits, n2, growvar] = getValues(path)
 #        print [nstruc, n2, growvar]
         os.chdir(path)
-        [avgErr,stdevErr] = [0,0]
+        [avgErr,stdevErr,L1,L0] = [0,0,0,0]
         try:
             resultsfile = open('results.out','r')
             results = resultsfile.readlines()[1:] #remove header
@@ -41,19 +41,21 @@ def fillRunArray(checkedList, varsList):
                 nComplete += 1            
                 try:
                     os.system('date > complete.txt')
-                    [avgErr,stdevErr] = getAvgStdev(results) #over the nfits cases
-#                    print [avgErr,stdevErr]
+                    [avgErr,stdevErr,L1,L0] = getResultsOut(results) #over the nfits cases
+                    print [avgErr,stdevErr,L1,L0]
                     i1 = structureslist.index(nstruc)
                     i2 = clusterlist.index(n2)
                     i3 = growlist.index(growvar)
-#                    print i1,i2,i3
+        #                    print i1,i2,i3
                     runArray[i1,i2,i3,0]=avgErr
-                    runArray[i1,i2,i3,1]=stdevErr 
+                    runArray[i1,i2,i3,1]=stdevErr
+                    runArray[i1,i2,i3,2]=L1
+                    runArray[i1,i2,i3,3]=L0                     
                 except: 
                     print 'failed to analyze %s' % [nstruc, n2, growvar]                      
             else:
                 print 'results.out length is %s in [nstruc, n2, growvar]: %s' % (len(results),[nstruc, n2,growvar])
-#            print avgErr, stdevErr            
+    #            print avgErr, stdevErr            
         except:
             print 'no results.out in %s' % [nstruc, n2, growvar]
 #    print runArray[2,3,:,1]   
@@ -62,22 +64,31 @@ def fillRunArray(checkedList, varsList):
     print 'runArray done'
     return runArray
 
+def readJ1(path, L0max):
+    '''Reads all clusters that are included in the fit (number is L0 norm).  Each cluster has its order and up to 6 vertices
+    stored in an array'''
+    runArray = np.zeros((L0max,L0max,L0max,4), dtype=float)
+
 def plotArray(x,y,matrix1,plotfile1,title1,xlabel1,ylabel1,plotmax):
     '''plots colored matrix for 2 d array'''
 #    from __future__ import division
     from matplotlib.patches import Patch
     from pylab import *
+    print plotfile1
+#    print x, y
+#    x=np.append(x,x[-1])#duplicate last value in extra slot, so plot will show all rows/columns 
+#    y=np.append(y,y[-1])
+#    print x,y  
     X,Y = meshgrid(x, y)
     Z = matrix1
     fig = figure()
     pcolor(X, Y, Z, cmap=cm.hot, vmax = plotmax)
-    xlim((x.min(),x.max()+0.2))
+    xlim((x.min(),x.max()))
     title(title1)
     xlabel(xlabel1)
     ylabel(ylabel1)
     colorbar()
     show()
-    print plotfile1
     fig.savefig(plotfile1)
 
 #pylab.ylabel('voltage (mV)')
@@ -90,17 +101,23 @@ def readList(listname):
     file1.close()
     return list1
 
-def getAvgStdev(list1):
-    '''Gets avg and stdev from column 4 of results.out'''
-    sumlist = 0.0
-    for line in list1:
-        sumlist += float(line.split()[3])
-    avg = sumlist/len(list1)
+def getResultsOut(list1):
+    '''Gets avg, stdev, L1, L0 norms from columns of results.out'''
+    err = 0.0
     stdev = 0.0
+    L1 = 0.0
+    L0 = 0      
     for line in list1:
-        stdev += (float(line.split()[3])-avg)**2
+        err += float(line.split()[3])
+        L1 += float(line.split()[6])
+        L0 += float(line.split()[7])               
+    err = err/len(list1)
+    L1=L1/len(list1)
+    L0=L0/len(list1)
+    for line in list1:
+        stdev += (float(line.split()[3])-err)**2
     stdev = math.sqrt(stdev)/len(list1)
-    return [avg, stdev]
+    return [err, stdev,L1,L0]
 
 def getValues(path): 
     '''gets each tag's value from the path'''
@@ -200,7 +217,6 @@ def readResultsOut(folder,structure):
                 if distancenew < distancemin:
                     distancemin = distancenew              
     return distancemin
-
 
 def distance(vec1, vec2):
 	return math.sqrt(math.pow(vec1[0]-vec2[0],2)+math.pow(vec1[1]-vec2[1],2)+math.pow(vec1[2]-vec2[2],2))

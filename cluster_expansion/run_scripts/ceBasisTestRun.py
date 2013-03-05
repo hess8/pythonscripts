@@ -14,6 +14,9 @@ vaspDataDir = mainDir+'vasp_data/'
 #Specify the type of run
 runtype = 'ncl_ntr'
 dir = mainDir + runtype + '/'
+################## Run output to check for completions ################## 
+#os.system('python26 /bluehome/bch/pythonscripts/cluster_expansion/analysis_scripts/cdBasisTest_output.py')
+
 #Specify the name of the type of run
 uncleParam = [10,15]
 runname = 'run'
@@ -45,13 +48,13 @@ latInVariables = [
                   ['@N2BODY','lat.in',clusterlist] #will calculate others from growVars                              
                   ]
 
-growlist = [0.0,0.1,0.2,0.3,0.4,0.5,0.56,0.76,1.0,1.3,1.8]
+growlist = [0.0,0.1,0.2,0.3,0.4,0.5,0.56,0.76,1.0,1.3,1.8,2.2]
 #growlist = [1.0]
 growVariables = [
                   ['*grow','lat.in',growlist]  #for finding n3body, etc...                              
                   ] # use anything but @ for calculated value
 
-structureslist=[32,64,128,256,512,800]
+structureslist=[32,64,128,256,512,800,900]
 #structureslist=[64]
 csInVariables = [
                  ['@NFITSTRUC','CS.in',structureslist],
@@ -114,7 +117,7 @@ for folder in toRunList:
     if name not in runninglist:        
         os.chdir(folder)    
         file = open(folder+'job','w+')    
-        jobData = '#!/bin/bash\n#PBS -l nodes=1:beta,ppn=1,pmem=16gb,walltime=4:20:00\n#PBS -N ' + name +'\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n' + execLines + 'exit 0'
+        jobData = '#!/bin/bash\n#PBS -l nodes=1:beta,ppn=1,pmem=16gb,walltime=0:20:00\n#PBS -N ' + name +'\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n' + execLines + 'exit 0'
         file.write(jobData)
         file.close()
     else:
