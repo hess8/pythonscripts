@@ -1,8 +1,8 @@
 ################## Directories ################## 
 mainDir = '/fslhome/bch/cluster_expansion/cluster_size_test/agpt/'
 #Specify the type of run
-runtype = 'ncl_ntr'
-#runtype = 'test'
+#runtype = 'ncl_ntr'
+runtype = 'test'
 
 
 dir = mainDir + runtype + '/'
@@ -11,7 +11,7 @@ runName = 'run_10_15'
 
 import os,subprocess,math,time,sys,datetime,numpy as np
 #import numpy as np 
-from ceAnalysisTools import addToList, checkFolders, fillRunArray, readList, plotArray,writeFinish, getElement,\
+from ceAnalysisTools import addToList, checkFolders, fillRunArray, readList, plotArray,recordFits,writeFinish, getElement,\
                             writeElements, nstrip, writeElSteps, writeElConverge
 
 run = runName
@@ -36,17 +36,20 @@ checkedList=sorted(checkFolders(toCheckList,checkedList,run))
 #    print('checkedList contains : ' + i+'\n')
 print '%s folders will be analyzed' % len(checkedList) 
 os.chdir(dir)
-structureslist=np.load('structureslist.npy')
-clusterlist=np.load('clusterlist.npy')
-growlist=np.load('growlist.npy')
-#clusterlist=readList('clusterlist.dat')
-#growlist=readList('growlist.dat')
+#structureslist=np.load('structureslist.npy')
+#clusterlist=np.load('clusterlist.npy')
+#growlist=np.load('growlist.npy')
+structureslist = [32]
+clusterlist = [4]
+growlist = [1.8,2.2]
 varsList = [structureslist,clusterlist,growlist]
-runArray = fillRunArray(checkedList, varsList) #also writes complete.txt if results.out has correct Nfits lines. 
+[runArray,paths, bestfit] = fillRunArray(checkedList, varsList) #also writes complete.txt if results.out has correct Nfits lines. 
+maxclust = 220 
+recordFits(runArray,paths,bestfit,maxclust) #finds lowest err fit, and finds closeness of other fits to it. 
+
+################## Plotting ############
 print runArray[0,:,:,0]
 os.chdir(dir)
-################## Plotting ############
-
 plotindex = 0 #[err, stdeverr, L1,L0]
 plotmax = np.amax(runArray[:,:,:,plotindex])
 x = varsList[2] # choose 0,1,2

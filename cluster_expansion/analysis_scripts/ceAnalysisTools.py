@@ -1,5 +1,17 @@
 import os, string, subprocess, math, numpy as np, matplotlib as p
 
+#class fits:
+#    def __init__(self,fitsDir,paths,runArray):
+#        self.FitsDir = fitsDir
+#        self.Paths = paths #those with completed fits
+#        self.N = len(paths)
+#        self.RunArray = runArray 
+#        self.n2 = 0 
+#        self.n3 = 0 
+#        self.n4 = 0 
+#        self.n5 = 0 
+#        self.n6 = 0       
+   
 def addToList(folder,toCheckList):
     files = os.listdir(folder)
     for path in files:
@@ -17,7 +29,6 @@ def checkFolders(toCheckList,checkedList,run):
             
 def fillRunArray(checkedList, varsList):
     '''Multidimensional array with results of runs:  runArray[nstruc, n2body,growvar] '''
-
     nComplete = 0
     structureslist = [int(i) for i in varsList[0]]
     clusterlist = [int(i) for i in varsList[1]]
@@ -28,46 +39,147 @@ def fillRunArray(checkedList, varsList):
     dim_nstruc = len(structureslist)  #these need to match run dimensions
     dim_n2body = len(clusterlist)
     dim_growvar = len(growlist)   
-    runArray = np.zeros((dim_nstruc,dim_n2body,dim_growvar,4), dtype=float)
+    runArray = np.zeros((dim_nstruc,dim_n2body,dim_growvar,5), dtype=float)
+    lowestErr = 1000.0
+    paths = []
+    print checkedList
     for path in checkedList:
         [nstruc, nfits, n2, growvar] = getValues(path)
 #        print [nstruc, n2, growvar]
         os.chdir(path)
         [avgErr,stdevErr,L1,L0] = [0,0,0,0]
-        try:
-            resultsfile = open('results.out','r')
-            results = resultsfile.readlines()[1:] #remove header
-            if len(results) == nfits:
-                nComplete += 1            
-                try:
-                    os.system('date > complete.txt')
-                    [avgErr,stdevErr,L1,L0] = getResultsOut(results) #over the nfits cases
-                    print [avgErr,stdevErr,L1,L0]
-                    i1 = structureslist.index(nstruc)
-                    i2 = clusterlist.index(n2)
-                    i3 = growlist.index(growvar)
-        #                    print i1,i2,i3
-                    runArray[i1,i2,i3,0]=avgErr
-                    runArray[i1,i2,i3,1]=stdevErr
-                    runArray[i1,i2,i3,2]=L1
-                    runArray[i1,i2,i3,3]=L0                     
-                except: 
-                    print 'failed to analyze %s' % [nstruc, n2, growvar]                      
-            else:
-                print 'results.out length is %s in [nstruc, n2, growvar]: %s' % (len(results),[nstruc, n2,growvar])
-    #            print avgErr, stdevErr            
-        except:
-            print 'no results.out in %s' % [nstruc, n2, growvar]
+#        try:
+        resultsfile = open('results.out','r')
+        results = resultsfile.readlines()[1:] #remove header
+        if len(results) == nfits:
+            nComplete += 1
+            paths.append(path)       
+            try:
+                os.system('date > complete.txt')
+                [avgErr,stdevErr,L1,L0] = resultsOut(results) #over the nfits cases
+                print [avgErr,stdevErr,L1,L0]
+                if avgErr < lowestErr:
+                    lowestErr = avgErr
+                    bestfit = [path,[nstruc, n2, growvar],[avgErr,stdevErr,L1,L0]]
+                i1 = structureslist.index(nstruc)
+                i2 = clusterlist.index(n2)
+                i3 = growlist.index(growvar)
+    #                    print i1,i2,i3
+                runArray[i1,i2,i3,0]=avgErr
+                runArray[i1,i2,i3,1]=stdevErr
+                runArray[i1,i2,i3,2]=L1
+                runArray[i1,i2,i3,3]=L0                     
+            except: 
+                print 'failed to analyze %s' % [nstruc, n2, growvar]                      
+        else:
+            print 'results.out length is %s in [nstruc, n2, growvar]: %s' % (len(results),[nstruc, n2,growvar])
+#            print avgErr, stdevErr            
+#        except:
+        print 'no results.out in %s' % [nstruc, n2, growvar]
 #    print runArray[2,3,:,1]   
 #    plotArray(runArray)     
     print 'number of incomplete jobs', len(checkedList)-nComplete
+    print 'Best fit', bestfit
     print 'runArray done'
-    return runArray
+    return [runArray, paths, bestfit]
 
-def readJ1(path, L0max):
-    '''Reads all clusters that are included in the fit (number is L0 norm).  Each cluster has its order and up to 6 vertices
+def recordFits(runArray,paths,bestfit,maxclust):
+    '''read J.1.out: order,avg distance,vertices,J's
+    test clusters, identify new ones, assign index to each, 
+    record cluster indices for fit'''
+    bestpath = bestfit[0]
+    bestindices = bestfit[1]
+    [bestorders,bestJs,bestverts,bestdists] = readJ1(bestpath,maxclust)
+#    print  'best',  [bestorders,bestJs,bestverts,bestdists]
+#    mag =        
+    clIndex = 0
+    for path in paths:
+        print path
+        dot = 0.0
+        [orders,js,verts,dists] = readJ1(bestpath,maxclust)
+        for i,jEn in enumerate(js): #check "inner product" between this fit and the best fit
+#            print 'i,jEn',i,jEn           
+            for ncl in range(orders[i]):
+                [match, ibest] = checkCluster(i,orders[i],verts[i,:,:],dists[i],bestorders,bestverts, bestdists)
+#                if match:
+#                    dot = dot + jEn*bestJs[ibest]          
+        
+def checkCluster(i,orderi,vertsi,disti,bestorders,bestverts, bestdists):   
+    '''determines whether this cluster matches one of the best fit clusters, and returns the index in the best fit'''
+    if i == 0:
+        match = True #all have constant term
+        ib = i
+        print 'cluster %i matches bestfit cluster %i' % (i,ib)
+        return [match,ib]
+    match = False
+    ib = 1
+#    print 'i',i
+#    for ib,orderb in enumerate(bestorders): \
+    while ib < len(bestorders) and match == False:
+#        print ib
+        orderb =  bestorders[ib]
+        if orderb == orderi:
+#            print orderb, orderi
+            for dist in bestdists: #check all avg distances
+#                print disti , dist
+                if abs(disti - dist) > 1e-6: # not a match 
+                    continue #to next distance
+                else: #possible match                    
+                    vectmatch=np.zeros((orderb), dtype = int)
+                    for ivert in range(orderb):
+                        bvert = bestverts[ib,ivert,:3]
+#                        print bvert, vertsi[ivert]
+                        if np.array_equal(bvert,vertsi[ivert]) or np.array_equal(bvert,-vertsi[ivert]): #any new vertex means no match
+                            vectmatch[ivert] = 1
+#                        print vectmatch
+                    if np.sum(vectmatch) == orderb:
+                        match = True
+                        imatch = ib
+                        break  #don't continue to other distances                 
+        ib += 1 
+    print 'Cluster %s in current fit, order %s, matches cluster %s  in bestfit, %s' % (str(i), str(orderi),str(imatch), str(match))
+    return [match,ib]
+                    
+def readJ1(path,maxclust):
+    '''Reads all clusters that are included in the fit (number is L0 norm).  Each cluster has its order and its vertices
     stored in an array'''
-    runArray = np.zeros((L0max,L0max,L0max,4), dtype=float)
+#    runArray = np.zeros((L0max,L0max,L0max,4), dtype=float)   
+    maxclust = 220
+    orders = np.zeros((maxclust),dtype=int)
+    verts = np.zeros((maxclust,6,3), dtype=float) #vertices
+    dists = np.zeros((maxclust), dtype=float) #vertices
+    js = np.zeros((maxclust), dtype=float)
+    j1file = open(path+'J.1.out','r')
+    lines = j1file.readlines()
+    j1file.close()
+    index = 0
+    verts[index,0,0]=0.0 #1-body cluster
+    verts[index,0,1]=0.0
+    verts[index,0,2]=0.0 
+    orders[0]=1
+    print orders[:20]
+    js[0] = lines[4].split()[1]
+    for i,line in enumerate(lines):
+    #    print i, line
+        if 'Number of vertices' in line:
+            index += 1        
+#            print i, lines[i+1]
+            order = int(lines[i+1])
+            orders[index] = order
+            print orders[:20]
+            js[index] = float(lines[i-1].split()[0])
+            dists[index] = float(lines[i+3])
+#            print "order", order
+            for j in range(order):
+                [x,y,z] = lines[i+7+j].split()[:3] #x, y, z coordinates
+                verts[index,j,0]=float(x)
+                verts[index,j,1]=float(y)
+                verts[index,j,2]=float(z) 
+#    print  orders
+#    print js
+#    print verts
+#    print dists                 
+    return [orders,js,verts,dists]
 
 def plotArray(x,y,matrix1,plotfile1,title1,xlabel1,ylabel1,plotmax):
     '''plots colored matrix for 2 d array'''
@@ -101,7 +213,7 @@ def readList(listname):
     file1.close()
     return list1
 
-def getResultsOut(list1):
+def resultsOut(list1):
     '''Gets avg, stdev, L1, L0 norms from columns of results.out'''
     err = 0.0
     stdev = 0.0
