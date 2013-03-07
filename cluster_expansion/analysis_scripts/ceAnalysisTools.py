@@ -1,16 +1,6 @@
 import os, string, subprocess, math, numpy as np, matplotlib as p
 
-#class fits:
-#    def __init__(self,fitsDir,paths,runArray):
-#        self.FitsDir = fitsDir
-#        self.Paths = paths #those with completed fits
-#        self.N = len(paths)
-#        self.RunArray = runArray 
-#        self.n2 = 0 
-#        self.n3 = 0 
-#        self.n4 = 0 
-#        self.n5 = 0 
-#        self.n6 = 0       
+ 
    
 def addToList(folder,toCheckList):
     files = os.listdir(folder)
@@ -48,34 +38,34 @@ def fillRunArray(checkedList, varsList, maxclust):
 #        print [nstruc, n2, growvar]
         os.chdir(path)
         [avgErr,stdevErr,L1,L0] = [0,0,0,0]
-#        try:
-        resultsfile = open('results.out','r')
-        results = resultsfile.readlines()[1:] #remove header
-        if len(results) == nfits:
-            nComplete += 1
-            paths.append(path)       
-            try:
-                os.system('date > complete.txt')
-                [avgErr,stdevErr,L1,L0] = resultsOut(results) #over the nfits cases
-                print [avgErr,stdevErr,L1,L0]
-                if avgErr < lowestErr:
-                    lowestErr = avgErr
-                    bestfit = [path,[nstruc, n2, growvar],[avgErr,stdevErr,L1,L0]]
-                i1 = structureslist.index(nstruc)
-                i2 = clusterlist.index(n2)
-                i3 = growlist.index(growvar)
-    #                    print i1,i2,i3
-                runArray[i1,i2,i3,0]=avgErr
-                runArray[i1,i2,i3,1]=stdevErr
-                runArray[i1,i2,i3,2]=L1
-                runArray[i1,i2,i3,3]=L0                     
-            except: 
-                print 'failed to analyze %s' % [nstruc, n2, growvar]                      
-        else:
-            print 'results.out length is %s in [nstruc, n2, growvar]: %s' % (len(results),[nstruc, n2,growvar])
-#            print avgErr, stdevErr            
-#        except:
-        print 'no results.out in %s' % [nstruc, n2, growvar]
+        try:
+            resultsfile = open('results.out','r')
+            results = resultsfile.readlines()[1:] #remove header
+            if len(results) == nfits:
+                nComplete += 1
+                paths.append(path)       
+                try:
+                    os.system('date > complete.txt')
+                    [avgErr,stdevErr,L1,L0] = resultsOut(results) #over the nfits cases
+                    print [avgErr,stdevErr,L1,L0]
+                    if avgErr < lowestErr:
+                        lowestErr = avgErr
+                        bestfit = [path,[nstruc, n2, growvar],[avgErr,stdevErr,L1,L0]]
+                    i1 = structureslist.index(nstruc)
+                    i2 = clusterlist.index(n2)
+                    i3 = growlist.index(growvar)
+        #                    print i1,i2,i3
+                    runArray[i1,i2,i3,0]=avgErr
+                    runArray[i1,i2,i3,1]=stdevErr
+                    runArray[i1,i2,i3,2]=L1
+                    runArray[i1,i2,i3,3]=L0                     
+                except: 
+                    print 'failed to analyze %s' % [nstruc, n2, growvar]                      
+            else:
+                print 'results.out length is %s in [nstruc, n2, growvar]: %s' % (len(results),[nstruc, n2,growvar])
+        #            print avgErr, stdevErr            
+        except:
+            print 'no results.out in %s' % [nstruc, n2, growvar]
 #    print runArray[2,3,:,1]   
 #    plotArray(runArray)  
     print 'number of incomplete jobs', len(checkedList)-nComplete
@@ -92,13 +82,16 @@ def recordFits(runArray,paths,bestfit,varsList,maxclust):
     clusterlist = [int(i) for i in varsList[1]]
     growlist = [round(float(i),2) for i in varsList[2]]    
     bestpath = bestfit[0]
+#    print 'structs', structureslist
+#    print 'clusters', clusterlist
+#    print 'grow',growlist
     bestindices = bestfit[1]
     print 'Best fit parameters'
     [bestorders,bestJs,bestverts,bestdists] = readJ1(bestpath,maxclust)
     bestfitMag = np.sqrt(np.sum(np.square(bestJs)))
 #    print  'best',  [bestorders,bestJs,bestverts,bestdists]
     for ipath, path in enumerate(paths):
-        print 'path', ipath, path
+        print 'Analyzing fit in path', ipath, path
         dot = 0.0
         [orders,js,verts,dists] = readJ1(path,maxclust)
         fitMag = np.sqrt(np.sum(np.square(js)))
@@ -112,6 +105,7 @@ def recordFits(runArray,paths,bestfit,varsList,maxclust):
         closeness = dot/(fitMag*bestfitMag) # essentially cos(theta) = a dot b/(|a||b|)       
 #        print 'closeness', closeness
         [nstruc, nfits, n2, growvar] = getValues(path)
+        print [nstruc, nfits, n2, growvar]
         i1 = structureslist.index(nstruc)
         i2 = clusterlist.index(n2)
         i3 = growlist.index(growvar)

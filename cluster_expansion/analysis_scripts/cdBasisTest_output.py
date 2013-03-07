@@ -1,9 +1,8 @@
 ################## Directories ################## 
 mainDir = '/fslhome/bch/cluster_expansion/cluster_size_test/agpt/'
 #Specify the type of run
-#runtype = 'ncl_ntr'
-runtype = 'test'
-
+runtype = 'ncl_ntr'
+#runtype = 'test'
 
 dir = mainDir + runtype + '/'
 #Specify the name of the type of run
@@ -13,10 +12,7 @@ import os,subprocess,math,time,sys,datetime,numpy as np
 #import numpy as np 
 from ceAnalysisTools import addToList, checkFolders, fillRunArray, recordFits, plotArray,writeFinish, getElement,\
                             writeElements, nstrip, writeElSteps, writeElConverge #readList
-
-run = runName
-
-#            
+run = runName         
 print('\nInitializing...\n')
 print('Finding Directories to do %s on\n' % run)
 print('Searching all Directories in ' + dir+'\n')
@@ -36,12 +32,12 @@ checkedList=sorted(checkFolders(toCheckList,checkedList,run))
 #    print('checkedList contains : ' + i+'\n')
 print '%s folders will be analyzed' % len(checkedList) 
 os.chdir(dir)
-#structureslist=np.load('structureslist.npy')
-#clusterlist=np.load('clusterlist.npy')
-#growlist=np.load('growlist.npy')
-structureslist = [32]
-clusterlist = [4]
-growlist = [1.8,2.2]
+structureslist=np.load('structureslist.npy')
+clusterlist=np.load('clusterlist.npy')
+growlist=np.load('growlist.npy')
+#structureslist = [32]
+#clusterlist = [4]
+#growlist = [1.8,2.2]
 varsList = [structureslist,clusterlist,growlist]
 maxclust = 220 #needed for recordFits (closeness of fits to best fit)
 [runArray,paths,bestfit] = fillRunArray(checkedList, varsList,maxclust) #also writes complete.txt if results.out has correct Nfits lines. 
@@ -49,7 +45,7 @@ maxclust = 220 #needed for recordFits (closeness of fits to best fit)
 ################## Plotting ############
 print runArray[0,:,:,0]
 os.chdir(dir)
-plotindex = 0 #[err, stdeverr, L1, L0]
+plotindex = 0 #[err, stdeverr, L1,L0,fitcloseness to best]
 plotmax = np.amax(runArray[:,:,:,plotindex])
 x = varsList[2] # choose 0,1,2
 y = np.log2(varsList[1])
@@ -60,7 +56,7 @@ for i,nstruct in enumerate(structureslist):
     ylabel1 = 'Log2 of N-pairs'
     plotArray(x,y,runArray[i,:,:,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)
       
-plotindex = 2 #[err, stdeverr, L1,L0]
+plotindex = 2 #[[err, stdeverr, L1,L0,fitcloseness to best]
 plotmax = np.amax(runArray[:,:,:,plotindex])
 x = varsList[2] # choose 0,1,2
 y = np.log2(varsList[1])
@@ -71,7 +67,7 @@ for i,nstruct in enumerate(structureslist):
     ylabel1 = 'Log2 of N-pairs'
     plotArray(x,y,runArray[i,:,:,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)  
 
-plotindex = 3 #[err, stdeverr, L1,L0]
+plotindex = 3 #[err, stdeverr, L1,L0,fit closeness to best]
 plotmax = np.amax(runArray[:,:,:,plotindex])
 x = varsList[2] # choose 0,1,2
 y = np.log2(varsList[1])
@@ -81,28 +77,40 @@ for i,nstruct in enumerate(structureslist):
     xlabel1 = 'Growth factor for orders above 2-body'
     ylabel1 = 'Log2 of N-pairs'
     plotArray(x,y,runArray[i,:,:,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)  
-    
-plotindex = 0 #[err, stdeverr, L1,L0]
+
+plotindex = 4 #[err, stdeverr, L1,L0,fit closeness to best]
 plotmax = np.amax(runArray[:,:,:,plotindex])
 x = varsList[2] # choose 0,1,2
-y = varsList[0]
-for i,npairs in enumerate(clusterlist):
-    plotfile = 'npairs%s' % npairs
-    title1 = 'Validation error for %s pairs in cluster basis, AgPt ' % npairs
+y = np.log2(varsList[1])
+for i,nstruct in enumerate(structureslist):
+    plotfile = 'fitclose%s' % nstruct
+    title1 = 'Closeness of fits to lowest err fit,  %s AgPt structures in training set' % nstruct
     xlabel1 = 'Growth factor for orders above 2-body'
-    ylabel1 = 'Number of structures in training set'
-    plotArray(x,y,runArray[:,i,:,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)
+    ylabel1 = 'Log2 of N-pairs'
+    plotArray(x,y,runArray[i,:,:,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)  
+
     
-plotindex = 0 #[err, stdeverr, L1,L0]
-plotmax = np.amax(runArray[:,:,:,plotindex])
-x = np.log2(varsList[1])
-y = varsList[0] # choose 0,1,2
-for i,growvar in enumerate(growlist):
-    plotfile = 'growvar%s' % int(100*growvar)
-    title1 = 'Validation error for N(o)=%s*N(o-1) , AgPt ' % growvar
-    ylabel1 = 'Number of structures in training set'
-    xlabel1 = 'Log2 of N-pairs'
-    plotArray(x,y,runArray[:,:,i,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)
+#plotindex = 0 #[err, stdeverr, L1,L0]
+#plotmax = np.amax(runArray[:,:,:,plotindex])
+#x = varsList[2] # choose 0,1,2
+#y = varsList[0]
+#for i,npairs in enumerate(clusterlist):
+#    plotfile = 'npairs%s' % npairs
+#    title1 = 'Validation error for %s pairs in cluster basis, AgPt ' % npairs
+#    xlabel1 = 'Growth factor for orders above 2-body'
+#    ylabel1 = 'Number of structures in training set'
+#    plotArray(x,y,runArray[:,i,:,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)
+#    
+#plotindex = 0 #[err, stdeverr, L1,L0]
+#plotmax = np.amax(runArray[:,:,:,plotindex])
+#x = np.log2(varsList[1])
+#y = varsList[0] # choose 0,1,2
+#for i,growvar in enumerate(growlist):
+#    plotfile = 'growvar%s' % int(100*growvar)
+#    title1 = 'Validation error for N(o)=%s*N(o-1) , AgPt ' % growvar
+#    ylabel1 = 'Number of structures in training set'
+#    xlabel1 = 'Log2 of N-pairs'
+#    plotArray(x,y,runArray[:,:,i,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)
 
 ################### Sparsity ############
 ##[structureslist,clusterlist,growlist]
