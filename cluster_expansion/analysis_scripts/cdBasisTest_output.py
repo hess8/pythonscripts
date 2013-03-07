@@ -11,8 +11,8 @@ runName = 'run_10_15'
 
 import os,subprocess,math,time,sys,datetime,numpy as np
 #import numpy as np 
-from ceAnalysisTools import addToList, checkFolders, fillRunArray, readList, plotArray,recordFits,writeFinish, getElement,\
-                            writeElements, nstrip, writeElSteps, writeElConverge
+from ceAnalysisTools import addToList, checkFolders, fillRunArray, recordFits, plotArray,writeFinish, getElement,\
+                            writeElements, nstrip, writeElSteps, writeElConverge #readList
 
 run = runName
 
@@ -43,14 +43,13 @@ structureslist = [32]
 clusterlist = [4]
 growlist = [1.8,2.2]
 varsList = [structureslist,clusterlist,growlist]
-[runArray,paths, bestfit] = fillRunArray(checkedList, varsList) #also writes complete.txt if results.out has correct Nfits lines. 
-maxclust = 220 
-recordFits(runArray,paths,bestfit,maxclust) #finds lowest err fit, and finds closeness of other fits to it. 
+maxclust = 220 #needed for recordFits (closeness of fits to best fit)
+[runArray,paths,bestfit] = fillRunArray(checkedList, varsList,maxclust) #also writes complete.txt if results.out has correct Nfits lines. 
 
 ################## Plotting ############
 print runArray[0,:,:,0]
 os.chdir(dir)
-plotindex = 0 #[err, stdeverr, L1,L0]
+plotindex = 0 #[err, stdeverr, L1, L0]
 plotmax = np.amax(runArray[:,:,:,plotindex])
 x = varsList[2] # choose 0,1,2
 y = np.log2(varsList[1])

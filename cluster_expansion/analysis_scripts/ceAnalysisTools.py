@@ -27,7 +27,7 @@ def checkFolders(toCheckList,checkedList,run):
             checkedList.append(path)
     return checkedList            
             
-def fillRunArray(checkedList, varsList):
+def fillRunArray(checkedList, varsList, maxclust):
     '''Multidimensional array with results of runs:  runArray[nstruc, n2body,growvar] '''
     nComplete = 0
     structureslist = [int(i) for i in varsList[0]]
@@ -77,49 +77,67 @@ def fillRunArray(checkedList, varsList):
 #        except:
         print 'no results.out in %s' % [nstruc, n2, growvar]
 #    print runArray[2,3,:,1]   
-#    plotArray(runArray)     
+#    plotArray(runArray)  
     print 'number of incomplete jobs', len(checkedList)-nComplete
     print 'Best fit', bestfit
+    print 'recording closeness of fits into runArray'
+    runArray = recordFits(runArray,paths,bestfit,varsList,maxclust)
     print 'runArray done'
     return [runArray, paths, bestfit]
 
-def recordFits(runArray,paths,bestfit,maxclust):
-    '''read J.1.out: order,avg distance,vertices,J's
-    test clusters, identify new ones, assign index to each, 
-    record cluster indices for fit'''
+def recordFits(runArray,paths,bestfit,varsList,maxclust):
+    '''read J.1.out: order, avg distance, vertices, J's
+    test fits to see how close they are to best fit. '''
+    structureslist = [int(i) for i in varsList[0]]
+    clusterlist = [int(i) for i in varsList[1]]
+    growlist = [round(float(i),2) for i in varsList[2]]    
     bestpath = bestfit[0]
     bestindices = bestfit[1]
+    print 'Best fit parameters'
     [bestorders,bestJs,bestverts,bestdists] = readJ1(bestpath,maxclust)
+    bestfitMag = np.sqrt(np.sum(np.square(bestJs)))
 #    print  'best',  [bestorders,bestJs,bestverts,bestdists]
-#    mag =        
-    clIndex = 0
-    for path in paths:
-        print path
+    for ipath, path in enumerate(paths):
+        print 'path', ipath, path
         dot = 0.0
-        [orders,js,verts,dists] = readJ1(bestpath,maxclust)
+        [orders,js,verts,dists] = readJ1(path,maxclust)
+        fitMag = np.sqrt(np.sum(np.square(js)))
+#        print 'mag', fitMag
         for i,jEn in enumerate(js): #check "inner product" between this fit and the best fit
-#            print 'i,jEn',i,jEn           
-            for ncl in range(orders[i]):
-                [match, ibest] = checkCluster(i,orders[i],verts[i,:,:],dists[i],bestorders,bestverts, bestdists)
-#                if match:
-#                    dot = dot + jEn*bestJs[ibest]          
+            if jEn != 0.0: #using only filled in part of array
+                [match, imatch] = checkCluster(i,orders[i],verts[i,:,:],dists[i],bestorders,bestverts, bestdists)
+                if match:
+#                    print 'i,jEn, imatch, bestJs[imatch]', [[i,jEn],[imatch, bestJs[imatch]]]
+                    dot = dot + jEn*bestJs[imatch]   
+        closeness = dot/(fitMag*bestfitMag) # essentially cos(theta) = a dot b/(|a||b|)       
+#        print 'closeness', closeness
+        [nstruc, nfits, n2, growvar] = getValues(path)
+        i1 = structureslist.index(nstruc)
+        i2 = clusterlist.index(n2)
+        i3 = growlist.index(growvar)
+#                    print i1,i2,i3
+        runArray[i1,i2,i3,4]=closeness
+    return runArray
         
 def checkCluster(i,orderi,vertsi,disti,bestorders,bestverts, bestdists):   
     '''determines whether this cluster matches one of the best fit clusters, and returns the index in the best fit'''
     if i == 0:
         match = True #all have constant term
         ib = i
-        print 'cluster %i matches bestfit cluster %i' % (i,ib)
+#        print 'cluster %i matches bestfit cluster %i' % (i,ib)
         return [match,ib]
     match = False
-    ib = 1
+    imatch = 0
+    ib = 1 #cluster in bestfit to start comparison
 #    print 'i',i
 #    for ib,orderb in enumerate(bestorders): \
     while ib < len(bestorders) and match == False:
 #        print ib
         orderb =  bestorders[ib]
+        if orderb == 0:
+            break #reached maximum order in best fit.
+#        print orderb, orderi        
         if orderb == orderi:
-#            print orderb, orderi
             for dist in bestdists: #check all avg distances
 #                print disti , dist
                 if abs(disti - dist) > 1e-6: # not a match 
@@ -137,8 +155,11 @@ def checkCluster(i,orderi,vertsi,disti,bestorders,bestverts, bestdists):
                         imatch = ib
                         break  #don't continue to other distances                 
         ib += 1 
-    print 'Cluster %s in current fit, order %s, matches cluster %s  in bestfit, %s' % (str(i), str(orderi),str(imatch), str(match))
-    return [match,ib]
+#    if match:
+#        print 'Cluster %s in fit, order %s, matches cluster %s  in bestfit' % (str(i+1), str(orderi),str(imatch+1))
+#    else:
+#        print 'No match for cluster %i in fit' % (i+1)
+    return [match,imatch]
                     
 def readJ1(path,maxclust):
     '''Reads all clusters that are included in the fit (number is L0 norm).  Each cluster has its order and its vertices
@@ -157,7 +178,6 @@ def readJ1(path,maxclust):
     verts[index,0,1]=0.0
     verts[index,0,2]=0.0 
     orders[0]=1
-    print orders[:20]
     js[0] = lines[4].split()[1]
     for i,line in enumerate(lines):
     #    print i, line
@@ -166,7 +186,6 @@ def readJ1(path,maxclust):
 #            print i, lines[i+1]
             order = int(lines[i+1])
             orders[index] = order
-            print orders[:20]
             js[index] = float(lines[i-1].split()[0])
             dists[index] = float(lines[i+3])
 #            print "order", order
@@ -176,7 +195,8 @@ def readJ1(path,maxclust):
                 verts[index,j,1]=float(y)
                 verts[index,j,2]=float(z) 
 #    print  orders
-#    print js
+#    print js[:30]
+#    print orders[:30]
 #    print verts
 #    print dists                 
     return [orders,js,verts,dists]
@@ -207,11 +227,11 @@ def plotArray(x,y,matrix1,plotfile1,title1,xlabel1,ylabel1,plotmax):
 #pylab.title('About as simple as it gets, folks')    
     
             
-def readList(listname):
-    file1 = open(listname,'r')
-    list1 = nstrip(file1.readlines())       
-    file1.close()
-    return list1
+#def readList(listname):
+#    file1 = open(listname,'r')
+#    list1 = nstrip(file1.readlines())       
+#    file1.close()
+#    return list1
 
 def resultsOut(list1):
     '''Gets avg, stdev, L1, L0 norms from columns of results.out'''
