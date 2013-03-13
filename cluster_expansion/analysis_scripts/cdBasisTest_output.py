@@ -3,6 +3,7 @@ mainDir = '/fslhome/bch/cluster_expansion/cluster_size_test/agpt/'
 #Specify the type of run
 runtype = 'ncl_ntr'
 #runtype = 'test'
+nHold=249  # No of structures in holdout set
 
 dir = mainDir + runtype + '/'
 #Specify the name of the type of run
@@ -10,8 +11,7 @@ runName = 'run_10_15'
 
 import os,subprocess,math,time,sys,datetime,numpy as np
 #import numpy as np 
-from ceAnalysisTools import addToList, checkFolders, fillRunArray, recordFits, plotArray,writeFinish, getElement,\
-                            writeElements, nstrip, writeElSteps, writeElConverge #readList
+from ceAnalysisTools import addToList, checkFolders, fillRunArray, plotArray
 run = runName         
 print('\nInitializing...\n')
 print('Finding Directories to do %s on\n' % run)
@@ -39,8 +39,7 @@ growlist=np.load('growlist.npy')
 #clusterlist = [4]
 #growlist = [1.8,2.2]
 varsList = [structureslist,clusterlist,growlist]
-maxclust = 220 #needed for recordFits (closeness of fits to best fit)
-[runArray,paths,bestfit] = fillRunArray(checkedList, varsList,maxclust) #also writes complete.txt if results.out has correct Nfits lines. 
+[runArray,paths,bestfit] = fillRunArray(checkedList, varsList,nHold) #also writes complete.txt if results.out has correct Nfits lines. 
 
 ################## Plotting ############
 print runArray[0,:,:,0]
@@ -55,6 +54,19 @@ for i,nstruct in enumerate(structureslist):
     xlabel1 = 'Growth factor for orders above 2-body'
     ylabel1 = 'Log2 of N-pairs'
     plotArray(x,y,runArray[i,:,:,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)
+    
+
+plotindex = 1 #[err, stdeverr, L1,L0,fitcloseness to best]
+plotmax = np.amax(runArray[:,:,:,plotindex])
+x = varsList[2] # choose 0,1,2
+y = np.log2(varsList[1])
+for i,nstruct in enumerate(structureslist):
+    plotfile = 'stdverrstruct%s' % nstruct
+    title1 = 'St. deviation of err for %s AgPt structures in training set' % nstruct
+    xlabel1 = 'Growth factor for orders above 2-body'
+    ylabel1 = 'Log2 of N-pairs'
+    plotArray(x,y,runArray[i,:,:,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)
+    
       
 plotindex = 2 #[[err, stdeverr, L1,L0,fitcloseness to best]
 plotmax = np.amax(runArray[:,:,:,plotindex])
@@ -89,7 +101,16 @@ for i,nstruct in enumerate(structureslist):
     ylabel1 = 'Log2 of N-pairs'
     plotArray(x,y,runArray[i,:,:,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)  
 
-    
+plotindex = 5 #[err, stdeverr, L1,L0,fit closeness to best]
+plotmax = np.amax(runArray[:,:,:,plotindex])
+x = varsList[2] # choose 0,1,2
+y = np.log2(varsList[1])
+for i,nstruct in enumerate(structureslist):
+    plotfile = 'predclose%s' % nstruct
+    title1 = 'Closeness of predicted errors to those in best fit, %s AgPt structures' % nstruct
+    xlabel1 = 'Growth factor for orders above 2-body'
+    ylabel1 = 'Log2 of N-pairs'
+    plotArray(x,y,runArray[i,:,:,plotindex],plotfile,title1,xlabel1,ylabel1,plotmax)     
 #plotindex = 0 #[err, stdeverr, L1,L0]
 #plotmax = np.amax(runArray[:,:,:,plotindex])
 #x = varsList[2] # choose 0,1,2
