@@ -1,8 +1,8 @@
 #Specify Directory to use
 #mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
-mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
-#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
+#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
+mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
 
 isolatedDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/electron_relax/'
 
@@ -96,7 +96,16 @@ for path in checkedList:
         print 'Fail:'+ path
 print 'Collating plots'
 os.chdir(mainDir)
-collate_plots(checkedList,'dos.png')
+tablelist = []
+tableorder = ['Ti','V','Cr','Mn','Fe','Co','Ni',
+              'Zr','Nb_pv','Mo','Tc','Ru','Rh','Pd',
+              'Hf','Ta','W','Re','Os','Ir','Pt']
+for elem in tableorder:
+    for path in checkedList:
+        if elem in path:
+            tablelist.append(path)
+                
+collate_plots(tablelist,'dos.png')
 
 ################# summary spreadsheet #################
 #Open data files
@@ -223,5 +232,16 @@ for i in range(len(elements)):
     print i,linei
     outfile.write(linei)
 outfile.close()
+
+################# data matrices plotting #################
+# Put in matrices of periodic table shape, and correct order
+enerMat = zeros((7,3),dtype = float)
+distMat = zeros((7,3),dtype = float)
+diffzMat = zeros((7,3),dtype = float)
+ccexpMat = zeros((7,3),dtype = float)
+
+for i in range(len(elements)):
+
+
 
 print 'Done with analysis'

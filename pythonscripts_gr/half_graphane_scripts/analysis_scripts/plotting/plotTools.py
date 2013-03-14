@@ -1,5 +1,5 @@
 
-def collate_plots(checkedList,plotName):
+def collate_plots(tablelist,plotName):
     import sys, os, subprocess
     import numpy as num
     sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
@@ -15,7 +15,7 @@ def collate_plots(checkedList,plotName):
     collatefile.write(' <html>\n <HEAD>\n<TITLE> %s </TITLE>\n</HEAD>\n' % plotType)
     collatefile.write(' <BODY>\n <p style="font-size:20px"> <table border="1">\n <tr>\n') #start row
     iImage = 0        
-    for path in checkedList:
+    for path in tablelist:
         element = getElement('adatom_',path)
         elementPlotName = element + plotName
         try: 
@@ -28,7 +28,7 @@ def collate_plots(checkedList,plotName):
             if num.mod(iImage,nRow) == 0: 
                 collatefile.write('</tr>\n<tr>\n') #end of row, begin new
     collatefile.write(' </tr></table> \n') #end of row and table                
-    for path in checkedList:
+    for path in tablelist:
         #get element name
         element = getElement('adatom_',path)
         elementPlotName = element + plotName              
