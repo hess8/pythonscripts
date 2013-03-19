@@ -1,3 +1,25 @@
+def plotArray(x,y,matrix1,plotfile1,title1,xlabel1,ylabel1,plotmax):
+    '''plots colored matrix for 2 d array'''
+#    from __future__ import division
+    from matplotlib.patches import Patch
+    from pylab import *
+    print plotfile1
+#    print x, y
+#    x=np.append(x,x[-1])#duplicate last value in extra slot, so plot will show all rows/columns 
+#    y=np.append(y,y[-1])
+#    print x,y  
+    X,Y = meshgrid(x, y)
+    Z = matrix1
+    fig = figure()
+    pcolor(X, Y, Z, cmap=cm.hot, vmax = plotmax)
+    xlim((x.min(),x.max()))
+    title(title1)
+    xlabel(xlabel1)
+    ylabel(ylabel1)
+    colorbar()
+    show()
+    fig.savefig(plotfile1)
+
 
 def collate_plots(checkedList,plotName):
     import sys, os, subprocess

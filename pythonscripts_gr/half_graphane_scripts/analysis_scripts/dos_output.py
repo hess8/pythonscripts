@@ -1,8 +1,8 @@
 #Specify Directory to use
 #mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
-#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
-mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
+mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
+#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
 
 isolatedDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/electron_relax/'
 
@@ -88,7 +88,7 @@ print 'writeElSteps', os.getcwd()
 ###### plot DOS #####
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts/plotting/')
 print 'Plotting DOS'
-from plotTools import vasputil_dosplot, collate_plots
+from plotTools import vasputil_dosplot, collate_plots, plotArray
 for path in checkedList:
     try:
         vasputil_dosplot([], ["DOSCAR"], path) #options, args, dir
@@ -157,7 +157,6 @@ os.chdir(mainDir)
 file = open(isolatedDir+'energies','r')
 isolenergies = nstrip(file.readlines())
 file.close()
-
 
 file = open(isolatedDir+'convdiff','r')
 isolconvdiff = nstrip(file.readlines())
@@ -235,13 +234,41 @@ outfile.close()
 
 ################# data matrices plotting #################
 # Put in matrices of periodic table shape, and correct order
-enerMat = zeros((7,3),dtype = float)
-distMat = zeros((7,3),dtype = float)
-diffzMat = zeros((7,3),dtype = float)
-ccexpMat = zeros((7,3),dtype = float)
+nrows = 3+1
+ncols = 7+1
+enerMat = np.zeros((nrows,ncols),dtype = float)
+distMat = np.zeros((nrows,ncols),dtype = float)
+diffzMat = np.zeros((nrows,ncols),dtype = float)
+ccexpMat = np.zeros((nrows,ncols),dtype = float)
+
 
 for i in range(len(elements)):
+    row = np.floor(i/ncols)
+    col = np.mod(i,ncols)
+    print i, [row, col]
+    for elem2 in tableorder:
+        if elements[i] == elem2:
+            if binde[i] < 0:
+                enerMat[row,col] = -binde[i]
+            else:
+                enerMat[row,col] = 0.0
+            distMat[row,col] = distances[i]
+            diffzMat[row,col] = diffz[i]
+            ccexpMat[row,col] = round(100*(float(ccdistances[i])/1.53391 - 1),1) #compare to graphane
+#plotting matrices
 
-
+os.chdir(mainDir)
+x = np.asarray(range(ncols))
+y = np.asarray(range(nrows))
+matrix = enerMat
+plotmax = np.amax(matrix)
+plotfile = 'bindenergy_%s' % structure
+title1 = 'Binding energy for %s' % structure
+#xlabel1 = 'Growth factor for orders above 2-body'
+#ylabel1 = 'Log2 of N-pairs'
+xlabel1 = ''
+ylabel1 = ''
+plotArray(x,y,matrix,plotfile,title1,xlabel1,ylabel1,plotmax)
+                        
 
 print 'Done with analysis'

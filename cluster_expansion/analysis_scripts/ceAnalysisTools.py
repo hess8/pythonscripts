@@ -255,10 +255,6 @@ def plotArray(x,y,matrix1,plotfile1,title1,xlabel1,ylabel1,plotmax):
     show()
     fig.savefig(plotfile1)
 
-#pylab.ylabel('voltage (mV)')
-#pylab.title('About as simple as it gets, folks')    
-    
-            
 #def readList(listname):
 #    file1 = open(listname,'r')
 #    list1 = nstrip(file1.readlines())       
