@@ -8,7 +8,6 @@ def readTrainStruc(dir):
     file1 = open('training_set_structures.dat','r')
     lines = file1.readlines()
     file1.close()
-#    print lines
     structs = [line.split()[1] for line in lines] #2nd column
     return structs
 
@@ -19,7 +18,8 @@ def aflowCreateJobs(structs,atomic,finalDir):
             os.system(commstr)
         except:
             print 'Error in executing %s' % commstr
-#    os.system('mv AFLOWDATA/* %s' % finalDir)
+    os.system('cp -r AFLOWDATA/* %s' % finalDir)
+    os.system('rm -r AFLOWDATA/')
     
     
 ################# script #######################
