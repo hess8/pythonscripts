@@ -54,11 +54,7 @@ kpointVariables = {
 #Specify Incar variables
 incarVariables = {
 '@ISPIN':
-	['2'],
-'@IBRION':
-	['2'],
-'@ISIF':
-	['4']
+	['2']
 }
 
 #Specify Potcar Elements
@@ -66,7 +62,7 @@ incarVariables = {
 elementList = {
 '@adatom':
 [
-'Co','Cr','Cr_pv','Fe','Hf','Ir','Mn','Mn_pv','Mo','Nb_pv','Ni','Os',
+'Co','Cr','Fe','Hf','Ir','Mn','Mo','Nb_pv','Ni','Os',
 'Pd','Pt','Re','Rh','Ru','Ta','Tc','Ti','V','W','Zr'
 ]
 }
@@ -99,7 +95,7 @@ tools.AddToList(dir)
 tools.BuildNewRun() #create folders
 
 
-raw_input("Done creating folders.  Press enter to submit jobs")
+#raw_input("Done creating folders.  Press enter to submit jobs")
 
 
 
@@ -125,7 +121,7 @@ time.sleep(1)
 os.chdir(dir)
 print("Searching all Directories in " + dir+"\n")
 
-tools.CheckFolders()
+tools.CheckFoldersDOS()
 checkedList=sorted(checkedList)
 toRunList=sorted(toRunList)
 
@@ -154,7 +150,7 @@ os.chdir(dir)
 print "\nThe following folders will be run:"
 for i in toRunList:
     print("toRunList contains : " + i)
-
+raw_input("Press enter to submit jobs")
 print"\n"
 for folder in toRunList:
     newFolder = folder
@@ -175,10 +171,10 @@ for folder in toRunList:
     file = open(newFolder+"job",'w+')
     prefix = 'adatom_'
     element = newFolder[newFolder.index(prefix)+len(prefix):newFolder.index('/',newFolder.index(prefix))]
-    jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=1gb,walltime=36:00:00\n#PBS -N dos2.1" + element+ "\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \n exit 0"
+    jobData = "#!/bin/bash\n#PBS -l nodes=1:beta,ppn=1,pmem=1gb,walltime=36:00:00\n#PBS -N dos" + element+ "\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.3.3/vasp  > \"$OUTFILE\" \n exit 0"
     file.write(jobData)
     file.close()
     subprocess.call(['qsub','job']) #waits to get response 
     
 
-print "Done with submitting jobs"
+print "Done submitting jobs"

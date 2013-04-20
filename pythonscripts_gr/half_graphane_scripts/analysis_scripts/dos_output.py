@@ -1,8 +1,8 @@
 #Specify Directory to use
 #mainDir = '/bluehome/bch/vasprun/graphene.structures/h.half_graphane2.1/'
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
-mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
-#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
+#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
+mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
 
 isolatedDir = '/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/isolated/electron_relax/'
 
@@ -22,25 +22,8 @@ elif 'diam' in lastdir:
 else: #half_graphane
     structure = 'half_gr'
 
-#Specify Poscar variables
-poscarVariables = {
-}
-
-#Specify KPoints variables
-kpointVariables = {
-}
-
-#Specify Incar variables
-incarVariables = {
-'@ISPIN':
-    ['2'],
-'@IBRION':
-    ['2'],
-'@ISIF':
-    ['4']
-}
-
-import os,sys,subprocess,math,time 
+import os,sys,subprocess,math,time
+import matplotlib.pyplot as plt 
 import numpy as np 
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
 from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  \
@@ -92,6 +75,7 @@ from plotTools import vasputil_dosplot, collate_plots, plotArray
 for path in checkedList:
     try:
         vasputil_dosplot([], ["DOSCAR"], path) #options, args, dir
+        plt.close()
     except:
         print 'Fail:'+ path
 print 'Collating plots'
@@ -105,7 +89,7 @@ for elem in tableorder:
         if elem in path:
             tablelist.append(path)
                 
-collate_plots(tablelist,'dos.png')
+collate_plots(tablelist,'dos.png','dos.png')
 
 ################# summary spreadsheet #################
 #Open data files
@@ -175,7 +159,7 @@ NELM = nstrip(file.readlines())[0]
 file.close()
 
 try:
-    file = open('initial_relax/stretch','r')
+    file = open('stretch/energies','r')
     strenergies = nstrip(file.readlines())
 except:
     strenergies = ['']*len(elements)
@@ -185,8 +169,10 @@ eIsolatedH = -1.115
 eIsolatedC = -1.3179
 energyGraphane = -25.63
 bindEnergyGraphane = energyGraphane - 2*eIsolatedH - 2* eIsolatedC
-
+BEstretch = [0]*len(elements)
 binde = [0]*len(elements)
+for i in range(len(elements)):  
+    BEstretch[i] = float(strenergies[i])-float(energies[i])
 for i in range(len(elements)):  
     try:
         # for h.half_graphane:
@@ -212,7 +198,7 @@ for i in range(len(elements)):
 #    if elements[i] == 'Ti':
 #        print float(energies[i]) , float(isolenergies[i]), binde[i]
 outfile = open('dos_analysis.csv','w')
-outfile.write('Element,'+BEString+',Calc Energy,Isol atom,IsolConvDiff,Distance,CC Diffz,CC expans %,Stretch energy,Converged,Steps\n')
+outfile.write('Element,'+BEString+',Calc Energy,Isol atom,IsolConvDiff,Distance,CC Diffz,CC expans %,BEstretch,Stretch energy,Converged,Steps\n')
 # write spreadsheet
 
 for i in range(len(elements)):
@@ -222,50 +208,55 @@ for i in range(len(elements)):
     except:
         ccexpand = 'null'
     if converged[i] =='Y' and isolatedFinish[i] == "Y" and float(isolatedElSteps[i]) < NELM:
-        linei = elements[i]+','+str(binde[i])+','+energies[i]+','+isolenergies[i]+','+isolconvdiff[i]+','+distances[i]+','+diffz[i]+','+ccexpand+','+strenergies[i]+','+converged[i]+','+steps[i]+'\n'
+        linei = elements[i]+','+str(binde[i])+','+energies[i]+','+isolenergies[i]+','+isolconvdiff[i]+','+distances[i]+','+diffz[i]+','+ccexpand+','+str(BEstretch[i])+','+strenergies[i]+','+converged[i]+','+steps[i]+'\n'
     elif isolatedFinish[i] == "N" or float(isolatedElSteps[i]) == NELM:
         print i, elements[i],isolatedFinish[i], float(isolatedElSteps[i]) 
-        linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+'not done'+','+isolconvdiff[i]+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
+        linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+'not done'+','+isolconvdiff[i]+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+str(BEstretch[i])+','+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
     else:
-        linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+isolenergies[i]+'*,'+isolconvdiff[i]+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
+        linei = elements[i]+'*,'+str(binde[i])+','+energies[i]+'*,'+isolenergies[i]+'*,'+isolconvdiff[i]+','+distances[i]+'*,'+diffz[i]+','+ccexpand+'*,'+str(BEstretch[i])+','+strenergies[i]+'*,'+converged[i]+'*,'+steps[i]+'\n'        
     print i,linei
     outfile.write(linei)
 outfile.close()
 
 ################# data matrices plotting #################
 # Put in matrices of periodic table shape, and correct order
-nrows = 3+1
-ncols = 7+1
-enerMat = np.zeros((nrows,ncols),dtype = float)
-distMat = np.zeros((nrows,ncols),dtype = float)
-diffzMat = np.zeros((nrows,ncols),dtype = float)
-ccexpMat = np.zeros((nrows,ncols),dtype = float)
+nrows = 3
+ncols = 7
+enerMat = np.zeros((nrows+1,ncols+1),dtype = float)#need extra so will show all data
+distMat = np.zeros((nrows+1,ncols+1),dtype = float)
+diffzMat = np.zeros((nrows+1,ncols+1),dtype = float)
+ccexpMat = np.zeros((nrows+1,ncols+1),dtype = float)
 
-
-for i in range(len(elements)):
-    row = np.floor(i/ncols)
+for i in range(len(tableorder)):
+    row = np.floor(i/(ncols))
     col = np.mod(i,ncols)
     print i, [row, col]
-    for elem2 in tableorder:
-        if elements[i] == elem2:
-            if binde[i] < 0:
-                enerMat[row,col] = -binde[i]
+    for j in range(len(elements)):
+        if tableorder[i] == elements[j]:
+            print elements[j]
+            if binde[j] < 0:
+                enerMat[row,col] = -binde[j]
             else:
                 enerMat[row,col] = 0.0
-            distMat[row,col] = distances[i]
-            diffzMat[row,col] = diffz[i]
-            ccexpMat[row,col] = round(100*(float(ccdistances[i])/1.53391 - 1),1) #compare to graphane
+            distMat[row,col] = distances[j]
+            diffzMat[row,col] = diffz[j]
+            ccexpMat[row,col] = round(100*(float(ccdistances[j])/1.53391 - 1),1) #compare to graphane
+#    #switch row order
+#    for i in range(len(enerMat[:,1])):
+
+#for i in range(nrows):
+#    print enerMat[i,:]
+        
 #plotting matrices
 
 os.chdir(mainDir)
-x = np.asarray(range(ncols))
-y = np.asarray(range(nrows))
+x = np.asarray(range(ncols+1))
+y = -np.asarray(range(nrows+1))
+#print x,y
 matrix = enerMat
 plotmax = np.amax(matrix)
 plotfile = 'bindenergy_%s' % structure
 title1 = 'Binding energy for %s' % structure
-#xlabel1 = 'Growth factor for orders above 2-body'
-#ylabel1 = 'Log2 of N-pairs'
 xlabel1 = ''
 ylabel1 = ''
 plotArray(x,y,matrix,plotfile,title1,xlabel1,ylabel1,plotmax)

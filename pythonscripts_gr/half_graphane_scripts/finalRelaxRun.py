@@ -2,8 +2,8 @@
 
 ################## Directories ################## 
 #Specify Directory to use
-mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
-#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
+#mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/"
+mainDir = "/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/h.half_graphane2.1/"
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
 #mainDir = "/bluehome/bch/vasprun/graphene.structures/ds_diam_like/"
 firstRun = False
@@ -12,14 +12,12 @@ firstRun = False
 a = mainDir.split('/')
 del a[-2]  #removes last part of path 
 inputDir = '/'.join(a) + 'vasp.input/'
- 
 
+HAdDist = 2.1 #H to adatom distance
 #Specify Potcar Directory
-HAdDist = 1.1
-
 potcardir = "/bluehome/bch/hessgroup/vaspfiles/src/potpaw_PBE/"
-#contcardir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
-contcardir = mainDir
+contcardir = "/bluehome/bch/vasprun/graphene.structures/half_graphane/"
+#contcardir = mainDir
 
 #get type of structure
 lastdir = mainDir.split('/')[-2]
@@ -77,7 +75,7 @@ incarVariables = {
 elementList = {
 '@adatom':
 [
-'Co','Cr','Cr_pv','Fe','Hf','Ir','Mn','Mn_pv','Mo','Nb_pv','Ni','Os',
+'Co','Cr','Fe','Hf','Ir','Mn','Mo','Nb_pv','Ni','Os',
 'Pd','Pt','Re','Rh','Ru','Ta','Tc','Ti','V','W','Zr'
 ]
 }
@@ -205,10 +203,10 @@ for folder in toRunList:
     file = open(newFolder+"job",'w+')
     prefix = 'adatom_'
     element = newFolder[newFolder.index(prefix)+len(prefix):newFolder.index('/',newFolder.index(prefix))]
-    jobData = "#!/bin/bash\n#PBS -l nodes=1:ppn=1,pmem=1gb,walltime=48:00:00\n#PBS -N fin_rel_" + element+ "\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\nmpiexec /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.2.12/vasp  > \"$OUTFILE\" \n exit 0"
+    jobData = "#!/bin/bash\n#PBS -l nodes=1:beta,ppn=1,pmem=1gb,walltime=48:00:00\n#PBS -N fin_rel_" + element+ "\n#PBS -m bea\n#PBS -M bret_hess@byu.edu\n# Set the max number of threads to use for programs using OpenMP. Should be <= ppn. Does nothing if the program doesn't use OpenMP.\nexport OMP_NUM_THREADS=8\nOUTFILE=\"output.txt\"\n# The following line changes to the directory that you submit your job from\ncd \"$PBS_O_WORKDIR\"\n /fslhome/bch/hessgroup/vaspfiles/src/vasp.5.3.3/vasp  > \"$OUTFILE\" \n exit 0"
     file.write(jobData)
     file.close()
     subprocess.check_call(['qsub','job']) #waits to get response 
     
 
-print "Done with submitting jobs"
+print "Done submitting jobs"

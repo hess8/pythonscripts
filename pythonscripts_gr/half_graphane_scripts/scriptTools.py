@@ -253,10 +253,20 @@ class VaspTools:
         for path in self.ToCheckList:
             if path.split("/")[-2] == self.RunName:
                 self.CheckedList.append(path)
+                print path
                 if os.path.exists(path + 'OUTCAR') and self.FinishCheck(path) and self.StepsLessThanNSW(path): 
                     print ('Will skip (finished):'+path)    
                 else:
                     self.ToRunList.append(path)             #run only unfinished ones
+    def CheckFoldersDOS(self):
+        for path in self.ToCheckList:
+            if path.split("/")[-2] == self.RunName:
+                self.CheckedList.append(path)
+                print path
+                if os.path.exists(path + 'OUTCAR') and self.FinishCheck(path): 
+                    print ('Will skip (finished):'+path)    
+                else:
+                    self.ToRunList.append(path)  
                 
     def CheckForNewRun(self):
         for path in self.CheckedList:
@@ -300,9 +310,76 @@ class VaspTools:
             steps =  9999
         #check vs NSW
         proc = subprocess.Popen(['grep','-i','NSW',self.CheckedList[0]+'/INCAR'],stdout=subprocess.PIPE)
+        print proc.communicate()[0].split('=')
         NSW = int(proc.communicate()[0].split('=')[-1])
         return steps < NSW # True/False
 
+    def stretchCsPOSCAR(self,runlist):
+       '''Takes a POSCAR (in CONTCAR direct coordinates), and moves the C's (first 2 atoms) downward by 
+       0.35 of z lattice vector (about 7 ang).  The 2 C's are in lines 9,10, or indices 8,9''' 
+       for path in runlist:
+           file=open(path + 'POSCAR','r')
+           lines=file.readlines()
+           file.close()
+           if len(lines) == 0:
+               return
+           c1pos = lines[8].split()
+           c2pos = lines[9].split()
+           z1 = float(c1pos[2])
+           z2 = float(c2pos[2])
+           if z1 > 0.5:
+               z1 = z1 - 1.0
+           if z2 > 0.5:
+               z2 = z1 - 1.0
+           c1pos = c1pos[0:2]+[str(z1-0.35)]
+           c2pos = c2pos[0:2]+[str(z2-0.35)] 
+           c1str = c1pos[0] + '  ' + c1pos[1] + '  ' + c1pos[2] + '\n'
+           c2str = c2pos[0] + '  ' + c2pos[1] + '  ' + c2pos[2] + '\n'
+           lines2 = lines[0:8]+[c1str,c2str]+lines[10:]
+           for line in lines2:
+               print line
+           
+           file=open(path + 'POSCAR','w')
+#           for i, linei in enumerate(lines2):
+           file.writelines(lines2)
+           file.close()
+       return             
+                                              
+#    def removeCsPOSCAR(self,runlist):
+#       '''Takes a POSCAR (in CONTCAR direct coordinates), and removes the C's (first 2 atoms) so that an 
+#       isolated adatomlayer can be run.  The 2 C's are in lines 9,10, or indices 8,9''' 
+#       for path in runlist:
+#           file=open(path + 'POSCAR','r')
+#           lines=file.readlines()
+#           file.close()
+#           if len(lines) == 0:
+#               return
+#           c1pos = lines[8].split()
+#           c2pos = lines[9].split()
+#           z1 = float(c1pos[2])
+#           z2 = float(c2pos[2])
+#           if z1 > 0.5:
+#               z1 = z1 - 1.0
+#           if z2 > 0.5:
+#               z2 = z1 - 1.0
+#           c1pos = c1pos[0:2]+[str(z1-0.35)]
+#           c2pos = c2pos[0:2]+[str(z2-0.35)] 
+#           c1str = c1pos[0] + '  ' + c1pos[1] + '  ' + c1pos[2] + '\n'
+#           c2str = c2pos[0] + '  ' + c2pos[1] + '  ' + c2pos[2] + '\n'
+#           lines2 = lines[0:8]+[c1str,c2str]+lines[10:]
+#           for line in lines2:
+#               print line
+#           
+#           file=open(path + 'POSCAR','w')
+##           for i, linei in enumerate(lines2):
+#           file.writelines(lines2)
+#           file.close()
+#       return             
+     
+                                    
+           
+              
+               
         
         
     def addHToPOSCAR(self,path,HAdDist):

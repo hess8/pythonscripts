@@ -11,26 +11,26 @@ def plotArray(x,y,matrix1,plotfile1,title1,xlabel1,ylabel1,plotmax):
     X,Y = meshgrid(x, y)
     Z = matrix1
     fig = figure()
-    pcolor(X, Y, Z, cmap=cm.Oranges_r, vmax = plotmax)
+#    pcolor(X, Y, Z, cmap=cm.Oranges_r, vmax = plotmax)
+    pcolor(X, Y, Z, cmap=cm.Purples, vmax = plotmax)
     xlim((x.min(),x.max()))
     title(title1)
     xlabel(xlabel1)
     ylabel(ylabel1)
     colorbar()
-    show()
+    draw()
     fig.savefig(plotfile1)
     
-def collate_plots(tablelist,plotName):
+def collate_plots(tablelist,plotName1,plotName2):
+    '''Creates an HTML page with the plots and labels'''    
     import sys, os, subprocess
     import numpy as num
     sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
     from analysisTools import getElement
-    
-    '''Creates an HTML page with the plots and labels'''
     if not os.path.exists('plots'):
         subprocess.call(['mkdir','plots'])
     nRow = 7  # put in periodic table order, with duplicates at end
-    plotType = plotName.split('.')[-2]
+    plotType = plotName1.split('.')[-2]
     print plotType
     collatefile  = open('%splots.htm' % plotType,'w')
     collatefile.write(' <html>\n <HEAD>\n<TITLE> %s </TITLE>\n</HEAD>\n' % plotType)
@@ -38,9 +38,9 @@ def collate_plots(tablelist,plotName):
     iImage = 0        
     for path in tablelist:
         element = getElement('adatom_',path)
-        elementPlotName = element + plotName
+        elementPlotName = element + plotName2
         try: 
-            subprocess.call(['cp','%s%s' % (path,plotName),'plots/'+elementPlotName])     
+            subprocess.call(['cp','%s%s' % (path,plotName1),'plots/'+elementPlotName])     
         except:
             print 'copy plot failed', path      
         if not element in ['Cr_pv', 'Mn_pv']: # don't want these in first table
@@ -52,7 +52,7 @@ def collate_plots(tablelist,plotName):
     for path in tablelist:
         #get element name
         element = getElement('adatom_',path)
-        elementPlotName = element + plotName              
+        elementPlotName = element + plotName2              
         if element  in ['Cr_pv', 'Mn_pv']: # put these last            
             collatefile.write('<td><p><img src="plots/%s" ></p><p>%s</p></td>\n' % (elementPlotName,element))#Image and element under it  
     collatefile.write(' </BODY> </html>') #end of file 
@@ -141,7 +141,8 @@ def vasputil_dosplot(options, args, dir):
             dl = label + ' spin down'
             ax.plot(en, dc.dos[1, :], label=dl)
     d.set_labels()
-    plt.show()
+    plt.show
+#    plt.close()
     plt.savefig('dos')
     
     # For a more involved plot, create your own plot script or run interactively
@@ -174,4 +175,4 @@ def vasputil_dosplot(options, args, dir):
     # os.system('epstopdf tex_demo.eps')
     
     # Finally, show picture
-    # show()
+    # draw()
