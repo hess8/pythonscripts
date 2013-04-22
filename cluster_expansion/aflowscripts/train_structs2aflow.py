@@ -1,6 +1,6 @@
+#!/usr/bin/python
 ''' Reads structure numbers from training_set_structures.dat, 
-    and creates directories with Aflow.in files.  
-    Moves files to finalDir, and removes AFLOWDATA from mainDir'''
+    and creates directories with Aflow.in files. '''
     
 import sys,os
 ################# functions #######################
@@ -23,19 +23,19 @@ def aflowCreateJobs(structs,atomic,finalDir):
         for struc in sublist:
             strucstr += 'f%s,'% struc
         try:
-            commstr= './aconvasp --aflow_proto ' + strucstr+ ' %s' % atomic
+            commstr= './aconvasp --aflow_proto ' + strucstr+ ':%s' % atomic
             os.system(commstr)
         except:
             print 'Error in executing %s' % commstr
-    os.system('cp -r AFLOWDATA/* %s' % finalDir)
-    os.system('rm -r AFLOWDATA/')
+#    os.system('cp -r AFLOWDATA/* %s' % finalDir)
+#    os.system('rm -r AFLOWDATA/')
     
     
 ################# script #######################
 
-mainDir = '/fslhome/bch/cluster_expansion/aflow1/test/'
-finalDir = '/fslhome/bch/cluster_expansion/aflow1/stefano/LIBS/LIBtestbch/'
-atomic = 'Al Pd,Pt'
+mainDir = '/fslhome/bch/cluster_expansion/alir/'
+finalDir = mainDir
+atomic = 'Al:Ir'
 structs = readTrainStruc(mainDir)
 aflowCreateJobs(structs,atomic,finalDir)
 print 'Done'
