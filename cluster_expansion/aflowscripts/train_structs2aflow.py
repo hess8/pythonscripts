@@ -6,7 +6,7 @@ import sys,os
 ################# functions #######################
 def readTrainStruc(dir):
     os.chdir(dir)
-    file1 = open('training_set_structures.dat','r')
+    file1 = open('training_set_structures2.dat','r')
     lines = file1.readlines()
     file1.close()
     structs = [line.split()[1] for line in lines] #2nd column
@@ -29,7 +29,10 @@ def aflowCreateJobs(structs,atomic,finalDir):
             print 'Error in executing %s' % commstr
 #    os.system('cp -r AFLOWDATA/* %s' % finalDir)
 #    os.system('rm -r AFLOWDATA/')
-    
+
+def otherPrep():
+    os.system("perl -pi -e 's/KPPRA=6000/KPPRA=10000/' */*/*/aflow.in")
+    os.system("find `pwd` -name 'aflow.in' > jobs2run")
     
 ################# script #######################
 
@@ -38,4 +41,5 @@ finalDir = mainDir
 atomic = 'Al:Ir'
 structs = readTrainStruc(mainDir)
 aflowCreateJobs(structs,atomic,finalDir)
+otherPrep()
 print 'Done'

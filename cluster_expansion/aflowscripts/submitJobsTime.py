@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import time, os, subprocess
 
-####### this "if" is for python versions lower than 2.7. Needed for subprocess.check_output.  Can be removed if running 2.7 or above. 
+####### This "if" block is for python versions lower than 2.7. Needed for subprocess.check_output. 
 if "check_output" not in dir( subprocess ): # duck punch it in!
     def f(*popenargs, **kwargs):
         if 'stdout' in kwargs:
@@ -16,7 +16,7 @@ if "check_output" not in dir( subprocess ): # duck punch it in!
             raise CalledProcessError(retcode, cmd)
         return output
     subprocess.check_output = f
-####### above needed only for python versions lower than 2.7.
+####### above needed for python versions lower than 2.7.
     
 def jobsleft(toRunFile):
     '''Returns number of lines in file'''
@@ -27,11 +27,11 @@ def jobsleft(toRunFile):
 
 maxDays = 2 #days to run this script
 waitMin = 1 #minutes between checking 
-nQueueWanted = 0 #keep this many in queue
+nQueueWanted = 1 #keep this many in queue
 user = 'bch'
 mainDir = '/fslhome/bch/cluster_expansion/alir/'
 jobfile = mainDir + 'aflowjob'
-toRunFile = mainDir + '/AFLOWDATA/AlIr/jobs2run'
+toRunFile = mainDir + 'jobs2run'
 starttime = time.time()
 os.chdir(mainDir)    
 while time.time()-starttime < maxDays*3600*24: 
