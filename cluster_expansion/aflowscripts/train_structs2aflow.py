@@ -6,14 +6,14 @@ import sys,os
 ################# functions #######################
 def readTrainStruc(dir):
     os.chdir(dir)
-    file1 = open('training_set_structures2.dat','r')
+    file1 = open('training_set_structures.dat','r')
     lines = file1.readlines()
     file1.close()
     structs = [line.split()[1] for line in lines] #2nd column
     return structs
 
 def aflowCreateJobs(structs,atomic,finalDir):
-    nsubmit = 10 #number of structures to submit in each execution of aflow
+    nsubmit = 50 #number of structures to submit in each execution of aflow
     for i in range(len(structs)/nsubmit+1):
         if (i+1)*nsubmit < len(structs)-1:
             sublist = structs[i*nsubmit:(i+1)*nsubmit]
