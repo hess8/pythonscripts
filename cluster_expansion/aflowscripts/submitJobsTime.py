@@ -25,16 +25,16 @@ def jobsleft(toRunFile):
     jobsfile.close()
     return len(lines1)
 
-maxDays = 2 #days to run this script
-waitMin = 5 #minutes between checking 
-nQueueWanted = 200 #keep this many in queue
+maxDays = 4 #days to run this script
+waitMin = .5 #minutes between checking 
+nQueueWanted = 2 #keep this many in queue
 user = 'bch'
-mainDir = '/fslhome/bch/cluster_expansion/alir/'
+mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA4GB/'
 jobfile = mainDir + 'aflowjob'
 toRunFile = mainDir + 'jobs2run'
 starttime = time.time()
 os.chdir(mainDir) 
-os.system('rm slurm-*.out')     
+#os.system('rm slurm-*.out')     
 while time.time()-starttime < maxDays*3600*24: 
     pending = subprocess.check_output(['squeue','-u',user, '--state=PENDING'])
     running = subprocess.check_output(['squeue','-u',user, '--state=RUNNING'])
@@ -50,8 +50,8 @@ while time.time()-starttime < maxDays*3600*24:
     print
     print time.asctime(time.localtime())
     print 'Jobs that were pending: ',len(pending)-1 #one line is header     
+    print 'Jobs that were running: ',len(running)-1 #one line is header 
     print 'Just submitted %s jobs via %s' % (nsubmit, jobfile)
-    print 'Jobs running: ',len(running)-1 #one line is header 
     print 'Days remaining for this script to run:', round(maxDays-(time.time()-starttime)/3600/24,4)
     print 'Files remaining in job list:' , jobsleft(toRunFile)
     print 'Will check again in %s min' % waitMin
