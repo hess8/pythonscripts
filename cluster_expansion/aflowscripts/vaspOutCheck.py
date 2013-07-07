@@ -13,7 +13,7 @@ def readTrainStruc(dir):
     return structs
 
 def aflowCreateJobs(structs,atomic,finalDir):
-    nsubmit = 50 #number of structures to submit in each execution of aflow
+    nsubmit = 10 #number of structures to submit in each execution of aflow
     for i in range(len(structs)/nsubmit+1):
         if (i+1)*nsubmit < len(structs)-1:
             sublist = structs[i*nsubmit:(i+1)*nsubmit]
@@ -32,7 +32,7 @@ def aflowCreateJobs(structs,atomic,finalDir):
 
 def otherPrep():
     os.system("perl -pi -e 's/KPPRA=6000/KPPRA=10000/' */*/*/aflow.in")
-#    os.system("perl -pi -e 's/SYM=ON/SYM=OFF/' */*/*/aflow.in")
+    os.system("perl -pi -e 's/SYM=ON/SYM=OFF/' */*/*/aflow.in")
     os.system("find `pwd` -name 'aflow.in' > jobs2run")
     
 ################# script #######################

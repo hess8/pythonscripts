@@ -25,19 +25,37 @@ def jobsleft(toRunFile):
     jobsfile.close()
     return len(lines1)
 
+def writejobname(jobfile,jobname):
+    job = open(jobfile,'r')
+    lines1 = job.readlines()
+    job.close()
+    for i,line in enumerate(lines1):
+        if 'job-name' in line:
+            lines1[i]='#SBATCH --job-name=%s\n' % jobname
+    job = open(jobfile,'w')
+    job.writelines(lines1)
+    job.close()
+
 maxDays = 4 #days to run this script
-waitMin = .5 #minutes between checking 
-nQueueWanted = 2 #keep this many in queue
+waitMin = 0.2 #minutes between checking 
+nQueueWanted = 0 #keep this many in queue
+#jobname = '3Gb4p' #best to update this
+#jobname = '1Gb10proc'
 user = 'bch'
-mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA4GB/'
+mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA4Gb4proc2/'
+os.chdir(mainDir)
+#mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA1GB10proc/'
 jobfile = mainDir + 'aflowjob'
+#writejobname(jobfile,jobname)
 toRunFile = mainDir + 'jobs2run'
 starttime = time.time()
-os.chdir(mainDir) 
+ 
 #os.system('rm slurm-*.out')     
 while time.time()-starttime < maxDays*3600*24: 
-    pending = subprocess.check_output(['squeue','-u',user, '--state=PENDING'])
-    running = subprocess.check_output(['squeue','-u',user, '--state=RUNNING'])
+    pending = subprocess.check_output(['squeue','-u',user,'--state=PENDING'])
+    running = subprocess.check_output(['squeue','-u',user,'--state=RUNNING'])    
+#    pending = subprocess.check_output(['squeue','-u',user,'-n',jobname,'--state=PENDING'])
+#    running = subprocess.check_output(['squeue','-u',user,'-n',jobname,'--state=RUNNING'])
 #    locked = subprocess.check_output(['find','-name','LOCK','|','wc','-l']) #gives error
     print pending
     pending = pending.splitlines()
