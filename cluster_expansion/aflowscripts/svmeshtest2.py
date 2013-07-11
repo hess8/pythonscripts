@@ -15,35 +15,37 @@ def svmesh(N,vecs):
     n3 = N**(1/3.0) * v**(1/3.0) * w**(1/3.0) / u**(2/3.0)
     print 'order type', ordertype([0,n1,n2,n3])
 #    print n1,n2,n3, n1*n2*n3
-    
-    nsort = sorted([n1,n2,n3],reverse=True)
-    print 'sorted', nsort
-    p = nsort[0]/nsort[1]
-    q = nsort[0]/nsort[2]
-    r = nsort[1]/nsort[2] 
+
+    p = n2/n1
+    q = n3/n2
+    r = n1/n3
     delta = 10**-6
-    mk = np.rint(nsort[2]) #lowest integer in mesh divisions
-    if abs(np.rint(r)-r)<delta:
-        mj = np.rint(r)*mk
-        if np.rint(r) != 1:
-            print 'int ratio r (2/3)'
-    else:
-        mj = np.rint(nsort[1])   
-    if abs(np.rint(q)-q)<delta:
-        if np.rint(q) != 1:
-            print 'int ratio q (1/3)'
-        mi = np.rint(q)*mk
-    else:
-        mi = np.rint(nsort[0])                   
+    PQR = np.array([0,0,0]).astype(int)
+    '''   Define triangle as 
+               m1
+            P      R
+        
+        m2     Q     m3
+    The integer relations (P,Q,R) 'point' to the larger integer.  If they are CCW, record +1.  
+    If CW, -1 
+                  
+           ''' 
+   
     if abs(np.rint(p)-p)<delta:
-        if np.rint(p) != 1:
-            print 'int ratio p (1/2)'
-        mi = np.rint(p)*mj
-        if abs(np.rint(q)-q)<delta:
-            print 'consistent?', np.rint(p)*mj == np.rint(q)*mk
-    print 'mlist', [mi,mj,mk]
-     
-           
+        PQR[0] = 1
+    elif abs(np.rint(1/p)-(1/p))<delta:
+        PQR[0] = -1
+    if abs(np.rint(q)-q)<delta:
+        PQR[1] = 1
+    elif abs(np.rint(1/q)-(1/q))<delta:
+        PQR[1] = -1    
+    if abs(np.rint(r)-r)<delta:
+        PQR[2] = 1
+    elif abs(np.rint(1/r)-(1/r))<delta:
+        PQR[2] = -1
+   
+    Nrels = np.sum(np.abs(PQR)) #number of integer relations)
+    print 'Nrels', Nrels, PQR          
     
     return np.rint(np.array([n1,n2,n3])).astype(int) #round then convert to integers
 
