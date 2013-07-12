@@ -78,12 +78,18 @@ def svmesh(N,vecs):
         ms[icy(imax,-1)] = ms[imax]//r1
         ms[icy(imax,1)] = ms[imax]//r2
     print ms, 'ms'
-
-
     return ms
                       
 def getkpts_vasp(dir):
     file1 = open(maindir+dir+'/'+kptsfile,'r')
+    kpointsfile = file1.readlines()
+    file1.close()
+    kpts_vasp = np.array(kpointsfile[3].split(),dtype=np.int16)
+    return kpts_vasp
+
+def writekpts_vasp(dir, ms):
+    '''Write mesh m's to kpoints file, replacing previous mesh'''
+    file1 = open(maindir+dir+'/'+kptsfile,'rw')
     kpointsfile = file1.readlines()
     file1.close()
     kpts_vasp = np.array(kpointsfile[3].split(),dtype=np.int16)
