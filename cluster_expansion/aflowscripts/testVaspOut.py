@@ -1,4 +1,9 @@
 #!/usr/bin/python
+import time, os, subprocess
+'''For each dir in jobs2run: replaces kpoints file with correct mesh for POSCAR,
+reads a jobfiles from the maindir,writes the structure number to the job name, and submits a vasp job
+'''
+#!/usr/bin/python
 ''' tests. '''
     
 import sys,os
@@ -99,10 +104,22 @@ def writekpts_vasp(dir, mesh):
     file2.close()
     return 
 
-   
+def writejobfile(maindir,dir):
+    '''read from a template in maindir, and put dir in job name'''
+    file1 = open(maindir+'vaspjob','r')
+    jobfile = file1.readlines()
+    file1.close
+    for i in range(len(jobfile)):
+        jobfile[i]=jobfile[i].replace('myjob', dir)
+    file2 = open(maindir+dir+'/'+'vaspjob','w')
+    file2.writelines(jobfile) 
+    file2.close()
+    return 
+
+
 ################# script #######################
 
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAktest2/AlIr/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAktest2corr/AlIr/'
 testfile = 'POSCAR'
 kptsfile = 'KPOINTS'
 Nkppra = 10000
@@ -119,18 +136,22 @@ for dir in dirs:
         file1.close()
         if len(poscar) >0:
             scale = np.sum(np.array(float(poscar[1])))
-#            print 'natoms', np.array(poscar[5].split(),dtype=np.int16)
             N = np.rint(Nkppra/np.sum(np.array(poscar[5].split(),dtype=np.int16))).astype(int) # number of kpts desired
             reallatt[0,:] = np.array(poscar[2].split())
             reallatt[1,:] = np.array(poscar[3].split())
             reallatt[2,:] = np.array(poscar[4].split())
             reallatt = scale*reallatt.astype(np.float)        
-#            print reallatt
             reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
-#            print reciplatt
             mesh_ns = svmesh(N,reciplatt)
-#            print mesh_ns
-            print getkpts_vasp(dir), 'Aflow'
-#            writekpts_vasp(dir, mesh_ns)
-#                        
+            writekpts_vasp(dir,mesh_ns) #correct kmesh
+            writejobfile(maindir,dir)
+            os.chdir(dir)
+            subprocess.call(['rm', 'slurm*'])
+            subprocess.call(['sbatch', 'vaspjob'])
+            os.chdir(maindir)
+            
+            # submit vasp job                      
 print 'Done'
+
+
+

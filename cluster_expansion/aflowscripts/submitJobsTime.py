@@ -42,7 +42,7 @@ nQueueWanted = 0 #keep this many in queue
 #jobname = '3Gb4p' #best to update this
 #jobname = '1Gb10proc'
 user = 'bch'
-mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAktest/'
+mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAktest2/'
 os.chdir(mainDir)
 #mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA1GB10proc/'
 jobfile = mainDir + 'aflowjob'
