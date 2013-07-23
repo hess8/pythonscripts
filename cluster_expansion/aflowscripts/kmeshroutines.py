@@ -2,13 +2,39 @@
 import numpy as np   
 import time, os, subprocess, sys
 
-def lattice_vecs(a,b,c,alpha,beta,gamma):
-    ''' Make lattice vectors from triclinic method of 
-    Setyawan, Wahyu; Curtarolo, Stefano (2010). "High-throughput electronic band structure calculations: 
-    Challenges and tools". Comp. Mat. Sci. 49: 299–312. doi:10.1016/j.commatsci.2010.05.010.
-    see A.14
-    '''
+def lattice_vecs(cryststruc):
     
+    ''' Make lattice vectors from triclinic method of 
+        Setyawan, Wahyu; Curtarolo, Stefano (2010). "High-throughput electronic band structure calculations: 
+     
+    see A.14.
+    al, be, ga, are alpha, beta, gamma angles
+    
+    Stefano's method reorders so that a<b<c .  Then the angles are changed:
+    a-b:gamma  b-c: alph  c-a: beta
+    '''
+    [a,b,c,al,be,ga] = cryststruc
+    if b>c: #switch c,b, gamma and beta 
+        [a,b,c,al,be,ga] = [a,c,b,al,ga,be] # e.g 3,2,1 -> 3,1,2
+    if a>b: #switch a,b, alph and beta
+        [a,b,c,al,be,ga] = [b,a,c,be,al,ga] # e.g 3,1,2 -> 1,3,2
+    if b>c: #switch c,b, gamma and beta
+        [a,b,c,al,be,ga] = [a,c,b,al,ga,be] # e.g 1,3,2 -> 1,2,3
+    print [a,b,c,al,be,ga]
+    ca = np.cos(al/180*np.pi)
+    cb = np.cos(be/180*np.pi)
+    cg = np.cos(ga/180*np.pi)
+    sa = np.sin(al/180*np.pi)
+    sb = np.sin(be/180*np.pi)
+    sg = np.sin(ga/180*np.pi) 
+    lv = np.zeros((3,3))
+    lv[0,:] = [a,0,0]
+    lv[1,:] = [b*cg,b*sg,0]  
+    lv[2,0] = c*cb
+    lv[2,1] = c/sg*(ca-cb*cg)
+    lv[2,2] = c/sg*np.sqrt(sg**2 - ca**2 - cb**2 + 2*ca*cb*cg)
+    print 'sqrt', (sg**2 - ca**2 - cb**2 + 2*ca*cb*cg)
+    return np.round(lv,14)       
 
 def icy(i,change): #for cycling indices 0,1,2
     i = i+change

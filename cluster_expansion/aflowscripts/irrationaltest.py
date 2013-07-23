@@ -26,22 +26,12 @@ for dir in dirs:
         for i,line in enumerate(aflowin):
             if 'VASP_POSCAR_MODE_EXPLICIT' in line:
                 istart = i+1
-                print 'istart', istart
                 break #take only first instance (should be only one)
-           
-            
-        scale = np.sum(np.array(float(aflowin[istart+1])))
-#            print 'natoms', np.array(poscar[5].split(),dtype=np.int16)
-        N = np.rint(Nkppra/np.sum(np.array(aflowin[istart+5].split(),dtype=np.int16))).astype(int) # number of kpts desired
-        reallatt[0,:] = np.array(aflowin[istart+2].split())
-        reallatt[1,:] = np.array(aflowin[istart+3].split())
-        reallatt[2,:] = np.array(aflowin[istart+4].split())
-        reallatt = scale*reallatt.astype(np.float)        
-#            print reallatt
-        reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
-#            print reciplatt
-        mesh_ns = km.svmesh(N,reciplatt)
-        print mesh_ns, 's/v method'
+        cryststruc = np.array(aflowin[istart+2].split(), dtype=np.float)
+        print cryststruc
+        print km.lattice_vecs(cryststruc)
+#        mesh_ns = km.svmesh(N,reciplatt)
+#        print mesh_ns, 's/v method'
 
 
 #                        
