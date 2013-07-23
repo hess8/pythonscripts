@@ -4,9 +4,10 @@
     
 import sys,os
 ################# functions #######################
-def readTrainStruc(dir):
+def readTrainStruc(dir,filename):
     os.chdir(dir)
-    file1 = open('training_set_structures50.dat','r')
+#    file1 = open('training_set_structures50.dat','r')
+    file1 = open(filename,'r')
     lines = file1.readlines()
     file1.close()
     structs = [line.split()[1] for line in lines] #2nd column
@@ -27,8 +28,8 @@ def aflowCreateJobs(structs,atomic,finalDir):
             os.system(commstr)
         except:
             print 'Error in executing %s' % commstr
-#    os.system('cp -r AFLOWDATA/* %s' % finalDir)
-#    os.system('rm -r AFLOWDATA/')
+    os.system('cp -r AFLOWDATA/* %s' % finalDir)
+    os.system('rm -r AFLOWDATA/')
 
 def otherPrep():
     os.system("perl -pi -e 's/KPPRA=6000/KPPRA=10000/' */*/*/aflow.in")
@@ -36,11 +37,15 @@ def otherPrep():
     os.system("find `pwd` -name 'aflow.in' > jobs2run")
     
 ################# script #######################
-
+filename='f1_50.dat'
 mainDir = '/fslhome/bch/cluster_expansion/alir/'
-finalDir = mainDir
+finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50/'
+if not os.path.isdir(finalDir):
+    os.system('mkdir %s' % finalDir)
+    
 atomic = 'Al:Ir'
-structs = readTrainStruc(mainDir)
+structs = readTrainStruc(mainDir,filename)
 aflowCreateJobs(structs,atomic,finalDir)
+os.chdir(finalDir)
 otherPrep()
 print 'Done'
