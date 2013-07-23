@@ -9,7 +9,7 @@ def readTrainStruc(dir,filename):
 #    file1 = open('training_set_structures50.dat','r')
     file1 = open(filename,'r')
     lines = file1.readlines()
-    file1.close()
+    file1.close() 
     structs = [line.split()[1] for line in lines] #2nd column
     return structs
 
@@ -37,9 +37,9 @@ def otherPrep():
     os.system("find `pwd` -name 'aflow.in' > jobs2run")
     
 ################# script #######################
-filename='f1_50.dat'
+filename='training_set_structures.dat'
 mainDir = '/fslhome/bch/cluster_expansion/alir/'
-finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50/'
+finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
 if not os.path.isdir(finalDir):
     os.system('mkdir %s' % finalDir)
     

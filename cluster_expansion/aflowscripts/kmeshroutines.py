@@ -1,6 +1,15 @@
 ################# functions #######################
 import numpy as np   
 import time, os, subprocess, sys
+
+def lattice_vecs(a,b,c,alpha,beta,gamma):
+    ''' Make lattice vectors from triclinic method of 
+    Setyawan, Wahyu; Curtarolo, Stefano (2010). "High-throughput electronic band structure calculations: 
+    Challenges and tools". Comp. Mat. Sci. 49: 299–312. doi:10.1016/j.commatsci.2010.05.010.
+    see A.14
+    '''
+    
+
 def icy(i,change): #for cycling indices 0,1,2
     i = i+change
     if i>2:
@@ -33,8 +42,6 @@ def readposcar(path):
     reallatt = scale*reallatt.astype(np.float)        
     reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
     return [natoms,reallatt,reciplatt]
-
-
 
 def svmesh(N,vecs):
     '''N: points desired.  vecs the lattice vectors as numpy array (reciprocal in our thinking)
@@ -76,11 +83,11 @@ def svmesh(N,vecs):
         PQR[2] = -np.rint(1/r)
     PQR = [int(PQR[j]) for j in [0,1,2]]
     Nrels = int(round(np.sum(np.abs(np.sign(PQR))),0)) #number of integer relations)
-    print 'Nrels', Nrels,PQR
-    print ns
-    print '0:1', ns[0]/ns[1], ns[1]/ns[0]
-    print '1:2', ns[1]/ns[2], ns[2]/ns[1]
-    print '2:0', ns[2]/ns[0], ns[0]/ns[2]
+#    print 'Nrels', Nrels,PQR
+#    print ns
+#    print '0:1', ns[0]/ns[1], ns[1]/ns[0]
+#    print '1:2', ns[1]/ns[2], ns[2]/ns[1]
+#    print '2:0', ns[2]/ns[0], ns[0]/ns[2]
     #form final mesh m's
     if Nrels == 0:
         for i in [0,1,2]:
