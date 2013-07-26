@@ -2,14 +2,28 @@
 import numpy as np   
 import time, os, subprocess, sys
 
+def create_poscar(message, scale, latticevecs, natoms, type_pos, positions):
+    poscar = open('POSCAR','w')
+    poscar.write(message+'\n')
+    poscar.write(str(scale)+'\n')
+    for i in natoms:
+        poscar.write(str(i)+'\n')
+    poscar.write(type_pos+'\n')
+    where = 0
+    for natom in natoms:
+        for j in range(natom):
+            for k in [0,1,2]:
+                poscar.write(str(positions[i,k])+'\n')
+            where += 1
+    poscar.close()
+  
+
 def lattice_vecs(cryststruc):
     
     ''' Make lattice vectors from triclinic method of 
-        Setyawan, Wahyu; Curtarolo, Stefano (2010). "High-throughput electronic band structure calculations: 
-     
+        Setyawan, Wahyu; Curtarolo, Stefano (2010). "High-throughput electronic band structure calculations:   
     see A.14.
     al, be, ga, are alpha, beta, gamma angles
-    
     Stefano's method reorders so that a<b<c .  Then the angles are changed:
     a-b:gamma  b-c: alph  c-a: beta
     '''
@@ -20,7 +34,7 @@ def lattice_vecs(cryststruc):
         [a,b,c,al,be,ga] = [b,a,c,be,al,ga] # e.g 3,1,2 -> 1,3,2
     if b>c: #switch c,b, gamma and beta
         [a,b,c,al,be,ga] = [a,c,b,al,ga,be] # e.g 1,3,2 -> 1,2,3
-    print [a,b,c,al,be,ga]
+#    print [a,b,c,al,be,ga]
     ca = np.cos(al/180*np.pi)
     cb = np.cos(be/180*np.pi)
     cg = np.cos(ga/180*np.pi)
@@ -33,7 +47,6 @@ def lattice_vecs(cryststruc):
     lv[2,0] = c*cb
     lv[2,1] = c/sg*(ca-cb*cg)
     lv[2,2] = c/sg*np.sqrt(sg**2 - ca**2 - cb**2 + 2*ca*cb*cg)
-    print 'sqrt', (sg**2 - ca**2 - cb**2 + 2*ca*cb*cg)
     return np.round(lv,14)       
 
 def icy(i,change): #for cycling indices 0,1,2
@@ -79,12 +92,27 @@ def svmesh(N,vecs):
     n1 = N**(1/3.0) * u**(1/3.0) * v**(1/3.0) / w**(2/3.0)
     n2 = N**(1/3.0) * v**(1/3.0) * w**(1/3.0) / u**(2/3.0)
     ns = [n0,n1,n2]
+#    print ns
 
     p = n1/n0
     q = n2/n1
     r = n0/n2
     pqr = [p,q,r]
     delta = 10**-6
+    ratios = np.array([p,q,r,1/p,1/q,1/r])
+#    print ratios
+    ratios2 = ratios *np.sqrt(3)
+    irrat = ''
+    for i,x in enumerate(ratios2):
+        if abs(np.rint(x)-x)<delta:
+            irrat = 'sqrt3'
+#            print i+1,ratios[i],x,'*sqrt3'
+    ratios2 = ratios /np.sqrt(3)
+    for i,x in enumerate(ratios2):
+        if abs(np.rint(x)-x)<delta:
+            irrat = 'sqrt3'
+#            print i+1,ratios[i],x,'/sqrt3*'
+
     PQR = np.array([0,0,0])
     ms = np.array([0,0,0])
     '''   Define triangle as 
@@ -137,7 +165,7 @@ def svmesh(N,vecs):
         ms[imax] = r1 * r2 * int(np.rint(nmax/r1/r2))
         ms[icy(imax,-1)] = ms[imax]//r1
         ms[icy(imax,1)] = ms[imax]//r2
-    return ms
+    return [ms,irrat]
                       
 def getkpts_vasp(path):
     file1 = open(path+'/'+'KPOINTS','r')

@@ -6,7 +6,6 @@ import sys,os
 ################# functions #######################
 def readTrainStruc(dir,filename):
     os.chdir(dir)
-#    file1 = open('training_set_structures50.dat','r')
     file1 = open(filename,'r')
     lines = file1.readlines()
     file1.close() 
@@ -37,9 +36,11 @@ def otherPrep():
     os.system("find `pwd` -name 'aflow.in' > jobs2run")
     
 ################# script #######################
-filename='training_set_structures.dat'
+#filename='training_set_structures.dat'
+filename='f1_50.dat'
 mainDir = '/fslhome/bch/cluster_expansion/alir/'
-finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
+#finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
+finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA1_50b/'
 if not os.path.isdir(finalDir):
     os.system('mkdir %s' % finalDir)
     
