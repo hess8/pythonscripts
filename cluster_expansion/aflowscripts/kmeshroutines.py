@@ -2,24 +2,61 @@
 import numpy as np   
 import time, os, subprocess, sys
 
-def create_poscar(message, scale, latticevecs, natoms, type_pos, positions):
-    poscar = open('POSCAR','w')
+def nstrip(list):
+#    '''Strips off /n'''
+    import string
+    list2 = []
+    for string1 in list:   
+        string2 = string1.strip("\n")
+        list2.append(string2)
+    return list2
+
+def aflow2poscar(path):
+        file1 = open(path+'aflow.in','r')
+        aflowin = file1.readlines()
+        file1.close()
+        for i,line in enumerate(aflowin):
+            if 'VASP_POSCAR_MODE_EXPLICIT' in line:
+                istart = i+1
+                break #take only first instance (should be only one)
+        descriptor = nstrip(aflowin)[istart]
+        cryststruc = np.array(aflowin[istart+2].split(), dtype=np.float)
+#        print cryststruc
+        reallatt =  lattice_vecs(cryststruc)
+        reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
+        natoms = np.array(aflowin[istart+3].split(),dtype=np.int16)
+        print natoms
+        totatoms=np.sum(natoms)
+        positions = np.zeros((totatoms,3),dtype=np.float)
+        postype = aflowin[istart+4] #Direct or Cartesian
+        where = 0
+        for natom in natoms:
+            for i in range(natom):
+                for k in [0,1,2]:
+                    positions[where,k] = float(aflowin[istart+5+where].split()[k])
+                where += 1
+        create_poscar('POSCAR0',descriptor+' From aflow.in BCH',1.0,reallatt,natoms,postype,positions,path)
+        totatoms=np.sum(natoms)
+        return totatoms
+
+def create_poscar(filename,message, scale, latticevecs, natoms, type_pos, positions, path):
+    poscar = open(path+filename,'w')
     poscar.write(message+'\n')
     poscar.write(str(scale)+'\n')
+    for i in [0,1,2]:
+        poscar.write('%20.15f %20.15f %20.15f \n' % (latticevecs[i,0], latticevecs[i,1], latticevecs[i,2]))         
     for i in natoms:
-        poscar.write(str(i)+'\n')
-    poscar.write(type_pos+'\n')
+        poscar.write(str(i)+'    ')
+    poscar.write('\n')
+    poscar.write(type_pos)
     where = 0
     for natom in natoms:
-        for j in range(natom):
-            for k in [0,1,2]:
-                poscar.write(str(positions[i,k])+'\n')
+        for i in range(natom):
+            poscar.write('%20.15f %20.15f %20.15f \n' % (positions[where,0],positions[where,1],positions[where,2]))
             where += 1
     poscar.close()
-  
 
 def lattice_vecs(cryststruc):
-    
     ''' Make lattice vectors from triclinic method of 
         Setyawan, Wahyu; Curtarolo, Stefano (2010). "High-throughput electronic band structure calculations:   
     see A.14.
