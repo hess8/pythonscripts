@@ -32,7 +32,7 @@ for dir in dirs:
             print vaspout[i].replace('\n','')
         kmesh = km.getkpts_vasp(currdir)
         print kmesh, kmesh[0]*kmesh[1]*kmesh[2] 
-        [natoms,reallatt,reciplatt] = km.readposcar(currdir) 
+        [descriptor, scale, reallatt, natoms, type_pos, positions] [natoms,reallatt,reciplatt] = km.readposcar('POSCAR',currdir) 
         Nkppra = 10000
         N = np.rint(Nkppra/natoms).astype(int)
         print 'natoms', natoms

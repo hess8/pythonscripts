@@ -11,37 +11,92 @@ def nstrip(list):
         list2.append(string2)
     return list2
 
-def aflow2poscar(path):
-        file1 = open(path+'aflow.in','r')
-        aflowin = file1.readlines()
-        file1.close()
-        for i,line in enumerate(aflowin):
-            if 'VASP_POSCAR_MODE_EXPLICIT' in line:
-                istart = i+1
-                break #take only first instance (should be only one)
-        descriptor = nstrip(aflowin)[istart]
-        cryststruc = np.array(aflowin[istart+2].split(), dtype=np.float)
-#        print cryststruc
-        reallatt =  lattice_vecs(cryststruc)
-        reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
-        natoms = np.array(aflowin[istart+3].split(),dtype=np.int16)
-        print natoms
-        totatoms=np.sum(natoms)
-        positions = np.zeros((totatoms,3),dtype=np.float)
-        postype = aflowin[istart+4] #Direct or Cartesian
-        where = 0
-        for natom in natoms:
-            for i in range(natom):
-                for k in [0,1,2]:
-                    positions[where,k] = float(aflowin[istart+5+where].split()[k])
-                where += 1
-        create_poscar('POSCAR0',descriptor+' From aflow.in BCH',1.0,reallatt,natoms,postype,positions,path)
-        totatoms=np.sum(natoms)
-        return totatoms
+def intcheck(x):
+    delta = 10**-6
+    if abs(np.rint(x)-x)<delta:
+        return True
+    else:
+        return False
 
-def create_poscar(filename,message, scale, latticevecs, natoms, type_pos, positions, path):
+def irratcheck(ratios,mlist):
+    '''Checks to see if ratios are a multiple of a root, or a multiple of 1/root'''
+    for m in mlist:
+        irratflag = False           
+#        ratios2 = ratios *np.sqrt(m)
+        sqr = np.sqrt(m)
+        for i,x in enumerate(ratios):
+            if intcheck(x*sqr,delta)
+            (abs(np.rint(x*sqr)-x*sqr)<delta | 
+                irrat = irrat+'*sqrt3 '
+    #            print i+1,ratios[i],x,'*sqrt3'
+        ratios2 = ratios /np.sqrt(3)
+        for i,x in enumerate(ratios2):
+            if abs(np.rint(x)-x)<delta:
+                irrat = irrat+'/sqrt3 '
+
+
+def readposcar(filename, path): 
+    ''' Format is explicit lattice vectors, not a,b,c,alpha, beta, gamma'''
+    file1 = open(path+filename,'r')
+    poscar = file1.readlines()
+    file1.close()
+    descriptor = nstrip(poscar)[0]
+    scale = float(nstrip(poscar)[1])
+    if scale < 0:
+        scale = (-scale)**(1/3)
+    reallatt = np.zeros((3,3))
+    reallatt[0,:] = np.array(poscar[2].split())
+    reallatt[1,:] = np.array(poscar[3].split())
+    reallatt[2,:] = np.array(poscar[4].split())
+    reallatt = reallatt.astype(np.float)
+    reallatt = scale*reallatt
+    reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
+    natoms = np.array(poscar[5].split(),dtype=np.int16)
+    totatoms=np.sum(natoms)
+    positions = np.zeros((totatoms,3),dtype=np.float)
+    postype = poscar[6] #Direct or Cartesian
+    whichatom = 0
+    for natom in natoms:
+        for i in range(natom):
+            for k in [0,1,2]:
+                positions[whichatom,k] = float(poscar[7+whichatom].split()[k])
+            whichatom += 1
+    create_poscar('POSCAR0',descriptor+' From aflow.in BCH',1.0,reallatt,natoms,postype,positions,path)
+    totatoms=np.sum(natoms)
+    return [descriptor, scale, reallatt, reciplatt, natoms, postype, positions]
+
+
+def aflow2poscar(path):
+    file1 = open(path+'aflow.in','r')
+    aflowin = file1.readlines()
+    file1.close()
+    for i,line in enumerate(aflowin):
+        if 'VASP_POSCAR_MODE_EXPLICIT' in line:
+            istart = i+1
+            break #take only first instance (should be only one)
+    descriptor = nstrip(aflowin)[istart]
+    scale = nstrip(aflowin)[istart+1]
+    cryststruc = np.array(aflowin[istart+2].split(), dtype=np.float)
+#        print cryststruc
+    reallatt =  lattice_vecs(cryststruc)
+    reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
+    natoms = np.array(aflowin[istart+3].split(),dtype=np.int16)
+    totatoms=np.sum(natoms)
+    positions = np.zeros((totatoms,3),dtype=np.float)
+    postype = aflowin[istart+4] #Direct or Cartesian
+    where = 0
+    for natom in natoms:
+        for i in range(natom):
+            for k in [0,1,2]:
+                positions[where,k] = float(aflowin[istart+5+where].split()[k])
+            where += 1
+    create_poscar('POSCAR0',descriptor+' From aflow.in BCH',scale,reallatt,natoms,postype,positions,path)
+    totatoms=np.sum(natoms)
+    return totatoms
+
+def create_poscar(filename,descriptor, scale, latticevecs, natoms, type_pos, positions, path):
     poscar = open(path+filename,'w')
-    poscar.write(message+'\n')
+    poscar.write(descriptor+'\n')
     poscar.write(str(scale)+'\n')
     for i in [0,1,2]:
         poscar.write('%20.15f %20.15f %20.15f \n' % (latticevecs[i,0], latticevecs[i,1], latticevecs[i,2]))         
@@ -103,21 +158,21 @@ def regpy_nocase(str,path):
         if re.search( str, line,  re.M|re.I):
             print line
    
-def readposcar(path):    
-    file1 = open(path+'/'+'POSCAR','r')
-    poscar = file1.readlines()
-    file1.close()
-    natoms = np.sum(np.array(poscar[5].split(),dtype=np.int16))
-    scale = float(poscar[1])
-    if scale < 0:
-        scale = np.abs(scale)**(1/3)
-    reallatt = np.zeros((3,3))
-    reallatt[0,:] = np.array(poscar[2].split())
-    reallatt[1,:] = np.array(poscar[3].split())
-    reallatt[2,:] = np.array(poscar[4].split())
-    reallatt = scale*reallatt.astype(np.float)        
-    reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
-    return [natoms,reallatt,reciplatt]
+#def readposcar(path):    ####### replaced by one above
+#    file1 = open(path+'/'+'POSCAR','r')
+#    poscar = file1.readlines()
+#    file1.close()
+#    natoms = np.sum(np.array(poscar[5].split(),dtype=np.int16))
+#    scale = float(poscar[1])
+#    if scale < 0:
+#        scale = np.abs(scale)**(1/3)
+#    reallatt = np.zeros((3,3))
+#    reallatt[0,:] = np.array(poscar[2].split())
+#    reallatt[1,:] = np.array(poscar[3].split())
+#    reallatt[2,:] = np.array(poscar[4].split())
+#    reallatt = scale*reallatt.astype(np.float)        
+#    reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
+#    return [natoms,reallatt,reciplatt]
 
 def svmesh(N,vecs):
     '''N: points desired.  vecs the lattice vectors as numpy array (reciprocal in our thinking)
@@ -135,20 +190,9 @@ def svmesh(N,vecs):
     q = n2/n1
     r = n0/n2
     pqr = [p,q,r]
-    delta = 10**-6
     ratios = np.array([p,q,r,1/p,1/q,1/r])
-#    print ratios
-    ratios2 = ratios *np.sqrt(3)
-    irrat = ''
-    for i,x in enumerate(ratios2):
-        if abs(np.rint(x)-x)<delta:
-            irrat = 'sqrt3'
-#            print i+1,ratios[i],x,'*sqrt3'
-    ratios2 = ratios /np.sqrt(3)
-    for i,x in enumerate(ratios2):
-        if abs(np.rint(x)-x)<delta:
-            irrat = 'sqrt3'
-#            print i+1,ratios[i],x,'/sqrt3*'
+    irrat = km.irratcheck(ratios,[2,3,5,7])
+
 
     PQR = np.array([0,0,0])
     ms = np.array([0,0,0])
