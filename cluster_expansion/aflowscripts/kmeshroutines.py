@@ -20,20 +20,14 @@ def intcheck(x):
 
 def irratcheck(ratios,mlist):
     '''Checks to see if ratios are a multiple of a root, or a multiple of 1/root'''
-    for m in mlist:
-        irratflag = False           
-#        ratios2 = ratios *np.sqrt(m)
+    irrat = ''
+    for m in mlist:                 
         sqr = np.sqrt(m)
         for i,x in enumerate(ratios):
-            if intcheck(x*sqr,delta)
-            (abs(np.rint(x*sqr)-x*sqr)<delta | 
-                irrat = irrat+'*sqrt3 '
-    #            print i+1,ratios[i],x,'*sqrt3'
-        ratios2 = ratios /np.sqrt(3)
-        for i,x in enumerate(ratios2):
-            if abs(np.rint(x)-x)<delta:
-                irrat = irrat+'/sqrt3 '
-
+            if intcheck(x*sqr) or intcheck(x/sqr) or intcheck(sqr/x) or intcheck((1/x*sqr)):
+#                irrat = irrat+'sqrt%i ' % m
+                print 'sqrt%i ' % m, x
+    return irrat
 
 def readposcar(filename, path): 
     ''' Format is explicit lattice vectors, not a,b,c,alpha, beta, gamma'''
@@ -61,7 +55,6 @@ def readposcar(filename, path):
             for k in [0,1,2]:
                 positions[whichatom,k] = float(poscar[7+whichatom].split()[k])
             whichatom += 1
-    create_poscar('POSCAR0',descriptor+' From aflow.in BCH',1.0,reallatt,natoms,postype,positions,path)
     totatoms=np.sum(natoms)
     return [descriptor, scale, reallatt, reciplatt, natoms, postype, positions]
 
@@ -79,6 +72,9 @@ def aflow2poscar(path):
     cryststruc = np.array(aflowin[istart+2].split(), dtype=np.float)
 #        print cryststruc
     reallatt =  lattice_vecs(cryststruc)
+    print 'Lattice from aflow.in a,b,c alpha,beta,gamma > POSCAR0'
+    print reallatt
+    print
     reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
     natoms = np.array(aflowin[istart+3].split(),dtype=np.int16)
     totatoms=np.sum(natoms)
@@ -90,7 +86,7 @@ def aflow2poscar(path):
             for k in [0,1,2]:
                 positions[where,k] = float(aflowin[istart+5+where].split()[k])
             where += 1
-    create_poscar('POSCAR0',descriptor+' From aflow.in BCH',scale,reallatt,natoms,postype,positions,path)
+    create_poscar('POSCAR0',descriptor+'From aflow.in BCH',scale,reallatt,natoms,postype,positions,path)
     totatoms=np.sum(natoms)
     return totatoms
 
@@ -158,22 +154,6 @@ def regpy_nocase(str,path):
         if re.search( str, line,  re.M|re.I):
             print line
    
-#def readposcar(path):    ####### replaced by one above
-#    file1 = open(path+'/'+'POSCAR','r')
-#    poscar = file1.readlines()
-#    file1.close()
-#    natoms = np.sum(np.array(poscar[5].split(),dtype=np.int16))
-#    scale = float(poscar[1])
-#    if scale < 0:
-#        scale = np.abs(scale)**(1/3)
-#    reallatt = np.zeros((3,3))
-#    reallatt[0,:] = np.array(poscar[2].split())
-#    reallatt[1,:] = np.array(poscar[3].split())
-#    reallatt[2,:] = np.array(poscar[4].split())
-#    reallatt = scale*reallatt.astype(np.float)        
-#    reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
-#    return [natoms,reallatt,reciplatt]
-
 def svmesh(N,vecs):
     '''N: points desired.  vecs the lattice vectors as numpy array (reciprocal in our thinking)
     output:  n0, n1, n2, the number of divisions along each RLV for the mesh'''
@@ -184,15 +164,19 @@ def svmesh(N,vecs):
     n1 = N**(1/3.0) * u**(1/3.0) * v**(1/3.0) / w**(2/3.0)
     n2 = N**(1/3.0) * v**(1/3.0) * w**(1/3.0) / u**(2/3.0)
     ns = [n0,n1,n2]
-#    print ns
+    print 'n0,n1,n2 from min s/v'
+    print ns
+    print
 
     p = n1/n0
     q = n2/n1
     r = n0/n2
     pqr = [p,q,r]
-    ratios = np.array([p,q,r,1/p,1/q,1/r])
-    irrat = km.irratcheck(ratios,[2,3,5,7])
-
+    print 'ratios n1/n0, n2/n1, n0/n2' 
+    print pqr
+    print
+    primes = [2,3,5,7,11,13,17,19,23,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101]
+    irrat = irratcheck(pqr,primes)
 
     PQR = np.array([0,0,0])
     ms = np.array([0,0,0])
@@ -204,18 +188,18 @@ def svmesh(N,vecs):
     The integer relations (P,Q,R) 'point' to the larger integer.  If they are CCW, record +.  
     If CW, -    
            ''' 
-    if abs(np.rint(p)-p)<delta:
+    if intcheck(p):
         PQR[0] = np.rint(p)
-    elif abs(np.rint(1/p)-(1/p))<delta:
+    elif intcheck(1/p):
         PQR[0] = -np.rint(1/p)
-    if abs(np.rint(q)-q)<delta:
+    if intcheck(q):
         PQR[1] = np.rint(q)
-    elif abs(np.rint(1/q)-(1/q))<delta:
-        PQR[1] = -np.rint(1/q)   
-    if abs(np.rint(r)-r)<delta:
+    elif intcheck(1/q):
+        PQR[1] = -np.rint(1/q)        
+    if intcheck(r):
         PQR[2] = np.rint(r)
-    elif abs(np.rint(1/r)-(1/r))<delta:
-        PQR[2] = -np.rint(1/r)
+    elif intcheck(1/r):
+        PQR[2] = -np.rint(1/r)        
     PQR = [int(PQR[j]) for j in [0,1,2]]
     Nrels = int(round(np.sum(np.abs(np.sign(PQR))),0)) #number of integer relations)
 #    print 'Nrels', Nrels,PQR

@@ -19,16 +19,22 @@ dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 for dir in dirs:
     if testfile in os.listdir(dir):
 #        print
-#        print dir
+        print
+        print dir + '========================='
         path = maindir+dir+'/'
-        totatoms = km.aflow2poscar(path)
         os.chdir(path)
+        os.system('rm POSCAR*')
+        totatoms = km.aflow2poscar(path)
         os.system('aconvasp --sprim < POSCAR0 > POSCAR')
-#        subprocess.call(['aconvasp','--sprim','<','POSCAR0','>','POSCAR'])
         os.chdir(maindir)       
         N = np.rint(Nkppra/totatoms).astype(int)
         [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = km.readposcar('POSCAR',path) #
-#        print [descriptor, scale, latticevecs, natoms]
+        print 'lattice from aconvasp --sprim < POSCAR0 > POSCAR'
+        print latticevecs
+        print
+        print 'reciprocal lattice vectors'
+        print reciplatt
+        print
         [mesh_ns, irrat] = km.svmesh(N,reciplatt)
 #        print mesh_ns, 's/v method'
         if len(irrat)>0:
