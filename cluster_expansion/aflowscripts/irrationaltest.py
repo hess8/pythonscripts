@@ -5,7 +5,8 @@ Reads POSCAR info from aflow.in
     
 import sys,os,subprocess
 import numpy as np
-import kmeshroutines as km                
+import kmeshroutines as km
+from poscar import POSCAR as POSCAR          
    
 ################# script #######################
 
@@ -23,21 +24,33 @@ for dir in dirs:
         print dir + '========================='
         path = maindir+dir+'/'
         os.chdir(path)
-        os.system('rm POSCAR*')
+#        os.system('rm POSCAR*')
         totatoms = km.aflow2poscar(path)
-        os.system('aconvasp --sprim < POSCAR0 > POSCAR')
-        os.chdir(maindir)       
+#        os.system('aconvasp --sprim < POSCAR0 > POSCAR')
+    
         N = np.rint(Nkppra/totatoms).astype(int)
-        [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = km.readposcar('POSCAR',path) #
-        print 'lattice from aconvasp --sprim < POSCAR0 > POSCAR'
-        print latticevecs
+        pfile = open('POSCAR0','r')
+        rlines  = [i.strip() for i in pfile.readlines()]       
+        pos = POSCAR(lines=rlines)       
+        print "real  od:",pos.orthogonality_defect
+        print "recip od:",pos.rod
+#        [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = km.readposcar('POSCAR0',path) #
+#        print 'lattice from aconvasp --sprim < POSCAR0 > POSCAR'
+##        print 'lattice from aconvasp --sprim < POSCAR0 > POSCAR'
+#        print latticevecs
+#        print
+#        print 'reciprocal lattice vectors'
+#        print reciplatt
         print
-        print 'reciprocal lattice vectors'
+        reciplatt = np.array((pos.bvecs[0],pos.bvecs[1],pos.bvecs[2]))
         print reciplatt
-        print
+#        print 'bvecs'
+#        print pos.bvecs
+#        print pos.bvecs[1,:]   
+#        [mesh_ns, irrat] = km.svmesh(N,pos.bvecs)        
         [mesh_ns, irrat] = km.svmesh(N,reciplatt)
-#        print mesh_ns, 's/v method'
+        print mesh_ns, 's/v method'
+        os.chdir(maindir)   
         if len(irrat)>0:
-            print dir, irrat
-#                        
+            print dir, irrat                        
 print 'Done'

@@ -2,6 +2,14 @@
 import numpy as np   
 import time, os, subprocess, sys
 
+#def structures_dict():
+#    '''Dictionary for all 26 k-lattice cases in    
+#            Setyawan, Wahyu; Curtarolo, Stefano (2010). "High-throughput electronic band structure calculations:   
+#        {key:value}
+#        {[number,'name',
+#    '''
+#    print
+
 def nstrip(list):
 #    '''Strips off /n'''
     import string
@@ -29,6 +37,19 @@ def irratcheck(ratios,mlist):
                 print 'sqrt%i ' % m, x
     return irrat
 
+def abcalbega_latt(lvecs):
+    '''finds a,b,c,alpha,beta,gamma from lattice vectors'''
+    v0 = lvecs[0,:]
+    v1 = lvecs[1,:]
+    v2 = lvecs[2,:]
+    a = np.linalg.norm(v0)
+    b = np.linalg.norm(v1)
+    c = np.linalg.norm(v2)
+    alpha = np.arccos(np.dot(v1,v2)/b/c) * 180/np.pi
+    beta = np.arccos(np.dot(v2,v0)/c/a) * 180/np.pi
+    gamma = np.arccos(np.dot(v0,v1)/a/b) * 180/np.pi    
+    return np.array([a,b,c,alpha,beta,gamma])
+
 def readposcar(filename, path): 
     ''' Format is explicit lattice vectors, not a,b,c,alpha, beta, gamma'''
     file1 = open(path+filename,'r')
@@ -37,7 +58,7 @@ def readposcar(filename, path):
     descriptor = nstrip(poscar)[0]
     scale = float(nstrip(poscar)[1])
     if scale < 0:
-        scale = (-scale)**(1/3)
+        scale = (-scale)**(1/3.0)
     reallatt = np.zeros((3,3))
     reallatt[0,:] = np.array(poscar[2].split())
     reallatt[1,:] = np.array(poscar[3].split())
@@ -68,14 +89,39 @@ def aflow2poscar(path):
             istart = i+1
             break #take only first instance (should be only one)
     descriptor = nstrip(aflowin)[istart]
-    scale = nstrip(aflowin)[istart+1]
+    scale = float(nstrip(aflowin)[istart+1])
+    if scale < 0:
+        scale = (-scale)**(1/3.0)
     cryststruc = np.array(aflowin[istart+2].split(), dtype=np.float)
-#        print cryststruc
-    reallatt =  lattice_vecs(cryststruc)
+#    print scale
+#    print cryststruc
+    cryststruc[0:3] = scale*cryststruc[0:3]
+    scale = 1.0 #since we put it into real lattice above
+    print 'original a,b,c, alpha, beta, gamma'
+    print cryststruc
+    reallatt =  np.array(lattice_vecs(cryststruc)).astype(np.float)
+    print 'reordered new lattice: a,b,c, alpha, beta, gamma'
+    print abcalbega_latt(reallatt)
+
     print 'Lattice from aflow.in a,b,c alpha,beta,gamma > POSCAR0'
     print reallatt
     print
     reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
+    print 'reciprocal lattice vectors'
+    print reciplatt   
+#    #test
+#    print
+#    print 'recip lattice traditional'
+#    reciplatt2 = np.array(lattice_vecs(cryststruc)).astype(np.float)
+#    a0 = reallatt[0,:]
+#    a1 = reallatt[1,:]
+#    a2 = reallatt[2,:]
+#    vol = np.dot(a0,np.cross(a1,a2))
+#    reciplatt2[0,:] = 2*np.pi*np.cross(a1,a2)/vol
+#    reciplatt2[1,:] = 2*np.pi*np.cross(a2,a0)/vol
+#    reciplatt2[2,:] = 2*np.pi*np.cross(a0,a1)/vol
+#    print reciplatt2   
+#    # end test
     natoms = np.array(aflowin[istart+3].split(),dtype=np.int16)
     totatoms=np.sum(natoms)
     positions = np.zeros((totatoms,3),dtype=np.float)
@@ -160,7 +206,7 @@ def svmesh(N,vecs):
     u = np.linalg.norm(np.cross(vecs[0,:],vecs[1,:]))
     v = np.linalg.norm(np.cross(vecs[1,:],vecs[2,:]))
     w = np.linalg.norm(np.cross(vecs[2,:],vecs[0,:]))
-    n0 = N**(1/3.0) * u**(1/3.0) * w**(1/3.0) / v**(2/3.0)
+    n0 = N**(1/3.0) * w**(1/3.0) * u**(1/3.0) / v**(2/3.0)
     n1 = N**(1/3.0) * u**(1/3.0) * v**(1/3.0) / w**(2/3.0)
     n2 = N**(1/3.0) * v**(1/3.0) * w**(1/3.0) / u**(2/3.0)
     ns = [n0,n1,n2]
