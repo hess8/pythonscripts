@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 ''' Reads structure numbers from training_set_structures.dat, 
     and creates directories with Aflow.in files. '''
     
@@ -37,10 +37,10 @@ def otherPrep():
     
 ################# script #######################
 #filename='training_set_structures.dat'
-filename='f1_50.dat'
+filename='f11000.dat'
 mainDir = '/fslhome/bch/cluster_expansion/alir/'
 #finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
-finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA1_50b/'
+finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/'
 if not os.path.isdir(finalDir):
     os.system('mkdir %s' % finalDir)
     

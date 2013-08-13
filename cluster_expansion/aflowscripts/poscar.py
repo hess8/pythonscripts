@@ -137,13 +137,13 @@ class POSCAR(object):
         return self._bvecs
 
     def read(self, path):
-        """Constructs a POSCAR from the specified path."""
+        """Reads a POSCAR from the specified path and assigns properties."""
         with open(path) as f:
             lines = f.readlines()
         self.fromlines(lines)
             
     def fromlines(self, lines):
-        """Constructs a POSCAR from a list of strings representing
+        """Assigns POSCAR properties from a list of strings representing
         the standard form of a poscar file."""
         #Get all the information that will never change
         self.name = lines[0]
@@ -188,6 +188,26 @@ class POSCAR(object):
                     self.concentrations.append("P")
                     self._dconcentrations.append(1)
                     self.stoichiometry.append(None)
+    
+    def write_poscar(self,filename):
+        '''BCH.  Doesn't support concentrations '''
+        el = '\n'
+        file1 = open(filename,'w')
+        file1.writeline(self.name+el)
+        for i in [0,1,2]:
+            file1.writeline(self.avecs[i]+el)
+        typestr = ''
+        for i in len(self.types):
+            typestr = typestr + writeline(self.type[i])+' '
+        file1.writeline(typestr+el)
+        if self.direct:
+            file1.writeline('Direct'+el)
+            
+        else:
+            file1.writeline('Error'+el)
+        for i in len(self.atoms):
+            typestr = typestr + writeline(self.atoms[i])+' ' 
+        file1.close()       
 
     def mink_reduce(self,eps):
         """Reduce the basis to the most orthogonal set.
@@ -264,3 +284,4 @@ class AtomicSite(object):
         self.vector = vector
         self.species = species
         self.direct = True
+        

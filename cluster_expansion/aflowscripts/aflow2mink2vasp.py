@@ -1,13 +1,14 @@
 #!/usr/bin/python
-''' tests whether the mesh numbers from the s/v method have irrational relationships:  sqrt 2, sqrt 3, sqrt 5 
-Reads POSCAR info from aflow.in
+''' Reads POSCAR from aflow run.  Replaces lattice and atom positions with a lattice that has a
+ mink reduced reciprocal lattice.  Overwrites the kpoints file.  
 '''
     
 import sys,os,subprocess
 import numpy as np
 import kmeshroutines as km
 from kmeshroutines import nstrip
-from poscar import POSCAR as POSCAR 
+from poscar import POSCAR, write_poscar
+import poscar
 
 def check_out(command):
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
@@ -19,7 +20,7 @@ def check_out(command):
    
 ################# script #######################
 
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50b/AlIr/'
+maindir = '/fslhome/bch/cluster_expansion/alir/testf10/AlIr/'
 testfile = 'aflow.in'
 Nkppra = 10000
 
@@ -37,7 +38,7 @@ for dir in dirs:
         os.system('cp ../../KPOINTS .')
         os.system('cp ../../INCAR .')
         os.system('cp ../../POTCAR .')        
-        totatoms = km.aflow2poscar(path)
+#        totatoms = km.aflow2poscar(path)
 #        os.system('aconvasp --sprim < POSCAR0 > POSCAR')
 #        back = subprocess.check_output(["echo", "Hello World!"])  
 #        back = check_out(["echo", "Hello World!"])
@@ -46,10 +47,13 @@ for dir in dirs:
 #        back = nstrip(subprocess.check_output(['mink_reduction.py < POSCAR0'], shell=True,).split())
 #        print 'back'
 #        print back
-        N = np.rint(Nkppra/totatoms).astype(int)
-        pfile = open('POSCAR0','r')
+
+        pfile = open('POSCAR','r')
         rlines  = [i.strip() for i in pfile.readlines()]       
-        pos = POSCAR(lines=rlines)   
+        pos = POSCAR(lines=rlines)
+        write_poscar('POSCAR1')
+        totatoms = np.sum(pos.atoms)
+        N = np.rint(Nkppra/totatoms).astype(int)   
         oldROD = pos.rod
         oldbvecs = np.array(pos.bvecs)
         print "Real lattice orth defect:",pos.orthogonality_defect
