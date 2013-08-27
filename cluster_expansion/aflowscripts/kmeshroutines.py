@@ -288,7 +288,7 @@ def getkpts_vasp(path):
         kpts_vasp = []
     return kpts_vasp
 
-def writekpts_vasp(dir, mesh):
+def writekpts_vasp(maindir,dir,kptsfile,mesh):
     '''Write mesh m's to kpoints file, replacing previous mesh'''
     file1 = open(maindir+dir+'/'+kptsfile,'r')
     kpointsfile = file1.readlines()

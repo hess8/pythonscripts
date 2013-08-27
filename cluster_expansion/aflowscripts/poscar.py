@@ -7,6 +7,7 @@ class POSCAR(object):
     """Reads and writes POSCAR files in VASP format."""
     def __init__(self, path = None, lines = None):
         self.name = ""
+        self.scale = 0.0
         #A list of the lattice vectors in the POSCAR
         self.avecs = []
         #A list containing the number of each species of atom that will be
@@ -35,6 +36,7 @@ class POSCAR(object):
         self._bvecs = []
         # Lengths of the reciprocal lattice vectors
         self._bvecs_lengths = []
+        
 
         if path is not None:
             self.read(path)
@@ -147,8 +149,13 @@ class POSCAR(object):
         the standard form of a poscar file."""
         #Get all the information that will never change
         self.name = lines[0]
+        self.scale = float(lines[1])
         self.avecs = [[ float(i) for i in j.split() ] for j in lines[2:5]]
-        
+        if self.scale < 0:
+            volume_avecs = abs(dot(cross(self.avecs[0],self.avecs[1]),self.avecs[2]))
+            self.scale = (-self.scale/volume_avecs)**(1/3.0)    
+        self.avecs = [[ self.scale*self.avecs[i][j] for j in [0,1,2] ] for i in [0,1,2]]
+        self.scale = 1.0
         self.types = [ int(i) for i in lines[5].split() ]
         self.direct = lines[6][0] == "D"
         #Read in the direct vectors for each of the atom types in self.types
@@ -161,10 +168,14 @@ class POSCAR(object):
                 a = AtomicSite(v, sindex)
                 self.atoms.append(a)
                 dindex += 1
+                
+            
 
         #Now we can read any additional information about occupation probabilities
         #for atomic sites that are not pure.
         if dindex < len(lines) - 1:
+            print 'dindex', dindex
+            print  'len(lines)', len(lines)
             for sindex in range(self.rank):
                 scount = self.types[sindex]
                 for i in range(scount):
@@ -193,20 +204,23 @@ class POSCAR(object):
         '''BCH.  Doesn't support concentrations '''
         el = '\n'
         file1 = open(filename,'w')
-        file1.writeline(self.name+el)
+        file1.write(self.name+el)
+        file1.write(str(self.scale)+el)
         for i in [0,1,2]:
-            file1.writeline(self.avecs[i]+el)
-        typestr = ''
-        for i in len(self.types):
-            typestr = typestr + writeline(self.type[i])+' '
-        file1.writeline(typestr+el)
+            file1.write('%20.14f %20.14f %20.14f \n' % (self.avecs[i][0],self.avecs[i][1],self.avecs[i][2]))     
+        str1 = ''
+        for i in range(len(self.types)):
+            str1 = str1 + str(self.types[i])+' '
+        file1.write(str1+el)
         if self.direct:
-            file1.writeline('Direct'+el)
-            
+            file1.write('Direct'+el)            
         else:
-            file1.writeline('Error'+el)
-        for i in len(self.atoms):
-            typestr = typestr + writeline(self.atoms[i])+' ' 
+            file1.write('Error'+el)
+        
+        str2 = ''
+        for i in range(len(self.atoms)):
+            file1.write('%20.14f %20.14f %20.14f \n' % (self.atoms[i].vector[0],self.atoms[i].vector[1],self.atoms[i].vector[2]))
+#            file1.write( '  '.join(map(str,self.atoms[i].vector)) + el)
         file1.close()       
 
     def mink_reduce(self,eps):
@@ -239,7 +253,7 @@ class POSCAR(object):
         return bout
 
 def load_ctypes_3x3_double(IN):
-    """Make a 3x3 array into the right think for ctypes"""
+    """Make a 3x3 array into the right thing for ctypes"""
     a = ((c_double * 3) *3)()
     for i in range(3):
         for j in range(3):
