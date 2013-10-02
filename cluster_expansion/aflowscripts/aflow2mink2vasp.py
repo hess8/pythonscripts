@@ -5,6 +5,7 @@
     
 import sys,os,subprocess
 import numpy as np
+from numpy import pi
 import kmeshroutines as km
 from kmeshroutines import nstrip
 from poscar import POSCAR 
@@ -61,7 +62,13 @@ for dir in dirs:
         oldbvecs = np.array(pos.bvecs)
         reallatt = np.array((pos.avecs[0],pos.avecs[1],pos.avecs[2]))
         print "Real lattice"
-        print  reallatt        
+        print  reallatt  
+        print "Recip lattice"
+        reciplatt = np.array((pos.bvecs[0],pos.bvecs[1],pos.bvecs[2]))
+        print  reciplatt
+        print "Recip lattice/2pi"         
+        reciplatt = np.array((pos.bvecs[0],pos.bvecs[1],pos.bvecs[2]))
+        print reciplatt/2/np.pi     
         print "Real lattice orth defect:",pos.orthogonality_defect
         print "Recp lattice orth defect:",pos.rod
         pos.kmink_reduce(1e-1) ####THIS DOES NOT CHANGE THE BVECS.  HAVE TO WRITE A NEW POSCAR, AS THE PROPERTIES ARE READ ONLY
