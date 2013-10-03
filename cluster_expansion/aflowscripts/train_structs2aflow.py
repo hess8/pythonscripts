@@ -31,19 +31,19 @@ def aflowCreateJobs(structs,atomic,finalDir):
     os.system('rm -r AFLOWDATA/')
 
 def otherPrep():
-    os.system("perl -pi -e 's/KPPRA=6000/KPPRA=10000/' */*/*/aflow.in")
+#    os.system("perl -pi -e 's/KPPRA=6000/KPPRA=10000/' */*/*/aflow.in")
 #    os.system("perl -pi -e 's/SYM=ON/SYM=OFF/' */*/*/aflow.in")
     os.system("find `pwd` -name 'aflow.in' > jobs2run")
     
 ################# script #######################
 #filename='training_set_structures.dat'
-filename='f11000.dat'
+#filename='f11000.dat'
+filename='f1_50.dat'
 mainDir = '/fslhome/bch/cluster_expansion/alir/'
 #finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
-finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/'
+finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50c/'
 if not os.path.isdir(finalDir):
     os.system('mkdir %s' % finalDir)
-    
 atomic = 'Al:Ir'
 structs = readTrainStruc(mainDir,filename)
 aflowCreateJobs(structs,atomic,finalDir)

@@ -38,11 +38,11 @@ def writejobname(jobfile,jobname):
 
 maxDays = 4 #days to run this script
 waitMin = 0.2 #minutes between checking 
-nQueueWanted = 500 #keep this many in queue
+nQueueWanted = 0 #keep this many in queue
 #jobname = '3Gb4p' #best to update this
 #jobname = '1Gb10proc'
 user = 'bch'
-mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
+mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50c/'
 os.chdir(mainDir)
 #mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA1GB10proc/'
 jobfile = mainDir + 'aflowjob'
