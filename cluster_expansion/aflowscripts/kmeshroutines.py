@@ -132,7 +132,7 @@ def aflow2poscar(path):
             for k in [0,1,2]:
                 positions[where,k] = float(aflowin[istart+5+where].split()[k])
             where += 1
-    create_poscar('POSCAR0',descriptor+'From aflow.in BCH',scale,reallatt,natoms,postype,positions,path)
+    create_poscar('POSCAR',descriptor+'From aflow.in BCH',scale,reallatt,natoms,postype,positions,path)
     totatoms=np.sum(natoms)
     return totatoms
 
@@ -302,18 +302,58 @@ def writekpts_vasp(maindir,dir,kptsfile,Nkppra):
     file2.close()
     return 
 
-def writejobfile(maindir,dir,jobname,vaspexec):
+def writejobfile(maindir,dir,jobfile,nameadd,vaspexec):
     '''read from a template one level up from maindir, and put dir in job name ('myjob' is replaced).  
     Choose executable label (should be linked in bin file)'''
+    curdir = os.getcwd()
     os.chdir(maindir)
-    file1 = open('../'+jobname,'r')
+    file1 = open('../'+jobfile,'r')
     jobfile = file1.readlines()
     file1.close
     for i in range(len(jobfile)):
-        jobfile[i]=jobfile[i].replace('myjob', dir)
+        jobfile[i]=jobfile[i].replace('myjob', dir+nameadd)
         if '>' in jobfile[i]:
             jobfile[i]= vaspexec + ' > vasp.out'
     file2 = open(maindir+dir+'vaspjob','w')
     file2.writelines(jobfile) 
     file2.close()
+    os.chdir(curdir)
     return 
+
+def checkq(user):
+    ####### This "if" block is for python versions lower than 2.7. Needed for subprocess.check_output. 
+    if "check_output" not in dir( subprocess ): # duck punch it in!
+        def f(*popenargs, **kwargs):
+            if 'stdout' in kwargs:
+                raise ValueError('stdout argument not allowed, it will be overridden.')
+            process = subprocess.Popen(stdout=subprocess.PIPE, *popenargs, **kwargs)
+            output, unused_err = process.communicate()
+            retcode = process.poll()
+            if retcode:
+                cmd = kwargs.get("args")
+                if cmd is None:
+                    cmd = popenargs[0]
+                raise CalledProcessError(retcode, cmd)
+            return output
+        subprocess.check_output = f
+    ####### above needed for python versions lower than 2.7.
+################# script #######################
+    maxDays = 4 #days to run this script
+    waitMin = 0.2 #minutes between checking         
+    #os.system('rm slurm-*.out') 
+    starttime = time.time()    
+    while time.time()-starttime < maxDays*3600*24: 
+        pending = subprocess.check_output(['squeue','-u',user,'--state=PENDING'])
+        running = subprocess.check_output(['squeue','-u',user,'--state=RUNNING'])    
+    #    pending = subprocess.check_output(['squeue','-u',user,'-n',jobname,'--state=PENDING'])
+    #    running = subprocess.check_output(['squeue','-u',user,'-n',jobname,'--state=RUNNING'])
+    #    locked = subprocess.check_output(['find','-name','LOCK','|','wc','-l']) #gives error
+        print pending
+        pending = pending.splitlines()
+        running = running.splitlines() 
+        print 'Jobs that are pending: ',len(pending)-1 #one line is header     
+        print 'Jobs that are running: ',len(running)-1 #one line is header 
+        print 'Will check again in %s min' % waitMin
+    #    print 'Locked files:' , locked   
+        print
+        time.sleep(waitMin*60) #seconds between checks

@@ -41,7 +41,7 @@ def otherPrep():
 filename='f1_50.dat'
 mainDir = '/fslhome/bch/cluster_expansion/alir/'
 #finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
-finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50c/'
+finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50d.clean/'
 if not os.path.isdir(finalDir):
     os.system('mkdir %s' % finalDir)
 atomic = 'Al:Ir'
