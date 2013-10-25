@@ -1,0 +1,3 @@
+mainDir = '/bluehome/bch/vasprun/graphene.structures/half_graphane/'
+isolatedDir = '/bluehome/bch/vasprun/graphene.structures/half_grapha
+elements = ['Co', 'Cr', 'Fe','Hf','Ir','Mn','Mo','Nb',Ni','Os','Pd','Pt','Re','Rh','Ru','Ta','Tc','Ti','V','W','Zr']
