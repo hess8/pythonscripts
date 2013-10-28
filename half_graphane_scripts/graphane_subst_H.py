@@ -5,7 +5,7 @@ from numpy.linalg import norm
 from random import random
 # L = input('\nBond length? ')
 Nsuper1 = 4 # N of supercells in two directions
-Nsuper2 = 2
+Nsuper2 = 4
 NCcell = 4 # number of C atoms in unit cell
 NCall = 4*Nsuper1*Nsuper2
 NHcell = 4 # starting H locations in unit cell
@@ -18,7 +18,7 @@ dAd = 2.2  # Adatom  distance from plane
 #Lattice Vectors from vasp primitive cell relaxatio   
 a1 =    array([2.13129, -1.2305, 0 ])     
 a2 =    array([2.13129, 1.2305, 0  ])    
-a3s =    array([.00000000,  0.000000000, 20.00]) 
+a3s =    array([.00000000,  0.000000000, 15.00]) 
 #this one will be unchanged in supercell
 theta = arccos(dot(a1,a2)/norm(a1)/norm(a2)) #in case of distorted hexagonal lattice
 thetadeg = theta*180/pi
@@ -37,8 +37,10 @@ rh2 =      array([2.93090,      0.00000,     -1.33850 ])
 a1s = Nsuper1*a1new # superlattice vectors, including break
 a2s =  Nsuper2*a2new  #  
 r = zeros((Nsuper1,Nsuper2,4,3))
-rh = zeros((Nsuper1,Nsuper2,4,3))
+rh = zeros((Nsuper1,Nsuper2,4,3)) 
+typetop = zeros((NCall)) #last index is type of atom temporarily assigned: 0 if H, 1 if adatom
 rad = zeros((NAd,3))
+rhfinal = zeros((NHall,3))
 #Create cell positions
    
 pscr=open('POSCAR' ,'w')
@@ -77,21 +79,27 @@ for j in range(Nsuper1):
         for iat in range(NCcell):
             pscr.write('%12.8f %12.8f %12.8f \n' % ( r[j,k,iat,0], r[j,k,iat,1], r[j,k,iat,2]))
 adcount = 0
+whichsite = 0
     #print hydrogen atoms
-for j in range(Nsuper1):
-    for k in range(Nsuper2):
-        for iat in range(NHcell):
-               if random() < subfrac and adcount < NAd: #assign this as adatom
-                   if rh[j,k,iat,2] > 0: #position is above the plane
-                       rad[adcount,:] = [rh[j,k,iat,0], rh[j,k,iat,1], dAd]
+while adcount < NAd: #start over in the random assignment if we don't get number of adatoms we want from random assignment
+    for j in range(Nsuper1):
+        for k in range(Nsuper2):
+            for iat in range(NHcell):                  
+                   print whichsite
+                   if typetop[whichsite] == 0 and random() < subfrac and adcount < NAd : #assign this as adatom
+                       print 'Assigning site %s as adatom' % str(whichsite)
+                       if rh[j,k,iat,2] > 0: #position is above the plane
+                           rad[adcount,:] = [rh[j,k,iat,0], rh[j,k,iat,1], dAd]
+                       else:
+                           rad[adcount,:] = [rh[j,k,iat,0], rh[j,k,iat,1], -dAd]
+                       adcount += 1
+                       typetop[whichsite] = 1 #adatom assigned there
                    else:
-                       rad[adcount,:] = [rh[j,k,iat,0], rh[j,k,iat,1], -dAd]
-                   adcount += 1
-               else:
-                   pscr.write('%12.8f %12.8f %12.8f \n' % ( rh[j,k,iat,0], rh[j,k,iat,1], rh[j,k,iat,2]))
+                       pscr.write('%12.8f %12.8f %12.8f \n' % ( rh[j,k,iat,0], rh[j,k,iat,1], rh[j,k,iat,2]))
+                   whichsite += 1
+print 'adcount',adcount
 #print adatom positions
-for j in range(NAd):
+for j in range(adcount):
     pscr.write('%12.8f %12.8f %12.8f \n' % ( rad[j,0], rad[j,1], rad[j,2]))
-
 
 pscr.close()
