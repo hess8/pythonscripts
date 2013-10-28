@@ -198,7 +198,7 @@ for i in range(len(elements)):
 #    if elements[i] == 'Ti':
 #        print float(energies[i]) , float(isolenergies[i]), binde[i]
 outfile = open('dos_analysis.csv','w')
-outfile.write('Element,'+BEString+',Calc Energy,Isol atom,IsolConvDiff,Distance,CC Diffz,CC expans %,BEstretch,Stretch energy,Converged,Steps\n')
+outfile.write('Element,'+BEString+',CalcEnergy,IsolAtom,IsolConvDiff,Distance,CCDiffz,CCexpans%,BEstretch,StretchEnergy,Converged,Steps\n')
 # write spreadsheet
 
 for i in range(len(elements)):
