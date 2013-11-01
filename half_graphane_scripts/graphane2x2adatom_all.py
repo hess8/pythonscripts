@@ -1,12 +1,13 @@
 # Generates all structures possible in a 2x2 graphane supercell, with adatoms replacing H 
+# Creates all vasp input files, and aflow.in
 # 
 from numpy import array, arccos, dot, pi, zeros, floor, sum
 from numpy.linalg import norm
 from random import random
 import os, subprocess, sys
 
-dir = '/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms'
-os.chdir(dir)
+maindir = '/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/'
+os.chdir(maindir)
 
 # L = input('\nBond length? ')
 Nsuper1 = 2 # N of supercells in two directions
@@ -14,7 +15,7 @@ Nsuper2 = 2
 NCcell = 2 # number of C atoms in unit cell
 NCall = 2*Nsuper1*Nsuper2
 NHcell = 2 # starting H locations in unit cell
-atomslist = 'C H W \n'
+atomslist = ['C', 'H', 'W']
 dAd = 2.2  # Adatom  distance from plane
                                                                                                                           
 #Lattice Vectors from vasp primitive cell relaxation 
@@ -57,7 +58,7 @@ for j in range(Nsuper1):
 typetop = zeros((8))
 for istruct in range(2**(2*(Nsuper1+Nsuper2))): # in each loop we add one more adatom to the structure, sequentially
     typetopstr = bin(istruct)[2:] # binary: 0 if H, 1 if adatom 
-    print typetopstr
+#    print typetopstr
     for i in range(len(typetopstr)) :
        typetop[i] = int(typetopstr[i])
     print  typetop
@@ -65,9 +66,19 @@ for istruct in range(2**(2*(Nsuper1+Nsuper2))): # in each loop we add one more a
     NHall = NCall - NAd #rest of top sites covered by H       
     rad = zeros((NAd,3))
     #Create cell positions
-       
-    pscr=open('POSCAR'+str(istruct) ,'w')
-    pscr.write(atomslist)
+    dir = maindir + 'struct%s/' %istruct
+    if not os.path.isdir(dir):
+        os.mkdir(dir)   
+    pscr=open(dir+'POSCAR','w')
+    if istruct ==0:
+        listused = [atomslist[0], atomslist[1]]
+    elif istruct == range(2**(2*(Nsuper1+Nsuper2))):
+        listused = [atomslist[0], atomslist[2]]
+    else:
+        listused =atomslist 
+    for atom in listused:
+        pscr.write('%s ' %atom)
+#    pscr.write('\n')     
     pscr.write('1.0 \n')
     #  lattice vectors
     
@@ -75,7 +86,12 @@ for istruct in range(2**(2*(Nsuper1+Nsuper2))): # in each loop we add one more a
     pscr.write('%12.8f %12.8f %12.8f  \n' % (a2s[0], a2s[1], a2s[2]))
     pscr.write('%12.8f %12.8f %12.8f  \n' % (a3s[0], a3s[1], a3s[2]))
     
-    pscr.write('%g %g %g\n' % (NCall, NHall, NAd))
+    pscr.write('%g ' % NCall)
+    if NHall>0:
+        pscr.write('%g ' % NHall)
+    if NAd>0:
+        pscr.write('%g ' % NAd)
+    pscr.write('\n')      
     pscr.write('Cartesian \n')
 
     #print (#no atom type numbers for POSCAR...just a list of positions
@@ -89,9 +105,8 @@ for istruct in range(2**(2*(Nsuper1+Nsuper2))): # in each loop we add one more a
     for j in range(Nsuper1):
         for k in range(Nsuper2):
             for iat in range(NHcell):                  
-                   print whichsite
                    if typetop[whichsite] == 1: #this is adatom
-                       print 'Site %s is adatom' % str(whichsite)
+#                       print 'Site %s is adatom' % str(whichsite)
                        if rh[j,k,iat,2] > 0: #position is above the plane
                            rad[adcount,:] = [rh[j,k,iat,0], rh[j,k,iat,1], dAd]
                        else:
@@ -104,5 +119,14 @@ for istruct in range(2**(2*(Nsuper1+Nsuper2))): # in each loop we add one more a
     for j in range(adcount):
         pscr.write('%12.8f %12.8f %12.8f \n' % ( rad[j,0], rad[j,1], rad[j,2]))
     pscr.close()
+#Copy vasp input files
+    os.chdir(dir)
+    os.system('cp ../../vaspinput/relax/KPOINTS .')
+    os.system('cp ../../vaspinput/relax/INCAR .') 
+    potstr = 'cat ' 
+    for atom in listused:
+        potstr += '~/vaspfiles/src/potpaw_PBE/%s/POTCAR ' %atom
+    potstr += '> POTCAR'
+    os.system(potstr) 
 print 'done'
 
