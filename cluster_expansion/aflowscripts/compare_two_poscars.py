@@ -1,7 +1,11 @@
+import sys, os, subprocess
+sys.path.append('/fslhome/bch/vaspfiles/src/hesslib/') 
+
 from ctypes import byref, cdll, c_double, c_bool,c_int,c_long
 from numpy import array, zeros, transpose
 from poscar import POSCAR as interpretposcar
-import os, subprocess
+
+import hesslib.so
     
 def compare_structs(lat1,types1,pos1,natoms1,lat2,types2,pos2,natoms2,mapped,status,irot,skip_out,identical):
     """COMPARE ARBITRARY STRUCTURES
@@ -34,14 +38,14 @@ subroutine test_compare_arbitrary_structures(LV1in,aTyp1in,aPos1in,natoms1,LV2in
     ntypes2 = len(types1)
     print
 #    print lat1; print types1; print pos1
-#    print load_ctypes_3x3_double(lat1); print load_ctypes_int_array(types1); print load_ctypes_3x3xN_double(pos1)
+    print load_ctypes_3x3_double(lat1); print load_ctypes_int_array(types1); print load_ctypes_3x3xN_double(pos1)
 #    print 'len passed type1',len(load_ctypes_int_array(types1))
     test(byref(load_ctypes_3x3_double(lat1)),byref(load_ctypes_int_array(types1)),byref(c_int(ntypes1)), \
          byref(load_ctypes_3x3xN_double(pos1)), byref(c_int(natoms1)), \
-            byref(load_ctypes_3x3_double(lat2)),byref(load_ctypes_int_array(types2)),byref(c_int(ntypes2)) \
-            byref(load_ctypes_3x3xN_double(pos2)), byref(c_int(natoms2)), \
-            byref(c_double(eps)),byref(c_bool(mapped)),byref(c_int(status)), \
-            byref(c_int(irot)),byref(c_int(skip_out)),byref(c_bool(identical)) )    
+         byref(load_ctypes_3x3_double(lat2)),byref(load_ctypes_int_array(types2)),byref(c_int(ntypes2)), \
+         byref(load_ctypes_3x3xN_double(pos2)), byref(c_int(natoms2)), \
+         byref(c_double(eps)),byref(c_bool(mapped)),byref(c_int(status)), \
+         byref(c_int(irot)),byref(c_int(skip_out)),byref(c_bool(identical)) )    
     
     print mapped,status, irot, skip_out,identical 
     return 
@@ -57,13 +61,14 @@ def load_ctypes_3x3_double(IN):
 def load_ctypes_3x3xN_double(IN):
     """Make a 3x3xN array into the right thing for ctypes"""
     N = IN.shape[1]
-    a = (c_double *N*3)() #note different order N,3 vs standard matrix 3,N
+#    a = (c_double *N*3)() #note different order N,3 vs standard matrix 3,N
+    a = (c_double *3*N)() 
 #    print IN
 #    print len(a)
 #    print a
     for i in range(3):
         for j in range(N):
-            a[i][j] = c_double(IN[i,j])            
+            a[j][i] = c_double(IN[i,j])            
     return a
 
 def print_matrix(IN):
@@ -96,17 +101,41 @@ def readposcar(filename):
     rlines  = [i.strip() for i in file.readlines()] #assumes use of  < POSCAR
     return interpretposcar(lines=rlines)
 
+#import inspect
+#
+#def get_user_attributes(cls):
+#    boring = dir(type('dummy', (object,), {}))
+#    return [item
+#            for item in inspect.getmembers(cls)
+#            if item[0] not in boring]
+    
+def get_object_attrs( obj ):
+    # code borrowed from the rlcompleter module ( see the code for Completer::attr_matches() )
+    ret = dir( obj )
+    ## if "__builtins__" in ret:
+    ##    ret.remove("__builtins__")
+
+    if hasattr( obj, '__class__'):
+        ret.append('__class__')
+        ret.extend( get_class_members(obj.__class__) )
+
+        ret = uniq( ret )
+
+    return ret
+
 ###########################   Script  ############################
 file1 = 'POSCAR1'
 file2 = 'POSCAR2'
 dir = '/fslhome/bch/cluster_expansion/alir/testf10/AlIr/f10/'
 os.chdir(dir)
+
+
 #read in both files
 pos = readposcar(file1)
 lat1 = array(pos.avecs)
 types1 = array(pos.types)
 natoms1 = len(pos.atoms)
-pos1 = zeros((3,natoms1));pos2 = zeros((3,natoms1))
+pos1 = zeros((3,natoms1))
 for i in range(natoms1):
     pos1[:,i]=pos.atoms[i].vector
 print "Lattice 1:"; print lat1
@@ -130,10 +159,18 @@ identical = False
 status = 0
 irot = 0
 skip_out = 0
-compare_structs(lat1,types1,pos1,natoms1,lat2,types2,pos2,natoms2,mapped,status,irot,skip_out,identical)
+#compare_structs(lat1,types1,pos1,natoms1,lat2,types2,pos2,natoms2,mapped,status,irot,skip_out,identical)
+
+b = (c_long*3)()
+#get_object_attrs( b )
+#print b
+#b[1] = c_long(2)
+#for property, value in vars(b).iteritems():
+#    print property, ": ", value
 
 
-
+#print get_user_attributes(b)
+#print inspect.getmembers(b)
 
 #a = array(([0, .5, .5], [.5,0,.5],[.5,.5,0]), dtype=float)
 #a = transpose(array((  

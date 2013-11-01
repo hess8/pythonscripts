@@ -21,9 +21,10 @@ def aflowCreateJobs(structs,atomic,finalDir):
             sublist = structs[i*nsubmit:]
         strucstr = ''
         for struc in sublist:
-            strucstr += 'f%s,'% struc
+#            strucstr += 'f%s,'% struc
+            strucstr += 'h%s,'% struc
         try:
-            commstr= './aconvasp --aflow_proto ' + strucstr+ ':%s' % atomic
+            commstr= 'aconvasp --aflow_proto ' + strucstr+ ':%s' % atomic
             os.system(commstr)
         except:
             print 'Error in executing %s' % commstr
@@ -38,14 +39,15 @@ def otherPrep():
 ################# script #######################
 #filename='training_set_structures.dat'
 #filename='f11000.dat'
-filename='f1_50.dat'
-mainDir = '/fslhome/bch/cluster_expansion/alir/'
+filename='h1_50.dat'
+mainDir = '/fslhome/bch/cluster_expansion/hexagonal/'
 #finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
-finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50d.clean/'
+finalDir = '/fslhome/bch/cluster_expansion/hexagonal/h1_50/'
 if not os.path.isdir(finalDir):
     os.system('mkdir %s' % finalDir)
 atomic = 'Al:Ir'
 structs = readTrainStruc(mainDir,filename)
+print structs
 aflowCreateJobs(structs,atomic,finalDir)
 os.chdir(finalDir)
 otherPrep()
