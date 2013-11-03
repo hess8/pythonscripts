@@ -302,7 +302,7 @@ def writekpts_vasp(maindir,dir,kptsfile,Nkppra):
     file2.close()
     return 
 
-def writejobfile(maindir,dir,jobfile,nameadd,vaspexec):
+def writejobfile(maindir,struct,jobfile,nameadd,vaspexec):
     '''read from a template one level up from maindir, and put dir in job name ('myjob' is replaced).  
     Choose executable label (should be linked in bin file)'''
     curdir = os.getcwd()
@@ -311,7 +311,7 @@ def writejobfile(maindir,dir,jobfile,nameadd,vaspexec):
     jobfile = file1.readlines()
     file1.close
     for i in range(len(jobfile)):
-        jobfile[i]=jobfile[i].replace('myjob', dir+nameadd)
+        jobfile[i]=jobfile[i].replace('myjob', struct+nameadd)
         if '>' in jobfile[i]:
             jobfile[i]= vaspexec + ' > vasp.out'
     file2 = open(maindir+dir+'vaspjob','w')

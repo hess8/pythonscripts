@@ -42,7 +42,7 @@ nQueueWanted = 0 #keep this many in queue
 #jobname = '3Gb4p' #best to update this
 #jobname = '1Gb10proc'
 user = 'bch'
-mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50c/'
+mainDir = '/fslhome/bch/cluster_expansion/hexagonal/aflow2x2adatoms/'
 os.chdir(mainDir)
 #mainDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA1GB10proc/'
 jobfile = mainDir + 'aflowjob'
@@ -57,7 +57,8 @@ while time.time()-starttime < maxDays*3600*24:
 #    pending = subprocess.check_output(['squeue','-u',user,'-n',jobname,'--state=PENDING'])
 #    running = subprocess.check_output(['squeue','-u',user,'-n',jobname,'--state=RUNNING'])
 #    locked = subprocess.check_output(['find','-name','LOCK','|','wc','-l']) #gives error
-    print pending
+    if len(pending)>85: #leenthg of line if empty pending queue
+        print pending
     pending = pending.splitlines()
     running = running.splitlines() 
     if jobsleft(toRunFile) < 1:
