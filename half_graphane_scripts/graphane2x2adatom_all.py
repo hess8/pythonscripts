@@ -79,7 +79,7 @@ for istruct in range(nstructs): # in each loop we add one more adatom to the str
     typetopstr = bin(istruct)[2:] # binary: 0 if H, 1 if adatom 
     print istruct
     for i in range(len(typetopstr)) :
-       typetop[i+nsites-len(typetopstr)] = int(typetopstr[i])
+       typetop[i+nsites-len(typetopstr)] = int(typetopstr[i])#fill out all spaces in the binary representation
     print  typetop #binary representation of H/adatoms   
     dir = maindir + 'struct%s/' %istruct 
     if not os.path.isdir(dir+run):
