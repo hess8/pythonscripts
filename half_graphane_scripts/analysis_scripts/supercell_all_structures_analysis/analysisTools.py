@@ -37,14 +37,36 @@ def nadatoms(strbinary):
 		nad += int(strbinary[i])
 	return nad
 	
-def FinishCheck(folder):
+def FinishCheck():
 #        """Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""
-    lastfolder = os.getcwd()
-    os.chdir(folder)
     proc = subprocess.Popen(['grep', 'Voluntary', 'OUTCAR'],stdout=subprocess.PIPE)
     newstring = proc.communicate()
-    os.chdir(lastfolder)    
     return newstring[0].find('Voluntary') > -1 #True/False	
+
+def getSteps():
+    '''number of steps in relaxation, as an integer'''
+    if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0:
+        os.chdir(lastfolder) 
+        return -9999
+    oszicar = open('OSZICAR','r')
+    laststep = oszicar.readlines()[-1].split()[0]
+    try:
+        value = int(laststep)
+        return value
+    except:
+        return 9999
+    
+def getNSW(dir): 
+    '''Writes Y or N depending on NSW convergence AND vasp finishing'''
+    #get NSW, the max ionic steps allowed in the run.  Using first directory in checkedList
+    lastdir = os.getcwd()
+    os.chdir(dir)
+    proc = subprocess.Popen(['grep','-i','NSW','INCAR'],stdout=subprocess.PIPE)
+    os.chdir(lastdir)
+    string = proc.communicate()
+    print string
+    NSW = int(string[0].split('=')[-1])
+    return NSW
         
 #def getDistance(folder):
 #    lastfolder = os.getcwd()
@@ -249,22 +271,7 @@ def FinishCheck(folder):
 #        stepsfile.write(str(getElSteps(path))+'\n')
 #    stepsfile.close()
 #
-#def getSteps(folder):
-#    '''number of steps in relaxation, as an integer'''
-#    lastfolder = os.getcwd()
-#    os.chdir(folder)
-#    if not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0:
-#        os.chdir(lastfolder) 
-#        return -9999
-#    oszicar = open('OSZICAR','r')
-#    laststep = oszicar.readlines()[-1].split()[0]
-#    oszicar.close()
-#    os.chdir(lastfolder)  
-#    try:
-#        value = int(laststep)
-#        return value
-#    except:
-#        return 9999
+
 #    
 #    
 #def writeSteps(checkedList):    

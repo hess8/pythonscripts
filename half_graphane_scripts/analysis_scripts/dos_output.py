@@ -187,6 +187,7 @@ for i in range(len(elements)):
             BEString = 'BE absolute'
         #for half graphane:
         elif structure == 'half_gr': 
+            print elements[i], float(energies[i]), float(isolenergies[i]) , eIsolatedH , 2*eIsolatedC 
             benergy_system = float(energies[i]) - float(isolenergies[i]) - eIsolatedH - 2*eIsolatedC 
             binde[i] = benergy_system - bindEnergyGraphane #relative to graphane 
             BEString = 'BE.vs.graphane'

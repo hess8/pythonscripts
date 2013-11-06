@@ -1,12 +1,15 @@
 import os,subprocess,math,time 
 from numpy import array, zeros, binary_repr,log2
 import numpy
-from analysisTools import FinishCheck,allFoldersList,energyOszicar,nadatoms
+from analysisTools import FinishCheck,allFoldersList,energyOszicar, \
+    nadatoms, getSteps, getNSW
 
 
 maindir = '/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/'
+os.chdir(maindir)
+#run = 'relaxfinal'
 run = 'relax'
-enerIsolatedAd =	-.45365181e+01 # for tungsten (W) only
+enerIsolatedAd = -.45365181e+01 # for tungsten (W) only
 nsites = 8 
 
 #standard energies:
@@ -25,6 +28,10 @@ distances = zeros(nstruct)
 binaryatoms = zeros(nstruct, dtype=numpy.int)
 nAd = zeros(nstruct, dtype=numpy.int)
 binde = zeros(nstruct)
+finish = zeros(nstruct, dtype=numpy.str)
+steps = zeros(nstruct, dtype=numpy.int)
+NSW = getNSW('../vaspinput/%s/' % run) 
+
 for i,dir in enumerate(dirlist):
     print dir
     os.chdir(dir)
@@ -37,16 +44,23 @@ for i,dir in enumerate(dirlist):
     benergy_system = ener[i] -  nAd[i] * enerIsolatedAd - nH*eIsolatedH - nsites*eIsolatedC 
     binde[i] = benergy_system - bindEnergyGraphane #relative to graphane 
     BEString = 'BE.vs.graphane'
+    if FinishCheck():
+        finish[i] = 'Y'
+    else:
+        finish[i] ='N'
+    steps[i] = getSteps()
+    if FinishCheck() and steps[i] < NSW:
+        os.system('date > converged.dat')   
 
 os.chdir(maindir)
-outfile = open('2x2all_initial.csv','w')
-outfile.write('Structure,Binary,%s,Calculated_Energy,N_Adatoms\n' % BEString)
+outfile = open('2x2all_%s.csv' %run,'w')
+outfile.write('Structure,Binary,%s,Calculated_Energy,N_Adatoms,Finished,Steps\n' % BEString)
 
 #for i in range(len(elements)):
 
 #outfile.close()
 for i,dir in enumerate(dirlist):
-    linei = structs[i]+','+ str(binaryatoms[i])+','+ str(binde[i]) +','+ str(ener[i])+','+ str(nAd[i])+'\n'
+    linei = structs[i]+','+ str(binaryatoms[i])+','+ str(binde[i]) +','+ str(ener[i])+','+ str(nAd[i])+','+ str(finish[i])+','+ str(steps[i])+'\n'
     outfile.write(linei)
 
 outfile.close()

@@ -26,7 +26,8 @@ import os, subprocess, sys
 #maindir = '/fslhome/bch/cluster_expansion/hexagonal/aflow2x2adatoms/'
 maindir = '/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/'
 aflow = False #1 to turn aflow prep on or off
-run = 'relaxfinal'
+#run = 'relaxfinal'
+run = 'relax'
 
 # L = input('\nBond length? ')
 Nsuper1 = 2 # N of supercells in two directions
@@ -50,10 +51,17 @@ thetadeg = theta*180/pi
 a1new = a1 # Don't change
 a2new = a2 # 
 #  Atom positions from vasp primitive cell relaxation
-rc1 =      array([1.46545,      0.00000,      0.22856])        
-rc2 =      array([2.93090,      0.00000,     -0.22856])         
-rh1 =      array([1.46545,      0.00000,      1.33850])      
-rh2 =      array([2.93090,      0.00000,     -1.33850 ])      
+#for "graphane" start of plane (diamond like)
+#rc1 =      array([1.46545,      0.00000,      0.22856])        
+#rc2 =      array([2.93090,      0.00000,     -0.22856])         
+#rh1 =      array([1.46545,      0.00000,      1.33850])      
+#rh2 =      array([2.93090,      0.00000,     -1.33850 ])    
+
+#For "flat start of plane"
+rc1 =      array([1.46545,      0.00000,      0.0])        
+rc2 =      array([2.93090,      0.00000,     -0.0])         
+rh1 =      array([1.46545,      0.00000,      1.1])      
+rh2 =      array([2.93090,      0.00000,     -1.1 ])   
 
 a1s = Nsuper1*a1new # superlattice vectors, including break
 a2s =  Nsuper2*a2new  #  
@@ -82,85 +90,91 @@ for istruct in range(nstructs): # in each loop we add one more adatom to the str
        typetop[i+nsites-len(typetopstr)] = int(typetopstr[i])#fill out all spaces in the binary representation
     print  typetop #binary representation of H/adatoms   
     dir = maindir + 'struct%s/' %istruct 
+    if not os.path.isdir(dir):
+        os.mkdir(dir)       
     if not os.path.isdir(dir+run):
         os.mkdir(dir+run)     
     os.chdir(dir+run)
-    os.system('rm slurm*.out')
-    if run == 'relax': # first run, write POSCAR
-        NAd = sum(typetop)
-        NHall = NCall - NAd #rest of top sites covered by H       
-        rad = zeros((NAd,3))
-        #Create cell positions
-        pscr=open(dir+'POSCAR','w')
-        if istruct ==0:
-            listused = [atomslist[0], atomslist[1]] # all H
-        elif istruct == nstructs-1: #all adatoms
-            listused = [atomslist[0], atomslist[2]]
-        else:
-            listused =atomslist 
-        for atom in listused:
-            pscr.write('%s ' %atom)
-    #    pscr.write('\n')     
-        pscr.write('\n1.0\n')
-        #  lattice vectors
+    if not os.path.exists('converged.dat'): # do only dirs that have not converged!!!!       
+        os.system('rm slurm*.out')
+        if run == 'relax' and (not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0): # first run, write POSCAR
+            NAd = sum(typetop)
+            NHall = NCall - NAd #rest of top sites covered by H       
+            rad = zeros((NAd,3))
+            #Create cell positions
+            pscr=open('POSCAR','w')
+            if istruct ==0:
+                listused = [atomslist[0], atomslist[1]] # all H
+            elif istruct == nstructs-1: #all adatoms
+                listused = [atomslist[0], atomslist[2]]
+            else:
+                listused =atomslist 
+            for atom in listused:
+                pscr.write('%s ' %atom)
+        #    pscr.write('\n')     
+            pscr.write('\n1.0\n')
+            #  lattice vectors
+            
+            pscr.write('%12.8f %12.8f %12.8f  \n' % (a1s[0], a1s[1], a1s[2]))
+            pscr.write('%12.8f %12.8f %12.8f  \n' % (a2s[0], a2s[1], a2s[2]))
+            pscr.write('%12.8f %12.8f %12.8f  \n' % (a3s[0], a3s[1], a3s[2]))
+            
+            pscr.write('%g ' % NCall)
+            if NHall>0:
+                pscr.write('%g ' % NHall)
+            if NAd>0:
+                pscr.write('%g ' % NAd)
+            pscr.write('\n')      
+            pscr.write('Cartesian \n')
         
-        pscr.write('%12.8f %12.8f %12.8f  \n' % (a1s[0], a1s[1], a1s[2]))
-        pscr.write('%12.8f %12.8f %12.8f  \n' % (a2s[0], a2s[1], a2s[2]))
-        pscr.write('%12.8f %12.8f %12.8f  \n' % (a3s[0], a3s[1], a3s[2]))
-        
-        pscr.write('%g ' % NCall)
-        if NHall>0:
-            pscr.write('%g ' % NHall)
-        if NAd>0:
-            pscr.write('%g ' % NAd)
-        pscr.write('\n')      
-        pscr.write('Cartesian \n')
-    
-        #print (#no atom type numbers for POSCAR...just a list of positions
-        for j in range(Nsuper1):
-            for k in range(Nsuper2):
-                for iat in range(NCcell):
-                    pscr.write('%12.8f %12.8f %12.8f \n' % ( r[j,k,iat,0], r[j,k,iat,1], r[j,k,iat,2]))
-            #print hydrogen atoms before adatoms
-        adcount = 0
-        whichsite = 0
-        for j in range(Nsuper1):
-            for k in range(Nsuper2):
-                for iat in range(NHcell):                  
-                       if typetop[whichsite] == 1: #this is adatom
-    #                       print 'Site %s is adatom' % str(whichsite)
-                           if rh[j,k,iat,2] > 0: #position is above the plane
-                               rad[adcount,:] = [rh[j,k,iat,0], rh[j,k,iat,1], dAd]
+            #print (#no atom type numbers for POSCAR...just a list of positions
+            for j in range(Nsuper1):
+                for k in range(Nsuper2):
+                    for iat in range(NCcell):
+                        pscr.write('%12.8f %12.8f %12.8f \n' % ( r[j,k,iat,0], r[j,k,iat,1], r[j,k,iat,2]))
+                #print hydrogen atoms before adatoms
+            adcount = 0
+            whichsite = 0
+            for j in range(Nsuper1):
+                for k in range(Nsuper2):
+                    for iat in range(NHcell):                  
+                           if typetop[whichsite] == 1: #this is adatom
+        #                       print 'Site %s is adatom' % str(whichsite)
+                               if rh[j,k,iat,2] > 0: #position is above the plane
+                                   rad[adcount,:] = [rh[j,k,iat,0], rh[j,k,iat,1], dAd]
+                               else:
+                                   rad[adcount,:] = [rh[j,k,iat,0], rh[j,k,iat,1], -dAd]
+                               adcount += 1
                            else:
-                               rad[adcount,:] = [rh[j,k,iat,0], rh[j,k,iat,1], -dAd]
-                           adcount += 1
-                       else:
-                           pscr.write('%12.8f %12.8f %12.8f \n' % ( rh[j,k,iat,0], rh[j,k,iat,1], rh[j,k,iat,2]))
-                       whichsite += 1
-        #print adatom positions
-        for j in range(adcount):
-            pscr.write('%12.8f %12.8f %12.8f \n' % ( rad[j,0], rad[j,1], rad[j,2]))
-        pscr.close()
-        #create POTCAR       
-        potstr = 'cat ' 
-        for atom in listused:
-            potstr += '~/vaspfiles/src/potpaw_PBE/%s/POTCAR ' %atom
-        potstr += '> POTCAR'
-        os.system(potstr)   
-    elif run == 'relaxfinal':
-        os.system('cp ../relax/CONTCAR POSCAR')
-        os.system('cp ../relax/POSCAR POSCAR.orig')        
-        os.system('cp ../relax/POTCAR .')  
-                      
-    if aflow:
-        dummy=0
-        os.system('aconvasp --poscar2aflowin < POSCAR > aflow.in')
-    else:  #Copy vasp input files              
-        os.system('cp ../../../vaspinput/%s/KPOINTS .' % run)
-        os.system('cp ../../../vaspinput/%s/INCAR .' % run)
-        os.system('cp ../../../vaspinput/%s/job .' % run)
-    writejobfile('struct'+str(istruct),atomslist[-1]+run,'vasp533')
-    os.system('sbatch job')
+                               pscr.write('%12.8f %12.8f %12.8f \n' % ( rh[j,k,iat,0], rh[j,k,iat,1], rh[j,k,iat,2]))
+                           whichsite += 1
+            #print adatom positions
+            for j in range(adcount):
+                pscr.write('%12.8f %12.8f %12.8f \n' % ( rad[j,0], rad[j,1], rad[j,2]))
+            pscr.close()
+            #create POTCAR       
+            potstr = 'cat ' 
+            for atom in listused:
+                potstr += '~/vaspfiles/src/potpaw_PBE/%s/POTCAR ' %atom
+            potstr += '> POTCAR'
+            os.system(potstr)   
+        elif run == 'relax' and os.path.exists('CONTCAR'):
+#            os.system('cp POSCAR POSCAR.orig')
+            os.system('cp CONTCAR POSCAR')     
+        elif run == 'relaxfinal':
+            os.system('cp ../relax/CONTCAR POSCAR')
+            os.system('cp ../relax/POSCAR POSCAR.orig')        
+            os.system('cp ../relax/POTCAR .')                         
+        if aflow:
+            dummy=0
+            os.system('aconvasp --poscar2aflowin < POSCAR > aflow.in')
+        else:  #Copy vasp input files              
+            os.system('cp ../../../vaspinput/%s/KPOINTS .' % run)
+            os.system('cp ../../../vaspinput/%s/INCAR .' % run)
+            os.system('cp ../../../vaspinput/%s/job .' % run)
+        writejobfile('struct'+str(istruct),atomslist[-1]+run,'vasp533')
+        os.system('sbatch job')
+        print 'Submitted job for struct%s' % str(istruct)
 #create aflow.in
 
 os.chdir(maindir)
