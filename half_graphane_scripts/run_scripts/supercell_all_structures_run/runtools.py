@@ -1,4 +1,40 @@
-def writePoscar(typetop, atomslist,nstructs, Nsuper1, Nsuper2,NCcell):
+import os
+
+def getAtomsUsed(atomslist,istruct,nstructs):
+    # of the list [C H Ad], which go into POSCAR
+    if istruct ==0:
+        listused = [atomslist[0], atomslist[1]] # all H
+    elif istruct == nstructs-1: #all adatoms
+        listused = [atomslist[0], atomslist[2]]
+    else:
+        listused =atomslist 
+    return listused   
+     
+def writejobfile(struct,nameadd,vaspexec):
+    '''read from a template one level up from maindir, and put dir in job name ('myjob' is replaced).  
+    Choose executable label (should be linked in bin file)'''
+    print os.getcwd()
+    file1 = open('job','r')
+    jobfile = file1.readlines()
+    file1.close
+    for i in range(len(jobfile)):
+        jobfile[i]=jobfile[i].replace('myjob', struct+nameadd)
+        if '>' in jobfile[i]:
+            jobfile[i]= vaspexec + ' > out'
+    file2 = open('job','w')
+    file2.writelines(jobfile) 
+    file2.close()
+    return 
+
+def writePotcar(listused):
+    potstr = 'cat ' 
+    for atom in listused:
+        potstr += '~/vaspfiles/src/potpaw_PBE/%s/POTCAR ' %atom
+    potstr += '> POTCAR'
+    os.system(potstr)
+    
+def writePoscar(typetop,listused,istruct,nstructs,Nsuper1,Nsuper2,NCcell):
+    '''Poscar for supercell, with adatom replacemnt of H given by typetop.  '''
     NAd = sum(typetop)
     NHall = NCall - NAd #rest of top sites covered by H
     NCall = 2*Nsuper1*Nsuper2       
@@ -48,12 +84,6 @@ def writePoscar(typetop, atomslist,nstructs, Nsuper1, Nsuper2,NCcell):
             rh[j,k,1,:] = rh2 + (j)*a1new + (k)*a2new
         #Create cell positions
     pscr=open('POSCAR','w')
-    if istruct ==0:
-        listused = [atomslist[0], atomslist[1]] # all H
-    elif istruct == nstructs-1: #all adatoms
-        listused = [atomslist[0], atomslist[2]]
-    else:
-        listused =atomslist 
     for atom in listused:
         pscr.write('%s ' %atom)
 #    pscr.write('\n')     

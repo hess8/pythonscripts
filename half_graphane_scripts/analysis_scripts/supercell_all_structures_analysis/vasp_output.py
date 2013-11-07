@@ -1,8 +1,7 @@
 import os,subprocess,math,time 
 from numpy import array, zeros, binary_repr,log2
 import numpy
-from analysisTools import FinishCheck,allFoldersList,energyOszicar, \
-    nadatoms, getSteps, getNSW
+from analysisTools import *
 
 
 maindir = '/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/'
@@ -31,7 +30,6 @@ binde = zeros(nstruct)
 finish = zeros(nstruct, dtype=numpy.str)
 steps = zeros(nstruct, dtype=numpy.int)
 NSW = getNSW('../vaspinput/%s/' % run) 
-
 for i,dir in enumerate(dirlist):
     print dir
     os.chdir(dir)
@@ -50,7 +48,11 @@ for i,dir in enumerate(dirlist):
         finish[i] ='N'
     steps[i] = getSteps()
     if FinishCheck() and steps[i] < NSW:
-        os.system('date > converged.dat')   
+        os.system('date > converged.dat')
+    if os.path.exists('CONTCAR') and os.path.getsize('CONTCAR') > 0:       
+        getPositionInfo()
+    else:
+        print 'CONTCAR not found, or empty'
 
 os.chdir(maindir)
 outfile = open('2x2all_%s.csv' %run,'w')
