@@ -10,8 +10,8 @@ from runtools import writePoscar, writejobfile
 #maindir = '/fslhome/bch/cluster_expansion/hexagonal/aflow2x2adatoms/'
 maindir = '/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/'
 aflow = False #1 to turn aflow prep on or off
-#run = 'relaxfinal'
-run = 'relax'
+run = 'relaxfinal'
+#run = 'relax'
 
 # L = input('\nBond length? ')
 Nsuper1 = 2 # N of supercells in two directions
@@ -36,7 +36,7 @@ for istruct in range(nstructs): #
     if not os.path.isdir(dir+run):
         os.mkdir(dir+run)     
     os.chdir(dir+run)
-    if not os.path.exists('converged.dat'): # do only dirs that have not converged!!!!       
+    if not os.path.exists('converged.dat'): # run only dirs that have not converged      
         os.system('rm slurm*.out')
         if run == 'relax' and (not os.path.exists('OSZICAR') or os.path.getsize('OSZICAR') == 0): 
             # first run, write POSCAR
@@ -47,10 +47,13 @@ for istruct in range(nstructs): #
         elif run == 'relax' and os.path.exists('CONTCAR'):
             os.system('cp POSCAR POSCAR%s' % time.strftime("%X")) #appends 24hr time
             os.system('cp CONTCAR POSCAR')     
-        elif run == 'relaxfinal':
+        elif run == 'relaxfinal' and not os.path.exists('POSCAR'):
             os.system('cp ../relax/CONTCAR POSCAR')
             os.system('cp ../relax/POSCAR POSCAR.orig')        
-            os.system('cp ../relax/POTCAR .')                         
+            os.system('cp ../relax/POTCAR .') 
+        elif run == 'relaxfinal' and os.path.exists('POSCAR'): #use CONTCAR from this folder, for more steps
+            os.system('cp POSCAR POSCAR%s' % time.strftime("%X")) 
+            os.system('cp CONTCAR POSCAR')                                             
         if aflow:
             os.system('aconvasp --poscar2aflowin < POSCAR > aflow.in')
         else:  #Copy vasp input files              
