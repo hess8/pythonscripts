@@ -169,12 +169,12 @@ def lattice_vecs(cryststruc):
     if b>c: #switch c,b, gamma and beta
         [a,b,c,al,be,ga] = [a,c,b,al,ga,be] # e.g 1,3,2 -> 1,2,3
 #    print [a,b,c,al,be,ga]
-    ca = np.cos(al/180*np.pi)
-    cb = np.cos(be/180*np.pi)
-    cg = np.cos(ga/180*np.pi)
-    sa = np.sin(al/180*np.pi)
-    sb = np.sin(be/180*np.pi)
-    sg = np.sin(ga/180*np.pi) 
+    ca = np.cos(al/180.0*np.pi)
+    cb = np.cos(be/180.0*np.pi)
+    cg = np.cos(ga/180.0*np.pi)
+    sa = np.sin(al/180.0*np.pi)
+    sb = np.sin(be/180.0*np.pi)
+    sg = np.sin(ga/180.0*np.pi) 
     lv = np.zeros((3,3))
     lv[0,:] = [a,0,0]
     lv[1,:] = [b*cg,b*sg,0]  
