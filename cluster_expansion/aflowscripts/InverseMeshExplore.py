@@ -3,7 +3,8 @@ import os, subprocess, sys, time
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
 from kmeshroutines import lattice_vecs
 
-from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, matrix, transpose,rint,inner,multiply
+from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log
+from numpy import matrix, transpose,rint,inner,multiply, size
 from numpy import zeros as array_zeros
 from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv
@@ -39,18 +40,10 @@ def unload_ctypes_3x3_double(OUT):
         for j in range(3):
             a[i][j] = OUT[i][j]
     return a
-#def unload_ctypes_3x3x48_double(OUT):
-#    """Take a ctypes array and load it into a 3x3 python list"""
-#    a = array_zeros((3,3,48),dtype=np_float)
-#    for i in range(3):
-#        for j in range(3):
-#            for k in range(48):
-#                print [i,j,k], OUT[i][j][k]                
-##                a[i,j,k] = OUT[i][j][k]
-#    return a
 
-def unload_ctypes_3x3x48_double(OUT,nops):
-    """Take a ctypes 1-dim array and load it into a 3x3xnops python list"""
+def unload_ctypes_3x3xN_double(OUT,nops):
+    """Take a ctypes 1-dim array and load it into a 3x3xnops python list.  Couldn't get 
+    the 3x3xN to work"""
     a = array_zeros((3,3,nops),dtype=np_float)
     ielement = 0
     for i in range(3):
@@ -61,7 +54,7 @@ def unload_ctypes_3x3x48_double(OUT,nops):
     return a
 
 def getGroup(latt):
-    print "lattice in getGroup\n",latt
+#    print "lattice in getGroup\n",latt
     N = 3*3*48
     opsOUT =(c_double * N)() 
     NopsOUT =c_int(0) 
@@ -70,7 +63,7 @@ def getGroup(latt):
     epsIN = c_double(eps)
     getLatticePointGroup(byref(lattIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
     nops = NopsOUT.value
-    symopsB = unload_ctypes_3x3x48_double(opsOUT,nops)
+    symopsB = unload_ctypes_3x3xN_double(opsOUT,nops)
     return [symopsB,nops]
     
 def orthdef(latt): #columns as vectors
@@ -85,81 +78,6 @@ def surfvol(vecs):
     surfvol = 2*(u + v + w)/6/(det(vecs))**(2/3.0)
     return surfvol
     
-#def changewhich(M,B):
-#    bestgrad = 0
-#    bestdel = zeros((3,3),dtype=np_int)
-#    Mold = M
-#    oldcost = cost(Mold,B)
-#    bestindex=[-1,-1,0]#initialize
-#    for i in range(3):
-#        for j in range(3):          
-#            M[i,j] += 1;delInc = cost(M,B)-oldcost; M[i,j] += -1           
-#            if delInc < 0 and delInc < bestgrad: bestindex = [i,j,1];bestgrad = delInc
-#            M[i,j] += -1;delDec = cost(M,B)-oldcost;M[i,j] += 1;
-#            if delDec < 0 and delDec < bestgrad: bestindex = [i,j,-1];bestgrad = delDec       
-#    return bestindex
-
-def Mfill(params):
-#    print params
-    [a,b] = params
-    M = matrix((  #for BCT only
-      [   a,  b,   -b],
-      [   b,  a,   -b],
-      [   0,   0,   a-b]
-      ), dtype=np_int)  
-    return M  
-
-#def changewhich(M,B):
-#    bestgrad = 0
-#    bestdel = zeros((3,3),dtype=np_int)
-#    Mold = M
-#    oldcost = cost(Mold,B)
-#    bestindex=[-1,-1,0]#initialize
-#    for i in range(3):
-#        for j in range(3):          
-#            M[i,j] += 1;delInc = cost(M,B)-oldcost; M[i,j] += -1           
-#            if delInc < 0 and delInc < bestgrad: bestindex = [i,j,1];bestgrad = delInc
-#            M[i,j] += -1;delDec = cost(M,B)-oldcost;M[i,j] += 1;
-#            if delDec < 0 and delDec < bestgrad: bestindex = [i,j,-1];bestgrad = delDec       
-#    return bestindex
-
-def changewhich(params,B):
-    bestgrad = 0
-    bestdel = zeros((3,3),dtype=np_int)
-    Mold = Mfill(params)
-    oldcost = cost(Mold,B)
-    bestindex=[-1,0]#initialize (-1 not allowed, of course)
-    params2 = params
-    step = 1 
-    for i,param in enumerate(params):         
-            params2[i] += step;delInc = cost(Mfill(params2),B)-oldcost;params2[i] -= step           
-            if delInc < 0 and delInc < bestgrad: bestindex = [i,1];bestgrad = delInc
-            params2[i] -= step;delDec = cost(Mfill(params2),B)-oldcost;params2[i] += step
-            if delDec < 0 and delDec < bestgrad: bestindex = [i,-1];bestgrad = delDec
-#            print 'delInc, delDec',delInc, delDec
-#    print bestgrad     
-    return bestindex
-
-def cost(M,B):
-    if det(M) == 0:
-        return 100
-    else:
-        K = lattice()
-        K.vecs = B.vecs*M.I;K.det = det(K.vecs)
-        if K.det == 0:
-            return 100
-        else:
-            scale = .8
-            Ncost = scale * abs((B.det/K.det -B.Nmesh))/B.Nmesh
-        #    delN = 0.8  
-        #    if B.det/K.det > (1+delN)*B.Nmesh or B.det/K.det < (1-delN)*B.Nmesh:
-        #        cost = 1000 #reject this...number of mesh points too far off
-        #    else:
-        #        cost = surfvol(K.vecs)#; print'minimizing via surfac/volume'
-#            cost = surfvol(K.vecs) + Ncost
-            cost = surfvol(K.vecs)*(1+Ncost)        
-            return(cost)
-
 def isinteger(x):
     return np.equal(np.mod(x, 1), 0)
 
@@ -173,23 +91,30 @@ class lattice(object): #reciprocal lattice
         self.vecs = []
         self.det = []
         self.Nmesh = []
+        
+def newvec(S,symops,nops):
+    ''' Applies all symmetry operations, and chooses a new primitive vector that is 
+    most orthogonal to the other(s)'''
+    rotvecs = array_zeros((3,nops),dtype=np_float)
+    print  rotvecs[:,1]
+    print  symops[:,1,1]
+    if S[0,1]==0 and S[1,1]==0 and S[2,1]==0: # we need to find S[:,1], the 2nd vector
+        for iop in range(nops):
+            rotvecs[:,iop] = transpose(dot(symops[:,:,iop],array(S[:,0]))) # newvec = R S0; all 1-d arrays are horizontal
+            print 'rotvecs',iop
+            print rotvecs[:,iop]
+    return newvec
+#    if S[:,2] = [0.0,0.0]
 
 #natoms = 3
 #nkppra = 10000
 #nk = int(nkppra/natoms)
-Nmesh=200   #(a - b) (-b^2 + a c) for BCT 
-#start b = 0 and c = a
-#M = zeros((3,3),dtype=np_int)
+Nmesh=200    
+
 print 'Target N kpoints', Nmesh
-a = int(rint(Nmesh**(1/3.0)));
-c = a
-b = 0
-params = [a,b]
-M = Mfill(params)
- 
-print 'Starting M'
-print 'Det M', det(M)
-print M
+
+M = zeros((3,3),dtype = np_int)
+S = zeros((3,3),dtype = np_float)
 B = lattice()
 A = lattice()
 
@@ -219,12 +144,12 @@ print 'Orth Defect of B', orthdef(B.vecs)
 print 'Surf/vol of B', surfvol(B.vecs)
 print 'symmetry operations of B\n'
 [symopsB,nopsB] = getGroup(B.vecs)
-for k in range(nopsB):
-    print k
-    op = matrix(symopsB[:,:,k])
+for j in range(nopsB):
+    print j
+    op = matrix(symopsB[:,:,j])
     print op
 #find real lattice
-A.vecs = inv(B.vecs)
+A.vecs = trimSmall(inv(B.vecs).T)
 A.det = det(A.vecs)
 print 'A vectors';print A.vecs
 print 'Det of A', A.det
@@ -245,9 +170,15 @@ for k in range(nops):
 #    sys.exit('stop')
 maxint = 3
 #vary 
-for a in range(maxint):
+for a in range(1,maxint): # Diagonal elements of m can't be zero
     for b in range(maxint):
         for c in range(maxint):
+            #create first S vector
+            M[0,0]=a; M[0,1]=b; M[0,2]=c;
+            S[:,0] = A.vecs*M.T[:,0]
+#            print 'S'; print S
+            #apply all symmetry operators, and find a second vector
+            S[:,1] = newvec(S,symopsA,nops)
 
 #    sys.exit('stop')        
 if istep < maxsteps:
