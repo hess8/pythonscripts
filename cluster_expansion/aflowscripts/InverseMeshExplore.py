@@ -17,9 +17,11 @@ utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
 getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
 
 '''The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
-So K = B Inv(M) 
+So K = B Inv(M) .  Work in the inverse space of this problem, where we can work with M instead of Inv(M). 
+T(InvK) =  T(InvB)T(M).  
 
-         
+Define S = T(InvK), and the real lattice A = T(InvB). So S = A T(M) is a superlattice on the real lattice.
+       
 Minimization scheme'''
 
 def load_ctypes_3x3_double(IN):
@@ -68,8 +70,8 @@ def getGroup(latt):
     epsIN = c_double(eps)
     getLatticePointGroup(byref(lattIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
     nops = NopsOUT.value
-    symops = unload_ctypes_3x3x48_double(opsOUT,nops)
-    return [symops,nops]
+    symopsB = unload_ctypes_3x3x48_double(opsOUT,nops)
+    return [symopsB,nops]
     
 def orthdef(latt): #columns as vectors
     od = norm(latt[:,0])*norm(latt[:,1])*norm(latt[:,2])/det(latt)
@@ -188,7 +190,8 @@ M = Mfill(params)
 print 'Starting M'
 print 'Det M', det(M)
 print M
-B =  lattice()
+B = lattice()
+A = lattice()
 
 ##############BCT lattice
 alat = 2*sqrt(2)
@@ -208,7 +211,6 @@ B.vecs = matrix((
 #crystal = [1,4,15,50,60,80] #trigonal [a,b,c,alpha,beta,gamma]
 #B.vecs = transpose(lattice_vecs(crystal))
 #############End BCT lattice
-
 B.det = det(B.vecs)
 B.Nmesh = Nmesh
 print 'B vectors';print B.vecs
@@ -216,52 +218,37 @@ print 'Det of B', B.det
 print 'Orth Defect of B', orthdef(B.vecs)
 print 'Surf/vol of B', surfvol(B.vecs)
 print 'symmetry operations of B\n'
-print 'starting cost of M', cost(M,B)
-
-[symops,nops] = getGroup(B.vecs)
-printmathematica = True 
-
+[symopsB,nopsB] = getGroup(B.vecs)
+for k in range(nopsB):
+    print k
+    op = matrix(symopsB[:,:,k])
+    print op
+#find real lattice
+A.vecs = inv(B.vecs)
+A.det = det(A.vecs)
+print 'A vectors';print A.vecs
+print 'Det of A', A.det
+print 'Orth Defect of A', orthdef(A.vecs)
+print 'Surf/vol of A', surfvol(A.vecs)
+print 'symmetry operations of A\n'
+[symopsA,nopsA] = getGroup(A.vecs)
+if nopsA != nopsB: 
+    print 'Number of operations different for A and B'
+    sys.exit('stop')
+else:
+    nops = nopsA
 for k in range(nops):
-#    print k
-    op = matrix(symops[:,:,k])
-#    print op
-#    print 'Inv(B) R B\n'
-
-    if printmathematica:
-        print 'RMat[[All, All, %s]]=' % str(k+1)
-        print'{'
-        for i in range(3):
-            print '{%f,%f,%f}'% (op[i,0],op[i,1],op[i,2])
-            if i < 2: 
-                print ','
-            else: 
-                print '};'
-        
-        print 'mMat[[All, All, %s]]=' % str(k+1)
-        print'{'
-        for i in range(3):
-            print '{%f,%f,%f}'% (trimSmall(B.vecs.I * op * B.vecs)[i,0],trimSmall(B.vecs.I * op * B.vecs)[i,1],trimSmall(B.vecs.I * op * B.vecs)[i,2])
-            if i < 2: 
-                print ','
-            else: 
-                print '};'
-        print
-  
-        print
-  
+    print k
+    op = matrix(symopsA[:,:,k])
+    print op
+    
 #    sys.exit('stop')
-maxsteps = 10000
-istep = 1
-while istep<maxsteps:
-    bestindex = changewhich(params,B)
-    if bestindex[1]==0:#found minimum at previous M
-        newcost = cost(M,B)        
-        break
-    else:
-        params[bestindex[0]] += bestindex[1]
-        M = Mfill(params)
-        newcost = cost(M,B)
-    istep += 1
+maxint = 3
+#vary 
+for a in range(maxint):
+    for b in range(maxint):
+        for c in range(maxint):
+
 #    sys.exit('stop')        
 if istep < maxsteps:
     print
