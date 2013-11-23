@@ -4,7 +4,7 @@ sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
 from kmeshroutines import lattice_vecs
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log
-from numpy import matrix, transpose,rint,inner,multiply, size
+from numpy import matrix, transpose,rint,inner,multiply,size,argmin
 from numpy import zeros as array_zeros
 from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv
@@ -91,19 +91,42 @@ class lattice(object): #reciprocal lattice
         self.vecs = []
         self.det = []
         self.Nmesh = []
+def cosvecs(vec1,vec2):
+    return dot(vec1,vec2)/norm(vec1)/norm(vec2)
         
-def newvec(S,symops,nops):
+def fillS(S,symops,nops):
+    S2 = array(S)
+    eps = 1.0e-6
     ''' Applies all symmetry operations, and chooses a new primitive vector that is 
     most orthogonal to the other(s)'''
     rotvecs = array_zeros((3,nops),dtype=np_float)
-    print  rotvecs[:,1]
-    print  symops[:,1,1]
-    if S[0,1]==0 and S[1,1]==0 and S[2,1]==0: # we need to find S[:,1], the 2nd vector
-        for iop in range(nops):
-            rotvecs[:,iop] = transpose(dot(symops[:,:,iop],array(S[:,0]))) # newvec = R S0; all 1-d arrays are horizontal
-            print 'rotvecs',iop
-            print rotvecs[:,iop]
-    return newvec
+    dotvecs = array_zeros((nops),dtype=np_float)
+#    if S2[0,1]==0 and S[1,1]==0 and S2[2,1]==0: 
+    # we need to choose S2[:,1], the 2nd vector
+    for iop in range(nops):
+        rotvecs[:,iop] = transpose(dot(symops[:,:,iop],array(S2[:,0]))) # newvec = R S20; all 1-d arrays are horizontal
+#        print 'rotvecs',iop
+#        print rotvecs[:,iop]
+        dotvecs[iop] = cosvecs(rotvecs[:,iop],S2[:,0])
+#        print 'dotvecs',dotvecs[iop]
+#    print rotvecs[:,argmin(abs(dotvecs))]
+    S2[:,1] =rotvecs[:,argmin(abs(dotvecs))] #take the first most orthogonal vector
+    #3rd vector; any that
+    for iop in range(nops):
+        rotvecs[:,iop] = transpose(dot(symops[:,:,iop],array(S2[:,1]))) # newvec = R S20; all 1-d arrays are horizontal
+        print 'rotvecs',iop
+        print rotvecs[:,iop]
+        dot0 = cosvecs(rotvecs[:,iop],S2[:,0])
+        dot1 = cosvecs(rotvecs[:,iop],S2[:,1])
+        print dot0,dot1
+        if abs(dot0-1.0) > eps and abs(dot1-1.0) > eps: #have found independent vector
+            S2[:,2] = rotvecs[:,iop]
+            print 'S2';print S2
+            break
+        else: 
+            print 'failed to find 3rd vector'  
+    S = matrix(S2)
+    return S    
 #    if S[:,2] = [0.0,0.0]
 
 #natoms = 3
@@ -176,9 +199,8 @@ for a in range(1,maxint): # Diagonal elements of m can't be zero
             #create first S vector
             M[0,0]=a; M[0,1]=b; M[0,2]=c;
             S[:,0] = A.vecs*M.T[:,0]
-#            print 'S'; print S
-            #apply all symmetry operators, and find a second vector
-            S[:,1] = newvec(S,symopsA,nops)
+            #apply all symmetry operators, and find 2nd and 3rd vectors
+            S = fillS(S,symopsA,nops)
 
 #    sys.exit('stop')        
 if istep < maxsteps:
