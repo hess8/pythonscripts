@@ -39,7 +39,7 @@ def unload_ctypes_3x3_double(OUT):
     return a
 #def unload_ctypes_3x3x48_double(OUT):
 #    """Take a ctypes array and load it into a 3x3 python list"""
-#    a = array_zeros((3,3,48),dtype=np_float)
+#    a = array_zeI ros((3,3,48),dtype=np_float)
 #    for i in range(3):
 #        for j in range(3):
 #            for k in range(48):

@@ -3,11 +3,11 @@ import os, subprocess, sys, time
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
 from kmeshroutines import lattice_vecs
 
-from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log
+from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import matrix, transpose,rint,inner,multiply,size,argmin
 from numpy import zeros as array_zeros
 from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
-from numpy.linalg import norm, det, inv
+from numpy.linalg import norm, det, inv, eig
 from numpy import int as np_int
 from numpy import float as np_float
 from random import random, randrange
@@ -91,6 +91,8 @@ class lattice(object): #reciprocal lattice
         self.vecs = []
         self.det = []
         self.Nmesh = []
+        self.symops = []
+        self.nops = []
 def cosvecs(vec1,vec2):
     return dot(vec1,vec2)/norm(vec1)/norm(vec2)
         
@@ -101,24 +103,26 @@ def fillS(S,symops,nops):
     most orthogonal to the other(s)'''
     rotvecs = array_zeros((3,nops),dtype=np_float)
     dotvecs = array_zeros((nops),dtype=np_float)
-#    if S2[0,1]==0 and S[1,1]==0 and S2[2,1]==0: 
     # we need to choose S2[:,1], the 2nd vector
     for iop in range(nops):
-        rotvecs[:,iop] = transpose(dot(symops[:,:,iop],array(S2[:,0]))) # newvec = R S20; all 1-d arrays are horizontal
-#        print 'rotvecs',iop
-#        print rotvecs[:,iop]
+        rotvecs[:,iop] = transpose(dot(symops[:,:,iop],array(S2[:,0]))) # newvec = R * S20; all 1-d arrays are horizontal
+        print 'rotvecs',iop
+        print rotvecs[:,iop]
         dotvecs[iop] = cosvecs(rotvecs[:,iop],S2[:,0])
-#        print 'dotvecs',dotvecs[iop]
-#    print '2nd vector',rotvecs[:,argmin(abs(dotvecs))]
+        print 'dotvecs',dotvecs[iop]
+    print '2nd vector',rotvecs[:,argmin(abs(dotvecs))]
     op2 = argmin(abs(dotvecs)); 
-#    print 'Second vector found for op %i' % op2
+    print 'Second vector found for op %i' % op2
     S2[:,1] =rotvecs[:,op2] #take the first most orthogonal vector
+    print 'S after 2nd vector'; print S2
+    
+    
     #Find a 3rd vector
     done = False
     for iop in range(nops):
         rotvecs[:,iop] = transpose(dot(symops[:,:,iop],array(S2[:,1]))) # newvec = R S20; all 1-d arrays are horizontal
-#        print 'rotvecs',iop
-#        print rotvecs[:,iop]
+        print 'rotvecs',iop
+        print rotvecs[:,iop]
         dot0 = cosvecs(rotvecs[:,iop],S2[:,0])
         dot1 = cosvecs(rotvecs[:,iop],S2[:,1])
 #        print dot0,dot1
@@ -128,17 +132,53 @@ def fillS(S,symops,nops):
             done = True
             break
     if not done:
-        print 'failed to find 3rd vector'  #one direction is uncoupled from the other two
+        print 'failed to find 3rd vector via symmetry'  #one direction is uncoupled from the other two
+        #choose a principal axis of the symmetry operators (rotation axis).      
+        unitaxis = eigenvecfind(S2,symops,nops)
+        print 
+
+#        print S2
+
     S = matrix(S2)
     return S    
 
-def checksymmetry(latt,symops,nops):
-    '''check that the lattice obeys all symmetry operations:  R.latt.inv(R) will give an integer matrix'''
+def eigenvecfind(S,symops,nops):
+    '''Find eigenvectors of symmetry operations (in cartesian basis).  A single eigenvector of eigenvalue 1 
+    signifies a rotation operator. This returns a cartesian vector that corresponds to a rotation axis that is not in 
+    the plane of the first two vectors of S'''
+    S2 = array(S)
+#    print 'S after array convert'; print S2  
+    eps = 1.0e-6
     for iop in range(nops):
+        evals,evecs = eig(symops[:,:,iop])
+        nOne = 0
+        for i, eval in enumerate(evals):
+            if abs(eval - 1) < eps:
+                nOne += 1
+                indexOne = i
+        if nOne == 1:
+            print; print iop;print 'eigenvalues',evals
+            print 'eigenvectors'; print evecs 
+            axis =  evecs[indexOne]
+            unitaxis = axis/norm(axis) #unit vector
+            print "S";print S2
+            print 'axis', axis          
+            #test to see if it's independent of the first two axes
+            print 'cos angle between (cross(S2[:,0],S2[:,1]) and axis)', cosvecs(cross(S2[:,0],S2[:,1]),axis)
+            if abs(cosvecs(cross(S2[:,0],S2[:,1]),axis))>eps: 
+                print'found independent third vector'
+                return unitaxis
+    print 'Found no 3rd vector through eigenvectors of symmetry operators'
+    sys.exit('stop')
+      
+
+def checksymmetry(latt,parentlatt):
+    '''check that the lattice obeys all symmetry operations of a parent lattice:  R.latt.inv(R) will give an integer matrix'''
+    for iop in range(parentlatt.nops):
         lmat = array(latt)
         if det(lmat) == 0:
             return False
-        mmat = dot(dot(inv(lmat),symops[:,:,iop]),lmat)
+        mmat = dot(dot(inv(lmat),parentlatt.symops[:,:,iop]),lmat)
 #        print 'mmat', iop
 #        print mmat
         for i in range(3):
@@ -158,7 +198,7 @@ def checksymmetry(latt,symops,nops):
 Nmesh=200    
 
 
-maxint = 8
+maxint = 2
 #print 'Target N kpoints', Nmesh
 
 M = zeros((3,3),dtype = np_int)
@@ -192,7 +232,7 @@ print 'Det of B', B.det
 print 'Orth Defect of B', orthdef(B.vecs)
 print 'Surf/vol of B', surfvol(B.vecs)
 
-[symopsB,nopsB] = getGroup(B.vecs)
+[B.symops,B.nops] = getGroup(B.vecs)
 #print 'symmetry operations of B\n'
 #for j in range(nopsB):
 #    print j
@@ -206,12 +246,11 @@ print 'Det of A', A.det
 print 'Orth Defect of A', orthdef(A.vecs)
 print 'Surf/vol of A', surfvol(A.vecs)
 
-[symopsA,nopsA] = getGroup(A.vecs)
-if nopsA != nopsB: 
+[A.symops,A.nops] = getGroup(A.vecs)
+if A.nops != B.nops: 
     print 'Number of operations different for A and B'
     sys.exit('stop')
-else:
-    nops = nopsA
+
 #print 'symmetry operations of A\n'
 #for k in range(nops):
 #    print k
@@ -224,45 +263,48 @@ else:
 for a in range(maxint): # Diagonal elements of m can't be zero
     for b in range(maxint):
         for c in range(maxint):
-            if a+b+c == 0:
+            if a==0 and b==0 and c==0:
                 continue
             #create first S vector
             M[0,0]=a; M[0,1]=b; M[0,2]=c;
+            print; print [a,b,c],'a,b,c'                  
             S[:,0] = A.vecs*M.T[:,0]
 #            print '1st vector';print S[:,0]
             #apply all symmetry operators, and find 2nd and 3rd vectors
-            S = fillS(S,symopsA,nops)
-            checksym = checksymmetry(S,symopsA,nops)
+            S = fillS(S,A)
+            print S
+            checksym = checksymmetry(S,A)
             if checksym: 
                 K.vecs = transpose(inv(S))
-                checksymB = checksymmetry(K.vecs,symopsB,nops)
+                checksymB = checksymmetry(K.vecs,B)
                 if checksymB: 
 #                    print 'Obeys symmetry of lattice B:', checksymB 
-                    print; print [a,b,c],'a,b,c'                              
+#                    print; print [a,b,c],'a,b,c'                              
                     print abs(det(S)/A.det),'Volume of S vs A:'
                     print round(surfvol(S),2),round(orthdef(S),2),'SV','OD' 
-                            
+            
+            sys.exit('stop')                
 
-sys.exit('stop')        
-print
-print 'Found minimum after %i steps' % istep
-print 'An optimum M'; print M
-K = lattice();K.vecs = B.vecs*M.I; K.det = det(K.vecs)
-print 'An optimum K mesh\n', K.vecs  
-print 'Number of mesh points', B.det/K.det
-print 'Orth defect',orthdef(K.vecs)
-print 'Surface/vol', surfvol(K.vecs)    
-print 'Mesh vector lengths:'; print norm(K.vecs[:,0]),norm(K.vecs[:,1]),norm(K.vecs[:,2])
-k0 = K.vecs[:,0]; k1 = K.vecs[:,1]; k2 = K.vecs[:,2]
-cosgamma = k0.T*k1/norm(k0)/norm(k1)
-cosalpha = k1.T*k2/norm(k1)/norm(k2)
-cosbeta =  k2.T*k0/norm(k2)/norm(k0)       
-print 'Mesh vector cosines:'; print cosalpha, cosbeta, cosgamma
-print 'Check B = KM   \n', K.vecs*M  
-print '\n\n\nTranspose for use in VMD or POSCAR'
-print 'B'; print B.vecs.T
-print 'K'; print K.vecs.T
-print 
-print 'Ended without minimum after maximum %i steps' % istep
-
-    
+#sys.exit('stop')        
+#print
+#print 'Found minimum after %i steps' % istep
+#print 'An optimum M'; print M
+#K = lattice();K.vecs = B.vecs*M.I; K.det = det(K.vecs)
+#print 'An optimum K mesh\n', K.vecs  
+#print 'Number of mesh points', B.det/K.det
+#print 'Orth defect',orthdef(K.vecs)
+#print 'Surface/vol', surfvol(K.vecs)    
+#print 'Mesh vector lengths:'; print norm(K.vecs[:,0]),norm(K.vecs[:,1]),norm(K.vecs[:,2])
+#k0 = K.vecs[:,0]; k1 = K.vecs[:,1]; k2 = K.vecs[:,2]
+#cosgamma = k0.T*k1/norm(k0)/norm(k1)
+#cosalpha = k1.T*k2/norm(k1)/norm(k2)
+#cosbeta =  k2.T*k0/norm(k2)/norm(k0)       
+#print 'Mesh vector cosines:'; print cosalpha, cosbeta, cosgamma
+#print 'Check B = KM   \n', K.vecs*M  
+#print '\n\n\nTranspose for use in VMD or POSCAR'
+#print 'B'; print B.vecs.T
+#print 'K'; print K.vecs.T
+#print 
+#print 'Ended without minimum after maximum %i steps' % istep
+#
+#    
