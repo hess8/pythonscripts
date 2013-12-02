@@ -1,5 +1,13 @@
 ################# functions #######################
-import numpy as np   
+from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
+from numpy import matrix, transpose,rint,inner,multiply,size,argmin,round
+from numpy import zeros as array_zeros
+from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
+from numpy.linalg import norm, det, inv, eig
+from numpy import int as np_int
+from numpy import float as np_float
+from random import random, randrange
+from ctypes import byref, cdll, c_double, c_int
 import time, os, subprocess, sys
 
 #def structures_dict():
@@ -9,6 +17,27 @@ import time, os, subprocess, sys
 #        {[number,'name',
 #    '''
 #    print
+class lattice(object): #reciprocal lattice
+    def __init__(self):         
+        self.vecs = []
+        self.det = []
+        self.Nmesh = []
+        self.symops = []
+        self.nops = []
+        
+def surfvol(vecs): 
+    '''Surface/volume metric for a mesh, scaled to 1 for a cube'''
+    vecs = transpose(vecs)
+    u = norm(cross(vecs[0,:],vecs[1,:]))
+    v = norm(cross(vecs[1,:],vecs[2,:]))
+    w = norm(cross(vecs[2,:],vecs[0,:]))
+    surfvol = 2*(u + v + w)/6/(abs(det(vecs)))**(2/3.0)
+    return abs(surfvol)
+
+def orthdef(latt): 
+    '''Orthogonality defect''' #columns as vectors
+    od = norm(latt[:,0])*norm(latt[:,1])*norm(latt[:,2])/det(latt)
+    return abs(od)
 
 def nstrip(list):
 #    '''Strips off /n'''
@@ -21,7 +50,7 @@ def nstrip(list):
 
 def intcheck(x):
     delta = 10**-6
-    if abs(np.rint(x)-x)<delta:
+    if abs(rint(x)-x)<delta:
         return True
     else:
         return False
@@ -30,7 +59,7 @@ def irratcheck(ratios,mlist):
     '''Checks to see if ratios are a multiple of a root, or a multiple of 1/root'''
     irrat = ''
     for m in mlist:                 
-        sqr = np.sqrt(m)
+        sqr = sqrt(m)
         for i,x in enumerate(ratios):
             if intcheck(x*sqr) or intcheck(x/sqr) or intcheck(sqr/x) or intcheck((1/x*sqr)):
 #                irrat = irrat+'sqrt%i ' % m
@@ -42,13 +71,13 @@ def abcalbega_latt(lvecs):
     v0 = lvecs[0,:]
     v1 = lvecs[1,:]
     v2 = lvecs[2,:]
-    a = np.linalg.norm(v0)
-    b = np.linalg.norm(v1)
-    c = np.linalg.norm(v2)
-    alpha = np.arccos(np.dot(v1,v2)/b/c) * 180/np.pi
-    beta = np.arccos(np.dot(v2,v0)/c/a) * 180/np.pi
-    gamma = np.arccos(np.dot(v0,v1)/a/b) * 180/np.pi    
-    return np.array([a,b,c,alpha,beta,gamma])
+    a = linalg.norm(v0)
+    b = linalg.norm(v1)
+    c = linalg.norm(v2)
+    alpha = arccos(dot(v1,v2)/b/c) * 180/pi
+    beta = arccos(dot(v2,v0)/c/a) * 180/pi
+    gamma = arccos(dot(v0,v1)/a/b) * 180/pi    
+    return array([a,b,c,alpha,beta,gamma])
 
 def readposcar(filename, path): 
     ''' Format is explicit lattice vectors, not a,b,c,alpha, beta, gamma'''
@@ -59,16 +88,16 @@ def readposcar(filename, path):
     scale = float(nstrip(poscar)[1])
     if scale < 0:
         scale = (-scale)**(1/3.0)
-    reallatt = np.zeros((3,3))
-    reallatt[0,:] = np.array(poscar[2].split())
-    reallatt[1,:] = np.array(poscar[3].split())
-    reallatt[2,:] = np.array(poscar[4].split())
-    reallatt = reallatt.astype(np.float)
+    reallatt = zeros((3,3))
+    reallatt[0,:] = array(poscar[2].split())
+    reallatt[1,:] = array(poscar[3].split())
+    reallatt[2,:] = array(poscar[4].split())
+    reallatt = reallatt.astype(float)
     reallatt = scale*reallatt
-    reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
-    natoms = np.array(poscar[5].split(),dtype=np.int16)
-    totatoms=np.sum(natoms)
-    positions = np.zeros((totatoms,3),dtype=np.float)
+    reciplatt = 2*pi*transpose(linalg.inv(reallatt))
+    natoms = array(poscar[5].split(),dtype=int16)
+    totatoms=sum(natoms)
+    positions = zeros((totatoms,3),dtype=float)
     postype = poscar[6] #Direct or Cartesian
     whichatom = 0
     for natom in natoms:
@@ -76,7 +105,7 @@ def readposcar(filename, path):
             for k in [0,1,2]:
                 positions[whichatom,k] = float(poscar[7+whichatom].split()[k])
             whichatom += 1
-    totatoms=np.sum(natoms)
+    totatoms=sum(natoms)
     return [descriptor, scale, reallatt, reciplatt, natoms, postype, positions]
 
 
@@ -92,39 +121,39 @@ def aflow2poscar(path):
     scale = float(nstrip(aflowin)[istart+1])
     if scale < 0:
         scale = (-scale)**(1/3.0)
-    cryststruc = np.array(aflowin[istart+2].split(), dtype=np.float)
+    cryststruc = array(aflowin[istart+2].split(), dtype=float)
 #    print scale
 #    print cryststruc
     cryststruc[0:3] = scale*cryststruc[0:3]
     scale = 1.0 #since we put it into real lattice above
     print 'original a,b,c, alpha, beta, gamma'
     print cryststruc
-    reallatt =  np.array(lattice_vecs(cryststruc)).astype(np.float)
+    reallatt =  array(lattice_vecs(cryststruc)).astype(float)
     print 'reordered new lattice: a,b,c, alpha, beta, gamma'
     print abcalbega_latt(reallatt)
 
     print 'Lattice from aflow.in a,b,c alpha,beta,gamma > POSCAR0'
     print reallatt
     print
-    reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
+    reciplatt = 2*pi*transpose(linalg.inv(reallatt))
     print 'reciprocal lattice vectors'
     print reciplatt   
 #    #test
 #    print
 #    print 'recip lattice traditional'
-#    reciplatt2 = np.array(lattice_vecs(cryststruc)).astype(np.float)
+#    reciplatt2 = array(lattice_vecs(cryststruc)).astype(float)
 #    a0 = reallatt[0,:]
 #    a1 = reallatt[1,:]
 #    a2 = reallatt[2,:]
-#    vol = np.dot(a0,np.cross(a1,a2))
-#    reciplatt2[0,:] = 2*np.pi*np.cross(a1,a2)/vol
-#    reciplatt2[1,:] = 2*np.pi*np.cross(a2,a0)/vol
-#    reciplatt2[2,:] = 2*np.pi*np.cross(a0,a1)/vol
+#    vol = dot(a0,cross(a1,a2))
+#    reciplatt2[0,:] = 2*pi*cross(a1,a2)/vol
+#    reciplatt2[1,:] = 2*pi*cross(a2,a0)/vol
+#    reciplatt2[2,:] = 2*pi*cross(a0,a1)/vol
 #    print reciplatt2   
 #    # end test
-    natoms = np.array(aflowin[istart+3].split(),dtype=np.int16)
-    totatoms=np.sum(natoms)
-    positions = np.zeros((totatoms,3),dtype=np.float)
+    natoms = array(aflowin[istart+3].split(),dtype=int16)
+    totatoms=sum(natoms)
+    positions = zeros((totatoms,3),dtype=float)
     postype = aflowin[istart+4] #Direct or Cartesian
     where = 0
     for natom in natoms:
@@ -133,7 +162,7 @@ def aflow2poscar(path):
                 positions[where,k] = float(aflowin[istart+5+where].split()[k])
             where += 1
     create_poscar('POSCAR',descriptor+'From aflow.in BCH',scale,reallatt,natoms,postype,positions,path)
-    totatoms=np.sum(natoms)
+    totatoms=sum(natoms)
     return totatoms
 
 def create_poscar(filename,descriptor, scale, latticevecs, natoms, type_pos, positions, path):
@@ -169,19 +198,19 @@ def lattice_vecs(cryststruc):
     if b>c: #switch c,b, gamma and beta
         [a,b,c,al,be,ga] = [a,c,b,al,ga,be] # e.g 1,3,2 -> 1,2,3
 #    print [a,b,c,al,be,ga]
-    ca = np.cos(al/180.0*np.pi)
-    cb = np.cos(be/180.0*np.pi)
-    cg = np.cos(ga/180.0*np.pi)
-    sa = np.sin(al/180.0*np.pi)
-    sb = np.sin(be/180.0*np.pi)
-    sg = np.sin(ga/180.0*np.pi) 
-    lv = np.zeros((3,3))
+    ca = cos(al/180.0*pi)
+    cb = cos(be/180.0*pi)
+    cg = cos(ga/180.0*pi)
+    sa = sin(al/180.0*pi)
+    sb = sin(be/180.0*pi)
+    sg = sin(ga/180.0*pi) 
+    lv = zeros((3,3))
     lv[0,:] = [a,0,0]
     lv[1,:] = [b*cg,b*sg,0]  
     lv[2,0] = c*cb
     lv[2,1] = c/sg*(ca-cb*cg)
-    lv[2,2] = c/sg*np.sqrt(sg**2 - ca**2 - cb**2 + 2*ca*cb*cg)
-    return np.round(lv,14)       
+    lv[2,2] = c/sg*sqrt(sg**2 - ca**2 - cb**2 + 2*ca*cb*cg)
+    return round(lv,14)       
 
 def icy(i,change): #for cycling indices 0,1,2
     i = i+change
@@ -203,9 +232,9 @@ def regpy_nocase(str,path):
 def svmesh(N,vecs):
     '''N: points desired.  vecs the lattice vectors as numpy array (reciprocal in our thinking)
     output:  n0, n1, n2, the number of divisions along each RLV for the mesh'''
-    u = np.linalg.norm(np.cross(vecs[0,:],vecs[1,:]))
-    v = np.linalg.norm(np.cross(vecs[1,:],vecs[2,:]))
-    w = np.linalg.norm(np.cross(vecs[2,:],vecs[0,:]))
+    u = linalg.norm(cross(vecs[0,:],vecs[1,:]))
+    v = linalg.norm(cross(vecs[1,:],vecs[2,:]))
+    w = linalg.norm(cross(vecs[2,:],vecs[0,:]))
     n0 = N**(1/3.0) * w**(1/3.0) * u**(1/3.0) / v**(2/3.0)
     n1 = N**(1/3.0) * u**(1/3.0) * v**(1/3.0) / w**(2/3.0)
     n2 = N**(1/3.0) * v**(1/3.0) * w**(1/3.0) / u**(2/3.0)
@@ -224,8 +253,8 @@ def svmesh(N,vecs):
     primes = [2,3,5,7,11,13,17,19,23,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101]
     irrat = irratcheck(pqr,primes)
 
-    PQR = np.array([0,0,0])
-    ms = np.array([0,0,0])
+    PQR = array([0,0,0])
+    ms = array([0,0,0])
     '''   Define triangle as 
                m1
             P      R
@@ -235,19 +264,19 @@ def svmesh(N,vecs):
     If CW, -    
            ''' 
     if intcheck(p):
-        PQR[0] = np.rint(p)
+        PQR[0] = rint(p)
     elif intcheck(1/p):
-        PQR[0] = -np.rint(1/p)
+        PQR[0] = -rint(1/p)
     if intcheck(q):
-        PQR[1] = np.rint(q)
+        PQR[1] = rint(q)
     elif intcheck(1/q):
-        PQR[1] = -np.rint(1/q)        
+        PQR[1] = -rint(1/q)        
     if intcheck(r):
-        PQR[2] = np.rint(r)
+        PQR[2] = rint(r)
     elif intcheck(1/r):
-        PQR[2] = -np.rint(1/r)        
+        PQR[2] = -rint(1/r)        
     PQR = [int(PQR[j]) for j in [0,1,2]]
-    Nrels = int(round(np.sum(np.abs(np.sign(PQR))),0)) #number of multiple relations)
+    Nrels = int(round(sum(abs(sign(PQR))),0)) #number of multiple relations)
 #    print 'Nrels', Nrels,PQR
 #    print ns
 #    print '0:1', ns[0]/ns[1], ns[1]/ns[0]
@@ -256,9 +285,9 @@ def svmesh(N,vecs):
     #form final mesh m's
     if Nrels == 0:
         for i in [0,1,2]:
-            ms[i] = np.rint(ns[i])
+            ms[i] = rint(ns[i])
     if Nrels == 1:
-        r1i = np.argmax(np.abs(PQR)) #want index of the only nonzero element
+        r1i = argmax(abs(PQR)) #want index of the only nonzero element
         r1 = PQR[r1i]
         if r1 > 0: #CCW, so the higher index is greater m
             ms[r1i] = round(ns[r1i],0) #round smaller one
@@ -266,14 +295,14 @@ def svmesh(N,vecs):
         else: #CW
             ms[icy(r1i,1)] = round(ns[icy(r1i,1)],0) #round smaller one
             ms[r1i] = ms[icy(r1i,1)] * abs(r1)      #form larger by relation
-        ms[icy(r1i,-1)] = np.rint(ns[icy(r1i,-1)])
+        ms[icy(r1i,-1)] = rint(ns[icy(r1i,-1)])
     if Nrels == 2 or Nrels == 3:
         #find the triangle side with no multiple relation.  Find the largest 
-        nmax = np.max(np.abs(ns))
-        imax = np.argmax(np.abs(ns)) #index of largest n.  Create m from this first
+        nmax = max(abs(ns))
+        imax = argmax(abs(ns)) #index of largest n.  Create m from this first
         r1 = abs(PQR[icy(imax,-1)])
         r2 = abs(PQR[imax])
-        ms[imax] = r1 * r2 * int(np.rint(nmax/r1/r2))
+        ms[imax] = r1 * r2 * int(rint(nmax/r1/r2))
         ms[icy(imax,-1)] = ms[imax]/r1
         ms[icy(imax,1)] = ms[imax]/r2
     return [ms,irrat]
@@ -283,7 +312,7 @@ def getkpts_vasp(path):
     kpointsfile = file1.readlines()
     file1.close()
     if len(kpointsfile)>3:
-        kpts_vasp = np.array(kpointsfile[3].split(),dtype=np.int32)
+        kpts_vasp = array(kpointsfile[3].split(),dtype=int32)
     else:
         kpts_vasp = []
     return kpts_vasp

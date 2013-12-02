@@ -1,7 +1,8 @@
 import os, subprocess, sys, time 
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
-from kmeshroutines import lattice_vecs
+from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef
+from LowSymMeshMinimize import findmin
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import matrix, transpose,rint,inner,multiply,size,argmin
@@ -66,17 +67,8 @@ def getGroup(latt):
     symopsB = unload_ctypes_3x3xN_double(opsOUT,nops)
     return [symopsB,nops]
     
-def orthdef(latt): #columns as vectors
-    od = norm(latt[:,0])*norm(latt[:,1])*norm(latt[:,2])/det(latt)
-    return abs(od)
 
-def surfvol(vecs):
-    vecs = transpose(vecs)
-    u = norm(cross(vecs[0,:],vecs[1,:]))
-    v = norm(cross(vecs[1,:],vecs[2,:]))
-    w = norm(cross(vecs[2,:],vecs[0,:]))
-    surfvol = 2*(u + v + w)/6/(abs(det(vecs)))**(2/3.0)
-    return abs(surfvol)
+
     
 def isinteger(x):
     return np.equal(np.mod(x, 1), 0)
@@ -86,13 +78,6 @@ def trimSmall(mat):
     mat[low_values_indices] = 0
     return mat
 
-class lattice(object): #reciprocal lattice
-    def __init__(self):         
-        self.vecs = []
-        self.det = []
-        self.Nmesh = []
-        self.symops = []
-        self.nops = []
 def cosvecs(vec1,vec2):
     return dot(vec1,vec2)/norm(vec1)/norm(vec2)
         
@@ -224,7 +209,6 @@ def checksymmetry(latt,parentlatt):
 #nk = int(nkppra/natoms)
 Nmesh=200    
 
-
 maxint = 8
 #print 'Target N kpoints', Nmesh
 
@@ -292,32 +276,34 @@ if A.nops != B.nops:
 #    print op
     
 #    sys.exit('stop')
-#if A.nops < 4 
+if A.nops < 4:
+    findmin(B,Nmesh)
 
 #vary 
-for a in range(maxint): # Diagonal elements of m can't be zero
-    for b in range(maxint):
-        for c in range(5*maxint):
-            if a==0 and b==0 and c==0:
-                continue
-            #create first S vector
-            M[0,0]=a; M[0,1]=b; M[0,2]=c;
-#            print; print [a,b,c],'a,b,c'                  
-            S[:,0] = A.vecs*M.T[:,0]
-#            print '1st vector';print S[:,0]
-            #apply all symmetry operators, and find 2nd and 3rd vectors
-            S = fillS(S,A)
-#            print S
-            checksym = checksymmetry(S,A)
-            if checksym: 
-                K.vecs = transpose(inv(S))
-                checksymB = checksymmetry(K.vecs,B)
-                if checksymB: 
-#                    print 'Obeys symmetry of lattice B:', checksymB               
-                    print; print [a,b,c],'a,b,c'
-                    print 'S';print S
-                    print abs(det(S)/A.det),'Volume of superlattice'
-                    print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
-                    print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
+else:
+    for a in range(maxint): # Diagonal elements of m can't be zero
+        for b in range(maxint):
+            for c in range(5*maxint):
+                if a==0 and b==0 and c==0:
+                    continue
+                #create first S vector
+                M[0,0]=a; M[0,1]=b; M[0,2]=c;
+    #            print; print [a,b,c],'a,b,c'                  
+                S[:,0] = A.vecs*M.T[:,0]
+    #            print '1st vector';print S[:,0]
+                #apply all symmetry operators, and find 2nd and 3rd vectors
+                S = fillS(S,A)
+    #            print S
+                checksym = checksymmetry(S,A)
+                if checksym: 
+                    K.vecs = transpose(inv(S))
+                    checksymB = checksymmetry(K.vecs,B)
+                    if checksymB: 
+    #                    print 'Obeys symmetry of lattice B:', checksymB               
+                        print; print [a,b,c],'a,b,c'
+                        print 'S';print S
+                        print abs(det(S)/A.det),'Volume of superlattice'
+                        print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
+                        print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
 
 print 'Done'
