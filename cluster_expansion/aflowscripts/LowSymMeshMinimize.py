@@ -44,7 +44,7 @@ def changewhich(params,B):
             if delInc < 0 and delInc < bestgrad: bestindex = [i,1];bestgrad = delInc
             params2[i] -= step;delDec = cost(Mfill(params2),B)-oldcost;params2[i] += step
             if delDec < 0 and delDec < bestgrad: bestindex = [i,-1];bestgrad = delDec
-#            print 'delInc, delDec',delInc, delDec
+            print 'delInc, delDec',delInc, delDec
 #    print bestgrad     
     return bestindex
 

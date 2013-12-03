@@ -67,9 +67,6 @@ def getGroup(latt):
     symopsB = unload_ctypes_3x3xN_double(opsOUT,nops)
     return [symopsB,nops]
     
-
-
-    
 def isinteger(x):
     return np.equal(np.mod(x, 1), 0)
 
@@ -95,6 +92,8 @@ def fillS(S,parentlatt):
         print rotvecs[:,iop]
         dotvecs[iop] = cosvecs(rotvecs[:,iop],S2[:,0])
         print 'dotvecs',dotvecs[iop]
+    if norm(abs(dotvecs)-1)<eps:# all rotated vectors are parallel or antiparellel to the first 
+        return S2 #will have zero determinant, so skip this value of [a,b,c]
     print '2nd vector',rotvecs[:,argmin(abs(dotvecs))]
     op2 = argmin(abs(dotvecs)); 
     print 'Second vector found for op %i' % op2
@@ -119,6 +118,7 @@ def fillS(S,parentlatt):
 #        print 'failed to find 3rd vector via symmetry'  #one direction is uncoupled from the other two
         #choose a principal axis of the symmetry operators (rotation axis).      
         unitaxis = eigenvecfind(S2,parentlatt)
+        print 'unitaxis', unitaxis
         ghj = dot(inv(parentlatt.vecs),unitaxis) 
         ghj = ghj/min(abs(ghj)); #should be array of integers in last row of M:  [g,h,j] for the smallest possible superlattice cell with vectors S2[:,0]), S2[:,1]) 
         print 'inv(A)*unitaxis'; print ghj
@@ -169,15 +169,17 @@ def eigenvecfind(S,parentlatt):
             if abs(eval - 1) < eps:
                 nOne += 1
                 indexOne = i
+                print 'indexOne',indexOne
         if nOne == 1:
-            #print; print iop;print 'eigenvalues',evals
-            #print 'eigenvectors'; print evecs 
+            print; print iop;print 'eigenvalues',evals
+            print 'eigenvectors'; print evecs 
             axis =  evecs[indexOne]
             unitaxis = axis/norm(axis) #unit vector
             #print "S";print S
             #print 'axis', axis          
             #test to see if it's independent of the first two axes
             #print 'cos angle between (cross(S[:,0],S[:,1]) and axis)', cosvecs(cross(S[:,0],S[:,1]),axis)
+            print 'cross(S[:,0],S[:,1]),axis', cross(S[:,0],S[:,1]),axis
             if abs(cosvecs(cross(S[:,0],S[:,1]),axis))>eps: 
                 #print'found independent third vector'
                 return unitaxis
@@ -241,17 +243,20 @@ clat = alat*ca
 
 ############## Any lattice
 #angle1 = 30
-crystal = [1,4,15,50,60,80] #trigonal [a,b,c,alpha,beta,gamma]
+crystal = [1,1,2,90,90,120] # [a,b,c,alpha,beta,gamma]
 B.vecs = transpose(lattice_vecs(crystal))
 #############End BCT lattice
+eps = 1.0e-6
 B.det = det(B.vecs)
 B.Nmesh = Nmesh
 print 'B vectors';print B.vecs
+print 'B transpose'; print B.vecs.T
 print 'Det of B', B.det
 print 'Orth Defect of B', orthdef(B.vecs)
 print 'Surf/vol of B', surfvol(B.vecs)
 
 [B.symops,B.nops] = getGroup(B.vecs)
+print 'Number of symmetry operations', B.nops
 #print 'symmetry operations of B\n'
 #for j in range(nopsB):
 #    print j
@@ -278,21 +283,23 @@ if A.nops != B.nops:
 #    sys.exit('stop')
 if A.nops < 4:
     findmin(B,Nmesh)
-
-#vary 
 else:
     for a in range(maxint): # Diagonal elements of m can't be zero
         for b in range(maxint):
-            for c in range(5*maxint):
+            for c in range(2*maxint):
                 if a==0 and b==0 and c==0:
                     continue
                 #create first S vector
                 M[0,0]=a; M[0,1]=b; M[0,2]=c;
-    #            print; print [a,b,c],'a,b,c'                  
+                print; print [a,b,c],'a,b,c'
+                print 'A.vecs*M.T[:,0]'  ; print A.vecs*M.T[:,0]                
                 S[:,0] = A.vecs*M.T[:,0]
     #            print '1st vector';print S[:,0]
                 #apply all symmetry operators, and find 2nd and 3rd vectors
                 S = fillS(S,A)
+                if abs(det(S))<eps:
+                    print 'S has zero det for ',[a,b,c]
+                    continue
     #            print S
                 checksym = checksymmetry(S,A)
                 if checksym: 
