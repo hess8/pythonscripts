@@ -70,6 +70,14 @@ def getGroup(latt):
 def isinteger(x):
     return np.equal(np.mod(x, 1), 0)
 
+def isequal(x,y):
+    eps = 1.0e-6
+    return abs(x-y)<eps
+
+def isreal(x):
+    eps = 1.0e-6
+    return abs(x.imag)<eps
+
 def trimSmall(mat):
     low_values_indices = abs(mat) < 1.0e-6
     mat[low_values_indices] = 0.0
@@ -213,7 +221,25 @@ def checksymmetry(latt,parentlatt):
 #                    print iop, 'mmat[i,j]',mmat[i,j]                    
                     return False #jumps out of subroutine
     return True #passes test
-    
+
+def nonDegen(vals):
+     '''Tests whether a vector has one unique element.  If so, returns the index'''
+     distinct = []
+     if isreal(vals[0]) and not isequal(vals[0],vals[1]) and not isequal(vals[0],vals[2]):
+         distinct.append(0)
+     if isreal(vals[1]) and not isequal(vals[1],vals[0]) and not isequal(vals[1],vals[2]):
+         distinct.append(1)
+     if isreal(vals[2]) and not isequal(vals[2],vals[0]) and not isequal(vals[2],vals[1]):
+         distinct.append(2)
+     return distinct    
+
+def matchDirection(vec,list):
+    '''if vec parallel or antiparallel to any vector in the list, don't include it'''
+    for vec2 in list:
+        if isequal(abs(cosvecs(vec,vec2)),1.0):
+            return True
+    return False
+     
 
 ##############################################################
 ########################## Script ############################
@@ -223,7 +249,6 @@ def checksymmetry(latt,parentlatt):
 #nk = int(nkppra/natoms)
 Nmesh=200    
 
-maxint = 2 
 #print 'Target N kpoints', Nmesh
 
 M = zeros((3,3),dtype = np_int)
@@ -243,7 +268,7 @@ B.vecs = matrix((
   ), dtype=float)
 
 
-#B.vecs = matrix((  #C asis along x axis!####
+#B.vecs = matrix((  #C axis along x !####
 #  [   -clat/2,  clat/2,   clat/2],
 #  [   alat/2,  -alat/2,   alat/2],
 #  [   alat/2,   alat/2,   -alat/2]
@@ -288,66 +313,85 @@ if A.nops != B.nops:
     sys.exit('Number of operations different for A and B; stop')
 
 print 'symmetry operations R of A\n'
+testvecs = [];oplist = []
 for k in range(A.nops):
     print; print k
     op = matrix(A.symops[:,:,k])
     print trimSmall(op)
     m = trimSmall(dot(dot(inv(A.vecs[:,:]), A.symops[:,:,k]),A.vecs[:,:])  ) 
-    [val,vecs]=eig(m)
+    [vals,vecs]=eig(m); vecs = array(vecs)
     print 'symop m'; print m
 
     print 'det(m)', det(m)
-    print 'eigen of m',val
+    print 'eigen of m',vals
     print vecs
     print vecs[:,0]/abs(vecs[:,0])[nonzero(vecs[:,0])].min()
     print vecs[:,1]/abs(vecs[:,1])[nonzero(vecs[:,1])].min()
     print vecs[:,2]/abs(vecs[:,2])[nonzero(vecs[:,2])].min()
     
-    if k == 0:
-        print vecs[0,2]*A.vecs[:,0]+vecs[1,2]*A.vecs[:,1]+vecs[2,2]*A.vecs[:,2]
-                        
-sys.exit('stop')
-if A.nops < 4: #has only 2 symm operations. 
-    findmin(B,Nmesh)
-else:
-    minSV = 1000 #initialize
-    for a in range(maxint): # Diagonal elements of m can't be zero
-        for b in range(maxint):
-            for c in range(2*maxint):
-                if a==0 and b==0 and c==0:
-                    continue
-                #create first S vector
-                M[0,0]=a; M[0,1]=b; M[0,2]=c;
-#                print; print [a,b,c],'a,b,c'
-                S[:,0] = dot(A.vecs,transpose(M[:,0]))
-                if norm(S[:,0])<eps:
-                    continue # all zeros, so go to next a,b,c
-                print '1st vector';print S[:,0]
-                #apply all symmetry operators, and find 2nd and 3rd vectors
-                S = fillS(S,A)
-                if abs(det(S))<eps:
-                    print 'S has zero det for ',[a,b,c]
-                    continue
-    #            print S
-                checksym = checksymmetry(S,A)
-                if checksym: 
-                    K.vecs = transpose(inv(S))
-                    checksymB = checksymmetry(K.vecs,B)
-                    if checksymB: 
-    #                    print 'Obeys symmetry of lattice B:', checksymB               
-                        print; print [a,b,c],'a,b,c'
-                        print 'S';print S
-                        print abs(det(S)/A.det),'Volume of superlattice'
-                        print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
-                        print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
-                        print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))
-                        if surfvol(K.vecs)<minSV:
-                            minSV = surfvol(K.vecs)
-                            bestK = K.vecs
-                            bestabc = [a,b,c]
-    print'------------------------------------------------'
-    print 'a,b,c',bestabc
-    print 'Best k mesh'; print bestK
-    print 'Best surface/volume:', round(minSV,2)
+    #find operations with nondegenerate real eigenvalues
+    print nonDegen(vals)
+    for i in nonDegen(vals):
+        if not matchDirection(transpose(vecs[:,i]),testvecs): #keep only unique directions    
+            testvecs.append(vecs[:,i].real/abs(vecs[:,i])[nonzero(vecs[:,i])].min())
+#            oplist.append([k,i])
+#print; print oplist;
+print testvecs
+for vec in testvecs:
+    print 'Cartesian direction to test as first superlattice vector '
+    print trimSmall(dot(A.vecs,vec))
+    S[:,0] = trimSmall(dot(A.vecs,vec))
+    print S
+    sys.exit('stop')
+    
+    
 
-print 'Done'
+#remove             
+sys.exit('stop')
+#if A.nops < 4: #has only 2 symm operations. 
+    
+#else:
+#    findmin(B,Nmesh)
+#    
+#    
+#    minSV = 1000 #initialize
+#    for a in range(maxint): # Diagonal elements of m can't be zero
+#        for b in range(maxint):
+#            for c in range(2*maxint):
+#                if a==0 and b==0 and c==0:
+#                    continue
+#                #create first S vector
+#                M[0,0]=a; M[0,1]=b; M[0,2]=c;
+##                print; print [a,b,c],'a,b,c'
+#                S[:,0] = dot(A.vecs,transpose(M[:,0]))
+#                if norm(S[:,0])<eps:
+#                    continue # all zeros, so go to next a,b,c
+#                print '1st vector';print S[:,0]
+#                #apply all symmetry operators, and find 2nd and 3rd vectors
+#                S = fillS(S,A)
+#                if abs(det(S))<eps:
+#                    print 'S has zero det for ',[a,b,c]
+#                    continue
+#    #            print S
+#                checksym = checksymmetry(S,A)
+#                if checksym: 
+#                    K.vecs = transpose(inv(S))
+#                    checksymB = checksymmetry(K.vecs,B)
+#                    if checksymB: 
+#    #                    print 'Obeys symmetry of lattice B:', checksymB               
+#                        print; print [a,b,c],'a,b,c'
+#                        print 'S';print S
+#                        print abs(det(S)/A.det),'Volume of superlattice'
+#                        print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
+#                        print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
+#                        print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))
+#                        if surfvol(K.vecs)<minSV:
+#                            minSV = surfvol(K.vecs)
+#                            bestK = K.vecs
+#                            bestabc = [a,b,c]
+#    print'------------------------------------------------'
+#    print 'a,b,c',bestabc
+#    print 'Best k mesh'; print bestK
+#    print 'Best surface/volume:', round(minSV,2)
+#
+#print 'Done'
