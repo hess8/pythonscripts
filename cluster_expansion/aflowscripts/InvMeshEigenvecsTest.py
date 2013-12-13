@@ -78,6 +78,9 @@ def isreal(x):
     eps = 1.0e-6
     return abs(x.imag)<eps
 
+def isindependent(vec1,vec2):  
+    return not isequal(abs(cosvecs(vec1,vec2)),1)
+
 def trimSmall(mat):
     low_values_indices = abs(mat) < 1.0e-6
     mat[low_values_indices] = 0.0
@@ -86,64 +89,31 @@ def trimSmall(mat):
 def cosvecs(vec1,vec2):
     return dot(vec1,vec2)/norm(vec1)/norm(vec2)
         
-def fillS(S,parentlatt):
-    S2 = array(S)
-    eps = 1.0e-6
+def findNextVec(S,parentlatt,which):
     ''' Applies all symmetry operations, and chooses a new primitive vector that is 
-    most orthogonal to the other(s)'''
+    most orthogonal to the other(s)'''    
+    eps = 1.0e-6
+    found = False
+    newvec = array([0.,0.,0.])  
     rotvecs = zeros((3,parentlatt.nops),dtype=np_float)
     dotvecs = zeros((parentlatt.nops),dtype=np_float)
-    # we need to choose S2[:,1], the 2nd vector
+    dotvecs0 = zeros((parentlatt.nops),dtype=np_float)
     for iop in range(parentlatt.nops):
-        rotvecs[:,iop] = transpose(dot(parentlatt.symops[:,:,iop],array(S2[:,0]))) # all 1-d arrays are horizontal
-        #print 'rotvecs',iop
-        #print rotvecs[:,iop]
-        dotvecs[iop] = cosvecs(rotvecs[:,iop],S2[:,0])
-        #print 'dotvecs',dotvecs[iop]
-    if norm(abs(dotvecs)-1)<eps:# all rotated vectors are parallel or antiparellel to the first 
-        return S2 #will have zero determinant, so skip this value of [a,b,c]
-    #print '2nd vector',rotvecs[:,argmin(abs(dotvecs))]
-    op2 = argmin(abs(dotvecs)); 
-    #print 'Second vector found for op %i' % op2
-    S2[:,1] =rotvecs[:,op2] #take the first most orthogonal vector
-    #print 'S after 2nd vector'; print S2
-    #Find a 3rd vector
-    done = False
-    for iop in range(parentlatt.nops):
-        rotvecs[:,iop] = transpose(dot(parentlatt.symops[:,:,iop],array(S2[:,1]))) # newvec = R S20; all 1-d arrays are horizontal
-        #print 'rotvecs',iop
-        #print rotvecs[:,iop]
-        dot0 = cosvecs(rotvecs[:,iop],S2[:,0])
-        dot1 = cosvecs(rotvecs[:,iop],S2[:,1])
-#        print dot0,dot1
-        S2[:,2] = rotvecs[:,iop]
-        if abs(det(S2)) >0.0 and abs(abs(dot0)-1.0) > eps and abs(abs(dot1)-1.0) > eps: #have found independent vector
-            #print 'Third vector found for op %i' % iop; print S2
-            done = True
-            break
-    if not done:
-#        print 'failed to find 3rd vector via symmetry'  #one direction is uncoupled from the other two
-        #choose a principal axis of the symmetry operators (rotation axis).      
-        unitaxis = eigenvecfind(S2,parentlatt)
-        #print 'unitaxis', unitaxis #we know the direction
-        ghj = dot(inv(parentlatt.vecs),unitaxis) 
-        #print 'ghj before normalization', ghj
-        min1 = 1
-        nonzero = abs(ghj) > 1.0e-6 #indices of nonzero
-        ghj = ghj/min(abs(ghj[nonzero])); #should be array of integers in last row of M:  [g,h,j] for the smallest possible superlattice cell with vectors S2[:,0]), S2[:,1]) 
-        #print 'inv(A)*unitaxis', ghj
-#        sys.exit('stop')         
-        #print dot(parentlatt.vecs,transpose(ghj))
-        S2[:,2] = transpose(dot(parentlatt.vecs,transpose(ghj)))
-        #print 'Third vector via eigenvector and minimizing S/V'; #print S2
-        S2 = svmin_3rdvec(S2,parentlatt) #adjust the length of this last vector
-        #print 'ending S in fillS'; print S2
-        #
-#        print S2
-
-    S = trimSmall(S2)
-    return S    
-
+        rotvecs[:,iop] = transpose(dot(parentlatt.symops[:,:,iop],S[:,which-1])) # all 1-d arrays are horizontal
+        dotvecs[iop] = cosvecs(rotvecs[:,iop],S[:,which-1])
+    if norm(abs(dotvecs)-1)>eps:# We have at least one independent vector
+        if which == 1: #Take the one that is most perpendicular to the earlier one
+            found = True
+            op2 = argmin(abs(dotvecs))
+            newvec = rotvecs[:,op2]
+        elif which == 2: # Third vector needs to be independent of first S vector, too. Use the first vector that is ind. of both
+            for iop in range(parentlatt.nops):
+                if isindependent(rotvecs[:,iop],S[:,0]) and isindependent(rotvecs[:,iop],S[:,1]):
+                    found = True
+                    newvec = rotvecs[:,iop]
+                    break                                 
+    return [found, newvec]
+ 
 def svmin_3rdvec(S,parentlatt):
     '''Multiply third vector of S by integers and find the minimum S/Volume metric'''
     from copy import copy 
@@ -337,15 +307,56 @@ for k in range(A.nops):
 #            oplist.append([k,i])
 #print; print oplist;
 print testvecs
-for vec in testvecs:
-    print 'Cartesian direction to test as first superlattice vector '
-    print trimSmall(dot(A.vecs,vec))
-    S[:,0] = trimSmall(dot(A.vecs,vec))
-    print S
-    sys.exit('stop')
+if len(testvecs)>0:
+    for vec in testvecs:
+        MT = zeros((3,3),dtype = np_int)
+        print;print 'Cartesian direction to test as first superlattice vector '
+        print trimSmall(dot(A.vecs,vec))
+        print vec
+        MT[:,0] = rint(Nmesh**(1/3.0))*vec
+        print MT
+        S = array(dot(A.vecs,MT))
+        [found,newvec] = findNextVec(S,A,1)  #find next vector
+        if found:
+            print 'Found 2nd vector by symmetry'
+            S[:,1] =  transpose(newvec)
+            MT = dot(inv(A.vecs),S)
+            print MT
+            print S            
+            
+            [found,newvec] = findNextVec(S,A,2)
+            if found:
+                S[:,2] = transpose(newvec)
+                print 'Found 3rd vector by symmetry'
+                MT = dot(inv(A.vecs),S)
+                print S
+                print MT               
+            else: 
+                #minimize cost over ghi 
+                print 
+        else:
+            #minimize cost over defghi
+            print
+        checksym = checksymmetry(S,A)
+        if checksym: 
+            K.vecs = transpose(inv(S))
+            checksymB = checksymmetry(K.vecs,B)
+            if checksymB: 
+    #                    print 'Obeys symmetry of lattice B:', checksymB               
+                print 'S';print S
+                print abs(det(S)/A.det),'Volume of superlattice'
+                print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
+                print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
+                print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))
+            else: 
+                print'Passed A symmetry, but failed B symmetry'
+        print'Failed A symmetry'
+  
+#        sys.exit('stop')
+else: #no symmetry directions
+    #minimize cost over defghi
+    print
     
-    
-
 #remove             
 sys.exit('stop')
 #if A.nops < 4: #has only 2 symm operations. 
