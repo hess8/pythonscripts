@@ -17,8 +17,26 @@ from ctypes import byref, cdll, c_double, c_int
 utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so') 
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
 
-
-#
+def searchmin(S,A):
+    ''' '''
+    MT = dot(inv(A.vecs),S)
+    #determine how many empty rows there are in S:
+    if norm(MT[:,0])==0:
+        knownvecs = 0
+    else:
+        if norm(MT[:,1])==0:
+            knownvecs = 1
+        else:
+            if norm(MT[:,2])==0:
+                knownvecs = 2
+    #Staring point of empty rows is a diagonal entry only
+    for i in range(knownvecs,3):
+        print A.Nmesh
+        MT[i,i] = rint(A.Nmesh**(1/3.0))    
+    #find the direction of steepest slope in the cost
+    
+    return MT
+                
 
 def Mfill(params):
 #    print params

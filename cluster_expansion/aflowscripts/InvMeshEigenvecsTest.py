@@ -2,7 +2,7 @@ import os, subprocess, sys, time
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
 from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef
-from LowSymMeshMinimize import findmin
+from LowSymMeshMinimize import searchmin
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import matrix, transpose,rint,inner,multiply,size,argmin,nonzero
@@ -273,6 +273,7 @@ print 'Number of symmetry operations', B.nops
 #find real lattice
 A.vecs = trimSmall(transpose(inv(B.vecs)))
 A.det = det(A.vecs)
+A.Nmesh = Nmesh
 print 'A vectors';print A.vecs
 print 'Det of A', A.det
 print 'Orth Defect of A', orthdef(A.vecs)
@@ -333,10 +334,13 @@ if len(testvecs)>0:
                 print MT               
             else: 
                 #minimize cost over ghi 
-                print 
+                print 'Finding third vector by minimizing S/V'
+                MT = searchmin(S,A)
+                print MT 
+                
         else:
             #minimize cost over defghi
-            print
+            print 'Finding 2nd and 3rd vectors by minimizing S/V'
         checksym = checksymmetry(S,A)
         if checksym: 
             K.vecs = transpose(inv(S))
@@ -355,7 +359,7 @@ if len(testvecs)>0:
 #        sys.exit('stop')
 else: #no symmetry directions
     #minimize cost over defghi
-    print
+    print 'Finding all mesh vectors by minimizing S/V'
     
 #remove             
 sys.exit('stop')
