@@ -1,8 +1,8 @@
 import os, subprocess, sys, time 
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
-from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef
-from LowSymMeshMinimize import searchmin
+from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef, icy
+from LowSymMeshMinimize import searchmin,searchminRandomStart
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import matrix, transpose,rint,inner,multiply,size,argmin,nonzero
@@ -145,12 +145,12 @@ def eigenvecfind(S,parentlatt):
     
     for iop in range(parentlatt.nops): #loop for printing only
         evals,evecs = eig(parentlatt.symops[:,:,iop])     
-        print; print iop; 
-        print 'symop R'; print parentlatt.symops[:,:,iop]
+#        print; print iop; 
+#        print 'symop R'; print parentlatt.symops[:,:,iop]
 #        print 'symop m'; print dot(dot(inv(parentlatt.vecs[:,:]),parentlatt.symops[:,:,iop]),parentlatt.vecs[:,:])    
 #        print 'det(m)', det( dot(dot(inv(parentlatt.vecs[:,:]),parentlatt.symops[:,:,iop]),parentlatt.vecs[:,:]) )  
-        print 'eigenvalues',evals
-        print 'eigenvectors'; print evecs #loop for printing only
+#        print 'eigenvalues',evals
+#        print 'eigenvectors'; print evecs #loop for printing only
         
     for iop in range(parentlatt.nops):
         evals,evecs = eig(parentlatt.symops[:,:,iop])      
@@ -175,12 +175,16 @@ def eigenvecfind(S,parentlatt):
                 return unitaxis
 #    #print 'Found no 3rd vector through eigenvectors of symmetry operators'
 #    sys.exit('stop')
+
+
       
 def checksymmetry(latt,parentlatt):
     '''check that the lattice obeys all symmetry operations of a parent lattice:  R.latt.inv(R) will give an integer matrix'''
     for iop in range(parentlatt.nops):
         lmat = array(latt)
         if det(lmat) == 0:
+            print 'Determinant zero'
+            print lmat    
             return False
         mmat = dot(dot(inv(lmat),parentlatt.symops[:,:,iop]),lmat)
 #        print 'mmat', iop
@@ -188,7 +192,15 @@ def checksymmetry(latt,parentlatt):
         for i in range(3):
             for j in range(3):
                 if abs(rint(mmat[i,j])-mmat[i,j])>1.0e-6:
-#                    print iop, 'mmat[i,j]',mmat[i,j]                    
+                    print iop, 'Symmetry failed for mmat[i,j]',mmat[i,j]
+                    print 'Cartesian operator' 
+                    print parentlatt.symops[:,:,iop] 
+                    print 'Cartesian Lattice'
+                    print lmat
+                    print 'transformed Cart operator' 
+                    print mmat                                     
+                    print 'Atranspose'
+                    print transpose(parentlatt.vecs)           
                     return False #jumps out of subroutine
     return True #passes test
 
@@ -291,17 +303,17 @@ for k in range(A.nops):
     print trimSmall(op)
     m = trimSmall(dot(dot(inv(A.vecs[:,:]), A.symops[:,:,k]),A.vecs[:,:])  ) 
     [vals,vecs]=eig(m); vecs = array(vecs)
-    print 'symop m'; print m
-
-    print 'det(m)', det(m)
-    print 'eigen of m',vals
-    print vecs
-    print vecs[:,0]/abs(vecs[:,0])[nonzero(vecs[:,0])].min()
-    print vecs[:,1]/abs(vecs[:,1])[nonzero(vecs[:,1])].min()
-    print vecs[:,2]/abs(vecs[:,2])[nonzero(vecs[:,2])].min()
+#    print 'symop m'; print m
+#
+#    print 'det(m)', det(m)
+#    print 'eigen of m',vals
+#    print vecs
+#    print vecs[:,0]/abs(vecs[:,0])[nonzero(vecs[:,0])].min()
+#    print vecs[:,1]/abs(vecs[:,1])[nonzero(vecs[:,1])].min()
+#    print vecs[:,2]/abs(vecs[:,2])[nonzero(vecs[:,2])].min()
     
     #find operations with nondegenerate real eigenvalues
-    print nonDegen(vals)
+#    print nonDegen(vals)
     for i in nonDegen(vals):
         if not matchDirection(transpose(vecs[:,i]),testvecs): #keep only unique directions    
             testvecs.append(vecs[:,i].real/abs(vecs[:,i])[nonzero(vecs[:,i])].min())
@@ -311,19 +323,19 @@ print testvecs
 if len(testvecs)>0:
     for vec in testvecs:
         MT = zeros((3,3),dtype = np_int)
-        print;print 'Cartesian direction to test as first superlattice vector '
+        print;print '****************';print 'Cartesian direction to test as first superlattice vector '
         print trimSmall(dot(A.vecs,vec))
         print vec
         MT[:,0] = rint(Nmesh**(1/3.0))*vec
-        print MT
+#        print MT
         S = array(dot(A.vecs,MT))
         [found,newvec] = findNextVec(S,A,1)  #find next vector
         if found:
             print 'Found 2nd vector by symmetry'
             S[:,1] =  transpose(newvec)
             MT = dot(inv(A.vecs),S)
-            print MT
-            print S            
+#            print MT
+#            print S            
             
             [found,newvec] = findNextVec(S,A,2)
             if found:
@@ -331,17 +343,21 @@ if len(testvecs)>0:
                 print 'Found 3rd vector by symmetry'
                 MT = dot(inv(A.vecs),S)
                 print S
-                print MT               
+#                print MT               
             else: 
                 #minimize cost over ghi 
                 print 'Finding third vector by minimizing S/V'
                 MT = searchmin(S,A)
-                print MT 
-                
+                print MT    
         else:
             #minimize cost over defghi
             print 'Finding 2nd and 3rd vectors by minimizing S/V'
+            MT = searchmin(S,A)
+        S = dot(A.vecs,MT)
         checksym = checksymmetry(S,A)
+#        sys.exit('stop')
+        
+        
         if checksym: 
             K.vecs = transpose(inv(S))
             checksymB = checksymmetry(K.vecs,B)
@@ -354,15 +370,36 @@ if len(testvecs)>0:
                 print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))
             else: 
                 print'Passed A symmetry, but failed B symmetry'
-        print'Failed A symmetry'
+        else:
+            print'Failed A symmetry'
   
 #        sys.exit('stop')
 else: #no symmetry directions
     #minimize cost over defghi
     print 'Finding all mesh vectors by minimizing S/V'
-    
-#remove             
+    MT = searchmin(S,A)
+    S = dot(A.vecs,MT)
+    print 'S';print S
+    print abs(det(S)/A.det),'Volume of superlattice'
+    print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
+    print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
+    print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))   
+
+#try random starting vector
+print '++++++++++++++++++++++++++'
+MT = searchminRandomStart(S,A)
+S = dot(A.vecs,MT)
+print 'S';print S
+print abs(det(S)/A.det),'Volume of superlattice'
+print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
+print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
+print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))   
+
+
+           
 sys.exit('stop')
+
+
 #if A.nops < 4: #has only 2 symm operations. 
     
 #else:
