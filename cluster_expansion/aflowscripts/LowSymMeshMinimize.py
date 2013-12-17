@@ -1,4 +1,6 @@
 '''Routines for minimizing S/V without regard to symmetry.  Useful for lowest symmetry crystals.'''
+'''NOT USED FOR NOW...SEE UnconstrainedSVmin.py'''
+
 
 import os, subprocess, sys, time 
 

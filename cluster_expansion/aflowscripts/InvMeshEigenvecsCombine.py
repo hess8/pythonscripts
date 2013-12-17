@@ -2,7 +2,7 @@ import os, subprocess, sys, time
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
 from kmeshroutines import svmesh, lattice_vecs, lattice, surfvol, orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs
-from LowSymMeshMinimize import searchmin #,searchminRandomStart
+from UnconstrainedSVmin import unconstrainedSVsearch
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import matrix, transpose,rint,inner,multiply,size,argmin,nonzero
@@ -68,8 +68,6 @@ def getGroup(latt):
     symopsB = unload_ctypes_3x3xN_double(opsOUT,nops)
     return [symopsB,nops]
     
-
-        
 def findNextVec(S,parentlatt,which):
     ''' Applies all symmetry operations, and chooses a new primitive vector that is 
     most orthogonal to the other(s)'''    
@@ -324,6 +322,9 @@ MT = zeros((3,3),dtype = np_int)
 
 if len(testvecs) == 0:
     print 'No eigen directions'
+    K.vecs = unconstrainedSVsearch(B)
+    if det(K.vecs)==0:
+        sys.exit('Det(K) is zero after unconstrained search')
 #    MT = unconstrainedmin(B.vecs)
 if len(testvecs) == 1:
     print 'Only 1 eigen direction'
