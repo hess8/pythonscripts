@@ -101,63 +101,6 @@ def searchmin(S,A):
         print 'Ended without minimum after maximum %i steps' % istep
     return MT
 
-#def searchminRandomStart(S,A):
-#    '''MT is transpose(M) '''
-#    print 'VARYING all MT, Random start'
-#    default_length = rint(A.Nmesh**(1/3.0))
-#    knownvecs = 0
-#    MT = zeros((3,3),dtype = int)
-#    for i in range(3):
-#        for j in range(3):
-#            MT[i,j]=randint(0,default_length)
-#    maxsteps = 10000
-#    istep = 1
-#    while istep<maxsteps:
-#        bestindex = changewhich(MT,knownvecs,A)
-#        print 'bestindex',bestindex            
-#        if bestindex[1]==0:#found minimum at previous M
-#            newcost = cost(MT,A)        
-#            break
-#        else:
-##            print 'value in MT to change', bestindex[0][0], MT[bestindex[0]]
-#            MT[bestindex[0][0],bestindex[0][1]] += bestindex[1]
-#            newcost = cost(MT,A)
-##            oldcost = newcost
-#        istep += 1
-#    #    sys.exit('stop')        
-#    if istep < maxsteps:
-#        print
-#        print 'Found minimum after %i steps' % istep
-#
-#        print 'An optimum transpose(M):'; print MT
-#        S = dot(A.vecs,MT)
-#        print 'Number of mesh points', det(S)/A.det
-#        print 'An optimum superlattice S:'; print S
-#        K = lattice();K.vecs = inv(transpose(S)); K.det = det(K.vecs)
-#        print 'An optimum K mesh\n', K.vecs  
-#        print 'Orth defect',orthdef(K.vecs)
-#        print 'Surface/vol', surfvol(K.vecs)    
-#        print 'Mesh vector lengths:'; print norm(K.vecs[:,0]),norm(K.vecs[:,1]),norm(K.vecs[:,2])
-#        print 
-#    else:
-#        print 'Ended without minimum after maximum %i steps' % istep
-#    return MT
-#                
-def changewhich(MT,knownvecs,A):
-    stopgrad = 0.01 # if negative slope magnitude gets less than this, quit
-    bestgrad = 0    
-    oldcost = cost(MT,A)    
-    for i in range(3):
-        for j in range(knownvecs,3):
-            #find cost gradient for changes in integers by 1 
-            MT[i,j] += 1;delInc = cost(MT,A)-oldcost; MT[i,j] -= 1           
-            if delInc < 0 and delInc < bestgrad: bestchange = [[i,j],1];bestgrad = delInc
-            MT[i,j] += -1;delDec = cost(MT,A)-oldcost; MT[i,j] -= -1           
-            if delDec < 0 and delDec < bestgrad: bestchange = [[i,j],-1];bestgrad = delDec            
-#            print 'delInc, delDec',delInc, delDec
-    if abs(bestgrad) < stopgrad: # good enough 
-        bestchange=[[-1,-1],0]#initialize (-1 not allowed, of course)   
-    return bestchange
 
 def cost(MT,A):
     if det(MT) == 0: print MT;print sys.exit('Error det(MT)=0; stop in cost()')

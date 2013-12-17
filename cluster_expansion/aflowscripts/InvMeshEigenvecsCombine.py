@@ -1,7 +1,7 @@
 import os, subprocess, sys, time 
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
-from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs
+from kmeshroutines import svmesh, lattice_vecs, lattice, surfvol, orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs
 from LowSymMeshMinimize import searchmin #,searchminRandomStart
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
@@ -13,6 +13,7 @@ from numpy import int as np_int
 from numpy import float as np_float
 from random import random, randrange
 from ctypes import byref, cdll, c_double, c_int
+from itertools import combinations
 
 utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so') 
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
@@ -179,8 +180,7 @@ def checksymmetry(latt,parentlatt):
                     print lmat
                     print 'transformed Cart operator' 
                     print mmat                                     
-                    print 'Atranspose'
-                    print transpose(parentlatt.vecs)           
+        
                     return False #jumps out of subroutine
     return True #passes test
 
@@ -202,7 +202,6 @@ def matchDirection(vec,list):
             return True
     return False
      
-
 ##############################################################
 ########################## Script ############################
 
@@ -242,9 +241,9 @@ B.vecs = matrix((
 
 ############## Any lattice
 
-#crystal = [1,1,sqrt(2),90,90,120] # [a,b,c,alpha,beta,gamma]
+crystal = [1,1,sqrt(2),90,90,120] # [a,b,c,alpha,beta,gamma]
 #crystal = [1,1,2,50,50,50] # [a,b,c,alpha,beta,gamma]
-#B.vecs = transpose(lattice_vecs(crystal))
+B.vecs = transpose(lattice_vecs(crystal))
 #############End BCT lattice
 eps = 1.0e-6
 B.det = det(B.vecs)
@@ -300,132 +299,178 @@ for k in range(A.nops):
 #            oplist.append([k,i])
 #print; print oplist;
 print testvecs
-if len(testvecs)>0:
-    for vec in testvecs:
-        MT = zeros((3,3),dtype = np_int)
-        print;print '****************';print 'Cartesian direction to test as first superlattice vector '
-        print trimSmall(dot(A.vecs,vec))
-        print vec
-        MT[:,0] = rint(Nmesh**(1/3.0))*vec
-#        print MT
-        S = array(dot(A.vecs,MT))
-        [found,newvec] = findNextVec(S,A,1)  #find next vector
-        if found:
-            print 'Found 2nd vector by symmetry'
-            S[:,1] =  transpose(newvec)
-            MT = dot(inv(A.vecs),S)
-#            print MT
-#            print S            
-            
-            [found,newvec] = findNextVec(S,A,2)
-            if found:
-                S[:,2] = transpose(newvec)
-                print 'Found 3rd vector by symmetry'
-                MT = dot(inv(A.vecs),S)
-                print S
-#                print MT               
-            else: 
-                #minimize cost over ghi 
-                print 'Finding third vector by minimizing S/V'
-                MT = searchmin(S,A)
-                print MT    
-        else:
-            #minimize cost over defghi
-            print 'Finding 2nd and 3rd vectors by minimizing S/V'
-            MT = searchmin(S,A)
-        S = dot(A.vecs,MT)
-        checksym = checksymmetry(S,A)
-#        sys.exit('stop')
-        
-        
-        if checksym: 
-            K.vecs = transpose(inv(S))
-            checksymB = checksymmetry(K.vecs,B)
-            if checksymB: 
-    #                    print 'Obeys symmetry of lattice B:', checksymB               
-                print 'S';print S
-                print abs(det(S)/A.det),'Volume of superlattice'
-                print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice,','OD'  
-                print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh,','OD'  
-                print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))
-            else: 
-                print'Passed A symmetry, but failed B symmetry'
-        else:
-            print'Failed A symmetry'
-  
-#        sys.exit('stop')
-else: #no symmetry directions
-    #minimize cost over defghi
-    print 'Finding all mesh vectors by minimizing S/V'
-    MT = searchmin(S,A)
-    S = dot(A.vecs,MT)
-    K.vecs = transpose(inv(S))
-    print 'S';print S
-    print abs(det(S)/A.det),'Volume of superlattice'
-    print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
-    print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
-    print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))   
-
-#try random starting vector
-#print '++++++++++++++++++++++++++'
-#MT = searchminRandomStart(S,A)
-#S = dot(A.vecs,MT)
-#K.vecs = transpose(inv(S))
-#print 'S';print S
-#print abs(det(S)/A.det),'Volume of superlattice'
-#print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
-#print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
-#print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))   
-
-
-           
-sys.exit('stop')
-
-
-#if A.nops < 4: #has only 2 symm operations. 
-    
-#else:
-#    findmin(B,Nmesh)
-#    
-#    
-#    minSV = 1000 #initialize
-#    for a in range(maxint): # Diagonal elements of m can't be zero
-#        for b in range(maxint):
-#            for c in range(2*maxint):
-#                if a==0 and b==0 and c==0:
-#                    continue
-#                #create first S vector
-#                M[0,0]=a; M[0,1]=b; M[0,2]=c;
-##                print; print [a,b,c],'a,b,c'
-#                S[:,0] = dot(A.vecs,transpose(M[:,0]))
-#                if norm(S[:,0])<eps:
-#                    continue # all zeros, so go to next a,b,c
-#                print '1st vector';print S[:,0]
-#                #apply all symmetry operators, and find 2nd and 3rd vectors
-#                S = fillS(S,A)
-#                if abs(det(S))<eps:
-#                    print 'S has zero det for ',[a,b,c]
-#                    continue
-#    #            print S
-#                checksym = checksymmetry(S,A)
-#                if checksym: 
-#                    K.vecs = transpose(inv(S))
-#                    checksymB = checksymmetry(K.vecs,B)
-#                    if checksymB: 
-#    #                    print 'Obeys symmetry of lattice B:', checksymB               
-#                        print; print [a,b,c],'a,b,c'
-#                        print 'S';print S
-#                        print abs(det(S)/A.det),'Volume of superlattice'
-#                        print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
-#                        print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
-#                        print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))
-#                        if surfvol(K.vecs)<minSV:
-#                            minSV = surfvol(K.vecs)
-#                            bestK = K.vecs
-#                            bestabc = [a,b,c]
-#    print'------------------------------------------------'
-#    print 'a,b,c',bestabc
-#    print 'Best k mesh'; print bestK
-#    print 'Best surface/volume:', round(minSV,2)
+MT = zeros((3,3),dtype = np_int)
+#print 'combinations'
 #
-#print 'Done'
+trials = [list(x) for x in combinations(testvecs,3)]
+#print trials
+bestindex = -1 
+bestSV = 1000 
+for i,vecs in enumerate(trials):
+#Q2 = zeros((3,3),dtype = float)
+    MT[:,0] = vecs[0]
+    MT[:,1] = vecs[1]
+    MT[:,2] = vecs[2]
+
+    if not isequal(det(MT),0):
+        print; print 'Trial MT'; print MT
+        print 'Det(MT)', det(MT)
+        Q = dot(B.vecs,transpose(inv(MT)))
+        if checksymmetry(Q,B):
+            N2 = rint((Nmesh/abs(det(MT)))**(1/3.0))
+            ms = [N2,N2,N2]
+            print ms
+            Q2 = Q
+            Q2[:,0] = Q2[:,0]/ms[0]
+            Q2[:,1] = Q2[:,1]/ms[1]
+            Q2[:,2] = Q2[:,2]/ms[2]
+            if checksymmetry(Q2,B):
+#                print 'Q2 vectors pass symmetry';print Q2
+#                print 'N of mesh', B.det/det(Q2)
+                SV = surfvol(Q2)
+                if SV<bestSV: bestSV = SV; bestindex = i; K.vecs = Q2
+                print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'                  
+        else:
+            print'Q fails symmetry'
+
+print '___________ Best mesh ___________'
+print 'trial', bestindex
+print K.vecs
+K.det = abs(det(K.vecs))
+print 'N of mesh', B.det/K.det
+SV = surfvol(K.vecs)
+print round(surfvol(K.vecs),4),round(orthdef(K.vecs),4),'SV of Q2,','OD' 
+
+
+#sys.exit('stop')
+#
+#
+#if len(testvecs)>0:
+#    for vec in testvecs:
+#        MT = zeros((3,3),dtype = np_int)
+#        print;print '****************';print 'Cartesian direction to test as first superlattice vector '
+#        print trimSmall(dot(A.vecs,vec))
+#        print vec
+#        MT[:,0] = rint(Nmesh**(1/3.0))*vec
+##        print MT
+#        S = array(dot(A.vecs,MT))
+#        [found,newvec] = findNextVec(S,A,1)  #find next vector
+#        if found:
+#            print 'Found 2nd vector by symmetry'
+#            S[:,1] =  transpose(newvec)
+#            MT = dot(inv(A.vecs),S)
+##            print MT
+##            print S            
+#            
+#            [found,newvec] = findNextVec(S,A,2)
+#            if found:
+#                S[:,2] = transpose(newvec)
+#                print 'Found 3rd vector by symmetry'
+#                MT = dot(inv(A.vecs),S)
+#                print S
+##                print MT               
+#            else: 
+#                #minimize cost over ghi 
+#                print 'Choosing third vector along an eigenvector, minimizing S/V'
+#                MT = searchmin(S,A)
+#                print MT    
+#        else:
+#            #minimize cost over defghi
+#            print 'Choosing 2nd and 3rd vectors by minimizing S/V'
+#            MT = searchmin(S,A)
+#        S = dot(A.vecs,MT)
+#        checksym = checksymmetry(S,A)
+##        sys.exit('stop')
+#        
+#        
+#        if checksym: 
+#            K.vecs = transpose(inv(S))
+#            checksymB = checksymmetry(K.vecs,B)
+#            if checksymB: 
+#    #                    print 'Obeys symmetry of lattice B:', checksymB               
+#                print 'S';print S
+#                print abs(det(S)/A.det),'Volume of superlattice'
+#                print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice,','OD'  
+#                print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh,','OD'  
+#                print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))
+#            else: 
+#                print'Passed A symmetry, but failed B symmetry'
+#        else:
+#            print'Failed A symmetry'
+#  
+##        sys.exit('stop')
+#else: #no symmetry directions
+#    #minimize cost over defghi
+#    print 'Finding all mesh vectors by minimizing S/V'
+#    MT = searchmin(S,A)
+#    S = dot(A.vecs,MT)
+#    K.vecs = transpose(inv(S))
+#    print 'S';print S
+#    print abs(det(S)/A.det),'Volume of superlattice'
+#    print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
+#    print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
+#    print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))   
+#
+##try random starting vector
+##print '++++++++++++++++++++++++++'
+##MT = searchminRandomStart(S,A)
+##S = dot(A.vecs,MT)
+##K.vecs = transpose(inv(S))
+##print 'S';print S
+##print abs(det(S)/A.det),'Volume of superlattice'
+##print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
+##print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
+##print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))   
+#
+#
+#           
+#sys.exit('stop')
+#
+#
+##if A.nops < 4: #has only 2 symm operations. 
+#    
+##else:
+##    findmin(B,Nmesh)
+##    
+##    
+##    minSV = 1000 #initialize
+##    for a in range(maxint): # Diagonal elements of m can't be zero
+##        for b in range(maxint):
+##            for c in range(2*maxint):
+##                if a==0 and b==0 and c==0:
+##                    continue
+##                #create first S vector
+##                M[0,0]=a; M[0,1]=b; M[0,2]=c;
+###                print; print [a,b,c],'a,b,c'
+##                S[:,0] = dot(A.vecs,transpose(M[:,0]))
+##                if norm(S[:,0])<eps:
+##                    continue # all zeros, so go to next a,b,c
+##                print '1st vector';print S[:,0]
+##                #apply all symmetry operators, and find 2nd and 3rd vectors
+##                S = fillS(S,A)
+##                if abs(det(S))<eps:
+##                    print 'S has zero det for ',[a,b,c]
+##                    continue
+##    #            print S
+##                checksym = checksymmetry(S,A)
+##                if checksym: 
+##                    K.vecs = transpose(inv(S))
+##                    checksymB = checksymmetry(K.vecs,B)
+##                    if checksymB: 
+##    #                    print 'Obeys symmetry of lattice B:', checksymB               
+##                        print; print [a,b,c],'a,b,c'
+##                        print 'S';print S
+##                        print abs(det(S)/A.det),'Volume of superlattice'
+##                        print round(surfvol(S),2),round(orthdef(S),2),'SV of superlattice','OD'  
+##                        print round(surfvol(K.vecs),2),round(orthdef(K.vecs),2),'SV of k-mesh','OD'  
+##                        print 'M matrix abc;def;ghj';print trimSmall(transpose(dot(inv(A.vecs),S)))
+##                        if surfvol(K.vecs)<minSV:
+##                            minSV = surfvol(K.vecs)
+##                            bestK = K.vecs
+##                            bestabc = [a,b,c]
+##    print'------------------------------------------------'
+##    print 'a,b,c',bestabc
+##    print 'Best k mesh'; print bestK
+##    print 'Best surface/volume:', round(minSV,2)
+##
+##print 'Done'

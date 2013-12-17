@@ -1,6 +1,6 @@
 ################# functions #######################
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
-from numpy import matrix, transpose,rint,inner,multiply,size,argmin,round
+from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,round
 from numpy import zeros 
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
@@ -84,7 +84,7 @@ def irratcheck(ratios,mlist):
         sqr = sqrt(m)
         for i,x in enumerate(ratios):
             if intcheck(x*sqr) or intcheck(x/sqr) or intcheck(sqr/x) or intcheck((1/x*sqr)):
-#                irrat = irrat+'sqrt%i ' % m
+                irrat = irrat+'sqrt%i ' % m
                 print 'sqrt%i ' % m, x
     return irrat
 
@@ -93,9 +93,9 @@ def abcalbega_latt(lvecs):
     v0 = lvecs[0,:]
     v1 = lvecs[1,:]
     v2 = lvecs[2,:]
-    a = linalg.norm(v0)
-    b = linalg.norm(v1)
-    c = linalg.norm(v2)
+    a = norm(v0)
+    b = norm(v1)
+    c = norm(v2)
     alpha = arccos(dot(v1,v2)/b/c) * 180/pi
     beta = arccos(dot(v2,v0)/c/a) * 180/pi
     gamma = arccos(dot(v0,v1)/a/b) * 180/pi    
@@ -254,9 +254,9 @@ def regpy_nocase(str,path):
 def svmesh(N,vecs):
     '''N: points desired.  vecs the lattice vectors as numpy array (reciprocal in our thinking)
     output:  n0, n1, n2, the number of divisions along each RLV for the mesh'''
-    u = linalg.norm(cross(vecs[0,:],vecs[1,:]))
-    v = linalg.norm(cross(vecs[1,:],vecs[2,:]))
-    w = linalg.norm(cross(vecs[2,:],vecs[0,:]))
+    u = norm(cross(vecs[0,:],vecs[1,:]))
+    v = norm(cross(vecs[1,:],vecs[2,:]))
+    w = norm(cross(vecs[2,:],vecs[0,:]))
     n0 = N**(1/3.0) * w**(1/3.0) * u**(1/3.0) / v**(2/3.0)
     n1 = N**(1/3.0) * u**(1/3.0) * v**(1/3.0) / w**(2/3.0)
     n2 = N**(1/3.0) * v**(1/3.0) * w**(1/3.0) / u**(2/3.0)
