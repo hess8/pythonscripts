@@ -5,7 +5,7 @@ import os, subprocess, sys, time
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
 from kmeshroutines import lattice,surfvol, orthdef
 
-from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef, icy
+from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import matrix, transpose,rint,inner,multiply,size,argmin,argmax,nonzero,shape
@@ -75,13 +75,14 @@ def searchmin(S,A):
         istep += 1
     #    sys.exit('stop')        
     if istep < maxsteps:
+        S = dot(A.vecs,MT)
+        K = lattice();K.vecs = inv(transpose(S)); K.det = det(K.vecs)        
         print
         print 'Found minimum after %i steps' % istep
+        print 'Symmetry error', round(symmetryErr(S,A),4)       
         print 'An optimum transpose(M):'; print MT
-        S = dot(A.vecs,MT)
         print 'Number of mesh points', det(S)/A.det
         print 'An optimum superlattice S:'; print S
-        K = lattice();K.vecs = inv(transpose(S)); K.det = det(K.vecs)
         print 'An optimum K mesh\n', K.vecs  
         print 'Orth defect',orthdef(K.vecs)
         print 'Surface/vol', surfvol(K.vecs)    
@@ -100,47 +101,48 @@ def searchmin(S,A):
         print 'Ended without minimum after maximum %i steps' % istep
     return MT
 
-def searchminRandomStart(S,A):
-    '''MT is transpose(M) '''
-    print 'VARYING all MT, Random start'
-    default_length = rint(A.Nmesh**(1/3.0))
-    knownvecs = 0
-    MT = zeros((3,3),dtype = int)
-    for i in range(3):
-        for j in range(3):
-            MT[i,j]=randint(0,default_length)
-    maxsteps = 10000
-    istep = 1
-    while istep<maxsteps:
-        bestindex = changewhich(MT,knownvecs,A)
-        print 'bestindex',bestindex            
-        if bestindex[1]==0:#found minimum at previous M
-            newcost = cost(MT,A)        
-            break
-        else:
-#            print 'value in MT to change', bestindex[0][0], MT[bestindex[0]]
-            MT[bestindex[0][0],bestindex[0][1]] += bestindex[1]
-            newcost = cost(MT,A)
-#            oldcost = newcost
-        istep += 1
-    #    sys.exit('stop')        
-    if istep < maxsteps:
-        print
-        print 'Found minimum after %i steps' % istep
-        print 'An optimum transpose(M):'; print MT
-        S = dot(A.vecs,MT)
-        print 'Number of mesh points', det(S)/A.det
-        print 'An optimum superlattice S:'; print S
-        K = lattice();K.vecs = inv(transpose(S)); K.det = det(K.vecs)
-        print 'An optimum K mesh\n', K.vecs  
-        print 'Orth defect',orthdef(K.vecs)
-        print 'Surface/vol', surfvol(K.vecs)    
-        print 'Mesh vector lengths:'; print norm(K.vecs[:,0]),norm(K.vecs[:,1]),norm(K.vecs[:,2])
-        print 
-    else:
-        print 'Ended without minimum after maximum %i steps' % istep
-    return MT
-                
+#def searchminRandomStart(S,A):
+#    '''MT is transpose(M) '''
+#    print 'VARYING all MT, Random start'
+#    default_length = rint(A.Nmesh**(1/3.0))
+#    knownvecs = 0
+#    MT = zeros((3,3),dtype = int)
+#    for i in range(3):
+#        for j in range(3):
+#            MT[i,j]=randint(0,default_length)
+#    maxsteps = 10000
+#    istep = 1
+#    while istep<maxsteps:
+#        bestindex = changewhich(MT,knownvecs,A)
+#        print 'bestindex',bestindex            
+#        if bestindex[1]==0:#found minimum at previous M
+#            newcost = cost(MT,A)        
+#            break
+#        else:
+##            print 'value in MT to change', bestindex[0][0], MT[bestindex[0]]
+#            MT[bestindex[0][0],bestindex[0][1]] += bestindex[1]
+#            newcost = cost(MT,A)
+##            oldcost = newcost
+#        istep += 1
+#    #    sys.exit('stop')        
+#    if istep < maxsteps:
+#        print
+#        print 'Found minimum after %i steps' % istep
+#
+#        print 'An optimum transpose(M):'; print MT
+#        S = dot(A.vecs,MT)
+#        print 'Number of mesh points', det(S)/A.det
+#        print 'An optimum superlattice S:'; print S
+#        K = lattice();K.vecs = inv(transpose(S)); K.det = det(K.vecs)
+#        print 'An optimum K mesh\n', K.vecs  
+#        print 'Orth defect',orthdef(K.vecs)
+#        print 'Surface/vol', surfvol(K.vecs)    
+#        print 'Mesh vector lengths:'; print norm(K.vecs[:,0]),norm(K.vecs[:,1]),norm(K.vecs[:,2])
+#        print 
+#    else:
+#        print 'Ended without minimum after maximum %i steps' % istep
+#    return MT
+#                
 def changewhich(MT,knownvecs,A):
     stopgrad = 0.01 # if negative slope magnitude gets less than this, quit
     bestgrad = 0    
@@ -160,9 +162,9 @@ def changewhich(MT,knownvecs,A):
 def cost(MT,A):
     if det(MT) == 0: print MT;print sys.exit('Error det(MT)=0; stop in cost()')
     S = dot(A.vecs,MT)
-    Nscale =0* .8; Ncost = Nscale * abs((det(S)/A.det -A.Nmesh))/A.Nmesh
+    Nscale =1* .8; Ncost = Nscale * abs((det(S)/A.det -A.Nmesh))/A.Nmesh
     symmScale = 10;  symmCost = symmScale* symmetryErr(S,A)  
-    print 'Ncost, symmCost', Ncost, symmCost
+#    print 'Ncost, symmCost', Ncost, symmCost
 #    print 'for MT:'
 #    print MT
     cost = surfvol(S)*(1+Ncost + symmCost)        

@@ -17,6 +17,28 @@ import time, os, subprocess, sys
 #        {[number,'name',
 #    '''
 #    print
+def isinteger(x):
+    return np.equal(np.mod(x, 1), 0)
+
+def isequal(x,y):
+    eps = 1.0e-6
+    return abs(x-y)<eps
+
+def isreal(x):
+    eps = 1.0e-6
+    return abs(x.imag)<eps
+
+def isindependent(vec1,vec2):  
+    return not isequal(abs(cosvecs(vec1,vec2)),1)
+
+def trimSmall(mat):
+    low_values_indices = abs(mat) < 1.0e-6
+    mat[low_values_indices] = 0.0
+    return mat
+
+def cosvecs(vec1,vec2):
+    return dot(vec1,vec2)/norm(vec1)/norm(vec2)
+
 class lattice(object): #reciprocal lattice
     def __init__(self):         
         self.vecs = []
