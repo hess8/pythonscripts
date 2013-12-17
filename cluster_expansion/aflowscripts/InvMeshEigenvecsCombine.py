@@ -173,14 +173,13 @@ def checksymmetry(latt,parentlatt):
         for i in range(3):
             for j in range(3):
                 if abs(rint(mmat[i,j])-mmat[i,j])>1.0e-6:
-                    print iop, 'Symmetry failed for mmat[i,j]',mmat[i,j]
-                    print 'Cartesian operator' 
-                    print parentlatt.symops[:,:,iop] 
-                    print 'Cartesian Lattice'
-                    print lmat
-                    print 'transformed Cart operator' 
-                    print mmat                                     
-        
+#                    print iop, 'Symmetry failed for mmat[i,j]',mmat[i,j]
+#                    print 'Cartesian operator' 
+#                    print parentlatt.symops[:,:,iop] 
+#                    print 'Cartesian Lattice'
+#                    print lmat
+#                    print 'transformed Cart operator' 
+#                    print mmat                                           
                     return False #jumps out of subroutine
     return True #passes test
 
@@ -201,6 +200,26 @@ def matchDirection(vec,list):
         if isequal(abs(cosvecs(vec,vec2)),1.0):
             return True
     return False
+
+def MT2mesh_one_n(MT,B):
+        Q = dot(B.vecs,transpose(inv(MT)))
+        N2 = rint((Nmesh/abs(det(MT)))**(1/3.0))
+        ms = [N2,N2,N2]
+#        print ms        
+        Q[:,0] = Q[:,0]/ms[0]
+        Q[:,1] = Q[:,1]/ms[1]
+        Q[:,2] = Q[:,2]/ms[2]
+        return Q
+
+def MT2mesh_three_ns(MT,B):
+        Q = dot(B.vecs,transpose(inv(MT)))
+        mesh = svmesh(Nmesh/abs(det(MT)),Q)
+        ms = mesh[0]
+        print ms
+        Q[:,0] = Q[:,0]/ms[0]
+        Q[:,1] = Q[:,1]/ms[1]
+        Q[:,2] = Q[:,2]/ms[2]
+        return Q
      
 ##############################################################
 ########################## Script ############################
@@ -220,13 +239,13 @@ K = lattice()
 
 ##############BCT lattice
 alat = 2*sqrt(5)
-ca = 4/3.
+ca = 11/3.
 clat = alat*ca
-B.vecs = matrix((  
-  [   -alat/2,  alat/2,   alat/2],
-  [   alat/2,  -alat/2,   alat/2],
-  [   clat/2,   clat/2,   -clat/2]
-  ), dtype=float)
+#B.vecs = matrix((  
+#  [   -alat/2,  alat/2,   alat/2],
+#  [   alat/2,  -alat/2,   alat/2],
+#  [   clat/2,   clat/2,   -clat/2]
+#  ), dtype=float)
 
 
 #B.vecs = matrix((  #C axis along x !####
@@ -241,8 +260,8 @@ B.vecs = matrix((
 
 ############## Any lattice
 
-crystal = [1,1,sqrt(2),90,90,120] # [a,b,c,alpha,beta,gamma]
-#crystal = [1,1,2,50,50,50] # [a,b,c,alpha,beta,gamma]
+#crystal = [1,1,sqrt(2),90,90,120] # [a,b,c,alpha,beta,gamma]
+crystal = [1,2,3,20,30,40] # [a,b,c,alpha,beta,gamma]
 B.vecs = transpose(lattice_vecs(crystal))
 #############End BCT lattice
 eps = 1.0e-6
@@ -275,7 +294,7 @@ if A.nops != B.nops:
     sys.exit('Number of operations different for A and B; stop')
 
 print 'symmetry operations R of A\n'
-testvecs = [];oplist = []
+testvecs = [];testindices = []
 for k in range(A.nops):
     print; print k
     op = matrix(A.symops[:,:,k])
@@ -285,56 +304,99 @@ for k in range(A.nops):
 #    print 'symop m'; print m
 #
 #    print 'det(m)', det(m)
-#    print 'eigen of m',vals
-#    print vecs
-#    print vecs[:,0]/abs(vecs[:,0])[nonzero(vecs[:,0])].min()
-#    print vecs[:,1]/abs(vecs[:,1])[nonzero(vecs[:,1])].min()
-#    print vecs[:,2]/abs(vecs[:,2])[nonzero(vecs[:,2])].min()
+    print 'eigen of m',vals
+    print vecs
+    print vecs[:,0]/abs(vecs[:,0])[nonzero(vecs[:,0])].min()
+    print vecs[:,1]/abs(vecs[:,1])[nonzero(vecs[:,1])].min()
+    print vecs[:,2]/abs(vecs[:,2])[nonzero(vecs[:,2])].min()
     
     #find operations with nondegenerate real eigenvalues
-#    print nonDegen(vals)
+    print 'nonDegen', nonDegen(vals)
     for i in nonDegen(vals):
         if not matchDirection(transpose(vecs[:,i]),testvecs): #keep only unique directions    
             testvecs.append(vecs[:,i].real/abs(vecs[:,i])[nonzero(vecs[:,i])].min())
-#            oplist.append([k,i])
+            testindices.append([k,i])
 #print; print oplist;
 print testvecs
+print testindices
 MT = zeros((3,3),dtype = np_int)
-#print 'combinations'
-#
-trials = [list(x) for x in combinations(testvecs,3)]
-#print trials
-bestindex = -1 
-bestSV = 1000 
-for i,vecs in enumerate(trials):
-#Q2 = zeros((3,3),dtype = float)
-    MT[:,0] = vecs[0]
-    MT[:,1] = vecs[1]
-    MT[:,2] = vecs[2]
 
-    if not isequal(det(MT),0):
-        print; print 'Trial MT'; print MT
-        print 'Det(MT)', det(MT)
-        Q = dot(B.vecs,transpose(inv(MT)))
-        if checksymmetry(Q,B):
-            N2 = rint((Nmesh/abs(det(MT)))**(1/3.0))
-            ms = [N2,N2,N2]
-            print ms
-            Q2 = Q
-            Q2[:,0] = Q2[:,0]/ms[0]
-            Q2[:,1] = Q2[:,1]/ms[1]
-            Q2[:,2] = Q2[:,2]/ms[2]
+
+if len(testvecs) == 0:
+    print 'No eigen directions'
+#    MT = unconstrainedmin(B.vecs)
+if len(testvecs) == 1:
+    print 'Only 1 eigen direction'
+    #Choose this one and the other two in the plane perpendicular to this. 
+    #Since all symmetry operators will be diagonal in this mesh representaion
+    #of eigenvectors of , 
+    #
+    MT[:,0] = testvecs[0]
+    k = testindices[0][0]
+    op = matrix(A.symops[:,:,k])
+#    print trimSmall(op)
+    m = trimSmall(dot(dot(inv(A.vecs[:,:]), A.symops[:,:,k]),A.vecs[:,:])  ) 
+    [vals,vecs]=eig(m); vecs = array(vecs)
+    print vecs
+    otherindices = nonzero(array([0,1,2])-k)
+    print otherindices[0]
+    v1 = vecs[otherindices[0][0]]
+    v2 = vecs[otherindices[0][1]]
+    MT[:,1] = v1/abs(v1)[nonzero(v1)].min()
+    #Make 3rd vector perp as possible to the other two 
+    ur0 = dot(A.vecs,MT[:,0])/norm(dot(A.vecs,MT[:,0])) #unit vector in real space
+    ur1 = dot(A.vecs,MT[:,1])/norm(dot(A.vecs,MT[:,1]))
+    ur2 = cross(ur0,ur1)
+    MT[:,2] = rint(dot(inv(A.vecs),ur2))
+#    MT[:,2] = v2/abs(v2)[nonzero(v2)].min()  
+    print 'MT from single operator';print MT
+    Q2 = MT2mesh_three_ns(MT,B)
+    if checksymmetry(Q2,B):
+        SV = surfvol(Q2)
+        print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'  
+        K.vecs = Q2                
+    else:
+        print'Q fails symmetry'    
+
+if len(testvecs) == 2:
+    print 'Only 2 eigen directions'
+    MT[:,0] = testvecs[0]
+    MT[:,1] = testvecs[1]
+    #Make 3rd vector perp as possible to the other two 
+    ur0 = dot(A.vecs,MT[:,0])/norm(dot(A.vecs,MT[:,0])) #unit vector in real space
+    ur1 = dot(A.vecs,MT[:,1])/norm(dot(A.vecs,MT[:,1]))
+    ur2 = cross(ur0,ur1)
+    MT[:,2] = rint(dot(inv(A.vecs),ur2))
+    print 'MT from two eigen directions';print MT
+    Q2 = MT2mesh_three_ns(MT,B)
+    if checksymmetry(Q2,B):
+        SV = surfvol(Q2)
+        print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'  
+        K.vecs = Q2                
+    else:
+        print'Q fails symmetry'  
+                    
+if len(testvecs) >= 3:
+    testvecstrials = [list(x) for x in combinations(testvecs,3)]
+    print testvecstrials    
+    bestindex = -1 
+    bestSV = 1000 
+    for i,vecs in enumerate(testvecstrials):
+        MT[:,0] = vecs[0]
+        MT[:,1] = vecs[1]
+        MT[:,2] = vecs[2]
+        print 'MT from three eigen directions';print MT
+    
+        if not isequal(det(MT),0):
+            Q2 = MT2mesh_one_n(MT,B)
             if checksymmetry(Q2,B):
-#                print 'Q2 vectors pass symmetry';print Q2
-#                print 'N of mesh', B.det/det(Q2)
                 SV = surfvol(Q2)
                 if SV<bestSV: bestSV = SV; bestindex = i; K.vecs = Q2
                 print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'                  
-        else:
-            print'Q fails symmetry'
-
-print '___________ Best mesh ___________'
-print 'trial', bestindex
+            else:
+                print'Q fails symmetry'
+    print '___________ Best mesh ___________'
+    print 'trial', bestindex
 print K.vecs
 K.det = abs(det(K.vecs))
 print 'N of mesh', B.det/K.det

@@ -1,6 +1,6 @@
 ################# functions #######################
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
-from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,round
+from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round
 from numpy import zeros 
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
@@ -309,7 +309,7 @@ def svmesh(N,vecs):
         for i in [0,1,2]:
             ms[i] = rint(ns[i])
     if Nrels == 1:
-        r1i = argmax(abs(PQR)) #want index of the only nonzero element
+        r1i = argmax(abs(array(PQR))) #want index of the only nonzero element
         r1 = PQR[r1i]
         if r1 > 0: #CCW, so the higher index is greater m
             ms[r1i] = round(ns[r1i],0) #round smaller one
