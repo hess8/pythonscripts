@@ -1,3 +1,4 @@
+'''Convention here is COLUMNS of matrices as vectors'''
 ################# functions #######################
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round
@@ -50,9 +51,9 @@ class lattice(object): #reciprocal lattice
 def surfvol(vecs): 
     '''Surface/volume metric for a mesh, scaled to 1 for a cube'''
     vecs = transpose(vecs)
-    u = norm(cross(vecs[0,:],vecs[1,:]))
-    v = norm(cross(vecs[1,:],vecs[2,:]))
-    w = norm(cross(vecs[2,:],vecs[0,:]))
+    u = norm(cross(vecs[:,0],vecs[:,1]))
+    v = norm(cross(vecs[:,1],vecs[:,2]))
+    w = norm(cross(vecs[:,2],vecs[:,0]))
     surfvol = 2*(u + v + w)/6/(abs(det(vecs)))**(2/3.0)
     return abs(surfvol)
 
@@ -90,9 +91,9 @@ def irratcheck(ratios,mlist):
 
 def abcalbega_latt(lvecs):
     '''finds a,b,c,alpha,beta,gamma from lattice vectors'''
-    v0 = lvecs[0,:]
-    v1 = lvecs[1,:]
-    v2 = lvecs[2,:]
+    v0 = lvecs[:,0]
+    v1 = lvecs[:,1]
+    v2 = lvecs[:,2]
     a = norm(v0)
     b = norm(v1)
     c = norm(v2)
@@ -111,9 +112,9 @@ def readposcar(filename, path):
     if scale < 0:
         scale = (-scale)**(1/3.0)
     reallatt = zeros((3,3))
-    reallatt[0,:] = array(poscar[2].split())
-    reallatt[1,:] = array(poscar[3].split())
-    reallatt[2,:] = array(poscar[4].split())
+    reallatt[:,0] = array(poscar[2].split())
+    reallatt[:,1] = array(poscar[3].split())
+    reallatt[:,2] = array(poscar[4].split())
     reallatt = reallatt.astype(float)
     reallatt = scale*reallatt
     reciplatt = 2*pi*transpose(linalg.inv(reallatt))
@@ -164,13 +165,13 @@ def aflow2poscar(path):
 #    print
 #    print 'recip lattice traditional'
 #    reciplatt2 = array(lattice_vecs(cryststruc)).astype(float)
-#    a0 = reallatt[0,:]
-#    a1 = reallatt[1,:]
-#    a2 = reallatt[2,:]
+#    a0 = reallatt[:,0]
+#    a1 = reallatt[:,1]
+#    a2 = reallatt[:,2]
 #    vol = dot(a0,cross(a1,a2))
-#    reciplatt2[0,:] = 2*pi*cross(a1,a2)/vol
-#    reciplatt2[1,:] = 2*pi*cross(a2,a0)/vol
-#    reciplatt2[2,:] = 2*pi*cross(a0,a1)/vol
+#    reciplatt2[:,0] = 2*pi*cross(a1,a2)/vol
+#    reciplatt2[:,1] = 2*pi*cross(a2,a0)/vol
+#    reciplatt2[:,2] = 2*pi*cross(a0,a1)/vol
 #    print reciplatt2   
 #    # end test
     natoms = array(aflowin[istart+3].split(),dtype=int16)
@@ -214,7 +215,7 @@ def lattice_vecs(cryststruc):
     '''
     [a,b,c,al,be,ga] = cryststruc
     if b>c: #switch c,b, gamma and beta 
-        [a,b,c,al,be,ga] = [a,c,b,al,ga,be] # e.g 3,2,1 -> 3,1,2
+        [a,b,c,al,be,ga] = [a,c,b,al,ga,be] # e.g 3,1,2 -> 3,1,2
     if a>b: #switch a,b, alph and beta
         [a,b,c,al,be,ga] = [b,a,c,be,al,ga] # e.g 3,1,2 -> 1,3,2
     if b>c: #switch c,b, gamma and beta
@@ -227,10 +228,10 @@ def lattice_vecs(cryststruc):
     sb = sin(be/180.0*pi)
     sg = sin(ga/180.0*pi) 
     lv = zeros((3,3))
-    lv[0,:] = [a,0,0]
-    lv[1,:] = [b*cg,b*sg,0]  
-    lv[2,0] = c*cb
-    lv[2,1] = c/sg*(ca-cb*cg)
+    lv[:,0] = [a,0,0]
+    lv[:,1] = [b*cg,b*sg,0]  
+    lv[0,2] = c*cb
+    lv[1,2] = c/sg*(ca-cb*cg)
     lv[2,2] = c/sg*sqrt(sg**2 - ca**2 - cb**2 + 2*ca*cb*cg)
     return round(lv,14)       
 
@@ -250,17 +251,30 @@ def regpy_nocase(str,path):
     for line in lines:
         if re.search( str, line,  re.M|re.I):
             print line
+
+def svmesh1freedir(N,vecs):
+    '''N: points desired, when only one direction is free of contraints on its magnitude vs other directions.
+    Put this direction first in vecs (vecs[:,0])!!  Vecs the lattice vectors as numpy array (reciprocal in our thinking)
+    output:  n0, n1=n2, the number of divisions along each RLV for the mesh. '''
+    u = norm(cross(vecs[:,0],vecs[:,1])) 
+    v = norm(cross(vecs[:,1],vecs[:,2]))
+    w = norm(cross(vecs[:,2],vecs[:,0]))
+    n0 = rint(N**(1/3.0) * (2*(u + w)/v)**(2/3.0))
+    n1 = rint(sqrt(N/n0))
+    return [n0,n1] 
    
 def svmesh(N,vecs):
-    '''N: points desired.  vecs the lattice vectors as numpy array (reciprocal in our thinking)
+    '''N: points desired, when all three directions are free of constraints on its magnitude vs other directions.  
+    Vecs the lattice vectors as numpy array (reciprocal here)
     output:  n0, n1, n2, the number of divisions along each RLV for the mesh'''
-    u = norm(cross(vecs[0,:],vecs[1,:]))
-    v = norm(cross(vecs[1,:],vecs[2,:]))
-    w = norm(cross(vecs[2,:],vecs[0,:]))
+    print 'vecs in svmesh', vecs
+    u = norm(cross(vecs[:,0],vecs[:,1]))
+    v = norm(cross(vecs[:,1],vecs[:,2]))
+    w = norm(cross(vecs[:,2],vecs[:,0]))
     n0 = N**(1/3.0) * w**(1/3.0) * u**(1/3.0) / v**(2/3.0)
     n1 = N**(1/3.0) * u**(1/3.0) * v**(1/3.0) / w**(2/3.0)
     n2 = N**(1/3.0) * v**(1/3.0) * w**(1/3.0) / u**(2/3.0)
-    ns = [n0,n1,n2]
+    ns = array([n0,n1,n2])
     print 'n0,n1,n2 from min s/v'
     print ns
     print
@@ -318,12 +332,33 @@ def svmesh(N,vecs):
             ms[icy(r1i,1)] = round(ns[icy(r1i,1)],0) #round smaller one
             ms[r1i] = ms[icy(r1i,1)] * abs(r1)      #form larger by relation
         ms[icy(r1i,-1)] = rint(ns[icy(r1i,-1)])
-    if Nrels == 2 or Nrels == 3:
-        #find the triangle side with no multiple relation.  Find the largest 
+    if Nrels == 2:#relations either point away from the smallest or toward the largest n
+        zindex = PQR.index(0)#find the triangle side with no multiple relation.
+        mpivot = icy(zindex,-1)#the vertex opposite a side is -1 away
+        print 'mpivot',mpivot
+        if mpivot == argmax(abs(ns)):
+            nmax = max(abs(ns))
+            imax = mpivot #index of largest n.  Create m from this first
+            r1 = abs(PQR[icy(imax,-1)])
+            r2 = abs(PQR[imax])
+            ms[imax] = r1 * r2 * int(rint(nmax/r1/r2))
+            ms[icy(imax,-1)] = ms[imax]/r1
+            ms[icy(imax,1)] = ms[imax]/r2  
+        if  mpivot == argmin(abs(ns)):
+            nmin = min(abs(ns))
+            imin = mpivot #index of largest n.  Create m from this first
+            r1 = abs(PQR[icy(imin,-1)])
+            r2 = abs(PQR[imin])
+            p
+            ms[imin] = int(rint(nmin))
+            ms[icy(imin,-1)] = ms[imin]*r1
+            ms[icy(imin,1)] = ms[imin]*r2                  
+    if Nrels == 3: #either method used in 2 works
         nmax = max(abs(ns))
         imax = argmax(abs(ns)) #index of largest n.  Create m from this first
         r1 = abs(PQR[icy(imax,-1)])
         r2 = abs(PQR[imax])
+        print PQR,r1, r2
         ms[imax] = r1 * r2 * int(rint(nmax/r1/r2))
         ms[icy(imax,-1)] = ms[imax]/r1
         ms[icy(imax,1)] = ms[imax]/r2

@@ -1,11 +1,11 @@
 import os, subprocess, sys, time 
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
-from kmeshroutines import svmesh, lattice_vecs, lattice, surfvol, orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs
+from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol, orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs
 from UnconstrainedSVmin import unconstrainedSVsearch
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
-from numpy import matrix, transpose,rint,inner,multiply,size,argmin,nonzero
+from numpy import transpose,rint,inner,multiply,size,argmin,nonzero
 from numpy import zeros #use arrays, not "matrix" class
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
@@ -154,8 +154,6 @@ def eigenvecfind(S,parentlatt):
                 return unitaxis
 #    #print 'Found no 3rd vector through eigenvectors of symmetry operators'
 #    sys.exit('stop')
-
-
       
 def checksymmetry(latt,parentlatt):
     '''check that the lattice obeys all symmetry operations of a parent lattice:  R.latt.inv(R) will give an integer matrix'''
@@ -199,33 +197,84 @@ def matchDirection(vec,list):
             return True
     return False
 
-def MT2mesh_one_n(MT,B):
-        Q = dot(B.vecs,transpose(inv(MT)))
-        N2 = rint((Nmesh/abs(det(MT)))**(1/3.0))
-        ms = [N2,N2,N2]
-#        print ms        
-        Q[:,0] = Q[:,0]/ms[0]
-        Q[:,1] = Q[:,1]/ms[1]
-        Q[:,2] = Q[:,2]/ms[2]
-        return Q
+#def MT2mesh_one_n(MT,B):
+#    Q = dot(B.vecs,transpose(inv(MT)))
+#    N2 = rint((Nmesh/abs(det(MT)))**(1/3.0))
+#    #just for comparison:
+#    meshtry = svmesh(Nmesh/abs(det(MT)),Q)
+#    print 'mesh without symmetry concerns', meshtry[0]   
+#    #             
+#    ms = [N2,N2,N2]
+#    print ms        
+#    Q[:,0] = Q[:,0]/ms[0]
+#    Q[:,1] = Q[:,1]/ms[1]
+#    Q[:,2] = Q[:,2]/ms[2]
+#    return Q
 
-def MT2mesh_three_ns(MT,B):
-        Q = dot(B.vecs,transpose(inv(MT)))
+#def MT2mesh_three_ns(MT,B):
+#    Q = dot(B.vecs,transpose(inv(MT)))
+#    mesh = svmesh(Nmesh/abs(det(MT)),Q)
+#    ms = mesh[0]
+#    print ms
+#    Q[:,0] = Q[:,0]/ms[0]
+#    Q[:,1] = Q[:,1]/ms[1]
+#    Q[:,2] = Q[:,2]/ms[2]
+#    return Q
+    
+def MT2mesh(MT,B):
+    '''test which directions are free to adjust'''
+    testi = 7
+    freedir = []
+    Q = dot(B.vecs,transpose(inv(MT)))    
+    print 'starting mesh Q'; print Q
+    for i in range(3):
+        Qtest = dot(B.vecs,transpose(inv(MT)))
+        Qtest[:,i] = Qtest[:,i]/testi
+        if checksymmetry(Qtest,B): freedir.append(i)
+    print 'free directions', freedir
+    if len(freedir) == 0:
+        N2 = rint((Nmesh/abs(det(MT)))**(1/3.0))
+        ms = [N2,N2,N2]    
+        #just for comparison:
+#        meshtry = svmesh(Nmesh/abs(det(MT)),Q)
+#        print 'mesh without symmetry concerns', meshtry[0] 
+    elif len(freedir) == 1:
+        #order so free dir is first in vecs
+        freeindex = freedir[0]
+        otherindices = nonzero(array([0,1,2])-freeindex)
+        vecs = zeros((3,3),dtype = float)
+        vecs[:,0] = B.vecs[:,freeindex]
+        vecs[:,1] = B.vecs[:,otherindices[0][0]]
+        vecs[:,2] = B.vecs[:,otherindices[0][1]]
+        [n0,n1]= svmesh1freedir(Nmesh/abs(det(MT)),vecs)
+        ms = [0,0,0]
+        ms[freeindex] = n0
+        ms[otherindices[0][0]] = n1
+        ms[otherindices[0][1]] = n1
+    elif len(freedir) == 3:      
         mesh = svmesh(Nmesh/abs(det(MT)),Q)
         ms = mesh[0]
-        print ms
-        Q[:,0] = Q[:,0]/ms[0]
-        Q[:,1] = Q[:,1]/ms[1]
-        Q[:,2] = Q[:,2]/ms[2]
+    else:
+        sys.exit('Error in MT2mesh; freedir has 2 elements, but not 3')
+    print 'mesh integers', ms      
+    Q[:,0] = Q[:,0]/ms[0]
+    Q[:,1] = Q[:,1]/ms[1]
+    Q[:,2] = Q[:,2]/ms[2]
+    if checksymmetry(Q,B):
         return Q
+    else:
+        sys.exit('Symmetry fails in MT2mesh, STOP')
      
+     
+
+
 ##############################################################
 ########################## Script ############################
 
 #natoms = 3
 #nkppra = 10000
 #nk = int(nkppra/natoms)
-Nmesh=200    
+Nmesh=200
 
 #print 'Target N kpoints', Nmesh
 
@@ -236,17 +285,17 @@ A = lattice()
 K = lattice()
 
 ##############BCT lattice
-alat = 2*sqrt(5)
-ca = 11/3.
-clat = alat*ca
-#B.vecs = matrix((  
+#alat = 2*sqrt(5)
+#ca = 7/3.
+#clat = alat*ca
+#B.vecs = array((  
 #  [   -alat/2,  alat/2,   alat/2],
 #  [   alat/2,  -alat/2,   alat/2],
 #  [   clat/2,   clat/2,   -clat/2]
 #  ), dtype=float)
 
 
-#B.vecs = matrix((  #C axis along x !####
+#B.vecs = array((  #C axis along x !####
 #  [   -clat/2,  clat/2,   clat/2],
 #  [   alat/2,  -alat/2,   alat/2],
 #  [   alat/2,   alat/2,   -alat/2]
@@ -259,7 +308,7 @@ clat = alat*ca
 ############## Any lattice
 
 #crystal = [1,1,sqrt(2),90,90,120] # [a,b,c,alpha,beta,gamma]
-crystal = [1,2,3,20,30,40] # [a,b,c,alpha,beta,gamma]
+crystal = [1,3*sqrt(3),11*sqrt(2),90,90,90] # [a,b,c,alpha,beta,gamma]
 B.vecs = transpose(lattice_vecs(crystal))
 #############End BCT lattice
 eps = 1.0e-6
@@ -276,7 +325,7 @@ print 'Number of symmetry operations', B.nops
 #print 'symmetry operations of B\n'
 #for j in range(nopsB):
 #    print j
-#    op = matrix(symopsB[:,:,j])
+#    op = array(symopsB[:,:,j])
 #    print op
 #find real lattice
 A.vecs = trimSmall(transpose(inv(B.vecs)))
@@ -295,7 +344,7 @@ print 'symmetry operations R of A\n'
 testvecs = [];testindices = []
 for k in range(A.nops):
     print; print k
-    op = matrix(A.symops[:,:,k])
+    op = array(A.symops[:,:,k])
     print trimSmall(op)
     m = trimSmall(dot(dot(inv(A.vecs[:,:]), A.symops[:,:,k]),A.vecs[:,:])  ) 
     [vals,vecs]=eig(m); vecs = array(vecs)
@@ -324,7 +373,9 @@ if len(testvecs) == 0:
     print 'No eigen directions'
     K.vecs = unconstrainedSVsearch(B)
     if det(K.vecs)==0:
-        sys.exit('Det(K) is zero after unconstrained search')
+        sys.exit('Det(K) is zero after unconstrained search! Stop')
+    if not checksymmetry(K.vecs,B):
+        sys.exit('Symmetry missing in mesh! Stop')
 #    MT = unconstrainedmin(B.vecs)
 if len(testvecs) == 1:
     print 'Only 1 eigen direction'
@@ -334,7 +385,7 @@ if len(testvecs) == 1:
     #
     MT[:,0] = testvecs[0]
     k = testindices[0][0]
-    op = matrix(A.symops[:,:,k])
+    op = array(A.symops[:,:,k])
 #    print trimSmall(op)
     m = trimSmall(dot(dot(inv(A.vecs[:,:]), A.symops[:,:,k]),A.vecs[:,:])  ) 
     [vals,vecs]=eig(m); vecs = array(vecs)
@@ -351,7 +402,8 @@ if len(testvecs) == 1:
     MT[:,2] = rint(dot(inv(A.vecs),ur2))
 #    MT[:,2] = v2/abs(v2)[nonzero(v2)].min()  
     print 'MT from single operator';print MT
-    Q2 = MT2mesh_three_ns(MT,B)
+#    Q2 = MT2mesh_three_ns(MT,B)
+    Q2 = MT2mesh(MT,B)
     if checksymmetry(Q2,B):
         SV = surfvol(Q2)
         print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'  
@@ -369,7 +421,8 @@ if len(testvecs) == 2:
     ur2 = cross(ur0,ur1)
     MT[:,2] = rint(dot(inv(A.vecs),ur2))
     print 'MT from two eigen directions';print MT
-    Q2 = MT2mesh_three_ns(MT,B)
+#    Q2 = MT2mesh_three_ns(MT,B)
+    Q2 = MT2mesh(MT,B)
     if checksymmetry(Q2,B):
         SV = surfvol(Q2)
         print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'  
@@ -383,13 +436,15 @@ if len(testvecs) >= 3:
     bestindex = -1 
     bestSV = 1000 
     for i,vecs in enumerate(testvecstrials):
+        print; print 'trial',i
         MT[:,0] = vecs[0]
         MT[:,1] = vecs[1]
         MT[:,2] = vecs[2]
         print 'MT from three eigen directions';print MT
-    
+        print 'det MT', det(MT)
         if not isequal(det(MT),0):
-            Q2 = MT2mesh_one_n(MT,B)
+#            Q2 = MT2mesh_one_n(MT,B)
+            Q2 = MT2mesh(MT,B)
             if checksymmetry(Q2,B):
                 SV = surfvol(Q2)
                 if SV<bestSV: bestSV = SV; bestindex = i; K.vecs = Q2
@@ -398,12 +453,14 @@ if len(testvecs) >= 3:
                 print'Q fails symmetry'
     print '___________ Best mesh ___________'
     print 'trial', bestindex
-print K.vecs
-K.det = abs(det(K.vecs))
-print 'N of mesh', B.det/K.det
-SV = surfvol(K.vecs)
-print round(surfvol(K.vecs),4),round(orthdef(K.vecs),4),'SV of Q2,','OD' 
-
+    if checksymmetry(K.vecs,B):
+        print K.vecs
+        K.det = abs(det(K.vecs))
+        print 'N of mesh', B.det/K.det
+        SV = surfvol(K.vecs)
+        print round(surfvol(K.vecs),4),round(orthdef(K.vecs),4),'SV of Q2,','OD' 
+    else:
+        print'K mesh fails symmetry'    
 
 #sys.exit('stop')
 #
