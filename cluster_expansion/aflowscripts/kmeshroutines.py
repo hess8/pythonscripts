@@ -11,6 +11,10 @@ from random import random, randrange
 from ctypes import byref, cdll, c_double, c_int
 import time, os, subprocess, sys
 
+utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so') 
+#had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
+getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
+
 #def structures_dict():
 #    '''Dictionary for all 26 k-lattice cases in    
 #            Setyawan, Wahyu; Curtarolo, Stefano (2010). "High-throughput electronic band structure calculations:   
@@ -443,3 +447,132 @@ def checkq(user):
     #    print 'Locked files:' , locked   
         print
         time.sleep(waitMin*60) #seconds between checks
+        
+def load_ctypes_3x3_double(IN):
+    """Make a 3x3 array into the right thing for ctypes"""
+    a = ((c_double * 3) *3)()
+    for i in range(3):
+        for j in range(3):
+            a[i][j] = c_double(IN[i,j])
+    return a
+
+def unload_ctypes_3x3_double(OUT):
+    """Take a ctypes array and load it into a 3x3 python list"""
+    a = zeros((3,3))
+    for i in range(3):
+        for j in range(3):
+            a[i][j] = OUT[i][j]
+    return a
+
+def unload_ctypes_3x3xN_double(OUT,nops):
+    """Take a ctypes 1-dim array and load it into a 3x3xnops python list.  Couldn't get 
+    the 3x3xN to work"""
+    a = zeros((3,3,nops),dtype=np_float)
+    ielement = 0
+    for i in range(3):
+        for j in range(3):
+            for k in range(nops):                          
+                a[i,j,k] = OUT[ielement]
+                ielement += 1                 
+    return a
+
+def getGroup(latt):
+#    print "lattice in getGroup\n",latt
+    N = 3*3*48
+    opsOUT =(c_double * N)() 
+    NopsOUT =c_int(0) 
+    lattIN = load_ctypes_3x3_double(transpose(latt)) # for some reason going to Fortran gives the TRANSPOSE
+    eps = 1.0e-4
+    epsIN = c_double(eps)
+    getLatticePointGroup(byref(lattIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
+    nops = NopsOUT.value
+    symopsB = unload_ctypes_3x3xN_double(opsOUT,nops)
+    return [symopsB,nops]
+    
+      
+def checksymmetry(latt,parentlatt):
+    '''check that the lattice obeys all symmetry operations of a parent lattice:  R.latt.inv(R) will give an integer matrix'''
+    for iop in range(parentlatt.nops):
+        lmat = array(latt)
+        if det(lmat) == 0:
+            print 'Determinant zero'
+            print lmat    
+            return False
+        mmat = dot(dot(inv(lmat),parentlatt.symops[:,:,iop]),lmat)
+#        print 'mmat', iop
+#        print mmat
+        for i in range(3):
+            for j in range(3):
+                if abs(rint(mmat[i,j])-mmat[i,j])>1.0e-6:
+#                    print iop, 'Symmetry failed for mmat[i,j]',mmat[i,j]
+#                    print 'Cartesian operator' 
+#                    print parentlatt.symops[:,:,iop] 
+#                    print 'Cartesian Lattice'
+#                    print lmat
+#                    print 'transformed Cart operator' 
+#                    print mmat                                           
+                    return False #jumps out of subroutine
+    return True #passes test
+
+def nonDegen(vals):
+     '''Tests whether a vector has one unique element.  If so, returns the index'''
+     distinct = []
+     if isreal(vals[0]) and not isequal(vals[0],vals[1]) and not isequal(vals[0],vals[2]):
+         distinct.append(0)
+     if isreal(vals[1]) and not isequal(vals[1],vals[0]) and not isequal(vals[1],vals[2]):
+         distinct.append(1)
+     if isreal(vals[2]) and not isequal(vals[2],vals[0]) and not isequal(vals[2],vals[1]):
+         distinct.append(2)
+     return distinct    
+
+def matchDirection(vec,list):
+    '''if vec parallel or antiparallel to any vector in the list, don't include it'''
+    for vec2 in list:
+        if isequal(abs(cosvecs(vec,vec2)),1.0):
+            return True
+    return False
+   
+def MT2mesh(MT,B):
+    '''test which directions are free to adjust'''
+    Nmesh = B.Nmesh
+    testi = 7
+    freedir = []
+    Q = dot(B.vecs,transpose(inv(MT)))    
+    print 'starting mesh Q'; print Q
+    for i in range(3):
+        Qtest = dot(B.vecs,transpose(inv(MT)))
+        Qtest[:,i] = Qtest[:,i]/testi
+        if checksymmetry(Qtest,B): freedir.append(i)
+    print 'free directions', freedir
+    if len(freedir) == 0:
+        N2 = rint((Nmesh/abs(det(MT)))**(1/3.0))
+        ms = [N2,N2,N2]    
+    elif len(freedir) == 1:
+        #order so free dir is first in vecs
+        freeindex = freedir[0]
+        otherindices = nonzero(array([0,1,2])-freeindex)
+        vecs = zeros((3,3),dtype = float)
+        vecs[:,0] = B.vecs[:,freeindex]
+        vecs[:,1] = B.vecs[:,otherindices[0][0]]
+        vecs[:,2] = B.vecs[:,otherindices[0][1]]
+        [n0,n1]= svmesh1freedir(Nmesh/abs(det(MT)),vecs)
+        ms = [0,0,0]
+        ms[freeindex] = n0
+        ms[otherindices[0][0]] = n1
+        ms[otherindices[0][1]] = n1
+    elif len(freedir) == 3:      
+        mesh = svmesh(Nmesh/abs(det(MT)),Q)
+        ms = mesh[0]
+    else:
+        sys.exit('Error in MT2mesh; freedir has 2 elements, but not 3')
+    print 'mesh integers', ms      
+    Q[:,0] = Q[:,0]/ms[0]
+    Q[:,1] = Q[:,1]/ms[1]
+    Q[:,2] = Q[:,2]/ms[2]
+    if checksymmetry(Q,B):
+        return Q
+    else:
+        sys.exit('Symmetry fails in MT2mesh, STOP')
+     
+     
+

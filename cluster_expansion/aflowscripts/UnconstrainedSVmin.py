@@ -15,8 +15,6 @@ from ctypes import byref, cdll, c_double, c_int
 def isinteger(x):
     return equal(mod(x, 1), 0)
 
-
-
 def changewhich(M,B):
     bestgrad = 0
     bestdel = zeros((3,3),dtype=np_int)
@@ -42,12 +40,12 @@ def unconstrainedSVsearch(B):
     K = lattice();K.vecs = zeros((3,3),dtype=float)
     Nmesh = B.Nmesh
     M = zeros((3,3),dtype=np_int)
-    print 'Target N kpoints', Nmesh
+#    print 'Target N kpoints', Nmesh
     a = rint(Nmesh**(1/3.0)); c = a; f = int(Nmesh/a/c)
     M[0,0]= a
     M[1,1]= c
     M[2,2]= f
-    print 'Starting M'
+#    print 'Starting M'
     print M
     maxsteps = 1000
     istep = 1
@@ -63,14 +61,14 @@ def unconstrainedSVsearch(B):
     if istep < maxsteps:
         print
         print 'Found minimum after %i steps' % istep
-        print 'Best M'; print M
+#        print 'Best M'; print M
         K = lattice();K.vecs = B.vecs*inv(M); K.det = det(K.vecs)
-        print 'Best K mesh\n', K.vecs
-        print 'Number of mesh points', B.det/K.det
-        print 'Minimum cost', newcost
-        print 'Orth defect',orthdef(K.vecs)
-        print 'Surface/vol', surfvol(K.vecs)
-        print 'Mesh vector lengths', norm(K.vecs[:,0]),norm(K.vecs[:,1]),norm(K.vecs[:,2])
+#        print 'Best K mesh\n', K.vecs
+#        print 'Number of mesh points', B.det/K.det
+#        print 'Minimum cost', newcost
+#        print 'Orth defect',orthdef(K.vecs)
+#        print 'Surface/vol', surfvol(K.vecs)
+#        print 'Mesh vector lengths', norm(K.vecs[:,0]),norm(K.vecs[:,1]),norm(K.vecs[:,2])
     
     else:
         print 'Ended without minimum after maximum %i steps' % istep
