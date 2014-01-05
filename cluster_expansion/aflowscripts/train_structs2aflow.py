@@ -21,11 +21,16 @@ def aflowCreateJobs(structs,atomic,finalDir):
             sublist = structs[i*nsubmit:]
         strucstr = ''
         for struc in sublist:
-#            strucstr += 'f%s,'% struc
-            strucstr += 'h%s,'% struc
+            strucstr += 'f%s,'% struc
+#            strucstr += 'h%s,'% struc
+            
         try:
-            commstr= 'aconvasp --aflow_proto ' + strucstr+ ':%s' % atomic
+            'aconvasp --proto=f1:Ag:Zr | aconvasp --poscar>POSCAR'
+#            commstr= 'aconvasp --aflow_proto ' + strucstr+ ':%s' % atomic 
+            commstr2= 'aconvasp --proto=%s:%s | aconvasp --poscar>POSCAR' % (strucstr,atomic)   #for POSCAR creation         
+#            commstr= 'aconvasp --aflow_proto ' + strucstr+ ':%s' % atomic
             os.system(commstr)
+            os.system(commstr2)
         except:
             print 'Error in executing %s' % commstr
     os.system('cp -r AFLOWDATA/* %s' % finalDir)
@@ -40,9 +45,10 @@ def otherPrep():
 #filename='training_set_structures.dat'
 #filename='f11000.dat'
 filename='h1_50.dat'
-mainDir = '/fslhome/bch/cluster_expansion/hexagonal/'
+mainDir = '/fslhome/bch/cluster_expansion/alir/'
+#mainDir = '/fslhome/bch/cluster_expansion/hexagonal/'
 #finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
-finalDir = '/fslhome/bch/cluster_expansion/hexagonal/h1_50/'
+finalDir = '/fslhome/bch/cluster_expansion/alir/h1_50b/'
 if not os.path.isdir(finalDir):
     os.system('mkdir %s' % finalDir)
 atomic = 'Al:Ir'

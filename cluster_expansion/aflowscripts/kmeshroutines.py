@@ -2,7 +2,7 @@
 ################# functions #######################
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round
-from numpy import zeros 
+from numpy import zeros, nonzero
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
 from numpy import int as np_int
@@ -90,7 +90,7 @@ def irratcheck(ratios,mlist):
         for i,x in enumerate(ratios):
             if intcheck(x*sqr) or intcheck(x/sqr) or intcheck(sqr/x) or intcheck((1/x*sqr)):
                 irrat = irrat+'sqrt%i ' % m
-                print 'sqrt%i ' % m, x
+#                print 'sqrt%i ' % m, x
     return irrat
 
 def abcalbega_latt(lvecs):
@@ -137,6 +137,7 @@ def readposcar(filename, path):
 
 
 def aflow2poscar(path):
+    '''Use POSCAR convention of vectors as rows'''
     file1 = open(path+'aflow.in','r')
     aflowin = file1.readlines()
     file1.close()
@@ -162,11 +163,11 @@ def aflow2poscar(path):
     print 'Lattice from aflow.in a,b,c alpha,beta,gamma > POSCAR0'
     print reallatt
     print
-    reciplatt = 2*pi*transpose(linalg.inv(reallatt))
+    reciplatt = 2*pi*transpose(inv(reallatt))
     print 'reciprocal lattice vectors'
     print reciplatt   
 #    #test
-#    print
+#    prints
 #    print 'recip lattice traditional'
 #    reciplatt2 = array(lattice_vecs(cryststruc)).astype(float)
 #    a0 = reallatt[:,0]
@@ -178,7 +179,7 @@ def aflow2poscar(path):
 #    reciplatt2[:,2] = 2*pi*cross(a0,a1)/vol
 #    print reciplatt2   
 #    # end test
-    natoms = array(aflowin[istart+3].split(),dtype=int16)
+    natoms = array(aflowin[istart+3].split(),dtype=int)
     totatoms=sum(natoms)
     positions = zeros((totatoms,3),dtype=float)
     postype = aflowin[istart+4] #Direct or Cartesian
@@ -271,7 +272,7 @@ def svmesh(N,vecs):
     '''N: points desired, when all three directions are free of constraints on its magnitude vs other directions.  
     Vecs the lattice vectors as numpy array (reciprocal here)
     output:  n0, n1, n2, the number of divisions along each RLV for the mesh'''
-    print 'vecs in svmesh', vecs
+#    print 'vecs in svmesh', vecs
     u = norm(cross(vecs[:,0],vecs[:,1]))
     v = norm(cross(vecs[:,1],vecs[:,2]))
     w = norm(cross(vecs[:,2],vecs[:,0]))
@@ -279,17 +280,17 @@ def svmesh(N,vecs):
     n1 = N**(1/3.0) * u**(1/3.0) * v**(1/3.0) / w**(2/3.0)
     n2 = N**(1/3.0) * v**(1/3.0) * w**(1/3.0) / u**(2/3.0)
     ns = array([n0,n1,n2])
-    print 'n0,n1,n2 from min s/v'
-    print ns
-    print
+#    print 'n0,n1,n2 from min s/v'
+#    print ns
+#    print
 
     p = n1/n0
     q = n2/n1
     r = n0/n2
     pqr = [p,q,r]
-    print 'ratios n1/n0, n2/n1, n0/n2' 
-    print pqr
-    print
+#    print 'ratios n1/n0, n2/n1, n0/n2' 
+#    print pqr
+#    print
     primes = [2,3,5,7,11,13,17,19,23,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97,101]
     irrat = irratcheck(pqr,primes)
 
@@ -339,7 +340,6 @@ def svmesh(N,vecs):
     if Nrels == 2:#relations either point away from the smallest or toward the largest n
         zindex = PQR.index(0)#find the triangle side with no multiple relation.
         mpivot = icy(zindex,-1)#the vertex opposite a side is -1 away
-        print 'mpivot',mpivot
         if mpivot == argmax(abs(ns)):
             nmax = max(abs(ns))
             imax = mpivot #index of largest n.  Create m from this first
@@ -348,7 +348,7 @@ def svmesh(N,vecs):
             ms[imax] = r1 * r2 * int(rint(nmax/r1/r2))
             ms[icy(imax,-1)] = ms[imax]/r1
             ms[icy(imax,1)] = ms[imax]/r2  
-        if  mpivot == argmin(abs(ns)):
+        if mpivot == argmin(abs(ns)):
             nmin = min(abs(ns))
             imin = mpivot #index of largest n.  Create m from this first
             r1 = abs(PQR[icy(imin,-1)])
@@ -362,7 +362,6 @@ def svmesh(N,vecs):
         imax = argmax(abs(ns)) #index of largest n.  Create m from this first
         r1 = abs(PQR[icy(imax,-1)])
         r2 = abs(PQR[imax])
-        print PQR,r1, r2
         ms[imax] = r1 * r2 * int(rint(nmax/r1/r2))
         ms[icy(imax,-1)] = ms[imax]/r1
         ms[icy(imax,1)] = ms[imax]/r2
@@ -569,10 +568,9 @@ def MT2mesh(MT,B):
     Q[:,0] = Q[:,0]/ms[0]
     Q[:,1] = Q[:,1]/ms[1]
     Q[:,2] = Q[:,2]/ms[2]
-    if checksymmetry(Q,B):
-        return Q
-    else:
-        sys.exit('Symmetry fails in MT2mesh, STOP')
+    return Q
+#    if checksymmetry(Q,B):
+
      
      
 

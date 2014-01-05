@@ -5,19 +5,15 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
     orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs,  \
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection
-from UnconstrainedSVmin import unconstrainedSVsearch
+    
+from unconstrainedSVmin import unconstrainedSVsearch
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import transpose,rint,inner,multiply,size,argmin,nonzero
 from numpy import zeros #use arrays, not "matrix" class
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
-from numpy import int as np_int
-from numpy import float as np_float
-from random import random, randrange
-from ctypes import byref, cdll, c_double, c_int
 from itertools import combinations
-
 
 '''The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
 So K = B Inv(M) .  Work in the inverse space of this problem, where we can work with M instead of Inv(M). 
@@ -33,25 +29,26 @@ Minimization scheme'''
 #natoms = 3
 #nkppra = 10000
 #nk = int(nkppra/natoms)
-Nmesh=400
+Nmesh=1500
 
 #print 'Target N kpoints', Nmesh
 
-M = zeros((3,3),dtype = np_int)
-S = zeros((3,3),dtype = np_float)
+M = zeros((3,3),dtype = int)
+S = zeros((3,3),dtype = float)
 B = lattice()
 A = lattice()
 K = lattice()
 
 ##############BCT lattice
-#alat = 2*sqrt(5)
+alat = 2*sqrt(5)
 #ca = 7/3.
-#clat = alat*ca
-#B.vecs = array((  
-#  [   -alat/2,  alat/2,   alat/2],
-#  [   alat/2,  -alat/2,   alat/2],
-#  [   clat/2,   clat/2,   -clat/2]
-#  ), dtype=float)
+ca = 1.0
+clat = alat*ca
+B.vecs = array((  
+  [   -alat/2,  alat/2,   alat/2],
+  [   alat/2,  -alat/2,   alat/2],
+  [   clat/2,   clat/2,   -clat/2]
+  ), dtype=float)
 
 
 #B.vecs = array((  #C axis along x !####
@@ -60,6 +57,13 @@ K = lattice()
 #  [   alat/2,   alat/2,   -alat/2]
 #  ), dtype=float)
 
+
+#B.vecs = array((   #F1, simple FCC)
+#[ 1.7965237,   0.89826185,  0.89826185],
+# [ 0.,          1.55583517,  0.51861172],
+# [ 0. ,         0.,        1.46685546]
+# ), dtype=float)
+
 #print 'B vectors before inverse and transpose';print B.vecs
 #B.vecs = trimSmall(transpose(inv(B.vecs)))
 #############End BCT lattice
@@ -67,14 +71,16 @@ K = lattice()
 ############## Any lattice
 
 #crystal = [1,1,sqrt(2),90,90,120] # [a,b,c,alpha,beta,gamma]
-crystal = [1,3*sqrt(3),11*sqrt(2),90,90,90] # [a,b,c,alpha,beta,gamma]
-B.vecs = transpose(lattice_vecs(crystal))
+#crystal = [2,3*sqrt(3),11*sqrt(2),90,90,20] # [a,b,c,alpha,beta,gamma]
+#crystal = [2,2,2,80,80,80] # [a,b,c,alpha,beta,gamma]
+
+#B.vecs = transpose(lattice_vecs(crystal))
 #############End BCT lattice
 eps = 1.0e-6
 B.det = det(B.vecs)
 B.Nmesh = Nmesh
 print 'B vectors';print B.vecs
-print 'B transpose'; print transpose(B.vecs)
+#print 'B transpose'; print transpose(B.vecs)
 print 'Det of B', B.det
 print 'Orth Defect of B', orthdef(B.vecs)
 print 'Surf/vol of B', surfvol(B.vecs)
@@ -90,7 +96,7 @@ print 'Number of symmetry operations', B.nops
 A.vecs = trimSmall(transpose(inv(B.vecs)))
 A.det = det(A.vecs)
 A.Nmesh = Nmesh
-print 'A vectors';print A.vecs
+print;print 'A vectors';print A.vecs
 print 'Det of A', A.det
 print 'Orth Defect of A', orthdef(A.vecs)
 print 'Surf/vol of A', surfvol(A.vecs)
@@ -107,26 +113,26 @@ for k in range(A.nops):
     print trimSmall(op)
     m = trimSmall(dot(dot(inv(A.vecs[:,:]), A.symops[:,:,k]),A.vecs[:,:])  ) 
     [vals,vecs]=eig(m); vecs = array(vecs)
-#    print 'symop m'; print m
-#
-#    print 'det(m)', det(m)
+    print 'symop m'; print m
+
+    print 'det(m)', det(m)
     print 'eigen of m',vals
     print vecs
+    print 'as rows, scaled to integers'
     print vecs[:,0]/abs(vecs[:,0])[nonzero(vecs[:,0])].min()
     print vecs[:,1]/abs(vecs[:,1])[nonzero(vecs[:,1])].min()
     print vecs[:,2]/abs(vecs[:,2])[nonzero(vecs[:,2])].min()
     
     #find operations with nondegenerate real eigenvalues
-    print 'nonDegen', nonDegen(vals)
+#    print 'nonDegen', nonDegen(vals)
     for i in nonDegen(vals):
         if not matchDirection(transpose(vecs[:,i]),testvecs): #keep only unique directions    
             testvecs.append(vecs[:,i].real/abs(vecs[:,i])[nonzero(vecs[:,i])].min())
             testindices.append([k,i])
 #print; print oplist;
-print testvecs
-print testindices
-MT = zeros((3,3),dtype = np_int)
-
+#print testvecs
+#print testindices
+MT = zeros((3,3),dtype = int)
 
 if len(testvecs) == 0:
     print 'No eigen directions'
@@ -148,24 +154,21 @@ if len(testvecs) == 1:
 #    print trimSmall(op)
     m = trimSmall(dot(dot(inv(A.vecs[:,:]), A.symops[:,:,k]),A.vecs[:,:])  ) 
     [vals,vecs]=eig(m); vecs = array(vecs)
-    print vecs
+#    print vecs
     otherindices = nonzero(array([0,1,2])-k)
-    print otherindices[0]
     v1 = vecs[otherindices[0][0]]
-    v2 = vecs[otherindices[0][1]]
     MT[:,1] = v1/abs(v1)[nonzero(v1)].min()
     #Make 3rd vector perp as possible to the other two 
     ur0 = dot(A.vecs,MT[:,0])/norm(dot(A.vecs,MT[:,0])) #unit vector in real space
     ur1 = dot(A.vecs,MT[:,1])/norm(dot(A.vecs,MT[:,1]))
     ur2 = cross(ur0,ur1)
     MT[:,2] = rint(dot(inv(A.vecs),ur2))
-#    MT[:,2] = v2/abs(v2)[nonzero(v2)].min()  
     print 'MT from single operator';print MT
 #    Q2 = MT2mesh_three_ns(MT,B)
     Q2 = MT2mesh(MT,B)
     if checksymmetry(Q2,B):
         SV = surfvol(Q2)
-        print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'  
+#        print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'  
         K.vecs = Q2                
     else:
         print'Q fails symmetry'    
@@ -191,31 +194,32 @@ if len(testvecs) == 2:
                     
 if len(testvecs) >= 3:
     testvecstrials = [list(x) for x in combinations(testvecs,3)]
-    print testvecstrials    
+#    print testvecstrials    
     bestindex = -1 
-    bestSV = 1000 
+    bestcost = 1000 
     for i,vecs in enumerate(testvecstrials):
         print; print 'trial',i
         MT[:,0] = vecs[0]
         MT[:,1] = vecs[1]
         MT[:,2] = vecs[2]
         print 'MT from three eigen directions';print MT
-        print 'det MT', det(MT)
+#        print 'det MT', det(MT)
         if not isequal(det(MT),0):
             Q2 = MT2mesh(MT,B)
             if checksymmetry(Q2,B):
-                SV = surfvol(Q2)
-                if SV<bestSV: bestSV = SV; bestindex = i; K.vecs = Q2
-                print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'                  
+                Nscale =1*.8; Ncost = Nscale * abs((B.det/det(Q2))-B.Nmesh)/B.Nmesh 
+                cost = surfvol(Q2)*(1+Ncost)
+                if cost<bestcost: bestcost = cost; bestindex = i; K.vecs = Q2
+#                print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'                  
             else:
                 print'Q fails symmetry'
     print '___________ Best mesh ___________'
     print 'trial', bestindex
-    if checksymmetry(K.vecs,B):
-        print K.vecs
-        K.det = abs(det(K.vecs))
-        print 'N of mesh', B.det/K.det
-        SV = surfvol(K.vecs)
-        print round(surfvol(K.vecs),4),round(orthdef(K.vecs),4),'SV of Q2,','OD' 
-    else:
-        print'K mesh fails symmetry'    
+if checksymmetry(K.vecs,B):
+    print K.vecs
+    K.det = abs(det(K.vecs))
+    print 'N of mesh', B.det/K.det
+    SV = surfvol(K.vecs)
+    print round(surfvol(K.vecs),4),round(orthdef(K.vecs),4),'SV of Q2,','OD' 
+else:
+    print'K mesh fails symmetry'    
