@@ -121,8 +121,8 @@ def readposcar(filename, path):
     reallatt[:,2] = array(poscar[4].split())
     reallatt = reallatt.astype(float)
     reallatt = scale*reallatt
-    reciplatt = 2*pi*transpose(linalg.inv(reallatt))
-    natoms = array(poscar[5].split(),dtype=int16)
+    reciplatt = 2*pi*transpose(inv(reallatt))
+    natoms = array(poscar[5].split(),dtype=int)
     totatoms=sum(natoms)
     positions = zeros((totatoms,3),dtype=float)
     postype = poscar[6] #Direct or Cartesian

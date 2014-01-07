@@ -6,7 +6,7 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection
     
-from nconstrainedSVmin import unconstrainedSVsearch
+from unconstrainedSVmin import unconstrainedSVsearch
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import transpose,rint,inner,multiply,size,argmin,nonzero

@@ -14,8 +14,6 @@ for dir in dirs:
     os.system(commstr2)
     os.chdir(maindir)
 
-
-
 ################## functions #######################
 #def readTrainStruc(dir,filename):
 #    os.chdir(dir)
