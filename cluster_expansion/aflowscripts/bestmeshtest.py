@@ -3,10 +3,11 @@
 '''
     
 import sys,os,subprocess
-from numpy import zeros, transpose, array,sum
+from numpy import zeros,transpose,array,sum,float64
 import kmeshroutines as km
 from kmeshroutines import nstrip
 from bestmesh import bestmesh
+fprec=float64
 #from poscar import POSCAR as POSCAR 
 
 def check_out(command):
@@ -19,7 +20,8 @@ def check_out(command):
    
 ################# script #######################
 
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
 testfile = 'POSCAR'
 Nkppra = 10000
 
@@ -41,26 +43,4 @@ for dir in dirs:
         Nmesh = Nkppra/totatoms
         bestmesh(reciplatt,Nmesh)
 
-       
-
-#        print 'lattice from aconvasp --sprim < POSCAR0 > POSCAR'
-##        print 'lattice from aconvasp --sprim < POSCAR0 > POSCAR'
-#        print latticevecs
-#        print
-#        print 'reciprocal lattice vectors'
-#        print reciplatt
-#        print
-#        reciplatt = array((pos.bvecs[0],pos.bvecs[1],pos.bvecs[2]))
-#        print reciplatt
-##        print 'bvecs'
-##        print pos.bvecs
-##        print pos.bvecs[1,:]   
-#        [mesh_ns, irrat] = km.svmesh(N,pos.bvecs)        
-#        [mesh_ns, irrat] = km.svmesh(N,reciplatt)
-##        km.writekpts_vasp(dir,mesh_ns) #correct kmesh
-#        print mesh_ns, 's/v method'
-#        if len(irrat)>0:
-#            print dir, irrat 
-                        
- 
 print 'Done'

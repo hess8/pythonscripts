@@ -2,11 +2,11 @@
 ################# functions #######################
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round
-from numpy import zeros, nonzero
+from numpy import zeros,nonzero,float64
+fprec=float64
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
 from numpy import int as np_int
-from numpy import float as np_float
 from random import random, randrange
 from ctypes import byref, cdll, c_double, c_int
 import time, os, subprocess, sys
@@ -37,7 +37,7 @@ def isindependent(vec1,vec2):
     return not isequal(abs(cosvecs(vec1,vec2)),1)
 
 def trimSmall(mat):
-    low_values_indices = abs(mat) < 1.0e-6
+    low_values_indices = abs(mat) < 1.0e-5
     mat[low_values_indices] = 0.0
     return mat
 
@@ -114,11 +114,11 @@ def readposcar(filename, path):
     file1.close()
     descriptor = nstrip(poscar)[0]
     scale = float(nstrip(poscar)[1])
-    reallatt = zeros((3,3),dtype=float)
+    reallatt = zeros((3,3),dtype=fprec)
     reallatt[:,0] = array(poscar[2].split())
     reallatt[:,1] = array(poscar[3].split())
     reallatt[:,2] = array(poscar[4].split())
-#    reallatt = reallatt.astype(float)
+#    reallatt = reallatt.astype(fprec)
 #    print reallatt
     if scale < 0:
         vol = det(reallatt)
@@ -129,7 +129,7 @@ def readposcar(filename, path):
     reciplatt = 2*pi*transpose(inv(reallatt))
     natoms = array(poscar[5].split(),dtype=int)
     totatoms=sum(natoms)
-    positions = zeros((totatoms,3),dtype=float)
+    positions = zeros((totatoms,3),dtype=fprec)
     postype = poscar[6] #Direct or Cartesian
     whichatom = 0
     for natom in natoms:
@@ -154,14 +154,14 @@ def aflow2poscar(path):
     scale = float(nstrip(aflowin)[istart+1])
     if scale < 0:
         scale = (-scale)**(1/3.0)
-    cryststruc = array(aflowin[istart+2].split(), dtype=float)
+    cryststruc = array(aflowin[istart+2].split(), dtype=fprec)
 #    print scale
 #    print cryststruc
     cryststruc[0:3] = scale*cryststruc[0:3]
     scale = 1.0 #since we put it into real lattice above
     print 'original a,b,c, alpha, beta, gamma'
     print cryststruc
-    reallatt =  array(lattice_vecs(cryststruc)).astype(float)
+    reallatt =  array(lattice_vecs(cryststruc)).astype(fprec)
     print 'reordered new lattice: a,b,c, alpha, beta, gamma'
     print abcalbega_latt(reallatt)
 
@@ -174,7 +174,7 @@ def aflow2poscar(path):
 #    #test
 #    prints
 #    print 'recip lattice traditional'
-#    reciplatt2 = array(lattice_vecs(cryststruc)).astype(float)
+#    reciplatt2 = array(lattice_vecs(cryststruc)).astype(fprec)
 #    a0 = reallatt[:,0]
 #    a1 = reallatt[:,1]
 #    a2 = reallatt[:,2]
@@ -186,7 +186,7 @@ def aflow2poscar(path):
 #    # end test
     natoms = array(aflowin[istart+3].split(),dtype=int)
     totatoms=sum(natoms)
-    positions = zeros((totatoms,3),dtype=float)
+    positions = zeros((totatoms,3),dtype=fprec)
     postype = aflowin[istart+4] #Direct or Cartesian
     where = 0
     for natom in natoms:
@@ -471,7 +471,7 @@ def unload_ctypes_3x3_double(OUT):
 def unload_ctypes_3x3xN_double(OUT,nops):
     """Take a ctypes 1-dim array and load it into a 3x3xnops python list.  Couldn't get 
     the 3x3xN to work"""
-    a = zeros((3,3,nops),dtype=np_float)
+    a = zeros((3,3,nops),dtype=fprec)
     ielement = 0
     for i in range(3):
         for j in range(3):
@@ -539,7 +539,7 @@ def matchDirection(vec,list):
 def MT2mesh(MT,B):
     '''test which directions are free to adjust'''
     Nmesh = B.Nmesh
-    testi = 7
+    testi = 3.0
     freedir = []
     Q = dot(B.vecs,transpose(inv(MT)))    
     print 'starting mesh Q'; print trimSmall(Q)
@@ -555,10 +555,10 @@ def MT2mesh(MT,B):
         #order so free dir is first in vecs
         freeindex = freedir[0]
         otherindices = nonzero(array([0,1,2])-freeindex)
-        vecs = zeros((3,3),dtype = float)
-        vecs[:,0] = B.vecs[:,freeindex]
-        vecs[:,1] = B.vecs[:,otherindices[0][0]]
-        vecs[:,2] = B.vecs[:,otherindices[0][1]]
+        vecs = zeros((3,3),dtype = fprec)
+        vecs[:,0] = Q[:,freeindex]
+        vecs[:,1] = Q[:,otherindices[0][0]]
+        vecs[:,2] = Q[:,otherindices[0][1]]
         [n0,n1]= svmesh1freedir(Nmesh/abs(det(MT)),vecs)
         print [n0,n1]
         ms = [0,0,0]
@@ -568,7 +568,16 @@ def MT2mesh(MT,B):
     elif len(freedir) == 3:      
         mesh = svmesh(Nmesh/abs(det(MT)),Q)
         ms = mesh[0]
-    else:
+    else: #should not occur
+        Qtest = dot(B.vecs,transpose(inv(MT)))
+        Qtest[:,0] = Qtest[:,0]*1
+        Qtest[:,1] = Qtest[:,1]*1
+        Qtest[:,2] = Qtest[:,2]*1
+        print checksymmetry(Qtest,B)  
+#        if not checksymmetry(Qtest,B):
+        print 'B lattice transpose';print 10*transpose(B.vecs)
+        print 'Q mesh transpose';print 10*transpose(Qtest)
+          
         sys.exit('Error in MT2mesh; freedir has 2 elements, but not 3')
     print 'mesh integers', ms      
     Q[:,0] = Q[:,0]/ms[0]

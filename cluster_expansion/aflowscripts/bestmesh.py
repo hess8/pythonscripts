@@ -9,7 +9,8 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
 from unconstrainedSVmin import unconstrainedSVsearch
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
-from numpy import transpose,rint,inner,multiply,size,argmin,nonzero
+from numpy import transpose,rint,inner,multiply,size,argmin,nonzero,float64
+fprec=float64
 from numpy import zeros #use arrays, not "matrix" class
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
@@ -26,15 +27,9 @@ def bestmesh(Blatt,Nmesh):
     
     ##############################################################
     ########################## Script ############################
-    
-    #natoms = 3
-    #nkppra = 10000
-    #nk = int(nkppra/natoms)
-    
-    #print 'Target N kpoints', Nmesh
-    
+   
     M = zeros((3,3),dtype = int)
-    S = zeros((3,3),dtype = float)
+    S = zeros((3,3),dtype = fprec)
     B = lattice()
     A = lattice()
     K = lattice()
@@ -100,7 +95,7 @@ def bestmesh(Blatt,Nmesh):
     #print; print oplist;
     print 'testvecs'; print testvecs
     #print testindices
-    MT = zeros((3,3),dtype = float)
+    MT = zeros((3,3),dtype = fprec)
     
     if len(testvecs) == 0:
         print 'No eigen directions'
