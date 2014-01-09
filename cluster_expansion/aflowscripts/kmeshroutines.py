@@ -537,19 +537,20 @@ def matchDirection(vec,list):
     return False
    
 def MT2mesh(MT,B):
-    '''test which directions are free to adjust'''
+    '''tests which directions are free to adjust, and chooses best mesh'''
     Nmesh = B.Nmesh
-    testi = 3.0
+    testi = 7.0
     freedir = []
-    Q = dot(B.vecs,transpose(inv(MT)))    
+    M = transpose(MT)
+    Q = dot(B.vecs,inv(M))    
     print 'starting mesh Q'; print trimSmall(Q)
     for i in range(3):
-        Qtest = dot(B.vecs,transpose(inv(MT)))
+        Qtest = dot(B.vecs,inv(M))
         Qtest[:,i] = Qtest[:,i]/testi
         if checksymmetry(Qtest,B): freedir.append(i)
     print 'free directions', freedir
     if len(freedir) == 0:
-        N2 = rint((Nmesh/abs(det(MT)))**(1/3.0))
+        N2 = rint((Nmesh/abs(det(M)))**(1/3.0))
         ms = [N2,N2,N2]    
     elif len(freedir) == 1:
         #order so free dir is first in vecs
@@ -559,24 +560,24 @@ def MT2mesh(MT,B):
         vecs[:,0] = Q[:,freeindex]
         vecs[:,1] = Q[:,otherindices[0][0]]
         vecs[:,2] = Q[:,otherindices[0][1]]
-        [n0,n1]= svmesh1freedir(Nmesh/abs(det(MT)),vecs)
+        [n0,n1]= svmesh1freedir(Nmesh/abs(det(M)),vecs)
         print [n0,n1]
         ms = [0,0,0]
         ms[freeindex] = n0
         ms[otherindices[0][0]] = n1
         ms[otherindices[0][1]] = n1
-    elif len(freedir) == 3:      
-        mesh = svmesh(Nmesh/abs(det(MT)),Q)
+    elif len(freedir) == 3:   
+        mesh = svmesh(Nmesh/abs(det(M)),Q)
         ms = mesh[0]
     else: #should not occur
-        Qtest = dot(B.vecs,transpose(inv(MT)))
-        Qtest[:,0] = Qtest[:,0]*1
-        Qtest[:,1] = Qtest[:,1]*1
-        Qtest[:,2] = Qtest[:,2]*1
-        print checksymmetry(Qtest,B)  
-#        if not checksymmetry(Qtest,B):
-        print 'B lattice transpose';print 10*transpose(B.vecs)
-        print 'Q mesh transpose';print 10*transpose(Qtest)
+#        Qtest = dot(B.vecs,transpose(inv(MT)))
+#        Qtest[:,0] = Qtest[:,0]*1
+#        Qtest[:,1] = Qtest[:,1]*1
+#        Qtest[:,2] = Qtest[:,2]*1
+#        print checksymmetry(Qtest,B)  
+##        if not checksymmetry(Qtest,B):
+#        print 'B lattice transpose';print 10*transpose(B.vecs)
+#        print 'Q mesh transpose';print 10*transpose(Qtest)
           
         sys.exit('Error in MT2mesh; freedir has 2 elements, but not 3')
     print 'mesh integers', ms      
@@ -585,7 +586,3 @@ def MT2mesh(MT,B):
     Q[:,2] = Q[:,2]/ms[2]
     return Q
 #    if checksymmetry(Q,B):
-
-     
-     
-

@@ -27,7 +27,7 @@ Nkppra = 10000
 
 #reallatt = zeros((3,3))
 os.chdir(maindir)
-dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
+dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 for dir in dirs:
     if testfile in os.listdir(dir):
 #        print
