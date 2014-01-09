@@ -38,35 +38,8 @@ def bestmesh(Blatt,Nmesh):
     B = lattice()
     A = lattice()
     K = lattice()
-    
-    ##############BCT lattice
-    alat = 2*sqrt(5)
-    ca = 7/3.
-    clat = alat*ca
-    #B.vecs = array((  
-    #  [   -alat/2,  alat/2,   alat/2],
-    #  [   alat/2,  -alat/2,   alat/2],
-    #  [   clat/2,   clat/2,   -clat/2]
-    #  ), dtype=float)
-    
-    
-    #B.vecs = array((  #C axis along x !####
-    #  [   -clat/2,  clat/2,   clat/2],
-    #  [   alat/2,  -alat/2,   alat/2],
-    #  [   alat/2,   alat/2,   -alat/2]
-    #  ), dtype=float)
-    
-    #print 'B vectors before inverse and transpose';print B.vecs
-    #B.vecs = trimSmall(transpose(inv(B.vecs)))
-    #############End BCT lattice
-    
-    ############## Any lattice
-    
-    #crystal = [1,1,sqrt(2),90,90,120] # [a,b,c,alpha,beta,gamma]
-    crystal = [2,3*sqrt(3),11*sqrt(2),90,90,20] # [a,b,c,alpha,beta,gamma]
-    #crystal = [2,2,2,80,80,80] # [a,b,c,alpha,beta,gamma]
-    
-    B.vecs = transpose(lattice_vecs(crystal))
+       
+    B.vecs = Blatt/2/pi  #Don't use 2pi constants in RL here.
     #############End BCT lattice
     eps = 1.0e-6
     B.det = det(B.vecs)
@@ -97,34 +70,37 @@ def bestmesh(Blatt,Nmesh):
     if A.nops != B.nops: 
         sys.exit('Number of operations different for A and B; stop')
     
-    print 'symmetry operations R of A\n'
+
     testvecs = [];testindices = []
+#    print 'symmetry operations R of A\n'
     for k in range(A.nops):
-        print; print k
+        print 
+        print k
         op = array(A.symops[:,:,k])
         print trimSmall(op)
         m = trimSmall(dot(dot(inv(A.vecs[:,:]), A.symops[:,:,k]),A.vecs[:,:])  ) 
         [vals,vecs]=eig(m); vecs = array(vecs)
-        print 'symop m'; print m
-    
-        print 'det(m)', det(m)
+        print'symop m',k; print m
+#    
+#        print 'det(m)', det(m)
         print 'eigen of m',vals
         print vecs
-        print 'as rows, scaled to integers'
-        print vecs[:,0]/abs(vecs[:,0])[nonzero(vecs[:,0])].min()
-        print vecs[:,1]/abs(vecs[:,1])[nonzero(vecs[:,1])].min()
-        print vecs[:,2]/abs(vecs[:,2])[nonzero(vecs[:,2])].min()
+        print 'scaled to integers'
+        vecs[:,0] = vecs[:,0]/abs(vecs[:,0])[nonzero(vecs[:,0])].min()
+        vecs[:,1] = vecs[:,1]/abs(vecs[:,1])[nonzero(vecs[:,1])].min()
+        vecs[:,2] = vecs[:,2]/abs(vecs[:,2])[nonzero(vecs[:,2])].min()
+        print vecs
         
         #find operations with nondegenerate real eigenvalues
-    #    print 'nonDegen', nonDegen(vals)
+        print 'nonDegen', nonDegen(vals)
         for i in nonDegen(vals):
             if not matchDirection(transpose(vecs[:,i]),testvecs): #keep only unique directions    
                 testvecs.append(vecs[:,i].real/abs(vecs[:,i])[nonzero(vecs[:,i])].min())
                 testindices.append([k,i])
     #print; print oplist;
-    #print testvecs
+    print 'testvecs'; print testvecs
     #print testindices
-    MT = zeros((3,3),dtype = int)
+    MT = zeros((3,3),dtype = float)
     
     if len(testvecs) == 0:
         print 'No eigen directions'
@@ -141,20 +117,31 @@ def bestmesh(Blatt,Nmesh):
         #of eigenvectors of , 
         #
         MT[:,0] = testvecs[0]
-        k = testindices[0][0]
-        op = array(A.symops[:,:,k])
+#        print 'testindices',testindices
+        kop = testindices[0][0] #useful operator 
+        ivec = testindices[0][1] #index of the only eigendirection 
+        op = array(A.symops[:,:,kop])
     #    print trimSmall(op)
-        m = trimSmall(dot(dot(inv(A.vecs[:,:]), A.symops[:,:,k]),A.vecs[:,:])  ) 
+        m = trimSmall(dot(dot(inv(A.vecs[:,:]), A.symops[:,:,kop]),A.vecs[:,:])  ) 
         [vals,vecs]=eig(m); vecs = array(vecs)
-    #    print vecs
-        otherindices = nonzero(array([0,1,2])-k)
+#        print vecs
+        otherindices = nonzero(array([0,1,2])-ivec)
+#        print kop
+#        print otherindices
         v1 = vecs[otherindices[0][0]]
         MT[:,1] = v1/abs(v1)[nonzero(v1)].min()
         #Make 3rd vector perp as possible to the other two 
-        ur0 = dot(A.vecs,MT[:,0])/norm(dot(A.vecs,MT[:,0])) #unit vector in real space
+        ur0 = dot(A.vecs,MT[:,0])/norm(dot(A.vecs,MT[:,0])) #unit vectors in real space
         ur1 = dot(A.vecs,MT[:,1])/norm(dot(A.vecs,MT[:,1]))
         ur2 = cross(ur0,ur1)
-        MT[:,2] = rint(dot(inv(A.vecs),ur2))
+        print ur0
+        print ur1
+        print ur2
+        print dot(inv(A.vecs),ur2)
+        mvec = dot(inv(A.vecs),ur2) #transformed to M space, but real
+        mvec = rint(mvec/abs(mvec[nonzero(mvec)]).min()) #Scale so smallest comp is 1
+        MT[:,2] = mvec       
+
         print 'MT from single operator';print MT
     #    Q2 = MT2mesh_three_ns(MT,B)
         Q2 = MT2mesh(MT,B)
@@ -163,7 +150,7 @@ def bestmesh(Blatt,Nmesh):
     #        print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'  
             K.vecs = Q2                
         else:
-            print'Q fails symmetry'    
+            print'Q from single operator fails symmetry'    
     
     if len(testvecs) == 2:
         print 'Only 2 eigen directions'
@@ -185,26 +172,33 @@ def bestmesh(Blatt,Nmesh):
             print'Q fails symmetry'  
                         
     if len(testvecs) >= 3:
+        print 'MT from three eigen directions'
         testvecstrials = [list(x) for x in combinations(testvecs,3)]
-    #    print testvecstrials    
+        print testvecstrials    
         bestindex = -1 
         bestcost = 1000 
         for i,vecs in enumerate(testvecstrials):
             print; print 'trial',i
+            print vecs
             MT[:,0] = vecs[0]
             MT[:,1] = vecs[1]
             MT[:,2] = vecs[2]
-            print 'MT from three eigen directions';print MT
-    #        print 'det MT', det(MT)
+            print 'MT'; print MT
+            print 'det MT', det(MT)
             if not isequal(det(MT),0):
                 Q2 = MT2mesh(MT,B)
                 if checksymmetry(Q2,B):
                     Nscale =1*.8; Ncost = Nscale * abs((B.det/det(Q2))-B.Nmesh)/B.Nmesh 
                     cost = surfvol(Q2)*(1+Ncost)
-                    if cost<bestcost: bestcost = cost; bestindex = i; K.vecs = Q2
-    #                print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'                  
+                    print cost
+                    if cost<bestcost: 
+                        bestcost = cost; 
+                        bestindex = i; 
+                        K.vecs = Q2
+                    
+                    print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'                  
                 else:
-                    print'Q fails symmetry'
+                    print'Q from trial %i fails symmetry' % i
         print '___________ Best mesh ___________'
         print 'trial', bestindex
     if checksymmetry(K.vecs,B):

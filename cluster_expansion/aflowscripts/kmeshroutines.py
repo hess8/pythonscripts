@@ -107,20 +107,25 @@ def abcalbega_latt(lvecs):
     return array([a,b,c,alpha,beta,gamma])
 
 def readposcar(filename, path): 
-    ''' Format is explicit lattice vectors, not a,b,c,alpha, beta, gamma'''
+    ''' Format is explicit lattice vectors, not a,b,c,alpha, beta, gamma. 
+    Saves vectors as columns, not rows which POSCAR uses'''
     file1 = open(path+filename,'r')
     poscar = file1.readlines()
     file1.close()
     descriptor = nstrip(poscar)[0]
     scale = float(nstrip(poscar)[1])
-    if scale < 0:
-        scale = (-scale)**(1/3.0)
-    reallatt = zeros((3,3))
+    reallatt = zeros((3,3),dtype=float)
     reallatt[:,0] = array(poscar[2].split())
     reallatt[:,1] = array(poscar[3].split())
     reallatt[:,2] = array(poscar[4].split())
-    reallatt = reallatt.astype(float)
+#    reallatt = reallatt.astype(float)
+#    print reallatt
+    if scale < 0:
+        vol = det(reallatt)
+        scale = (-scale/vol)**(1/3.0)  
     reallatt = scale*reallatt
+#    print reallatt    
+    scale = 1.0
     reciplatt = 2*pi*transpose(inv(reallatt))
     natoms = array(poscar[5].split(),dtype=int)
     totatoms=sum(natoms)
@@ -136,8 +141,8 @@ def readposcar(filename, path):
     return [descriptor, scale, reallatt, reciplatt, natoms, postype, positions]
 
 
-def aflow2poscar(path):
-    '''Use POSCAR convention of vectors as rows'''
+def aflow2poscar(path): 
+    '''DON"T USE THIS>>>Need to use (-scale/volume)**(1/3.0)'''
     file1 = open(path+'aflow.in','r')
     aflowin = file1.readlines()
     file1.close()
@@ -502,14 +507,14 @@ def checksymmetry(latt,parentlatt):
 #        print mmat
         for i in range(3):
             for j in range(3):
-                if abs(rint(mmat[i,j])-mmat[i,j])>1.0e-6:
+                if abs(rint(mmat[i,j])-mmat[i,j])>5.0e-5:
 #                    print iop, 'Symmetry failed for mmat[i,j]',mmat[i,j]
 #                    print 'Cartesian operator' 
 #                    print parentlatt.symops[:,:,iop] 
 #                    print 'Cartesian Lattice'
 #                    print lmat
-#                    print 'transformed Cart operator' 
-#                    print mmat                                           
+                    print 'transformed Cart operator' 
+                    print mmat                                           
                     return False #jumps out of subroutine
     return True #passes test
 
@@ -537,7 +542,7 @@ def MT2mesh(MT,B):
     testi = 7
     freedir = []
     Q = dot(B.vecs,transpose(inv(MT)))    
-    print 'starting mesh Q'; print Q
+    print 'starting mesh Q'; print trimSmall(Q)
     for i in range(3):
         Qtest = dot(B.vecs,transpose(inv(MT)))
         Qtest[:,i] = Qtest[:,i]/testi
@@ -555,6 +560,7 @@ def MT2mesh(MT,B):
         vecs[:,1] = B.vecs[:,otherindices[0][0]]
         vecs[:,2] = B.vecs[:,otherindices[0][1]]
         [n0,n1]= svmesh1freedir(Nmesh/abs(det(MT)),vecs)
+        print [n0,n1]
         ms = [0,0,0]
         ms[freeindex] = n0
         ms[otherindices[0][0]] = n1

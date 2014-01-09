@@ -1,10 +1,9 @@
 #!/usr/bin/python
-''' tests whether the mesh numbers from the s/v method have irrational relationships:  sqrt 2, sqrt 3, sqrt 5 
-Reads POSCAR info from aflow.in
+'''    Tests routine for finding best mesh via symmetry eigenvectors, for each structure in dir
 '''
     
 import sys,os,subprocess
-import numpy as np
+from numpy import zeros, transpose, array,sum
 import kmeshroutines as km
 from kmeshroutines import nstrip
 from bestmesh import bestmesh
@@ -24,7 +23,7 @@ maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 testfile = 'POSCAR'
 Nkppra = 10000
 
-#reallatt = np.zeros((3,3))
+#reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 for dir in dirs:
@@ -34,10 +33,11 @@ for dir in dirs:
         print dir + '========================='
         path = maindir+dir+'/'
         os.chdir(path)
-        print km.readposcar('POSCAR',path)
+#        print km.readposcar('POSCAR',path)
         [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = km.readposcar('POSCAR',path) #
-        os.chdir(maindir) 
-        totatoms = np.sum(natoms)
+        os.chdir(maindir)
+#        print 'reciprocal lattice vectors (rows)';print reciplatt
+        totatoms = sum(natoms)
         Nmesh = Nkppra/totatoms
         bestmesh(reciplatt,Nmesh)
 
@@ -50,7 +50,7 @@ for dir in dirs:
 #        print 'reciprocal lattice vectors'
 #        print reciplatt
 #        print
-#        reciplatt = np.array((pos.bvecs[0],pos.bvecs[1],pos.bvecs[2]))
+#        reciplatt = array((pos.bvecs[0],pos.bvecs[1],pos.bvecs[2]))
 #        print reciplatt
 ##        print 'bvecs'
 ##        print pos.bvecs
