@@ -1,23 +1,14 @@
 #!/usr/bin/python
 '''    Tests routine for finding best mesh via symmetry eigenvectors, for each structure in dir
 '''
-    
+   
 import sys,os,subprocess
 from numpy import zeros,transpose,array,sum,float64
 import kmeshroutines as km
 from kmeshroutines import nstrip
-from bestmesh import bestmesh
+from bestmeshEigenIter import bestmeshEigenIter
 fprec=float64
-#from poscar import POSCAR as POSCAR 
 
-def check_out(command):
-    process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-    output = process.communicate()
-    retcode = process.poll()
-    if retcode:
-            raise subprocess.CalledProcessError(retcode, command, output=output[0])
-    return output          
-   
 ################# script #######################
 
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
@@ -41,6 +32,5 @@ for dir in dirs:
 #        print 'reciprocal lattice vectors (rows)';print reciplatt
         totatoms = sum(natoms)
         Nmesh = Nkppra/totatoms
-        bestmesh(reciplatt,Nmesh)
-
+        bestmeshEigenIter(reciplatt,Nmesh)
 print 'Done'

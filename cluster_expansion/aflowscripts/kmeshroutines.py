@@ -490,7 +490,7 @@ def getGroup(latt):
     epsIN = c_double(eps)
     getLatticePointGroup(byref(lattIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
     nops = NopsOUT.value
-    symopsB = unload_ctypes_3x3xN_double(opsOUT,nops)
+    symopsB = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
     return [symopsB,nops]
     
       
@@ -502,19 +502,19 @@ def checksymmetry(latt,parentlatt):
             print 'Determinant zero'
             print lmat    
             return False
-        mmat = dot(dot(inv(lmat),parentlatt.symops[:,:,iop]),lmat)
+        mmat = trimSmall(dot(dot(inv(lmat),parentlatt.symops[:,:,iop]),lmat))
 #        print 'mmat', iop
-#        print mmat
+#        print trimSmall(mmat)
         for i in range(3):
             for j in range(3):
-                if abs(rint(mmat[i,j])-mmat[i,j])>5.0e-5:
+                if abs(rint(mmat[i,j])-mmat[i,j])>1.0e-4:
 #                    print iop, 'Symmetry failed for mmat[i,j]',mmat[i,j]
 #                    print 'Cartesian operator' 
 #                    print parentlatt.symops[:,:,iop] 
 #                    print 'Cartesian Lattice'
 #                    print lmat
-                    print 'transformed Cart operator' 
-                    print mmat                                           
+                    print 'Noninteger transformed Cart operator' 
+                    print mmat                                        
                     return False #jumps out of subroutine
     return True #passes test
 
@@ -536,14 +536,20 @@ def matchDirection(vec,list):
             return True
     return False
    
-def MT2mesh(MT,B):
+def MT2mesh(MT,B,A):
     '''tests which directions are free to adjust, and chooses best mesh'''
     Nmesh = B.Nmesh
-    testi = 7.0
+    testi = 7
     freedir = []
     M = transpose(MT)
+#    print 'M';print M
+#    print 'inv(M)';print inv(M)
     Q = dot(B.vecs,inv(M))    
     print 'starting mesh Q'; print trimSmall(Q)
+    if checksymmetry(Q,B): 
+        print 'Pass symmetry check' 
+    else: 
+        print'Failed symmetry check'
     for i in range(3):
         Qtest = dot(B.vecs,inv(M))
         Qtest[:,i] = Qtest[:,i]/testi
@@ -570,15 +576,7 @@ def MT2mesh(MT,B):
         mesh = svmesh(Nmesh/abs(det(M)),Q)
         ms = mesh[0]
     else: #should not occur
-#        Qtest = dot(B.vecs,transpose(inv(MT)))
-#        Qtest[:,0] = Qtest[:,0]*1
-#        Qtest[:,1] = Qtest[:,1]*1
-#        Qtest[:,2] = Qtest[:,2]*1
-#        print checksymmetry(Qtest,B)  
-##        if not checksymmetry(Qtest,B):
-#        print 'B lattice transpose';print 10*transpose(B.vecs)
-#        print 'Q mesh transpose';print 10*transpose(Qtest)
-          
+        test2free(M,B,A)
         sys.exit('Error in MT2mesh; freedir has 2 elements, but not 3')
     print 'mesh integers', ms      
     Q[:,0] = Q[:,0]/ms[0]
@@ -586,3 +584,46 @@ def MT2mesh(MT,B):
     Q[:,2] = Q[:,2]/ms[2]
     return Q
 #    if checksymmetry(Q,B):
+
+def test2free(M,B,A):
+    '''just for testing this strange case'''
+    [m1,m2,m3] = [1,1,4]
+    testi =7
+    freedir = []
+    
+    Qtest = dot(B.vecs,inv(M))
+    Qtest[:,0] = Qtest[:,0]/m1
+    Qtest[:,1] = Qtest[:,1]/m2
+    Qtest[:,2] = Qtest[:,2]/m3
+    print 'Q symmetry test for B:', checksymmetry(Qtest,B) 
+ 
+    Stest1 = dot(A.vecs,transpose(M))
+    print; print 'starting superlattice S'; print trimSmall(Stest1)
+    print 'Initial S symmetry test for A:', checksymmetry(Stest1,A)
+    for i in range(3):
+        Stest2 = dot(A.vecs,transpose(M))
+        Stest2[:,i] = Stest2[:,i]*testi
+        if checksymmetry(Stest2,A): freedir.append(i)
+    print 'free directions for A', freedir
+    Stest = dot(A.vecs,transpose(M))    
+    Stest[:,0] = Stest[:,0]*m1
+    Stest[:,1] = Stest[:,1]*m2
+    Stest[:,2] = Stest[:,2]*m3
+    print 'Final S'; print trimSmall(Stest)
+    print 'Final S symmetry test for A:', checksymmetry(Stest,A)  
+#        if not checksymmetry(Qtest,B):
+#        print 'B lattice transpose';print 10*transpose(B.vecs)
+#        print 'Q mesh transpose';print 10*transpose(Qtest)
+#    if not checksymmetry(Stest,A):
+#    print 'A lattice transpose for VMD';print trimSmall(transpose(A.vecs))
+#    print 'S transpose for VMD';print trimSmall(transpose(Stest))
+#    
+#    print 'S transpose lattice after x rotation';print trimSmall(transpose(dot(A.symops[:,:,2],Stest)))
+    mmat = trimSmall(dot(dot(inv(Stest),A.symops[:,:,2]),Stest))
+    print 'mmat'; print mmat
+    print 'RS,Sm';print trimSmall(dot(A.symops[:,:,2],Stest));print trimSmall(dot(Stest,mmat))
+    mmat1 = trimSmall(dot(dot(inv(Stest1),A.symops[:,:,2]),Stest1))
+    print 'mmat1'; print mmat1
+    print 'RSinitial,Sinitial*m'; print trimSmall(dot(A.symops[:,:,2],Stest1));print trimSmall(dot(Stest1,mmat1))
+
+#    print 'm from inverse':  

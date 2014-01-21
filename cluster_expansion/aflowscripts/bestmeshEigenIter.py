@@ -16,6 +16,11 @@ from numpy import zeros #use arrays, not "matrix" class
 from numpy.linalg import norm, det, inv, eig
 from itertools import combinations
 
+def bestmeshEigenIter(Blatt,Nmesh):
+    '''Starts with MT made of eigenvectors of the m(R,A) operators. Explores noninteger changes in MT 
+    to minimize the errors in symmetry and the cost in S/V and Nmesh'''
+    
+
 def bestmeshEigen(Blatt,Nmesh):
     '''The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
     So K = B Inv(M) .  Work in the inverse space of this problem, where we can work with M instead of Inv(M). 
