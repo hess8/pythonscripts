@@ -518,6 +518,36 @@ def checksymmetry(latt,parentlatt):
                     return False #jumps out of subroutine
     return True #passes test
 
+def symmetryError(latt,parentlatt):
+    '''check that the lattice obeys all symmetry operations of a parent lattice:  R.latt.inv(R) will give an integer matrix'''
+    symmerr = 0.0
+    for iop in range(parentlatt.nops):
+        lmat = array(latt)
+        if det(lmat) == 0:
+            print 'Determinant zero'
+            print lmat    
+            return [symmerror,False]
+        mmat = trimSmall(dot(dot(inv(lmat),parentlatt.symops[:,:,iop]),lmat))
+#        print 'mmat', iop
+#        print trimSmall(mmat)
+        operr = 0.0
+        for i in range(3):
+            for j in range(3):
+                if abs(rint(mmat[i,j])-mmat[i,j])>1.0e-4:
+                    operr += abs(rint(mmat[i,j])-mmat[i,j])
+#                    print iop, 'Symmetry failed for mmat[i,j]',mmat[i,j]
+#                    print 'Cartesian operator' 
+#                    print parentlatt.symops[:,:,iop] 
+#                    print 'Cartesian Lattice'
+#                    print lmat
+        if operr > 2.0e-4:
+            symmerr += operr
+            print 'Noninteger operator in superlattice for operation %s, with error %f.' % (iop,operr)
+    if operr < 2.0e-4:
+        return [0.0,True] #passes test
+    else:
+        return [symerr,False]
+
 def nonDegen(vals):
      '''Tests whether a vector has one unique element.  If so, returns the index'''
      distinct = []

@@ -16,13 +16,38 @@ from numpy import zeros #use arrays, not "matrix" class
 from numpy.linalg import norm, det, inv, eig
 from itertools import combinations
 
-def bestmeshEigenIter(Blatt,Nmesh):
-    '''Starts with MT made of eigenvectors of the m(R,A) operators. Explores noninteger changes in MT 
-    to minimize the errors in symmetry and the cost in S/V and Nmesh'''
-    
+def changewhich(M,B):
+    bestgrad = 0
+    bestdel = zeros((3,3),dtype=int)
+    Mold = M
+    oldcost = cost(Mold,B)
+    bestindex=[-1,-1,0]#initialize
+    for i in range(3):
+        for j in range(3):
+            M[i,j] += 1;delInc = cost(M,B)-oldcost; M[i,j] += -1
+            if delInc < 0 and delInc < bestgrad: bestindex = [i,j,1];bestgrad = delInc
+            M[i,j] += -1;delDec = cost(M,B)-oldcost;M[i,j] += 1;
+            if delDec < 0 and delDec < bestgrad: bestindex = [i,j,-1];bestgrad = delDec
+#            print i,j, delInc, delDec
+    return bestindex
 
-def bestmeshEigen(Blatt,Nmesh):
-    '''The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
+def cost(M,B):
+    if isequal(det(M),0):
+        return 100
+#    if isequal(K.det,0):
+#        return 100
+    else:
+        K = lattice()
+        K.vecs = dot(B.vecs,inv(M));K.det = abs(det(K.vecs))
+        Nscale =1*.05; Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
+        cost = surfvol(K.vecs)*(1+Ncost)
+        return(cost)  
+
+def bestmeshEigenIter(Blatt,Nmesh):
+    '''
+    Starts with MT made of eigenvectors of the m(R,A) operators. Explores noninteger changes in MT 
+    to minimize the errors in symmetry and the cost in S/V and Nmesh 
+    The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
     So K = B Inv(M) .  Work in the inverse space of this problem, where we can work with M instead of Inv(M). 
     T(InvK) =  T(InvB)T(M).  
     
@@ -39,7 +64,7 @@ def bestmeshEigen(Blatt,Nmesh):
     A = lattice()
     K = lattice()
        
-    B.vecs = Blatt/2/pi  #Don't use 2pi constants in RL here.
+    B.vecs = Blatt/2/pi  #Don't use 2pi constants in reciprocal lattice here.
     #############End BCT lattice
     eps = 1.0e-6
     B.det = det(B.vecs)
@@ -113,40 +138,85 @@ def bestmeshEigen(Blatt,Nmesh):
     #    MT = unconstrainedmin(B.vecs)
     if len(testvecs) == 1:
         print 'Only 1 eigen direction'
-        #Choose this one and the other two in the plane perpendicular to this. 
-        MT[:,0] = testvecs[0]
-#       print 'testindices',testindices
-        kop = testindices[0][0] #useful operator 
-        ieigen = testindices[0][1] #index of the only eigendirection 
-        op = array(A.symops[:,:,kop])
-    #    print trimSmall(op)
-    
-#        find one other direction in the plane perp to the eigendireation; either degenerate eigenvalue will do.
-        otherindices = nonzero(array([0,1,2])-ieigen)
-        print eigendirs[:,:,otherindices[0][0]]
-        MT[:,1] = eigendirs[:,:,kop][:,otherindices[0][0]]
-        #Make 3rd vector perp as possible to the other two 
-        ur0 = dot(A.vecs,MT[:,0])/norm(dot(A.vecs,MT[:,0])) #unit vectors in real space
-        ur1 = dot(A.vecs,MT[:,1])/norm(dot(A.vecs,MT[:,1]))
-        ur2 = cross(ur0,ur1)
-        print ur0
-        print ur1
-        print ur2
-        print 'ur2 transformed to m space'; print dot(inv(A.vecs),ur2)
-        mvec = dot(inv(A.vecs),ur2) #transformed to M space, but real
-        mvec = rint(mvec/abs(mvec[nonzero(mvec)]).min()) #Scale so smallest comp is 1
-        MT[:,2] = mvec       
-        print 'MT from single operator';print MT
-        print 'starting superlattice'; print dot(A.vecs,MT)
         
-    #    Q2 = MT2mesh_three_ns(MT,B)
-        Q2 = MT2mesh(MT,B,A)
-        if checksymmetry(Q2,B):
-            SV = surfvol(Q2)
-    #        print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'  
-            K.vecs = Q2                
+        print 'First find min S/V ignoring symmetry'
+        [M,K.vecs] = unconstrainedSVsearch(B)
+        MT = trimSmall(dot(inv(K.vecs),B.vecs))
+        print 'MT ignoring symmetry'; print MT
+        print 'K.vecs';print K.vecs; 
+#        for k in range(A.nops):
+
+    maxsteps = 1000
+    istep = 1
+    while istep<maxsteps:
+        bestindex = changewhich(M,B)
+        if bestindex[2]==0:#found minimum
+            newcost = cost(M,B)
+            break
         else:
-            print'Q from single operator fails symmetry'    
+            M[bestindex[0],bestindex[1]] += bestindex[2]
+            newcost = cost(M,B)
+        istep += 1
+    if istep < maxsteps:
+        print
+        print 'Found minimum after %i steps' % istep
+        print 'Best M'; print M
+        K = lattice();K.vecs = trimSmall(dot(B.vecs,inv(M)));            
+    else:
+        print 'Ended without minimum after maximum %i steps' % istep
+    return [M,K.vecs]
+
+ 
+        
+#        beta = 0.5       
+#        for iter in range(itermax):
+#            for k in [2]:
+#                beta = beta*(1-1.0/itermax)
+#                mR = trimSmall(dot(dot(inv(A.vecs),A.symops[:,:,k]),A.vecs)) 
+#                print 'effective mS';print dot(inv(MT),dot(mR,MT))
+#                print 'det mS', det(dot(inv(MT),dot(mR,MT)))
+#                mtemp = dot(inv(MT),dot(mR,MT))              
+#                mS = mtemp - beta*(mtemp - rint(mtemp))
+##                MT = rint(trimSmall(dot(mR,dot(MT,mS))))
+#                mtemp2 =trimSmall(dot(mR,dot(MT,mS)))
+#                MT = mtemp2 - beta*(mtemp2 - rint(mtemp2))
+#            
+#            print 'new MT', iter; print MT        
+        
+#        #Choose this one and the other two in the plane perpendicular to this. 
+#        MT[:,0] = testvecs[0]
+##       print 'testindices',testindices
+#        kop = testindices[0][0] #useful operator 
+#        ieigen = testindices[0][1] #index of the only eigendirection 
+#        op = array(A.symops[:,:,kop])
+#    #    print trimSmall(op)
+#    
+##        find one other direction in the plane perp to the eigendireation; either degenerate eigenvalue will do.
+#        otherindices = nonzero(array([0,1,2])-ieigen)
+#        print eigendirs[:,:,otherindices[0][0]]
+#        MT[:,1] = eigendirs[:,:,kop][:,otherindices[0][0]]
+#        #Make 3rd vector perp as possible to the other two 
+#        ur0 = dot(A.vecs,MT[:,0])/norm(dot(A.vecs,MT[:,0])) #unit vectors in real space
+#        ur1 = dot(A.vecs,MT[:,1])/norm(dot(A.vecs,MT[:,1]))
+#        ur2 = cross(ur0,ur1)
+#        print ur0
+#        print ur1
+#        print ur2
+#        print 'ur2 transformed to m space'; print dot(inv(A.vecs),ur2)
+#        mvec = dot(inv(A.vecs),ur2) #transformed to M space, but real
+#        mvec = rint(mvec/abs(mvec[nonzero(mvec)]).min()) #Scale so smallest comp is 1
+#        MT[:,2] = mvec       
+#        print 'MT from single operator';print MT
+#        print 'starting superlattice'; print dot(A.vecs,MT)
+#        
+#    #    Q2 = MT2mesh_three_ns(MT,B)
+#        Q2 = MT2mesh(MT,B,A)
+#        if checksymmetry(Q2,B):
+#            SV = surfvol(Q2)
+#    #        print round(surfvol(Q2),4),round(orthdef(Q2),4),'SV of Q2,','OD'  
+#            K.vecs = Q2                
+#        else:
+#            print'Q from single operator fails symmetry'    
     
     if len(testvecs) == 2:
         print 'Only 2 eigen directions'

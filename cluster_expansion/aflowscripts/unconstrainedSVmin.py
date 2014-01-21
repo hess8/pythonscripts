@@ -1,7 +1,7 @@
 import os, subprocess, sys, time 
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
-from kmeshroutines import lattice, surfvol, orthdef, isequal
+from kmeshroutines import lattice, surfvol, orthdef, isequal,trimSmall
 #from kmeshroutines import lattice,surfvol, orthdef
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, matrix, transpose,rint,inner,multiply
@@ -37,7 +37,7 @@ def cost(M,B):
 #        return 100
     else:
         K = lattice()
-        K.vecs = B.vecs*inv(M);K.det = abs(det(K.vecs))
+                K.vecs = dot(B.vecs,inv(M));K.det = abs(det(K.vecs))
         Nscale =1*.05; Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
         cost = surfvol(K.vecs)*(1+Ncost)
         return(cost)      
@@ -68,7 +68,8 @@ def unconstrainedSVsearch(B):
         print
         print 'Found minimum after %i steps' % istep
         print 'Best M'; print M
-        K = lattice();K.vecs = B.vecs*inv(M); 
+        K = lattice();K.vecs = trimSmall(dot(B.vecs,inv(M))); 
+       
 #        K.det = det(K.vecs)
 #        print 'Best K mesh\n', K.vecs
 #        print 'Number of mesh points', B.det/K.det
@@ -79,4 +80,4 @@ def unconstrainedSVsearch(B):
     
     else:
         print 'Ended without minimum after maximum %i steps' % istep
-    return K.vecs
+    return [M,K.vecs]

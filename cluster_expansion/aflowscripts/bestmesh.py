@@ -100,7 +100,7 @@ def bestmeshEigen(Blatt,Nmesh):
     
     if len(testvecs) == 0:
         print 'No eigen directions'
-        K.vecs = unconstrainedSVsearch(B)
+        [M,K.vecs] = unconstrainedSVsearch(B)
         if det(K.vecs)==0:
             sys.exit('Det(K) is zero after unconstrained search! Stop')
         if not checksymmetry(K.vecs,B):
