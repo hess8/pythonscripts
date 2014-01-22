@@ -37,7 +37,7 @@ def cost(M,B):
 #        return 100
     else:
         K = lattice()
-                K.vecs = dot(B.vecs,inv(M));K.det = abs(det(K.vecs))
+        K.vecs = dot(B.vecs,inv(M));K.det = abs(det(K.vecs))
         Nscale =1*.05; Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
         cost = surfvol(K.vecs)*(1+Ncost)
         return(cost)      

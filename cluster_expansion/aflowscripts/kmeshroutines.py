@@ -523,10 +523,10 @@ def symmetryError(latt,parentlatt):
     symmerr = 0.0
     for iop in range(parentlatt.nops):
         lmat = array(latt)
-        if det(lmat) == 0:
-            print 'Determinant zero'
-            print lmat    
-            return [symmerror,False]
+#        if det(lmat) == 0:
+#            print 'Determinant zero'
+#            print lmat    
+#            return symmerror
         mmat = trimSmall(dot(dot(inv(lmat),parentlatt.symops[:,:,iop]),lmat))
 #        print 'mmat', iop
 #        print trimSmall(mmat)
@@ -542,11 +542,11 @@ def symmetryError(latt,parentlatt):
 #                    print lmat
         if operr > 2.0e-4:
             symmerr += operr
-            print 'Noninteger operator in superlattice for operation %s, with error %f.' % (iop,operr)
-    if operr < 2.0e-4:
-        return [0.0,True] #passes test
-    else:
-        return [symerr,False]
+#            print 'Noninteger operator in superlattice for operation %s, with error %s.' % (iop,str(operr))
+#    if operr < 2.0e-4:
+#        return 0.0
+#    else:
+    return symmerr
 
 def nonDegen(vals):
      '''Tests whether a vector has one unique element.  If so, returns the index'''

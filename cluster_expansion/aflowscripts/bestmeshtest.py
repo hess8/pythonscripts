@@ -11,8 +11,8 @@ fprec=float64
 
 ################# script #######################
 
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
 testfile = 'POSCAR'
 Nkppra = 10000
 
