@@ -6,7 +6,7 @@ import sys,os,subprocess
 from numpy import zeros,transpose,array,sum,float64
 import kmeshroutines as km
 from kmeshroutines import nstrip
-from bestmeshEigenIter import bestmeshEigenIter
+from bestmeshIter import bestmeshIter
 fprec=float64
 
 ################# script #######################
@@ -21,7 +21,6 @@ os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 for dir in dirs:
     if testfile in os.listdir(dir):
-#        print
         print
         print dir + '========================='
         path = maindir+dir+'/'
@@ -32,5 +31,5 @@ for dir in dirs:
 #        print 'reciprocal lattice vectors (rows)';print reciplatt
         totatoms = sum(natoms)
         Nmesh = Nkppra/totatoms
-        bestmeshEigenIter(reciplatt,Nmesh)
+        bestmeshIter(reciplatt,Nmesh)
 print 'Done'

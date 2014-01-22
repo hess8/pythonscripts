@@ -40,7 +40,8 @@ def cost(M,B):
         K.vecs = dot(B.vecs,inv(M));K.det = abs(det(K.vecs))
         Nscale =1*.05; Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
         cost = surfvol(K.vecs)*(1+Ncost)
-        return(cost)      
+        return(cost)     
+
     
 def unconstrainedSVsearch(B):
     K = lattice();K.vecs = zeros((3,3),dtype=float)
@@ -67,7 +68,7 @@ def unconstrainedSVsearch(B):
     if istep < maxsteps:
         print
         print 'Found minimum after %i steps' % istep
-        print 'Best M'; print M
+#        print 'Best M'; print M
         K = lattice();K.vecs = trimSmall(dot(B.vecs,inv(M))); 
        
 #        K.det = det(K.vecs)

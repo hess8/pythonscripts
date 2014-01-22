@@ -15,13 +15,28 @@ utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
 getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
 
-#def structures_dict():
-#    '''Dictionary for all 26 k-lattice cases in    
-#            Setyawan, Wahyu; Curtarolo, Stefano (2010). "High-throughput electronic band structure calculations:   
-#        {key:value}
-#        {[number,'name',
-#    '''
-#    print
+def latticeType(nops):
+    type = {2:'Triclinic', 4:'Monoclinic', 8:'Orthorhombic', 
+            16:'Tetragonal', 12:'Trigonal', 24:'Hexagonal', 48:'Cubic'}
+    return type[nops]
+
+def rNN(latt):
+    maxsearch = 4 #in each +- lattice direction
+    rmin = 10000.0
+    for i in range(-maxsearch, maxsearch):
+        for j in range(-maxsearch, maxsearch):
+                for k in range(-maxsearch, maxsearch):
+                    r = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
+                    if norm(r) < rmin and norm(r) > 0.0:                    
+                        rmin = norm(r)
+    return rmin
+
+def packingFraction(latt):
+    print 'rNN', rNN(latt)
+    vol = abs(det(latt))
+    vsphere = 4/3*pi*(rNN(latt)/2)**3.0 #rNN is the diameter of the sphere
+    return vsphere/vol
+
 def isinteger(x):
     return np.equal(np.mod(x, 1), 0)
 
