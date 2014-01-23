@@ -2,13 +2,14 @@
 ''' For each structure dir in maindir, add POSCAR using aconvasp.  dir can be empty  '''
     
 import sys,os
-
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 atomic = 'Al:Ir'
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 print dirs
 for dir in dirs:
+    print dir
     os.chdir(dir)
     commstr2= 'aconvasp --proto=%s:%s | aconvasp --poscar>POSCAR' % (dir,atomic)   #for POSCAR creation         
     os.system(commstr2)

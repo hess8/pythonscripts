@@ -1,7 +1,7 @@
 '''Convention here is COLUMNS of matrices as vectors'''
 ################# functions #######################
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
-from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round
+from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round,ceil
 from numpy import zeros,nonzero,float64
 fprec=float64
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
@@ -21,11 +21,15 @@ def latticeType(nops):
     return type[nops]
 
 def dNN(latt):
-    maxsearch = 4 #in each +- lattice direction
+    a0 = norm(latt[:,0]); a1 = norm(latt[:,1]); a2 = norm(latt[:,2]); 
+    amax = max([a0,a1,a2])
+    f = 2
+    maxsearch0 = int(f*ceil(amax/a0)); maxsearch1= int(f*ceil(amax/a1)); maxsearch2 = int(f*ceil(amax/a2));
     dmin = 10000.0
-    for i in range(-maxsearch, maxsearch):
-        for j in range(-maxsearch, maxsearch):
-                for k in range(-maxsearch, maxsearch):
+    
+    for i in range(-maxsearch0, maxsearch0):
+        for j in range(-maxsearch1, maxsearch1):
+                for k in range(-maxsearch2, maxsearch2):
                     d = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
                     dnorm = norm(d)
                     if dnorm < dmin and dnorm > 0.0:                    
@@ -36,7 +40,7 @@ def packingFraction(latt):
 #    print 'dNN', dNN(latt)
     vol = abs(det(latt))
     vsphere = 4/3.0*pi*(dNN(latt)/2)**3.0  
-    return vsphere/vol
+    return round(vsphere/vol,4)
 
 def isinteger(x):
     return np.equal(np.mod(x, 1), 0)

@@ -86,16 +86,8 @@ def cost(M,B,run):
     return(cost)  
 
 def bestmeshIter(Blatt,Nmesh):
-    '''
-    Starts with MT made of eigenvectors of the m(R,A) operators. Explores noninteger changes in MT 
-    to minimize the errors in symmetry and the cost in S/V and Nmesh 
-    The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
-    So K = B Inv(M) .  Work in the inverse space of this problem, where we can work with M instead of Inv(M). 
-    T(InvK) =  T(InvB)T(M).  
-    
-    Define S = T(InvK), and the real lattice A = T(InvB). So S = A T(M) is a superlattice on the real lattice.
-           
-    Minimization scheme'''
+    '''The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
+    So K = B Inv(M).  Change M one element at a time to minimize the errors in symmetry and the cost in S/V and Nmesh '''
     
     ##############################################################
     ########################## Script ############################
@@ -117,38 +109,11 @@ def bestmeshIter(Blatt,Nmesh):
     print 'Orth Defect of B', orthdef(B.vecs)
     print 'Surf/vol of B', surfvol(B.vecs)
     pfB = packingFraction(B.vecs)
-    print 'Packing fraction of B:', round(pfB,4)
-    
+    print 'Packing fraction of B:', pfB  
     [B.symops,B.nops] = getGroup(B.vecs)
     print 'Number of symmetry operations', B.nops
-    print 'Lattice type:', latticeType(B.nops)
-    #print 'symmetry operations of B\n'
-    #for j in range(nopsB):
-    #    print j
-    #    op = array(symopsB[:,:,j])
-    #    print op
-    #find real lattice
-#    A.vecs = transpose(inv(B.vecs))
-#    A.det = det(A.vecs)
-#    A.Nmesh = Nmesh
-#    print;print 'A vectors';print A.vecs
-#    print 'Det of A', A.det
-#    print 'Orth Defect of A', orthdef(A.vecs)
-#    print 'Surf/vol of A', surfvol(A.vecs)
-#    print 'Packing fraction of A:', round(packingFractionBK.vecs),4)
-#    
-#    [A.symops,A.nops] = getGroup(A.vecs)
-#    if A.nops != B.nops: 
-#        sys.exit('Number of operations different for A and B; stop')
-#    print 'symmetry operations R of A\n'
-#    for k in range(A.nops):
-#        print 
-#        print k
-#        op = array(A.symops[:,:,k])
-#        print'symop R of A'; print trimSmall(op)
-#        m = trimSmall(dot(dot(inv(A.vecs), A.symops[:,:,k]),A.vecs))          
-#        print'symop m'; print m            
-
+    lattype = latticeType(B.nops)
+    print 'Lattice type:', lattype
     print 'Best mesh ignoring symmetry'
     M = zeros((3,3),dtype=int)
     a = rint(Nmesh**(1/3.0)); c = a; f = int(Nmesh/a/c)
@@ -186,8 +151,9 @@ def bestmeshIter(Blatt,Nmesh):
         print 'N of mesh', B.det/K.det, 'vs target', B.Nmesh
         print round(surfvol(K.vecs),4),round(orthdef(K.vecs),4),'SV of mesh,','OD'
         pf1 = packingFraction(K.vecs); pfmax = pf1
-        print 'Packing fraction', round(pf1,4)
+        print 'Packing fraction', pf1
         print 'Lattice type:', latticeType(B.nops)
+        meshtype = 'CUB-like'
         
         print; print 'Try FCC-like substitution'
         kmesh2 = zeros((3,3),dtype = float)
@@ -201,38 +167,37 @@ def bestmeshIter(Blatt,Nmesh):
             SV = surfvol(kmesh2)
             print round(surfvol(kmesh2),4),round(orthdef(kmesh2),4),'SV of mesh,','OD'
             pf = packingFraction(kmesh2)
-            print 'Packing fraction', round(pf,4)
+            print 'Packing fraction', pf
             if pf > pfmax:
                 K.vecs = kmesh2
                 print 'FCC-like substitution is better'
                 pfmax = pf
+                meshtype = 'FCC-like'
 
-#        print; print 'Try BCC-like substitution'
-#        kmesh2 = zeros((3,3),dtype = float)
-#        scale = 2/2**(1/3.0)
-#        kmesh2[:,0] = K.vecs[:,1]/scale + K.vecs[:,2]/scale - K.vecs[:,0]/scale
-#        kmesh2[:,1] = K.vecs[:,2]/scale + K.vecs[:,0]/scale - K.vecs[:,1]/scale
-#        kmesh2[:,2] = K.vecs[:,0]/scale + K.vecs[:,1]/scale - K.vecs[:,2]/scale
-#        print kmesh2
-#        if checksymmetry(kmesh2,B):
-#            print 'N of mesh', B.det/det(kmesh2)
-#            SV = surfvol(kmesh2)
-#            print round(surfvol(kmesh2),4),round(orthdef(kmesh2),4),'SV of mesh,','OD'
-#            pf = packingFraction(kmesh2)
-#            print 'Packing fraction', round(pf,4)
-#            if pf > pfmax:
-#                K.vecs = kmesh2
-#                print 'BCC-like substitution is better'
-#                pfmax = pf                
-                
+        print; print 'Try BCC-like substitution'
+        kmesh2 = zeros((3,3),dtype = float)
+        scale = 2/2**(1/3.0)
+        kmesh2[:,0] = K.vecs[:,1]/scale + K.vecs[:,2]/scale - K.vecs[:,0]/scale
+        kmesh2[:,1] = K.vecs[:,2]/scale + K.vecs[:,0]/scale - K.vecs[:,1]/scale
+        kmesh2[:,2] = K.vecs[:,0]/scale + K.vecs[:,1]/scale - K.vecs[:,2]/scale
+        print kmesh2
+        if checksymmetry(kmesh2,B):
+            print 'N of mesh', B.det/det(kmesh2)
+            SV = surfvol(kmesh2)
+            print round(surfvol(kmesh2),4),round(orthdef(kmesh2),4),'SV of mesh,','OD'
+            pf = packingFraction(kmesh2)
+            print 'Packing fraction', pf
+            if pf > pfmax:
+                K.vecs = kmesh2
+                print 'BCC-like substitution is better'
+                pfmax = pf
+                meshtype = 'BCC-like'                              
         print
         print 'Final K mesh'; print K.vecs
-        print 'Packing fraction', round(pfmax,4), 'vs original B', round(pfB,4)       
-                
-                    
-        
-        
-        
+        K.Nmesh = B.det/K.det
+        print 'N of mesh', K.Nmesh
+        print 'Packing fraction', pfmax, 'vs original B', pfB            
     else:
         print'K mesh fails symmetry'  
         sys.exit('Stop')
+    return [K.vecs, K.Nmesh, B.Nmesh, lattype, pfB, pfmax, meshtype]

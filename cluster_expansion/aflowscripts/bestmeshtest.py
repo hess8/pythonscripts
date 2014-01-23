@@ -4,8 +4,9 @@
    
 import sys,os,subprocess
 from numpy import zeros,transpose,array,sum,float64
-import kmeshroutines as km
-from kmeshroutines import nstrip
+from numpy.linalg import norm
+#import kmeshroutines as km
+from kmeshroutines import nstrip, readposcar
 from bestmeshIter import bestmeshIter
 fprec=float64
 
@@ -19,17 +20,28 @@ Nkppra = 10000
 #reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
+file1 = open('meshsummary.csv','w')
+file1.write('Structure' + ',' +  'Lattice' + ',' + 'amax/amin' + ',' + 'Packing lattice' + ',' + 'Packing mesh' + ',' \
+             + 'Improvement' + ',' + 'Mesh type' + ',' + 'Nmesh' + ',' + 'TargetNmesh' + '\n')
 for dir in dirs:
     if testfile in os.listdir(dir):
         print
         print dir + '========================='
         path = maindir+dir+'/'
         os.chdir(path)
-#        print km.readposcar('POSCAR',path)
-        [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = km.readposcar('POSCAR',path) #
+#        print readposcar('POSCAR',path)
+        [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',path) #
         os.chdir(maindir)
 #        print 'reciprocal lattice vectors (rows)';print reciplatt
         totatoms = sum(natoms)
         Nmesh = Nkppra/totatoms
-        bestmeshIter(reciplatt,Nmesh)
+        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pfmax, meshtype] = bestmeshIter(reciplatt,Nmesh)
+        pfimprove = round(pfmax/pfB , 1)
+        a0 = norm(reciplatt[:,0]); a1 = norm(reciplatt[:,1]); a2 = norm(reciplatt[:,2]); 
+        amax = max([a0,a1,a2]); amin =  min([a0,a1,a2])
+        aratio = round(amax/amin, 1)
+        file1.write(dir + ',' +  lattype + ',' + str(aratio) + ',' +str(pfB) + ',' + str(pfmax) + ',' + str(pfimprove) + ',' + meshtype + ','\
+                     + str(Nmesh)+ ',' + str(targetNmesh)+  '\n')
+file1.close()
+        
 print 'Done'
