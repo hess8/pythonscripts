@@ -20,21 +20,22 @@ def latticeType(nops):
             16:'Tetragonal', 12:'Trigonal', 24:'Hexagonal', 48:'Cubic'}
     return type[nops]
 
-def rNN(latt):
+def dNN(latt):
     maxsearch = 4 #in each +- lattice direction
-    rmin = 10000.0
+    dmin = 10000.0
     for i in range(-maxsearch, maxsearch):
         for j in range(-maxsearch, maxsearch):
                 for k in range(-maxsearch, maxsearch):
-                    r = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
-                    if norm(r) < rmin and norm(r) > 0.0:                    
-                        rmin = norm(r)
-    return rmin
+                    d = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
+                    dnorm = norm(d)
+                    if dnorm < dmin and dnorm > 0.0:                    
+                        dmin = dnorm
+    return dmin
 
 def packingFraction(latt):
-    print 'rNN', rNN(latt)
+#    print 'dNN', dNN(latt)
     vol = abs(det(latt))
-    vsphere = 4/3*pi*(rNN(latt)/2)**3.0 #rNN is the diameter of the sphere
+    vsphere = 4/3.0*pi*(dNN(latt)/2)**3.0  
     return vsphere/vol
 
 def isinteger(x):
@@ -528,7 +529,7 @@ def checksymmetry(latt,parentlatt):
 #                    print parentlatt.symops[:,:,iop] 
 #                    print 'Cartesian Lattice'
 #                    print lmat
-                    print 'Noninteger transformed Cart operator' 
+                    print 'Noninteger operator in m space' 
                     print mmat                                        
                     return False #jumps out of subroutine
     return True #passes test
