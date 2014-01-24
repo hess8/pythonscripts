@@ -11,9 +11,10 @@ from bestmeshIter import bestmeshIter
 fprec=float64
 
 ################# script #######################
-
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 testfile = 'POSCAR'
 Nkppra = 10000
 
@@ -40,7 +41,7 @@ for dir in dirs:
         a0 = norm(reciplatt[:,0]); a1 = norm(reciplatt[:,1]); a2 = norm(reciplatt[:,2]); 
         amax = max([a0,a1,a2]); amin =  min([a0,a1,a2])
         aratio = round(amax/amin, 1)
-        file1.write(dir + ',' +  lattype + ',' + str(aratio) + ',' +str(pfB) + ',' + str(pfmax) + ',' + str(pfimprove) + ',' + meshtype + ','\
+        file1.write(dir + ',' +  lattype + ',' + str(aratio) + ',' +str(pfB) + ',' + str(pfmax) + ',' + str(pfimprove) + ',  ' + meshtype + ','\
                      + str(Nmesh)+ ',' + str(targetNmesh)+  '\n')
 file1.close()
         

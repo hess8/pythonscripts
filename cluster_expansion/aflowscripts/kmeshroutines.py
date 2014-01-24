@@ -533,8 +533,8 @@ def checksymmetry(latt,parentlatt):
 #                    print parentlatt.symops[:,:,iop] 
 #                    print 'Cartesian Lattice'
 #                    print lmat
-                    print 'Noninteger operator in m space' 
-                    print mmat                                        
+#                    print 'Noninteger operator in m space' 
+#                    print mmat                                        
                     return False #jumps out of subroutine
     return True #passes test
 
