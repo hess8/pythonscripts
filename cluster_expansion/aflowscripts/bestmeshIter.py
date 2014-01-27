@@ -8,7 +8,7 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
     latticeType, packingFraction
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
-from numpy import transpose,rint,inner,multiply,size,argmin,nonzero,float64, identity
+from numpy import transpose,rint,inner,multiply,size,argmin,argmax,nonzero,float64, identity
 from numpy import ceil
 fprec=float64
 from numpy import zeros #use arrays, not "matrix" class
@@ -80,13 +80,13 @@ def cost(M,B,run):
         Nscale =1*1.0; Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
         shapescale = 1 * 0.5; shapecost = shapescale * surfvol(K.vecs)
         symerr = symmetryError(K.vecs,B)
-        print symerr
+#        print symerr
         cost = symerr *(1+Ncost)*(1+shapecost)
     elif run == 'fccsym':
-        Nscale =1*10.0; Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
+        Nscale =1*0.5; Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
         shapescale = 1 * 0.5; shapecost = shapescale * (1/packingFraction(K.vecs))     
         symerr = symmetryError(K.vecs,B)
-        print symerr          
+#        print symerr          
         cost = symerr *(1+Ncost)*(1+shapecost)
     else:
        sys.exit('Cost type not found in cost function. Stop')      
@@ -113,6 +113,10 @@ def bestmeshIter(Blatt,Nmesh):
     A = lattice()
     K = lattice()
     status = ''
+    pf_orth = 0
+    pf_orth2fcc = 0
+    pf_fcc = 0
+    
        
     B.vecs = Blatt/2/pi  #Don't use 2pi constants in reciprocal lattice here.
     #############End BCT lattice
@@ -138,7 +142,7 @@ def bestmeshIter(Blatt,Nmesh):
     
 #    if fcctype(B):
     print 'fcc-like starting mesh'
-    type = 'fcc'; #status += type +';'; #meshtype = type
+    #type = 'fcc'; #status += type +';'; #meshtype = type
     scale = 2*rint((Nmesh/4)**(1/3.0))
     kmesh2 = zeros((3,3),dtype = float) 
     kmesh2[:,0] = B.vecs[:,1]/scale + B.vecs[:,2]/scale
@@ -154,20 +158,23 @@ def bestmeshIter(Blatt,Nmesh):
     [M,K] = findmin(M,B,type+'sym')    
     print M
     kvecs_fcc = K.vecs
-    pf_fcc = packingFraction(kvecs_fcc)
-    print 'Packing fraction (fcc):', pf_fcc
+    pf = packingFraction(kvecs_fcc)
+    print 'Packing fraction (fcc):', pf
     sym_fcc = checksymmetry(kvecs_fcc,B)
-    if not sym_fcc: print 'fcc sym fail'; status += 'fcc sym fail;'
-    
+    if sym_fcc:
+        pf_fcc = pf
+    else: 
+        print 'fcc sym fail'; status += 'fcc sym fail;'; 
 #    else:
 
     print;
     print 'orthorhombic starting mesh'
-    type = 'orth'; #status += type +' ' ; #meshtype = type
+    #type = 'orth'; #status += type +' ' ; #meshtype = type
+    M = zeros((3,3),dtype=int)    
     M[0,0]= a
     M[1,1]= a
     M[2,2]= f        
-#        print M          
+#    print M          
     [M,K] = findmin(M,B,type) 
     print 'M ignoring symmetry:'; print M
     print 'Packing fraction:', packingFraction(K.vecs)
@@ -175,24 +182,41 @@ def bestmeshIter(Blatt,Nmesh):
     [M,K] = findmin(M,B,type+'sym')    
     print M
     kvecs_orth = K.vecs
-    pf_orth = packingFraction(kvecs_orth)
-    print 'Packing fraction (orth):', pf_orth
-    sym_orth = checksymmetry(kvecs_orth,B)    
-    if not sym_orth: print 'orth sym fail'; status += 'orth sym fail;'
-    
-    if sym_orth and sym_fcc:
-        if pf_orth > pf_fcc :
-            K.vecs = kvecs_orth
-            meshtype = 'orth'
-        else:
-            K.vecs = kvecs_fcc
-            meshtype = 'fcc'
-    elif sym_orth and not sym_fcc:
-        K.vecs = kvecs_orth
-        meshtype = 'orth' 
-    elif sym_fcc and not sym_orth:
-        K.vecs = kvecs_fcc
-        meshtype = 'fcc' 
+    pf = packingFraction(kvecs_orth)
+    print 'Packing fraction (orth):', pf_orth  
+    sym_orth = checksymmetry(kvecs_orth,B)
+    if sym_orth:
+        pf_orth = pf 
+        print; print 'Try FCC-like substitution'
+        kmesh2 = zeros((3,3),dtype = float)
+        scale = 2/4**(1/3.0)
+        kmesh2[:,0] = K.vecs[:,1]/scale + K.vecs[:,2]/scale
+        kmesh2[:,1] = K.vecs[:,2]/scale + K.vecs[:,0]/scale
+        kmesh2[:,2] = K.vecs[:,0]/scale + K.vecs[:,1]/scale 
+        print kmesh2
+        if checksymmetry(kmesh2,B):
+            pf = packingFraction(kmesh2)
+            print 'Packing fraction', pf
+            if pf > pf_orth:
+                kvecs_orth = kmesh2
+                status += 'orth->fcc;'
+                pf_orth2fcc = pf        
+    else:
+        print 'orth sym fail'; status += 'orth sym fail;'
+        
+#    if sym_orth and sym_fcc:
+#        if pf_orth > pf_fcc :
+#            K.vecs = kvecs_orth
+#            meshtype = 'orth'
+#        else:
+#            K.vecs = kvecs_fcc
+#            meshtype = 'fcc'
+#    elif sym_orth and not sym_fcc:
+#        K.vecs = kvecs_orth
+#        meshtype = 'orth' 
+#    elif sym_fcc and not sym_orth:
+#        K.vecs = kvecs_fcc
+#        meshtype = 'fcc' 
     else: #neither passed symmetry
         print'K mesh fails symmetry'        
         sys.exit('Stop')        
@@ -217,8 +241,8 @@ def bestmeshIter(Blatt,Nmesh):
 #        
 #        ???????
     pfK = packingFraction(K.vecs)
-    if pfK <= pfB: #can't find better mesh; simply do Monkhorst-Pack with equal integers
-        status += 'MHPrevert;'; meshtype = 'revert MHP'
+    if pfK < pfB: #didn't find better mesh; simply do Monkhorst-Pack with equal integers
+        meshtype = 'MHP' ; #status += 'MHPrevert;'
         K.vecs = B.vecs/a
         pfK = packingFraction(K.vecs)
 
@@ -294,6 +318,10 @@ def bestmeshIter(Blatt,Nmesh):
 #                print 'FCC-like substitution is better'
 #                pfmax = pf
 #                meshtype = 'FCC-like'
+        pfs = [pf_fcc,pf_orth,pf_orth2fcc,pfB]
+        pfmax = max(pfs)
+        pftypes = ['fcc','orth','orth2fcc','latt']
+        meshtype = pftypes[argmin(pfs)]
                                              
         print
         print 'Final K mesh'; print K.vecs
@@ -305,4 +333,4 @@ def bestmeshIter(Blatt,Nmesh):
         print'K mesh fails symmetry'        
         sys.exit('Stop')
     
-    return [K.vecs, K.Nmesh, B.Nmesh, lattype, pfB, pfK, meshtype]
+    return [K.vecs, K.Nmesh, B.Nmesh, lattype, pfB, pf_fcc, pf_orth, pf_orth2fcc, pfmax, meshtype, fcctype(B),status]
