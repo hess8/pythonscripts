@@ -24,7 +24,7 @@ os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 file1 = open('meshsummary.csv','w')
 file1.write('Structure,Lattice,amax/amin,pfB,pf_orth,pf_orth2fcc,pf_fcc,pf_max,meshtype' + ',' \
-             + 'Improvement,Search type,fcc compatibility,Nmesh,TargetNmesh' + '\n')
+             + 'Improvement,fcc compatibility,Nmesh,TargetNmesh' + '\n')
 for dir in dirs:
     if testfile in os.listdir(dir):
         print
@@ -42,9 +42,10 @@ for dir in dirs:
         a0 = norm(reciplatt[:,0]); a1 = norm(reciplatt[:,1]); a2 = norm(reciplatt[:,2]); 
         amax = max([a0,a1,a2]); amin =  min([a0,a1,a2])
         aratio = round(amax/amin, 1)
-        file1.write(14*'s%,' %  \
-        (dir, lattype, str(aratio), str(pfB), str(pf_orth), str(pf_orth2fcc), str(pf_fcc), str(pf_max), \
-         meshtype, str(pfimprove), str(fcctype), str(Nmesh), str(targetNmesh), str(status)+'\n'))
+        format = 13*'%s,'+'%s'
+        file1.write(format %  \
+        (dir, lattype, str(aratio), str(pfB), str(pf_orth), str(pf_orth2fcc), str(pf_fcc), str(pfmax), \
+         meshtype, str(pfimprove), str(fcctype), str(Nmesh), str(targetNmesh), status+'\n'))
 file1.close()
         
 print 'Done'

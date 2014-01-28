@@ -500,6 +500,19 @@ def unload_ctypes_3x3xN_double(OUT,nops):
                 ielement += 1                 
     return a
 
+def mink_reduce(a,eps):
+    """Reduce the basis to the most orthogonal set.
+       A Minkowski-reduced (via a "greedy algorithm basis) """
+#        utilslib =  cdll.LoadLibrary('/Users/hart/codes/celib/trunk/libutils.so')
+#    utilslib =  cdll.LoadLibrary('/fslhome/bch/cluster_expansion/theuncle/celib/trunk/libutils.so')
+    utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
+    ared =((c_double * 3) *3)()
+#    mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_ 
+    mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_     
+    mink(byref(load_ctypes_3x3_double(a)),byref(ared),byref(c_double(eps)))
+    ared2 = unload_ctypes_3x3_double(ared)   
+    return ared2
+
 def getGroup(latt):
 #    print "lattice in getGroup\n",latt
     N = 3*3*48
@@ -528,6 +541,7 @@ def checksymmetry(latt,parentlatt):
         for i in range(3):
             for j in range(3):
                 if abs(rint(mmat[i,j])-mmat[i,j])>1.0e-4:
+                    print mmat
 #                    print iop, 'Symmetry failed for mmat[i,j]',mmat[i,j]
 #                    print 'Cartesian operator' 
 #                    print parentlatt.symops[:,:,iop] 
