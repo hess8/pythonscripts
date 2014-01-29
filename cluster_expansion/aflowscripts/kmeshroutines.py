@@ -541,7 +541,7 @@ def checksymmetry(latt,parentlatt):
         for i in range(3):
             for j in range(3):
                 if abs(rint(mmat[i,j])-mmat[i,j])>1.0e-4:
-                    print mmat
+#                    print mmat
 #                    print iop, 'Symmetry failed for mmat[i,j]',mmat[i,j]
 #                    print 'Cartesian operator' 
 #                    print parentlatt.symops[:,:,iop] 
