@@ -5,7 +5,7 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
     orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs,  \
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection, symmetryError,\
-    latticeType, packingFraction, mink_reduce
+    latticeType, packingFraction, mink_reduce, lattvec_u, three_perp
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import transpose,rint,inner,multiply,size,argmin,argmax,nonzero,float64, identity
@@ -112,7 +112,27 @@ def printops_eigs(B):
         print 'symop', j, 'egenvalues', vals
         print op
         print 'eigenvectors'; print vecs
-
+        
+def orthsuper(B):
+    '''For lattice with orthogonal nonprimitive lattice vectors (cubic, tetragonal, orthorhombic),
+    finds the simple orthorhombic superlattice with minimum s/v.'''
+    # Find a set of three shortest lattice vectors that are perpendicular
+    A = inv(transpose(B.vecs))
+    print 'A'; print A
+    S = zeros((3,3),dtype = float)
+    M = zeros((3,3),dtype = int)
+    [S[0,:],S[1,:],S[2,:]] = three_perp(A)
+#    print [S[0,:],S[1,:],S[2,:]]
+#    S_orth = trimSmall(transpose(array([S[0,:],S[1,:],S[2,:]])))
+    S_orth = three_perp(A)
+    print S_orth
+    M = transpose(dot(inv(A),S_orth))
+    print 'M by finding 3 shortest perpendicular vectors';print M
+    #starting mesh Q with 3 free directions. 
+    Q = dot(inv(M),B.vecs)
+    if latt
+    
+    
 def bestmeshIter(Blatt,Nmesh):
     '''The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
     So K = B Inv(M).  Change M one element at a time to minimize the errors in symmetry and the cost in S/V and Nmesh '''
@@ -145,10 +165,12 @@ def bestmeshIter(Blatt,Nmesh):
     pfB = packingFraction(B.vecs)
     print 'Packing fraction of B:', pfB  
     [B.symops,B.nops] = getGroup(B.vecs)
-    printops_eigs(B)
-    lattype = latticeType(B.nops)
-    print 'Lattice type:', lattype
-    
+#    printops_eigs(B)
+    B.lattype = latticeType(B.nops)
+    print 'Lattice type:', B.lattype
+    if B.lattype in ['Orthorhombic', 'Tetragonal','Cubic']:
+        orthsuper(B)
+    sys.exit('stop')
 #    print 'MINK REDUCTION:'
 #    B.vecs = transpose(mink_reduce(transpose(B.vecs), 1e-4)) #fortran routines use vectors as rows
 #    print B.vecs
@@ -161,8 +183,8 @@ def bestmeshIter(Blatt,Nmesh):
 #    print 'Packing fraction of B:', pfB 
 #    [B.symops,B.nops] = getGroup(B.vecs)
 #    print 'Number of symmetry operations', B.nops
-#    lattype = latticeType(B.nops)
-#    print 'Mink lattice type:', lattype
+#    B.lattype = latticeType(B.nops)
+#    print 'Mink lattice type:', B.lattype
 
     M = zeros((3,3),dtype=int)
     a = rint(Nmesh**(1/3.0)); f = int(Nmesh/a/a)
@@ -302,4 +324,4 @@ def bestmeshIter(Blatt,Nmesh):
 #        print'K mesh fails symmetry'        
 #        sys.exit('Stop')
     
-    return [K.vecs, K.Nmesh, B.Nmesh, lattype, pfB, pf_maxpf, pf_minsv, pf_sv2fcc, pfmax, meshtype, fcctype(B),status]
+    return [K.vecs, K.Nmesh, B.Nmesh, B.lattype, pfB, pf_maxpf, pf_minsv, pf_sv2fcc, pfmax, meshtype, fcctype(B),status]

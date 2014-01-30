@@ -2,7 +2,7 @@
 ################# functions #######################
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round,ceil
-from numpy import zeros,nonzero,float64
+from numpy import zeros,nonzero,float64, sort, argsort
 fprec=float64
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
@@ -20,17 +20,24 @@ def latticeType(nops):
             16:'Tetragonal', 12:'Trigonal', 24:'Hexagonal', 48:'Cubic'}
     return type[nops]
 
+def searchsphere(aVecs):
+   '''Decide how many lattice points to look in each direction to get all the
+   points in a sphere that contains all of the longest _primitive_ vectors (from GLH)'''
+   eps  = 1e-6
+   cell_volume = det(aVecs)
+   max_norm = max(norm(aVecs[:,0]),norm(aVecs[:,1]),norm(aVecs[:,2]))
+   n0 = ceil(max_norm*norm(cross(aVecs[:,1],aVecs[:,2])/cell_volume)+eps)
+   n1 = ceil(max_norm*norm(cross(aVecs[:,2],aVecs[:,0])/cell_volume)+eps)
+   n2 = ceil(max_norm*norm(cross(aVecs[:,0],aVecs[:,1])/cell_volume)+eps)
+   return [int(n0),int(n1),int(n2)]
+
 def dNN(latt):
     '''Finds nearest neighbor distance'''
-    a0 = norm(latt[:,0]); a1 = norm(latt[:,1]); a2 = norm(latt[:,2]); 
-    amax = max([a0,a1,a2])
-    f = 2
-    maxsearch0 = int(f*ceil(amax/a0)); maxsearch1= int(f*ceil(amax/a1)); maxsearch2 = int(f*ceil(amax/a2));
+    [m0,m1,m2] = searchsphere(latt)
     dmin = 10000.0
-    
-    for i in range(-maxsearch0, maxsearch0):
-        for j in range(-maxsearch1, maxsearch1):
-                for k in range(-maxsearch2, maxsearch2):
+    for i in range(-m0, m0):
+        for j in range(-m1, m1):
+                for k in range(-m2, m2):
                     d = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
                     dnorm = norm(d)
                     if dnorm < dmin and dnorm > 0.0:                    
@@ -39,16 +46,12 @@ def dNN(latt):
 
 def lattvec_u(latt):
     '''Find shortest lattice vector parallel to vector u'''
-    a0 = norm(latt[:,0]); a1 = norm(latt[:,1]); a2 = norm(latt[:,2]); 
-    amax = max([a0,a1,a2])
-    f = 2
-    maxsearch0 = int(f*ceil(amax/a0)); maxsearch1= int(f*ceil(amax/a1)); maxsearch2 = int(f*ceil(amax/a2));
+    [m0,m1,m2] = searchsphere(latt)
     dmin = 10000.0
     dvec = zeros((3),dtype = float)
-    
-    for i in range(-maxsearch0, maxsearch0):
-        for j in range(-maxsearch1, maxsearch1):
-                for k in range(-maxsearch2, maxsearch2):
+    for i in range(-m0, m0):
+        for j in range(-m1, m1):
+                for k in range(-m2, m2):
                     r = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
                     d  = norm(r)
                     if d < dmin and dnorm > 0.0 and isequal(dot(transpose(r),u),0):                    
@@ -56,12 +59,41 @@ def lattvec_u(latt):
                         lattvec = r
     return lattvec
 
-def orthmesh(B):
-    '''For lattice with orthogonal nonprimitive lattice vectors (cubic, tetragonal, orthorhombic),
-    finds the orthorhombic mesh that minimizes s/v.'''
-    
-    # Find the three shortest lattice vectors parallel to the eigenvectors of the two-fold rotation matrices. 
-    
+def three_perp(latt):
+    '''Find three of the shortest lattice vectors that are perpendicular to each other'''
+    [m0,m1,m2] = searchsphere(latt)
+    print [m0,m1,m2]
+    scale = 1 ; m0 = scale*m0; m1 = scale*m1; m2 = scale*m2;
+    vecs = zeros(((2*m0+1) * (2*m1+1) * (2*m2+1),3), dtype=float)
+    norms = zeros((2*m0+1) * (2*m1+1) * (2*m2+1), dtype=float) 
+    index = 0
+    #find all vectors in this range
+    for i in range(-m0, m0+1):
+        for j in range(-m1, m1+1):
+                for k in range(-m2, m2+1):
+#                    print i,k,j, index
+                    vecs[index,:] = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
+#                    print  vecs[index,:],norm(vecs[index,:])
+                    norms[index]  = norm(vecs[index,:])
+                    index += 1
+    #Find indices for vectors sorted by increasing norm
+    sortvecs = argsort(norms)
+#    print sortvecs
+#    print sort(norms)
+#    for i in sortvecs:
+#        print vecs[i,:],
+#        print norms[i]
+    #Find the first set of three shortest that are perpendicular
+    for i in sortvecs:
+        for j in sortvecs:
+            if arenormal(vecs[i,:],vecs[j,:]):
+#                print i,j,         
+                for k in sortvecs:
+                    if arenormal(vecs[k,:],vecs[j,:]) and arenormal(vecs[i,:],vecs[k,:]):
+#                        print k
+#                        print [vecs[i,:],vecs[j,:],vecs[k,:]]
+                        return trimSmall(transpose(array([vecs[i,:],vecs[j,:],vecs[k,:]]))) 
+    sys.exit('Could not find 3 perp vectors')
 
 def packingFraction(latt):
 #    print 'dNN', dNN(latt)
@@ -79,6 +111,14 @@ def isequal(x,y):
 def isreal(x):
     eps = 1.0e-6
     return abs(x.imag)<eps
+
+def arenormal(v1,v2):
+    eps = 1.0e-6
+    if norm(v1)*norm(v2)>eps:
+#        print cosvecs(v1,v2)
+        return abs(dot(v1,v2))<eps
+    else:
+        return False
 
 def isindependent(vec1,vec2):  
     return not isequal(abs(cosvecs(vec1,vec2)),1)
@@ -98,6 +138,7 @@ class lattice(object): #reciprocal lattice
         self.Nmesh = []
         self.symops = []
         self.nops = []
+        self.lattype = []
         
 def surfvol(vecs): 
     '''Surface/volume metric for a mesh, scaled to 1 for a cube'''

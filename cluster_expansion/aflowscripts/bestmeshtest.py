@@ -29,7 +29,7 @@ file1.write('Structure,Lattice,amax/amin,pfB,pf_minsv,pf_sv2fcc,pf_fcc,pf_max,me
              + 'Improvement,fcc compatibility,Nmesh,TargetNmesh' + '\n')
 for dir in dirs:
     if testfile in os.listdir(dir):
-        print
+        print 
         print dir + '========================='
         path = maindir+dir+'/'
         os.chdir(path)
