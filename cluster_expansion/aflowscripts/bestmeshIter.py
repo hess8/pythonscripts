@@ -104,6 +104,15 @@ def fcctype(B):
     latt2[:,2] = B.vecs[:,0]/2 + B.vecs[:,1]/2   
     return checksymmetry(latt2,B)
 
+def printops_eigs(B):
+    print 'Number of symmetry operations', B.nops
+    for j in range(B.nops):
+        op = array(B.symops[:,:,j])
+        [vals,vecs]=eig(op); vecs = array(vecs)
+        print 'symop', j, 'egenvalues', vals
+        print op
+        print 'eigenvectors'; print vecs
+
 def bestmeshIter(Blatt,Nmesh):
     '''The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
     So K = B Inv(M).  Change M one element at a time to minimize the errors in symmetry and the cost in S/V and Nmesh '''
@@ -136,7 +145,7 @@ def bestmeshIter(Blatt,Nmesh):
     pfB = packingFraction(B.vecs)
     print 'Packing fraction of B:', pfB  
     [B.symops,B.nops] = getGroup(B.vecs)
-    print 'Number of symmetry operations', B.nops
+    printops_eigs(B)
     lattype = latticeType(B.nops)
     print 'Lattice type:', lattype
     

@@ -21,6 +21,7 @@ def latticeType(nops):
     return type[nops]
 
 def dNN(latt):
+    '''Finds nearest neighbor distance'''
     a0 = norm(latt[:,0]); a1 = norm(latt[:,1]); a2 = norm(latt[:,2]); 
     amax = max([a0,a1,a2])
     f = 2
@@ -35,6 +36,32 @@ def dNN(latt):
                     if dnorm < dmin and dnorm > 0.0:                    
                         dmin = dnorm
     return dmin
+
+def lattvec_u(latt):
+    '''Find shortest lattice vector parallel to vector u'''
+    a0 = norm(latt[:,0]); a1 = norm(latt[:,1]); a2 = norm(latt[:,2]); 
+    amax = max([a0,a1,a2])
+    f = 2
+    maxsearch0 = int(f*ceil(amax/a0)); maxsearch1= int(f*ceil(amax/a1)); maxsearch2 = int(f*ceil(amax/a2));
+    dmin = 10000.0
+    dvec = zeros((3),dtype = float)
+    
+    for i in range(-maxsearch0, maxsearch0):
+        for j in range(-maxsearch1, maxsearch1):
+                for k in range(-maxsearch2, maxsearch2):
+                    r = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
+                    d  = norm(r)
+                    if d < dmin and dnorm > 0.0 and isequal(dot(transpose(r),u),0):                    
+                        dmin = dnorm
+                        lattvec = r
+    return lattvec
+
+def orthmesh(B):
+    '''For lattice with orthogonal nonprimitive lattice vectors (cubic, tetragonal, orthorhombic),
+    finds the orthorhombic mesh that minimizes s/v.'''
+    
+    # Find the three shortest lattice vectors parallel to the eigenvectors of the two-fold rotation matrices. 
+    
 
 def packingFraction(latt):
 #    print 'dNN', dNN(latt)

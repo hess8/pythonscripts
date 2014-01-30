@@ -3,7 +3,7 @@
     
 import sys,os
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/AlIr/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/AlIr/'
 atomic = 'Al:Ir'
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])

@@ -12,10 +12,11 @@ from bestmeshIter import bestmeshIter
 fprec=float64
 
 ################# script #######################
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test101x/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test101x/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 testfile = 'POSCAR'
 Nkppra = 10000
