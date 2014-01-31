@@ -20,6 +20,11 @@ def latticeType(nops):
             16:'Tetragonal', 12:'Trigonal', 24:'Hexagonal', 48:'Cubic'}
     return type[nops]
 
+def unique_anorms(latt):
+    '''Returns whether each vector in turn has a unique length among the three, '''
+    a0 = norm(latt[:,0]); a1 = norm(latt[:,1]); a2 = norm(latt[:,2])
+    return [not isequal(a0,a1) and  not isequal(a0,a2), not isequal(a1,a0) and not isequal(a1,a2), not isequal(a2,a0) and not isequal(a2,a1)] 
+
 def searchsphere(aVecs):
    '''Decide how many lattice points to look in each direction to get all the
    points in a sphere that contains all of the longest _primitive_ vectors (from GLH)'''
@@ -44,7 +49,7 @@ def dNN(latt):
                         dmin = dnorm
     return dmin
 
-def lattvec_u(latt):
+def lattvec_u(latt,u):
     '''Find shortest lattice vector parallel to vector u'''
     [m0,m1,m2] = searchsphere(latt)
     dmin = 10000.0
@@ -52,14 +57,17 @@ def lattvec_u(latt):
     for i in range(-m0, m0):
         for j in range(-m1, m1):
                 for k in range(-m2, m2):
+                    if i == j == k == 0: continue
                     r = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
                     d  = norm(r)
-                    if d < dmin and dnorm > 0.0 and isequal(dot(transpose(r),u),0):                    
-                        dmin = dnorm
-                        lattvec = r
+                    ur = r/norm(r)
+                    if d < dmin and d > 0.0 and isequal(dot(transpose(ur),u),1):                    
+                        dmin = d
+                        print 'lattice m for lattice vector', dot(inv(latt),transpose(r))
+                        lattvec = r             
     return lattvec
 
-def three_perp(latt):
+def three_perp(latt,lattype):
     '''Find three of the shortest lattice vectors that are perpendicular to each other'''
     [m0,m1,m2] = searchsphere(latt)
     print [m0,m1,m2]
@@ -77,22 +85,34 @@ def three_perp(latt):
                     norms[index]  = norm(vecs[index,:])
                     index += 1
     #Find indices for vectors sorted by increasing norm
+    vecs = trimSmall(vecs)
     sortvecs = argsort(norms)
+#    for i in sortvecs:
+#        print vecs[i,:]
 #    print sortvecs
 #    print sort(norms)
 #    for i in sortvecs:
 #        print vecs[i,:],
 #        print norms[i]
-    #Find the first set of three shortest that are perpendicular
-    for i in sortvecs:
-        for j in sortvecs:
+    #Find the first set of three shortest that are perpendicular and meet symmetry requirements
+    for i in sortvecs[1:]: #Don't include first which i zero
+        for j in sortvecs[1:]:
             if arenormal(vecs[i,:],vecs[j,:]):
-#                print i,j,         
-                for k in sortvecs:
+                print i,j       
+                for k in sortvecs[1:]:
+#                    if i != j and i!=k and k != j:
+#                        print;print k, cosvecs(vecs[k,:],vecs[j,:]) , cosvecs(vecs[k,:],vecs[i,:])
                     if arenormal(vecs[k,:],vecs[j,:]) and arenormal(vecs[i,:],vecs[k,:]):
-#                        print k
-#                        print [vecs[i,:],vecs[j,:],vecs[k,:]]
-                        return trimSmall(transpose(array([vecs[i,:],vecs[j,:],vecs[k,:]]))) 
+                        S = transpose(array([vecs[i,:],vecs[j,:],vecs[k,:]]))
+                        print 'found 3 vectors of any type',i,j,k
+                        if lattype == 'Cubic' and unique_anorms(S).count(True) == 0:
+                            return trimSmall(S) 
+                        if lattype == 'Tetrahedral' and unique_anorms(S).count(True) == 1:
+                            return trimSmall(S) 
+                        if lattype == 'Orthorhombic' and unique_anorms(S).count(True) == 3:
+                            return trimSmall(S)
+#                    print vecs[i,:];print vecs[j,:]; print vecs[k,:]
+#                    sys.exit('stop in 3perp')   
     sys.exit('Could not find 3 perp vectors')
 
 def packingFraction(latt):
@@ -114,9 +134,10 @@ def isreal(x):
 
 def arenormal(v1,v2):
     eps = 1.0e-6
-    if norm(v1)*norm(v2)>eps:
+    norm1 = norm(v1); norm2 = norm(v2);
+    if norm1*norm2>eps:
 #        print cosvecs(v1,v2)
-        return abs(dot(v1,v2))<eps
+        return abs(dot(v1,v2))<eps*norm1*norm2
     else:
         return False
 

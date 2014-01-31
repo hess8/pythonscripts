@@ -5,7 +5,7 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
     orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs,  \
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection, symmetryError,\
-    latticeType, packingFraction, mink_reduce, lattvec_u, three_perp
+    latticeType, packingFraction, mink_reduce, lattvec_u, three_perp, arenormal
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import transpose,rint,inner,multiply,size,argmin,argmax,nonzero,float64, identity
@@ -16,6 +16,31 @@ from numpy import zeros #use arrays, not "matrix" class
 from numpy.linalg import norm, det, inv, eig
 from numpy.random import randint
 from itertools import combinations
+
+def eigenvecfind(S,parentlatt):
+    '''Find eigenvectors of symmetry operations (in cartesian basis).  A single eigenvector of eigenvalue 1 
+    signifies a rotation operator. This returns a cartesian vector that corresponds to a rotation axis that is not in 
+    the plane of the first two vectors of S'''
+#    print 'S after array convert'; print S  
+    eps = 1.0e-6
+    
+    for iop in range(parentlatt.nops): #loop for printing only
+        evals,evecs = eig(parentlatt.symops[:,:,iop])            
+    for iop in range(parentlatt.nops):
+        evals,evecs = eig(parentlatt.symops[:,:,iop])      
+        nOne = 0
+        for i, eval in enumerate(evals):
+            if abs(eval - 1) < eps:
+                nOne += 1
+                indexOne = i
+        if nOne == 1:
+            axis =  evecs[indexOne]
+            unitaxis = axis/norm(axis) #unit vector
+            if abs(cosvecs(cross(S[:,0],S[:,1]),axis))>eps: 
+                #print'found independent third vector'
+                return unitaxis
+#    #print 'Found no 3rd vector through eigenvectors of symmetry operators'
+#    sys.exit('stop')
 #
 def changewhich(M,B,run):
     bestgrad = 0
@@ -113,25 +138,77 @@ def printops_eigs(B):
         print op
         print 'eigenvectors'; print vecs
         
+def three_perp_eigs(A):
+    testvecs = []; testindices = []
+    svecs = zeros((3,3),dtype = float)
+    for k in range(A.nops):
+#        print; print k
+        op = array(A.symops[:,:,k])
+        [vals,vecs]=eig(op); vecs = array(vecs)      
+        #find operations with nondegenerate real eigenvalues
+#        print k, nonDegen(vals)
+        for i in nonDegen(vals):
+            if not matchDirection(transpose(vecs[:,i]),testvecs): #keep only unique directions    
+                testvecs.append(vecs[:,i])
+                testindices.append([k,i])
+    if len(testvecs) >= 3:
+        testvecstrials = [list(x) for x in combinations(testvecs,3)]
+        print testvecstrials
+        for trial in testvecstrials:
+            #find superlattice
+            for i in range(3):
+#                print trial[i]
+                svecs[i,:] = lattvec_u(A.vecs,trial[i])
+#                print svecs[i,:]
+#            print cosvecs(svecs[0,:],svecs[1,:]) , cosvecs(svecs[1,:],svecs[2,:]) , cosvecs(svecs[2,:],svecs[0,:])
+            if arenormal(svecs[0,:],svecs[1,:]) and arenormal(svecs[1,:],svecs[2,:]) and arenormal(svecs[2,:],svecs[0,:]):
+                    S = transpose(array([svecs[0,:],svecs[1,:],svecs[2,:]]))
+                    return trimSmall(S) #only need one set
+    sys.exit('error in three_perp_eigs')
+        
 def orthsuper(B):
     '''For lattice with orthogonal nonprimitive lattice vectors (cubic, tetragonal, orthorhombic),
     finds the simple orthorhombic superlattice with minimum s/v.'''
     # Find a set of three shortest lattice vectors that are perpendicular
-    A = inv(transpose(B.vecs))
-    print 'A'; print A
+    A = lattice()
+    A.vecs = trimSmall(inv(transpose(B.vecs)))
+    print 'A'; print A.vecs
+    print 'det a', det(A.vecs)
+    [A.symops,A.nops] = getGroup(A.vecs)
+#    printops_eigs(A)
+#    print 'transp A'; print transpose(A)    
     S = zeros((3,3),dtype = float)
     M = zeros((3,3),dtype = int)
-    [S[0,:],S[1,:],S[2,:]] = three_perp(A)
-#    print [S[0,:],S[1,:],S[2,:]]
-#    S_orth = trimSmall(transpose(array([S[0,:],S[1,:],S[2,:]])))
-    S_orth = three_perp(A)
-    print S_orth
-    M = transpose(dot(inv(A),S_orth))
+    K = zeros((3,3),dtype = float)
+#    S_orth = three_perp(A.vecs,B.lattype)
+    print; S_orth =  three_perp_eigs(A)  
+#    sys.exit('stop')  
+    M = trimSmall(transpose(dot(inv(A.vecs),S_orth)))
     print 'M by finding 3 shortest perpendicular vectors';print M
+    print 'det M', det(M)
+
     #starting mesh Q with 3 free directions. 
-    Q = dot(inv(M),B.vecs)
-    if latt
-    
+    Q = dot(B.vecs,inv(M))
+    print dot(Q[:,0],Q[:,1]),dot(Q[:,1],Q[:,2]),dot(Q[:,2],Q[:,0])
+    print norm(Q[:,0]),norm(Q[:,1]),norm(Q[:,2])
+#        K = B.vecs/rint((B.Nmesh/det(Q))**(1/3.0))
+#    if B.lattype == 'Tetrahedral':
+#        #Find the free direction
+#        q0 = norm(Q[:,0]); q1 = norm(Q[:,1]); q2 = norm(Q[:,2]); 
+#        if isequal(q1,q2)): nmesh 
+    print 'mesh numbers'; 
+    [n0,n1,n2] = svmesh(B.Nmesh/abs(det(M)),Q)[0]
+    print [n0,n1,n2]
+    K[:,0] = Q[:,0]/n0; K[:,1] = Q[:,1]/n1; K[:,2] = Q[:,2]/n2
+    print K
+    Nmesh = B.det/det(K)
+    if checksymmetry(K,B):
+        pf = packingFraction(K)
+        print 'Packing fraction (orthmesh)', pf, 'vs original B', packingFraction(B.vecs)  
+        print 'Nmesh', Nmesh, 'vs target', B.Nmesh 
+    else:
+        sys.exit('Symmetry failed in orthsuper')
+    return [K,pf,True]
     
 def bestmeshIter(Blatt,Nmesh):
     '''The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
@@ -168,9 +245,27 @@ def bestmeshIter(Blatt,Nmesh):
 #    printops_eigs(B)
     B.lattype = latticeType(B.nops)
     print 'Lattice type:', B.lattype
+    pf_orth=0; pf_orth2fcc=0
     if B.lattype in ['Orthorhombic', 'Tetragonal','Cubic']:
-        orthsuper(B)
-    sys.exit('stop')
+        [kvecs_orth,pf_orth,sym_orth] = orthsuper(B)
+        print; print 'Try orth2FCC substitution.',
+        kmesh2 = zeros((3,3),dtype = float)
+        scale = 2/4**(1/3.0)
+        kmesh2[:,0] = kvecs_orth[:,1]/scale + kvecs_orth[:,2]/scale
+        kmesh2[:,1] = kvecs_orth[:,2]/scale + kvecs_orth[:,0]/scale
+        kmesh2[:,2] = kvecs_orth[:,0]/scale + kvecs_orth[:,1]/scale   
+        sym_orth2fcc = checksymmetry(kmesh2,B)
+        if sym_orth2fcc:
+#            print; print kmesh2
+            pf = packingFraction(kmesh2)
+            print; print 'Packing fraction', pf, 'vs original B', pfB  
+            kvecs_orth2fcc = kmesh2
+            pf_orth2fcc = pf
+        else:
+            print' It fails symmetry test'
+        
+        
+#    sys.exit('stop')
 #    print 'MINK REDUCTION:'
 #    B.vecs = transpose(mink_reduce(transpose(B.vecs), 1e-4)) #fortran routines use vectors as rows
 #    print B.vecs
@@ -298,6 +393,14 @@ def bestmeshIter(Blatt,Nmesh):
         pfs = [pfB]
         pftypes = ['B_latt']
         ks  = [B.vecs/a]
+        if sym_orth:
+            pfs.append(pf_orth)
+            pftypes.append('orth')
+            ks.append(kvecs_orth)
+        if sym_orth2fcc:
+            pfs.append(pf_orth2fcc)
+            pftypes.append('orth2fcc')
+            ks.append(kvecs_orth2fcc)            
         if sym_minsv:
             pfs.append(pf_minsv)
             pftypes.append('minsv')
@@ -324,4 +427,6 @@ def bestmeshIter(Blatt,Nmesh):
 #        print'K mesh fails symmetry'        
 #        sys.exit('Stop')
     
-    return [K.vecs, K.Nmesh, B.Nmesh, B.lattype, pfB, pf_maxpf, pf_minsv, pf_sv2fcc, pfmax, meshtype, fcctype(B),status]
+#    print [K.vecs, K.Nmesh, B.Nmesh, B.lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_minsv, pf_sv2fcc, pfmax, meshtype, fcctype(B),status]
+
+    return [K.vecs, K.Nmesh, B.Nmesh, B.lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_minsv, pf_sv2fcc, pfmax, meshtype, fcctype(B),status]
