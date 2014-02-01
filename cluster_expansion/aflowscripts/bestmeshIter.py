@@ -5,11 +5,12 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
     orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs,  \
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection, symmetryError,\
-    latticeType, packingFraction, mink_reduce, lattvec_u, three_perp, arenormal
+    latticeType, packingFraction, mink_reduce, lattvec_u, three_perp, arenormal,\
+    unique_anorms
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import transpose,rint,inner,multiply,size,argmin,argmax,nonzero,float64, identity
-from numpy import ceil
+from numpy import ceil, real
 fprec=float64
 from numpy import zeros #use arrays, not "matrix" class
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
@@ -149,21 +150,31 @@ def three_perp_eigs(A):
 #        print k, nonDegen(vals)
         for i in nonDegen(vals):
             if not matchDirection(transpose(vecs[:,i]),testvecs): #keep only unique directions    
-                testvecs.append(vecs[:,i])
+                testvecs.append(real(vecs[:,i]))
                 testindices.append([k,i])
     if len(testvecs) >= 3:
         testvecstrials = [list(x) for x in combinations(testvecs,3)]
-        print testvecstrials
+#        print testvecstrials
         for trial in testvecstrials:
             #find superlattice
             for i in range(3):
-#                print trial[i]
+                print; print 'trial u',trial[i]
                 svecs[i,:] = lattvec_u(A.vecs,trial[i])
-#                print svecs[i,:]
-#            print cosvecs(svecs[0,:],svecs[1,:]) , cosvecs(svecs[1,:],svecs[2,:]) , cosvecs(svecs[2,:],svecs[0,:])
+                print svecs[i,:]
+                print 'lattice m for lattice vector', dot(inv(A.vecs),transpose(svecs[i,:]))
+#            print 'cosvecs', cosvecs(svecs[0,:],svecs[1,:]) , cosvecs(svecs[1,:],svecs[2,:]) , cosvecs(svecs[2,:],svecs[0,:])
+#            print arenormal(svecs[0,:],svecs[1,:]) , arenormal(svecs[1,:],svecs[2,:]) , arenormal(svecs[2,:],svecs[0,:])           
             if arenormal(svecs[0,:],svecs[1,:]) and arenormal(svecs[1,:],svecs[2,:]) and arenormal(svecs[2,:],svecs[0,:]):
-                    S = transpose(array([svecs[0,:],svecs[1,:],svecs[2,:]]))
-                    return trimSmall(S) #only need one set
+                S = transpose(array([svecs[0,:],svecs[1,:],svecs[2,:]]))
+                print 'found 3 perp'; print unique_anorms(S)
+                print S; print norm(S[:,0]); print norm(S[:,1]); print norm(S[:,2])
+                print unique_anorms(S).count(True); print A.lattype
+                if A.lattype == 'Cubic' and unique_anorms(S).count(True) == 0:
+                    return trimSmall(S) 
+                if A.lattype == 'Tetragonal' and unique_anorms(S).count(True) <= 1:
+                    return trimSmall(S) 
+                if A.lattype == 'Orthorhombic': #and unique_anorms(S).count(True) == 3:
+                    return trimSmall(S)
     sys.exit('error in three_perp_eigs')
         
 def orthsuper(B):
@@ -175,6 +186,7 @@ def orthsuper(B):
     print 'A'; print A.vecs
     print 'det a', det(A.vecs)
     [A.symops,A.nops] = getGroup(A.vecs)
+    A.lattype = latticeType(A.nops)
 #    printops_eigs(A)
 #    print 'transp A'; print transpose(A)    
     S = zeros((3,3),dtype = float)
@@ -189,9 +201,9 @@ def orthsuper(B):
 
     #starting mesh Q with 3 free directions. 
     Q = dot(B.vecs,inv(M))
-    print dot(Q[:,0],Q[:,1]),dot(Q[:,1],Q[:,2]),dot(Q[:,2],Q[:,0])
-    print norm(Q[:,0]),norm(Q[:,1]),norm(Q[:,2])
-#        K = B.vecs/rint((B.Nmesh/det(Q))**(1/3.0))
+#    print dot(Q[:,0],Q[:,1]),dot(Q[:,1],Q[:,2]),dot(Q[:,2],Q[:,0])
+#    print norm(Q[:,0]),norm(Q[:,1]),norm(Q[:,2])
+##        K = B.vecs/rint((B.Nmesh/det(Q))**(1/3.0))
 #    if B.lattype == 'Tetrahedral':
 #        #Find the free direction
 #        q0 = norm(Q[:,0]); q1 = norm(Q[:,1]); q2 = norm(Q[:,2]); 
@@ -200,8 +212,8 @@ def orthsuper(B):
     [n0,n1,n2] = svmesh(B.Nmesh/abs(det(M)),Q)[0]
     print [n0,n1,n2]
     K[:,0] = Q[:,0]/n0; K[:,1] = Q[:,1]/n1; K[:,2] = Q[:,2]/n2
-    print K
-    Nmesh = B.det/det(K)
+#    print K
+    Nmesh = B.det/abs(det(K))
     if checksymmetry(K,B):
         pf = packingFraction(K)
         print 'Packing fraction (orthmesh)', pf, 'vs original B', packingFraction(B.vecs)  
@@ -245,7 +257,7 @@ def bestmeshIter(Blatt,Nmesh):
 #    printops_eigs(B)
     B.lattype = latticeType(B.nops)
     print 'Lattice type:', B.lattype
-    pf_orth=0; pf_orth2fcc=0
+    pf_orth=0; pf_orth2fcc=0; sym_orth = False; sym_orth2fcc = False
     if B.lattype in ['Orthorhombic', 'Tetragonal','Cubic']:
         [kvecs_orth,pf_orth,sym_orth] = orthsuper(B)
         print; print 'Try orth2FCC substitution.',
@@ -387,7 +399,7 @@ def bestmeshIter(Blatt,Nmesh):
 #    print 'Final symmetry check:',checksymmetry(K.vecs,B)
     if not (sym_minsv or sym_sv2fcc or sym_maxpf):
         meshtype = 'B_latt_revert' ; #status += 'MHPrevert;'
-        K.vecs = B.vecs/a; K.det = det(K.vecs); K.Nmesh = B.det/K.det
+        K.vecs = B.vecs/a; K.det = det(K.vecs); K.Nmesh = abs(B.det/K.det)
         pfmax = packingFraction(K.vecs)
     else:
         pfs = [pfB]

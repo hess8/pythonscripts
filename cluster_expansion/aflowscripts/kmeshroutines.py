@@ -2,7 +2,7 @@
 ################# functions #######################
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round,ceil
-from numpy import zeros,nonzero,float64, sort, argsort
+from numpy import zeros,nonzero,float64, sort, argsort,mod
 fprec=float64
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
@@ -28,12 +28,13 @@ def unique_anorms(latt):
 def searchsphere(aVecs):
    '''Decide how many lattice points to look in each direction to get all the
    points in a sphere that contains all of the longest _primitive_ vectors (from GLH)'''
+   scale = 1  #1 is normal; others for testing
    eps  = 1e-6
    cell_volume = det(aVecs)
    max_norm = max(norm(aVecs[:,0]),norm(aVecs[:,1]),norm(aVecs[:,2]))
-   n0 = ceil(max_norm*norm(cross(aVecs[:,1],aVecs[:,2])/cell_volume)+eps)
-   n1 = ceil(max_norm*norm(cross(aVecs[:,2],aVecs[:,0])/cell_volume)+eps)
-   n2 = ceil(max_norm*norm(cross(aVecs[:,0],aVecs[:,1])/cell_volume)+eps)
+   n0 = scale*ceil(max_norm*norm(cross(aVecs[:,1],aVecs[:,2])/cell_volume)+eps)
+   n1 = scale*ceil(max_norm*norm(cross(aVecs[:,2],aVecs[:,0])/cell_volume)+eps)
+   n2 = scale*ceil(max_norm*norm(cross(aVecs[:,0],aVecs[:,1])/cell_volume)+eps)
    return [int(n0),int(n1),int(n2)]
 
 def dNN(latt):
@@ -49,29 +50,56 @@ def dNN(latt):
                         dmin = dnorm
     return dmin
 
-def lattvec_u(latt,u):
-    '''Find shortest lattice vector parallel to vector u'''
-    [m0,m1,m2] = searchsphere(latt)
-    dmin = 10000.0
-    dvec = zeros((3),dtype = float)
-    for i in range(-m0, m0):
-        for j in range(-m1, m1):
-                for k in range(-m2, m2):
-                    if i == j == k == 0: continue
-                    r = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
-                    d  = norm(r)
-                    ur = r/norm(r)
-                    if d < dmin and d > 0.0 and isequal(dot(transpose(ur),u),1):                    
-                        dmin = d
-                        print 'lattice m for lattice vector', dot(inv(latt),transpose(r))
-                        lattvec = r             
+def lattvec_u(A,u):
+    '''Find shortest lattice vector parallel to vector u.
+    If v=|v|u is a lattice vector, made by multiplying unit vector by a real number |v|, then
+    v = |v|u = m1a1 + m2a2 + m3a3 = A*col(m1 m2 m3), where col means column vector.  
+    Then c === inv(A)u = col(m1/q m2/q m3/q).  We want to find the smallest set of m1, m2, m3 that satisfy this
+    So divide c by the magnitude of the smallest of the nonzero elements of c (suppose it's the second).  
+    Gives c2 = col(m1/m2 1 m3/m2).  We multiply this by the series m = 2, 3, 4, 5, until all elements are
+    integers.  Then then c3  = m*c2 will be [m1 m2 m3] '''
+    
+    print u
+    c = trimSmall(dot(inv(A),u))
+    c2 = c/min(abs(c[nonzero(c)]))
+    c3 = c2
+    mmax = 1000
+    m = 1
+    print c3
+    while not ( isinteger(c3[0]) and isinteger(c3[1]) and isinteger(c3[2]) ) and m < mmax :
+        print 'c3', c3
+        print 'mult',m,c3 
+             
+        m += 1
+        c3 = m * c2
+
+    if m < mmax: #success.
+        v = dot(A,transpose(c3))
+        return v
+    else:
+        return [0,0,0]
+
+#    [m0,m1,m2] = searchsphere(latt)
+#    scale = 2; [m0,m1,m2] = 2*array([m0,m1,m2])   #Needs 2x the value found in Gus' sphere routine
+#    dmin = 10000.0
+#    dvec = zeros((3),dtype = float)
+#    lattvec = [0,0,0]
+#    for i in range(-m0, m0):
+#        for j in range(-m1, m1):
+#                for k in range(-m2, m2):
+#                    if i == j == k == 0: continue
+#                    r = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
+#                    d  = norm(r)
+#                    ur = r/norm(r)
+#                    if 0.00 < d < dmin and isequal(dot(transpose(ur),u),1):                    
+#                        dmin = d
+#                        lattvec = r             
     return lattvec
 
 def three_perp(latt,lattype):
     '''Find three of the shortest lattice vectors that are perpendicular to each other'''
     [m0,m1,m2] = searchsphere(latt)
-    print [m0,m1,m2]
-    scale = 1 ; m0 = scale*m0; m1 = scale*m1; m2 = scale*m2;
+#    print [m0,m1,m2]
     vecs = zeros(((2*m0+1) * (2*m1+1) * (2*m2+1),3), dtype=float)
     norms = zeros((2*m0+1) * (2*m1+1) * (2*m2+1), dtype=float) 
     index = 0
@@ -98,7 +126,7 @@ def three_perp(latt,lattype):
     for i in sortvecs[1:]: #Don't include first which i zero
         for j in sortvecs[1:]:
             if arenormal(vecs[i,:],vecs[j,:]):
-                print i,j       
+#                print i,j       
                 for k in sortvecs[1:]:
 #                    if i != j and i!=k and k != j:
 #                        print;print k, cosvecs(vecs[k,:],vecs[j,:]) , cosvecs(vecs[k,:],vecs[i,:])
@@ -122,7 +150,9 @@ def packingFraction(latt):
     return round(vsphere/vol,4)
 
 def isinteger(x):
-    return np.equal(np.mod(x, 1), 0)
+#    print x, 'mod x,1',mod(x, 1)
+#    print 'mod x,1',mod(x, 1)
+    return isequal(abs(rint(x)-x), 0)
 
 def isequal(x,y):
     eps = 1.0e-6

@@ -1,7 +1,6 @@
 #!/usr/bin/python
 '''    Tests routine for finding best mesh via symmetry eigenvectors, for each structure in dir
 '''
-   
 import sys,os,subprocess
 from numpy import zeros,transpose,array,sum,float64
 from numpy.linalg import norm
