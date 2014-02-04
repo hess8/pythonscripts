@@ -5,8 +5,8 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
     orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs,  \
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection, symmetryError,\
-    latticeType, packingFraction, mink_reduce, lattvec_u, three_perp, arenormal,\
-    unique_anorms
+    latticeType, packingFraction, mink_reduce, lattvec_u,arenormal,\
+    unique_anorms #,three_perp,
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import transpose,rint,inner,multiply,size,argmin,argmax,nonzero,float64, identity
@@ -67,16 +67,19 @@ def findmin(M,B,run):
     while istep<maxsteps:
         bestindex = changewhich(M,B,run)
         if bestindex[2]==0:#found minimum
-            newcost = cost(M,B,run)
+#            newcost = cost(M,B,run)
             break
         else:
             M[bestindex[0],bestindex[1]] += bestindex[2]
-            newcost = cost(M,B,run)
+#            newcost = cost(M,B,run)
+            if run == 'minsvsym' and B.Nmesh/float(det(M))>1.2: M = M*2 # open up search space when when det(M) gets too low
+#            print; print M;print newcost
+
         istep += 1
     if istep < maxsteps:
         print 'Found minimum after %i steps' % istep
 #        print 'Best M'; print M
-        K = lattice();K.vecs = trimSmall(dot(B.vecs,inv(M)));K.det = det(K.vecs); K.Nmesh = B.det/K.det             
+        K = lattice();K.vecs = trimSmall(dot(B.vecs,inv(M)));K.det = abs(det(K.vecs)); K.Nmesh = B.det/K.det             
     else:
         print 'Ended without minimum after maximum %i steps' % istep
         sys.exit('Stop')
@@ -105,19 +108,31 @@ def cost(M,B,run):
 #        cost = (1/pf)*(1+Ncost) 
         cost = 1/pf + Ncost     
     elif run == 'minsvsym':
-        Nscale =1*.05; Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
+        Nscale =1*.05#.05; 
+        Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
         shapescale = 1 * 0.5; shapecost = shapescale * surfvol(K.vecs)
         symerr = symmetryError(K.vecs,B)
 #        print symerr
 #        cost = symerr *(1+Ncost)*(1+shapecost)
         cost = symerr  + Ncost + shapecost
     elif run == 'maxpfsym':
-        Nscale =1*.2; Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
+        Nscale =1*.2; #*.2;
+        Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
         shapescale = 1 * 0.5; shapecost = shapescale * (1/packingFraction(K.vecs))     
         symerr = symmetryError(K.vecs,B)
 #        print symerr          
 #        cost = symerr *(1+Ncost)*(1+shapecost)
         cost = symerr  + Ncost + shapecost
+    elif run == 'sym':   
+        symerr = symmetryError(K.vecs,B)
+        cost = symerr 
+    elif run == 'sym_sv':   
+        symerr = symmetryError(K.vecs,B)
+        shapescale = 1 * 0.5; shapecost = shapescale * surfvol(K.vecs)
+        symerr = symmetryError(K.vecs,B)
+        cost = symerr + shapecost       
+        
+        
     else:
        sys.exit('Cost type not found in cost function. Stop')      
     return(cost)  
@@ -158,17 +173,17 @@ def three_perp_eigs(A):
         for trial in testvecstrials:
             #find superlattice
             for i in range(3):
-                print; print 'trial u',trial[i]
+#                print; print 'trial u',trial[i]
                 svecs[i,:] = lattvec_u(A.vecs,trial[i])
-                print svecs[i,:]
-                print 'lattice m for lattice vector', dot(inv(A.vecs),transpose(svecs[i,:]))
+#                print svecs[i,:]
+#                print 'lattice m for lattice vector', dot(inv(A.vecs),transpose(svecs[i,:]))
 #            print 'cosvecs', cosvecs(svecs[0,:],svecs[1,:]) , cosvecs(svecs[1,:],svecs[2,:]) , cosvecs(svecs[2,:],svecs[0,:])
 #            print arenormal(svecs[0,:],svecs[1,:]) , arenormal(svecs[1,:],svecs[2,:]) , arenormal(svecs[2,:],svecs[0,:])           
             if arenormal(svecs[0,:],svecs[1,:]) and arenormal(svecs[1,:],svecs[2,:]) and arenormal(svecs[2,:],svecs[0,:]):
                 S = transpose(array([svecs[0,:],svecs[1,:],svecs[2,:]]))
-                print 'found 3 perp'; print unique_anorms(S)
-                print S; print norm(S[:,0]); print norm(S[:,1]); print norm(S[:,2])
-                print unique_anorms(S).count(True); print A.lattype
+#                print 'found 3 perp'; print unique_anorms(S)
+#                print S; print norm(S[:,0]); print norm(S[:,1]); print norm(S[:,2])
+#                print unique_anorms(S).count(True); print A.lattype
                 if A.lattype == 'Cubic' and unique_anorms(S).count(True) == 0:
                     return trimSmall(S) 
                 if A.lattype == 'Tetragonal' and unique_anorms(S).count(True) <= 1:
@@ -183,8 +198,8 @@ def orthsuper(B):
     # Find a set of three shortest lattice vectors that are perpendicular
     A = lattice()
     A.vecs = trimSmall(inv(transpose(B.vecs)))
-    print 'A'; print A.vecs
-    print 'det a', det(A.vecs)
+#    print 'A'; print A.vecs
+#    print 'det a', det(A.vecs)
     [A.symops,A.nops] = getGroup(A.vecs)
     A.lattype = latticeType(A.nops)
 #    printops_eigs(A)
@@ -195,7 +210,7 @@ def orthsuper(B):
 #    S_orth = three_perp(A.vecs,B.lattype)
     print; S_orth =  three_perp_eigs(A)  
 #    sys.exit('stop')  
-    M = trimSmall(transpose(dot(inv(A.vecs),S_orth)))
+    M = rint(transpose(dot(inv(A.vecs),S_orth))).astype(int)
     print 'M by finding 3 shortest perpendicular vectors';print M
     print 'det M', det(M)
 
@@ -235,17 +250,17 @@ def bestmeshIter(Blatt,Nmesh):
     A = lattice()
     K = lattice()
     status = ''
-    pf_minsv = 0
-    pf_sv2fcc = 0
-    pf_maxpf = 0
+    pf_minsv = 0; pf_sv2fcc = 0; pf_maxpf = 0
+    sym_maxpf = False;  sym_sv2fcc = False; sym_minsv = False
+    a = rint(Nmesh**(1/3.0)); f = int(Nmesh/a/a)
     
        
-    B.vecs = Blatt/2/pi  #Don't use 2pi constants in reciprocal lattice here.
+    B.vecs = Blatt/2/pi  #Don't use 2pi constants in reciprocal lattice here
     #############End BCT lattice
     eps = 1.0e-6
 
     B.Nmesh = Nmesh
-    print 'B vectors';print B.vecs #
+    print 'B vectors (differ by 2pi from traditional)';print B.vecs #
     #print 'B transpose'; print transpose(B.vecs)
     B.det = det(B.vecs)
     print 'Det of B', B.det
@@ -257,6 +272,13 @@ def bestmeshIter(Blatt,Nmesh):
 #    printops_eigs(B)
     B.lattype = latticeType(B.nops)
     print 'Lattice type:', B.lattype
+    A = lattice()
+    A.vecs = trimSmall(inv(transpose(B.vecs)))
+    print 'Real space lattice A'; print A.vecs
+    print 'Det A', det(A.vecs)
+    pfA = packingFraction(A.vecs)
+    print 'Packing fraction of A:', pfA    
+    
     pf_orth=0; pf_orth2fcc=0; sym_orth = False; sym_orth2fcc = False
     if B.lattype in ['Orthorhombic', 'Tetragonal','Cubic']:
         [kvecs_orth,pf_orth,sym_orth] = orthsuper(B)
@@ -268,7 +290,8 @@ def bestmeshIter(Blatt,Nmesh):
         kmesh2[:,2] = kvecs_orth[:,0]/scale + kvecs_orth[:,1]/scale   
         sym_orth2fcc = checksymmetry(kmesh2,B)
         if sym_orth2fcc:
-#            print; print kmesh2
+            M = rint(dot(inv(kmesh2),B.vecs)).astype(int)
+            print; print 'M';print M
             pf = packingFraction(kmesh2)
             print; print 'Packing fraction', pf, 'vs original B', pfB  
             kvecs_orth2fcc = kmesh2
@@ -292,90 +315,125 @@ def bestmeshIter(Blatt,Nmesh):
 #    print 'Number of symmetry operations', B.nops
 #    B.lattype = latticeType(B.nops)
 #    print 'Mink lattice type:', B.lattype
-
-    M = zeros((3,3),dtype=int)
-    a = rint(Nmesh**(1/3.0)); f = int(Nmesh/a/a)
-    #Check fcc-like mesh compatibility
-
-    
-#    if fcctype(B):
-
-#    print 'fcc-like starting mesh'    
-#    type = 'fcc' 
-#    scale = 2*rint((Nmesh/4)**(1/3.0))
-#    kmesh2 = zeros((3,3),dtype = float) 
-#    kmesh2[:,0] = B.vecs[:,1]/scale + B.vecs[:,2]/scale
-#    kmesh2[:,1] = B.vecs[:,2]/scale + B.vecs[:,0]/scale
-#    kmesh2[:,2] = B.vecs[:,0]/scale + B.vecs[:,1]/scale 
-##        print kmesh2
-#    M = dot(inv(kmesh2),B.vecs)
-#    print M    
-
-    print;
-    print 'Packing fraction minimization, starting with diagonal M'
-    type = 'maxpf'  #revise these types  
-    M[0,0]= a
-    M[1,1]= a
-    M[2,2]= f       
-    [M,K] = findmin(M,B,type)
-    print 'M ignoring symmetry:'; print M
-    print 'Packing fraction:', packingFraction(K.vecs)
-    print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh  
-    print 'Nearby mesh with required symmetry:'
-    [M,K] = findmin(M,B,type+'sym')    
-    print M
-    kvecs_maxpf = K.vecs
-    pf = packingFraction(kvecs_maxpf)
-    sym_maxpf = checksymmetry(kvecs_maxpf,B)
-    if sym_maxpf:
-        print 'Packing fraction (maxpf):', pf, 'vs original B', pfB  
-        print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh        
-        pf_maxpf = pf
-    else: 
-        print 'maxpf sym fail'; #status += 'maxpf sym fail;'; 
-#    else:
-
-    print;
-    print 'S/V minimization, starting with diagonal M'
-    type = 'minsv'  
-    M[0,0]= a
-    M[1,1]= a
-    M[2,2]= f        
-#    print M          
-    [M,K] = findmin(M,B,type) 
-    print 'M ignoring symmetry:'; print M
-    print 'Packing fraction:', packingFraction(K.vecs)
-    print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh      
-    print 'Nearby mesh with required symmetry:'          
-    [M,K] = findmin(M,B,type+'sym')    
-    print M
-    kvecs_minsv = K.vecs
-    pf = packingFraction(kvecs_minsv)   
-    sym_minsv = checksymmetry(kvecs_minsv,B)
-    sym_sv2fcc = False #initialize
-    if sym_minsv:
-        pf_minsv = pf
-        print 'Packing fraction (minsv)', pf, 'vs original B', pfB  
-        print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh 
-        print; print 'Try FCC-like substitution.',
-        kmesh2 = zeros((3,3),dtype = float)
-        scale = 2/4**(1/3.0)
-        kmesh2[:,0] = K.vecs[:,1]/scale + K.vecs[:,2]/scale
-        kmesh2[:,1] = K.vecs[:,2]/scale + K.vecs[:,0]/scale
-        kmesh2[:,2] = K.vecs[:,0]/scale + K.vecs[:,1]/scale   
-        sym_sv2fcc = checksymmetry(kmesh2,B)
-        if sym_sv2fcc:
-            print; print kmesh2
-            pf = packingFraction(kmesh2)
-            print 'Packing fraction', pf, 'vs original B', pfB  
-            kvecs_sv2fcc = kmesh2
-            pf_sv2fcc = pf
-        else:
-            print' It fails symmetry test'
-                    
     else:
-        print 'minsv sym fail'; #status += 'minsv sym fail;'
+        M = zeros((3,3),dtype=int)
+        
+        print 'S/V minimization, starting with diagonal M'
+ 
+        M[0,0]= a
+        M[1,1]= a
+        M[2,2]= f
+#        print 'S/V minimization, start diag a,w/ random off diag'
+#        for i in range(3):
+#            for j in range(3):
+#                if i ==j:
+#                    M[i,j] = a
+#                else:
+##                    M[i,j] = randint(-a/2,a/2)         
+#                    M[i,j] = 3
+    #    print M 
+    
+#        print;
+#        type = 'sym'     
+#        [M,K] = findmin(M,B,type) 
+#        print 'M ignoring N and pf:'; print M
+#        print 'Packing fraction:', packingFraction(K.vecs)
+#        print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh   
+#        print 'Symm:', checksymmetry(K.vecs,B)   
 #
+#        print;
+#        type = 'sym_sv'     
+#        [M,K] = findmin(M,B,type) 
+#        print 'M ignoring N:'; print M
+#        print 'Packing fraction:', packingFraction(K.vecs)
+#        print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh   
+#        print 'Symm:', checksymmetry(K.vecs,B)         
+#        
+#        sys.exit('stop')
+    
+    
+    
+             
+        type = 'minsv' 
+        [M,K] = findmin(M,B,type) 
+        print 'M ignoring symmetry:'; print M
+        print 'Packing fraction:', packingFraction(K.vecs)
+        print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh    
+        print 'Nearby mesh with required symmetry:'          
+        [M,K] = findmin(M,B,type+'sym')    
+        print M
+        kvecs_minsv = K.vecs
+        pf = packingFraction(kvecs_minsv)   
+        sym_minsv = checksymmetry(kvecs_minsv,B)
+        if sym_minsv:
+            pf_minsv = pf
+            print 'Packing fraction (minsv)', pf, 'vs original B', pfB  
+            print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh 
+            print; print 'Try FCC-like substitution.',
+            kmesh2 = zeros((3,3),dtype = float)
+            scale = 2/4**(1/3.0)
+            kmesh2[:,0] = K.vecs[:,1]/scale + K.vecs[:,2]/scale
+            kmesh2[:,1] = K.vecs[:,2]/scale + K.vecs[:,0]/scale
+            kmesh2[:,2] = K.vecs[:,0]/scale + K.vecs[:,1]/scale 
+#            M = rint(dot(inv(kmesh2),B.vecs)).astype(int) #set this for maxpf run  
+            sym_sv2fcc = checksymmetry(kmesh2,B)
+            if sym_sv2fcc:
+                M = rint(dot(inv(kmesh2),B.vecs)).astype(int)
+                print; print 'M';print M            
+    #            print; print kmesh2
+                pf = packingFraction(kmesh2)
+                print 'Packing fraction', pf, 'vs original B', pfB  
+                kvecs_sv2fcc = kmesh2
+                pf_sv2fcc = pf
+            else:
+                print' It fails symmetry test'                
+        else:
+            print 'minsv sym fail'; #status += 'minsv sym fail;'
+#        
+        
+        
+        
+        
+        
+        print;
+#        print 'Packing fraction minimization, starting with large BCC like'
+#        print 'Packing fraction minimization, starting with diagonal M'
+        type = 'maxpf'  #revise these types  
+#        M = zeros((3,3),dtype=int)
+#        M[0,0]= a
+#        M[1,1]= a
+#        M[2,2]= f  
+        print 'PF maximization, start diag a,w/ random off diag'
+        for i in range(3):
+            for j in range(3):
+                if i ==j:
+                    M[i,j] = a
+                else:
+                    M[i,j] = randint(-a/2,a/2) 
+        
+#        M = array([[-a, a ,a],
+#                  [a,-a, a],
+#                  [a,a,-a]])    
+#        [M,K] = findmin(M,B,type)
+#        print 'M ignoring symmetry:'; print M
+#        print 'Packing fraction:', packingFraction(K.vecs)
+#        print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh  
+#        print 'Nearby mesh with required symmetry:'
+        [M,K] = findmin(M,B,type+'sym')    
+        print M
+        kvecs_maxpf = K.vecs
+        pf = packingFraction(kvecs_maxpf)
+        sym_maxpf = checksymmetry(kvecs_maxpf,B)
+        if sym_maxpf:
+            print 'Packing fraction (maxpf):', pf, 'vs original B', pfB  
+            print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh        
+            pf_maxpf = pf
+        else: 
+            print 'maxpf sym fail'; #status += 'maxpf sym fail;'; 
+     
+     
+        print;
+
 #    pfK = packingFraction(K.vecs)
 #    if pfK < pfB: #didn't find better mesh; simply do Monkhorst-Pack with equal integers
 #        meshtype = 'MHP' ; #status += 'MHPrevert;'
@@ -397,9 +455,9 @@ def bestmeshIter(Blatt,Nmesh):
         
 #
 #    print 'Final symmetry check:',checksymmetry(K.vecs,B)
-    if not (sym_minsv or sym_sv2fcc or sym_maxpf):
+    if not (sym_minsv or sym_sv2fcc or sym_maxpf or sym_orth or sym_orth2fcc):
         meshtype = 'B_latt_revert' ; #status += 'MHPrevert;'
-        K.vecs = B.vecs/a; K.det = det(K.vecs); K.Nmesh = abs(B.det/K.det)
+        K.vecs = B.vecs/a; K.det = abs(det(K.vecs)); K.Nmesh = abs(B.det/K.det)
         pfmax = packingFraction(K.vecs)
     else:
         pfs = [pfB]
@@ -424,10 +482,10 @@ def bestmeshIter(Blatt,Nmesh):
         if sym_maxpf:
             pfs.append(pf_maxpf)
             pftypes.append('maxpf')
-            ks.append(kvecs_maxpf)             
+            ks.append(kvecs_maxpf)          
         pfmax = max(pfs)
         meshtype = pftypes[argmax(pfs)]
-        K.vecs = ks[argmax(pfs)]; K.det = det(K.vecs); K.Nmesh = B.det/K.det
+        K.vecs = ks[argmax(pfs)]; K.det = abs(det(K.vecs)); K.Nmesh = B.det/K.det
 
 #        print
 #        print 'Final K mesh'; print K.vecs

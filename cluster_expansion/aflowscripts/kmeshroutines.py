@@ -59,16 +59,16 @@ def lattvec_u(A,u):
     Gives c2 = col(m1/m2 1 m3/m2).  We multiply this by the series m = 2, 3, 4, 5, until all elements are
     integers.  Then then c3  = m*c2 will be [m1 m2 m3] '''
     
-    print u
+#    print u
     c = trimSmall(dot(inv(A),u))
     c2 = c/min(abs(c[nonzero(c)]))
     c3 = c2
     mmax = 1000
     m = 1
-    print c3
+#    print c3
     while not ( isinteger(c3[0]) and isinteger(c3[1]) and isinteger(c3[2]) ) and m < mmax :
-        print 'c3', c3
-        print 'mult',m,c3 
+#        print 'c3', c3
+#        print 'mult',m,c3 
              
         m += 1
         c3 = m * c2
@@ -96,52 +96,52 @@ def lattvec_u(A,u):
 #                        lattvec = r             
     return lattvec
 
-def three_perp(latt,lattype):
-    '''Find three of the shortest lattice vectors that are perpendicular to each other'''
-    [m0,m1,m2] = searchsphere(latt)
-#    print [m0,m1,m2]
-    vecs = zeros(((2*m0+1) * (2*m1+1) * (2*m2+1),3), dtype=float)
-    norms = zeros((2*m0+1) * (2*m1+1) * (2*m2+1), dtype=float) 
-    index = 0
-    #find all vectors in this range
-    for i in range(-m0, m0+1):
-        for j in range(-m1, m1+1):
-                for k in range(-m2, m2+1):
-#                    print i,k,j, index
-                    vecs[index,:] = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
-#                    print  vecs[index,:],norm(vecs[index,:])
-                    norms[index]  = norm(vecs[index,:])
-                    index += 1
-    #Find indices for vectors sorted by increasing norm
-    vecs = trimSmall(vecs)
-    sortvecs = argsort(norms)
-#    for i in sortvecs:
-#        print vecs[i,:]
-#    print sortvecs
-#    print sort(norms)
-#    for i in sortvecs:
-#        print vecs[i,:],
-#        print norms[i]
-    #Find the first set of three shortest that are perpendicular and meet symmetry requirements
-    for i in sortvecs[1:]: #Don't include first which i zero
-        for j in sortvecs[1:]:
-            if arenormal(vecs[i,:],vecs[j,:]):
-#                print i,j       
-                for k in sortvecs[1:]:
-#                    if i != j and i!=k and k != j:
-#                        print;print k, cosvecs(vecs[k,:],vecs[j,:]) , cosvecs(vecs[k,:],vecs[i,:])
-                    if arenormal(vecs[k,:],vecs[j,:]) and arenormal(vecs[i,:],vecs[k,:]):
-                        S = transpose(array([vecs[i,:],vecs[j,:],vecs[k,:]]))
-                        print 'found 3 vectors of any type',i,j,k
-                        if lattype == 'Cubic' and unique_anorms(S).count(True) == 0:
-                            return trimSmall(S) 
-                        if lattype == 'Tetrahedral' and unique_anorms(S).count(True) == 1:
-                            return trimSmall(S) 
-                        if lattype == 'Orthorhombic' and unique_anorms(S).count(True) == 3:
-                            return trimSmall(S)
-#                    print vecs[i,:];print vecs[j,:]; print vecs[k,:]
-#                    sys.exit('stop in 3perp')   
-    sys.exit('Could not find 3 perp vectors')
+#def three_perp(latt,lattype):
+#    '''Find three of the shortest lattice vectors that are perpendicular to each other'''
+#    [m0,m1,m2] = searchsphere(latt)
+##    print [m0,m1,m2]
+#    vecs = zeros(((2*m0+1) * (2*m1+1) * (2*m2+1),3), dtype=float)
+#    norms = zeros((2*m0+1) * (2*m1+1) * (2*m2+1), dtype=float) 
+#    index = 0
+#    #find all vectors in this range
+#    for i in range(-m0, m0+1):
+#        for j in range(-m1, m1+1):
+#                for k in range(-m2, m2+1):
+##                    print i,k,j, index
+#                    vecs[index,:] = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
+##                    print  vecs[index,:],norm(vecs[index,:])
+#                    norms[index]  = norm(vecs[index,:])
+#                    index += 1
+#    #Find indices for vectors sorted by increasing norm
+#    vecs = trimSmall(vecs)
+#    sortvecs = argsort(norms)
+##    for i in sortvecs:
+##        print vecs[i,:]
+##    print sortvecs
+##    print sort(norms)
+##    for i in sortvecs:
+##        print vecs[i,:],
+##        print norms[i]
+#    #Find the first set of three shortest that are perpendicular and meet symmetry requirements
+#    for i in sortvecs[1:]: #Don't include first which i zero
+#        for j in sortvecs[1:]:
+#            if arenormal(vecs[i,:],vecs[j,:]):
+##                print i,j       
+#                for k in sortvecs[1:]:
+##                    if i != j and i!=k and k != j:
+##                        print;print k, cosvecs(vecs[k,:],vecs[j,:]) , cosvecs(vecs[k,:],vecs[i,:])
+#                    if arenormal(vecs[k,:],vecs[j,:]) and arenormal(vecs[i,:],vecs[k,:]):
+#                        S = transpose(array([vecs[i,:],vecs[j,:],vecs[k,:]]))
+#                        print 'found 3 vectors of any type',i,j,k
+#                        if lattype == 'Cubic' and unique_anorms(S).count(True) == 0:
+#                            return trimSmall(S) 
+#                        if lattype == 'Tetrahedral' and unique_anorms(S).count(True) == 1:
+#                            return trimSmall(S) 
+#                        if lattype == 'Orthorhombic' and unique_anorms(S).count(True) == 3:
+#                            return trimSmall(S)
+##                    print vecs[i,:];print vecs[j,:]; print vecs[k,:]
+##                    sys.exit('stop in 3perp')   
+#    sys.exit('Could not find 3 perp vectors')
 
 def packingFraction(latt):
 #    print 'dNN', dNN(latt)
@@ -150,12 +150,10 @@ def packingFraction(latt):
     return round(vsphere/vol,4)
 
 def isinteger(x):
-#    print x, 'mod x,1',mod(x, 1)
-#    print 'mod x,1',mod(x, 1)
     return isequal(abs(rint(x)-x), 0)
 
 def isequal(x,y):
-    eps = 1.0e-6
+    eps = 5.0e-5
     return abs(x-y)<eps
 
 def isreal(x):
@@ -163,7 +161,7 @@ def isreal(x):
     return abs(x.imag)<eps
 
 def arenormal(v1,v2):
-    eps = 1.0e-6
+    eps = 5.0e-5
     norm1 = norm(v1); norm2 = norm(v2);
     if norm1*norm2>eps:
 #        print cosvecs(v1,v2)
@@ -174,10 +172,10 @@ def arenormal(v1,v2):
 def isindependent(vec1,vec2):  
     return not isequal(abs(cosvecs(vec1,vec2)),1)
 
-def trimSmall(mat):
-    low_values_indices = abs(mat) < 1.0e-5
-    mat[low_values_indices] = 0.0
-    return mat
+def trimSmall(list_mat):
+    low_values_indices = abs(list_mat) < 1.0e-5
+    list_mat[low_values_indices] = 0.0
+    return list_mat
 
 def cosvecs(vec1,vec2):
     return dot(vec1,vec2)/norm(vec1)/norm(vec2)
