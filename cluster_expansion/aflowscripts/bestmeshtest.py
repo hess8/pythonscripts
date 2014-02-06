@@ -15,8 +15,8 @@ fprec=float64
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 testfile = 'POSCAR'
 Nkppra = 10000
 
@@ -24,9 +24,8 @@ Nkppra = 10000
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 file1 = open('meshsummary.csv','w')
-file1.write('Structure,Lattice,amax/amin,pfB,pf_orth,pf_orth2fcc,pf_maxpf,pf_minsv,pf_sv2fcc,pf_max,meshtype' + ',' \
+file1.write('Structure,Lattice,amax/amin,pfB,pf_orth,pf_orth2fcc,pf_maxpf, pf_pf2fcc, pfmax, meshtype' + ',' \
              + 'Improvement,fcc compatibility,Nmesh,TargetNmesh,Nmesh/Target' + '\n')
-
 #for i,dir in enumerate(dirs):    
 #    if testfile in os.listdir(dir) and i >8638:
 for dir in dirs:
@@ -41,15 +40,15 @@ for dir in dirs:
 #        print 'reciprocal lattice vectors (rows)';print reciplatt
         totatoms = sum(natoms)
         Nmesh = Nkppra/totatoms
-        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_minsv, pf_sv2fcc, pfmax, meshtype, fcctype, status] = bestmeshIter(reciplatt,Nmesh)
-#        [K.vecs, K.Nmesh, B.Nmesh, B.lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_minsv, pf_sv2fcc, pfmax, meshtype, fcctype(B),status]
+        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype, status] = bestmeshIter(reciplatt,Nmesh)
+#        [K.vecs, K.Nmesh, B.Nmesh, B.lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype(B),status]
         pfimprove = round(pfmax/pfB , 1)
         a0 = norm(reciplatt[:,0]); a1 = norm(reciplatt[:,1]); a2 = norm(reciplatt[:,2]); 
         amax = max([a0,a1,a2]); amin =  min([a0,a1,a2])
         aratio = round(amax/amin, 1)
-        format = 16*'%s,'+'%s'
+        format = 15*'%s,'+'%s'
         file1.write(format %  \
-        (dir, lattype, str(aratio), str(pfB), str(pf_orth), str(pf_orth2fcc), str(pf_maxpf),str(pf_minsv), str(pf_sv2fcc), str(pfmax), \
+        (dir, lattype, str(aratio), str(pfB), str(pf_orth), str(pf_orth2fcc), str(pf_maxpf),str(pf_pf2fcc), str(pfmax), \
          meshtype, str(pfimprove), str(fcctype), str(rint(Nmesh)), str(targetNmesh), str(round(Nmesh/targetNmesh,3)),status+'\n'))
 file1.close()
         
