@@ -186,6 +186,7 @@ class lattice(object): #reciprocal lattice
         self.det = []
         self.Nmesh = []
         self.symops = []
+        self.msymops = []
         self.nops = []
         self.lattype = []
         
@@ -642,7 +643,14 @@ def getGroup(latt):
     nops = NopsOUT.value
     symopsB = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
     return [symopsB,nops]
-    
+
+def intsymops(A):
+    '''finds integer symmetry operations in the basis of the vectors of lattice A, 
+    given the cartesian operators A.symop'''
+    mops = zeros((3,3,A.nops),dtype = float)
+    for i in range(A.nops):
+        mops[:,:,i] = dot(dot(inv(A.vecs),A.symops[:,:,i]),A.vecs)
+    return trimSmall(mops)  
       
 def checksymmetry(latt,parentlatt):
     '''check that the lattice obeys all symmetry operations of a parent lattice:  R.latt.inv(R) will give an integer matrix'''
