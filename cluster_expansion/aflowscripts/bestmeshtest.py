@@ -16,9 +16,11 @@ fprec=float64
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
+
 testfile = 'POSCAR'
-Nkppra = 10000*10000
+Nkppra = 10000
 
 #reallatt = zeros((3,3))
 os.chdir(maindir)
