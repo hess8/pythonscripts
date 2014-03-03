@@ -189,6 +189,7 @@ class lattice(object): #reciprocal lattice
         self.msymops = []
         self.nops = []
         self.lattype = []
+        self.pftarget = []
         
 def surfvol(vecs): 
     '''Surface/volume metric for a mesh, scaled to 1 for a cube'''

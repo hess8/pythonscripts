@@ -154,89 +154,6 @@ def findmin_i(M,B,iop):
 #        sys.exit('Stop')
     return trimSmall(M)
 
-def gradM(Mv,B,run):
-    '''Calculates the gradient in cost vs changing Mv by incrementing and decrementing each element'''
-    gradM = zeros((9),dtype = float)
-    for i in range(9):
-        Mv[i] += 1;
-        cost1 = cost(Mv.reshape((3,3)),B,run)
-        Mv[i] += -2;
-        cost2 = cost(Mv.reshape((3,3)),B,run)
-        Mv[i] += 1  
-        gradM[i] = (cost1-cost2)/2
-    print 'gradM'; print gradM.reshape((3,3))
-    return gradM
-
-#def BFGSi(M,B,run):
-#    '''BFGS method, but altered (BCH) to run over integers'''
-#    Mv = M.flatten()
-#    stepscale = 0.1 #Go only a fraction of step toward min location estimated by gradient
-#    hessB = identity(9) #approx to hessian
-#    delcost = -1.0
-#    grad1 = gradM(Mv,B,run)
-#    oldcost = cost(Mv.reshape((3,3)),B,run)
-#    print 'cost',oldcost
-#    while delcost < 0:
-#        p = -dot(inv(hessB),grad1)
-#        alpha = cost(Mv.reshape((3,3)),B,run)/norm(grad1)
-#        print 'alpha',alpha;print 'p'; print p
-#        s = rint(alpha*p*stepscale)
-#        print 'det M',det(Mv.reshape((3,3)))
-#        Mv = Mv + s
-#        print 'new Mv'; print Mv.reshape((3,3))
-#        print 'det M',det(Mv.reshape((3,3)))
-#        grad2 = gradM(Mv,B,run)
-#        y = grad2 - grad1
-#        print 'y',y
-##        print dot(B,outer(s,s))
-##        hessB = hessB + outer(y,y)/inner(y,s) - dot(dot(hessB,outer(s,s)),hessB)/inner(s,dot(hessB,s))
-#        newcost = cost(Mv.reshape((3,3)),B,run)
-#        print 'cost',newcost
-#        delcost = newcost - oldcost
-#        print 'delcost',delcost
-#        oldcost = newcost; grad1 = grad2 
-##        sys.exit('stop')
-#    M = Mv.reshape((3,3))
-#    return M
-
-#def findmin(M,B,run):
-#    '''Dual version:  Finds minimum cost for the lattice by varying the integers of m, in the element that gives steepest descent
-#    The 'run' indicates the cost function to use'''
-#    maxsteps = 1000
-#    istep = 1
-#    M = minkM(M,B);print'Mink reduced M'; print M
-#    Mv = M.flatten()
-#   
-#    while istep<maxsteps:
-#
-##        sys.exit('stop')
-#        bestindex = changewhichdual(Mv,B,run)
-#        print bestindex[0][0],bestindex[0][1], bestindex[0][2], bestindex[0][3],bestindex[1]
-#        if bestindex[1]>=0:#found minimum
-##            newcost = cost(M,B,run)
-#            break
-#        else:
-#            if bestindex[0][0]==bestindex[0][1]: #only change this one index
-#                Mv[bestindex[0][0]] += -(-1)**bestindex[0][2]#if index is 0, get -1; if index is 1, get 1
-#            else:
-#                Mv[bestindex[0][0]] += -(-1)**bestindex[0][2] 
-#                Mv[bestindex[0][1]] += -(-1)**bestindex[0][3]
-#        M = trimSmall(Mv.reshape((3,3)))
-#        print 'New M'; print M
-#        print 'newcost', cost(M,B,run)
-#        if run == 'minsvsym' and B.Nmesh/float(det(M))>1.2: M = M*2 # open up search space when when det(M) gets too low
-##            print; print M;print newcost
-#        istep += 1
-#    if istep < maxsteps:
-#        print 'Found minimum after %i steps' % istep
-##        print 'Best M'; print M
-#        K = lattice();K.vecs = trimSmall(dot(B.vecs,inv(M)));K.det = abs(det(K.vecs)); K.Nmesh = B.det/K.det             
-#    else:
-#        print 'Ended without minimum after maximum %i steps' % istep
-#        sys.exit('Stop')
-#    return [trimSmall(M),K]
-
-
 def findmin(M,B,run): #normal routine for varying a single element at a time. 
     '''Finds minimum cost for the lattice by varying the integers of m, in the element that gives steepest descent
     The 'run' indicates the cost function to use'''
@@ -267,53 +184,6 @@ def findmin(M,B,run): #normal routine for varying a single element at a time.
         sys.exit('Stop')
     return [trimSmall(M),K]
 
-#def findmin(M,B,run): #see above for other version
-#    '''Finds minimum cost for the lattice by varying the integers of m, in the two elements that gives steepest descent
-#    The 'run' indicates the cost function to use'''
-#    maxsteps = 1000
-#    istep = 1
-#    while istep<maxsteps:
-##        bestindex = changewhich(M,B,run)
-#        [bestindex, nextbest, deltai, deltai2] = grad(M,B,run)
-#        if deltai[bestindex]==0:#found minimum
-#            break
-#        else:
-#            M[bestindex] += deltai[bestindex]
-##            if random()>0.5: #don't do this every time to avoid cycles
-#            M[nextbest] += deltai2[nextbest]
-##            print 'bestindex, nextbest, deltai, deltai2', bestindex, nextbest; print deltai; print deltai2
-##            print M
-#            if run == 'minsvsym' and B.Nmesh/float(det(M))>1.2: M = M*2 # open up search space when when det(M) gets too low
-##            print; print M;print newcost
-#        istep += 1
-#    if istep < maxsteps:
-#        print 'Found minimum after %i steps' % istep
-##        print 'Best M'; print M
-#        K = lattice();K.vecs = trimSmall(dot(B.vecs,inv(M)));K.det = abs(det(K.vecs)); K.Nmesh = B.det/K.det             
-#    else:
-#        print 'Ended without finding minimum, after the maximum %i steps' % istep
-#        sys.exit('Stop')
-#    return [trimSmall(M),K]
-
-#def costsymflat(M,B):
-#    M1 = deepcopy(M)
-#    M1.shape = (3,3)
-#    Kvecs = dot(B.vecs,inv(M1)) 
-#    symerr = symmetryError(Kvecs,B)
-#    return M1.flat   
-
-#class cost2(object):  
-#    def __init__(self):         
-#        self.latt = []
-#        self.symopi = []
-#    def symflat(self,M):
-#        M1 = deepcopy(M)
-#        M1.shape = (3,3)
-#        Kvecs = dot(self.latt.vecs,inv(M1)) 
-#        symerr = symmetryError(Kvecs,self.latt)
-#        print M1
-#        print symerr
-#        return symerr
 
 def costi(M,B,iop):
     '''Here the symmetry cost is that due to only one symm operation,iop'''
@@ -341,14 +211,10 @@ def costi(M,B,iop):
 
 
 def cost(M,B,run):
-#    print M
     if isequal(det(M),0):
         return 1000
-#        print 'Failed M'; print M
-#        sys.exit('Det(M) = 0 in cost function. Stop')
-#    else: 
-#        K = lattice()
-#        K.vecs = dot(B.vecs,inv(M));K.det = abs(det(K.vecs))
+    pftarget = B.pftarget
+    
     K = lattice()
     K.vecs = dot(B.vecs,inv(M));K.det = abs(det(K.vecs))    
     if run == 'minsv':
@@ -361,7 +227,7 @@ def cost(M,B,run):
         Nscale =1*.5; Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
         pf = packingFraction(K.vecs)
 #        cost = (1/pf)*(1+Ncost) 
-        cost = 1 * (0.7405 - pf)/0.7405  + Ncost     
+        cost = 1 * abs(pftarget - pf)/pftarget  + Ncost     
     elif run == 'minsvsym':
         Nscale =1*.05#.05; 
         Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
@@ -373,7 +239,8 @@ def cost(M,B,run):
     elif run == 'maxpfsym':
         Nscale =1*.2; #*.2;
         Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
-        shapescale = 10 ; shapecost = shapescale * (0.7405 - packingFraction(K.vecs))/0.7405   
+        pf = packingFraction(K.vecs)
+        shapescale = 10 ; shapecost = shapescale * abs(pftarget - pf)/pftarget
         symerr = symmetryError(K.vecs,B)
 #        print symerr          
 #        cost = symerr *(1+Ncost)*(1+shapecost)
@@ -471,13 +338,6 @@ def orthsuper(B):
 
     #starting mesh Q with 3 free directions. 
     Q = dot(B.vecs,inv(M))
-#    print dot(Q[:,0],Q[:,1]),dot(Q[:,1],Q[:,2]),dot(Q[:,2],Q[:,0])
-#    print norm(Q[:,0]),norm(Q[:,1]),norm(Q[:,2])
-##        K = B.vecs/rint((B.Nmesh/det(Q))**(1/3.0))
-#    if B.lattype == 'Tetrahedral':
-#        #Find the free direction
-#        q0 = norm(Q[:,0]); q1 = norm(Q[:,1]); q2 = norm(Q[:,2]); 
-#        if isequal(q1,q2)): nmesh 
     print 'mesh numbers'; 
     [n0,n1,n2] = svmesh(B.Nmesh/abs(det(M)),Q)[0]
     print [n0,n1,n2]
@@ -511,6 +371,8 @@ def bestmeshIter(Blatt,Nmesh):
     print 'Target mesh number', Nmesh
        
     B.vecs = Blatt/2/pi  #Don't use 2pi constants in reciprocal lattice here
+#    B.pftarget = 0.7405 #default best packing fraction
+    B.pftarget = 0.35
     #############End BCT lattice
     eps = 1.0e-6
 
@@ -565,18 +427,6 @@ def bestmeshIter(Blatt,Nmesh):
     else:
 #'--------------------------------------------------------------------------------------------------------'
 #'--------------------------------------------------------------------------------------------------------'
-   
-
-#        if B.lattype in ['Hexagonal','Monoclinic']:
-#            M = zeros((3,3),dtype=int)
-##             print 'Starting with diagonal M'
-##             M[0,0]= a
-##             M[1,1]= a
-##             M[2,2]= f
-#            c=3        
-#            M = array([[-a, a/c , a/c],[a/c,-a,a/c],[a/c,a/c,-a]])
-#     
-#        else:
         M = zeros((3,3),dtype=int)
         ctest = []
         type = 'maxpfsym'; print type
@@ -588,34 +438,10 @@ def bestmeshIter(Blatt,Nmesh):
             print 'Start mesh trial'; print M              
             [M,K] = findmin(M,B,type)
             print 'Test trial M'; print M
-
             ctest.append(cost(M,B,type))
-        print'Trial costs',ctest                           
+#        print'Trial costs',ctest                           
         cbest = ctrials[argmin(ctest)]
-        print'Best c', cbest
-            
-            
-        
-     #
-     #        print 'S/V minimization, start diag a,w/ random off diag'
-     #        for i in range(3):
-     #            for j in range(3):
-     #                if i ==j:
-     #                    M[i,j] = a
-     #                else:
-     #                    M[i,j] = 3 
-     #                    M[i,j] = rint(a/3)
-#        print M  
-     #        ma = zeros((3,3,A.nops),dtype = float)
-     #        ms = zeros((3,3,A.nops),dtype = float)
-     #        for iop in range(A.nops): ma[:,:,iop] = trimSmall(dot(dot(inv(A.vecs),A.symops[:,:,iop]),A.vecs))
-     #        ms[:,:,iop] = trimSmall(dot(dot(inv(S),ma[:,:,iop]),S)) #starting values
-     #        type = 'minsv';print type
-     
-     #        type = 'maxpf'; print type
-     #        [M,K] = findmin(M,B,type) 
-     #        print 'M ignoring symmetry:'; print M
-       
+#        print'Best c', cbest       
         iternpf = 0
         itermaxnpf = 10
         itermaxsym = 5
@@ -642,7 +468,7 @@ def bestmeshIter(Blatt,Nmesh):
             while not symm and itersym <itermaxsym: 
                 itersym += 1
                 print 'Symmetry iteration', itersym, '-------'         
-                print 'Nmesh', abs(det(M)), 'packing', packingFraction(dot(B.vecs,inv(M)))
+#                print 'Nmesh', abs(det(M)), 'packing', packingFraction(dot(B.vecs,inv(M)))
                 M = minkM(M,B)#; print'Mink reduced M'; print M    
                 for iop in range(B.nops):
                     M = findmin_i(M,B,iop)
@@ -687,41 +513,6 @@ def bestmeshIter(Blatt,Nmesh):
                     else:
                         print '    Fails to improve mesh'    
                 delcost = cost(M,B,type) - oldcost
-        
-#    #random test around best M:
-#    rrange = 3
-#    nrand = 300
-#    kmesh = trimSmall(dot(B.vecs,inv(M)))
-#    pfbest = packingFraction(kmesh)
-#    M2 = deepcopy(M)
-#    M3 = M2
-#    if 0.7405 - pfbest > 0.1:
-#        print 'Check %i random variations on M in range %i, vs best packing %f' % (nrand, rrange,pfbest)        
-#        for irun in range(nrand):
-#            if fmod(irun,100) == 0: print irun
-#            for i in range(3):
-#                for j in range(3):
-##                        M3[i,j] = M3[i,j] + randint(-rrange,rrange+1)
-#                    M3[i,j] = M2[i,j] + randint(-rrange,rrange+1)
-##            print;print 'Before scaling'; print M3
-#            M3 = rint(M3 * (B.Nmesh/abs(det(M3)))**(1/3.0))
-##            print 'After scaling'; print M3              
-#            kmesh = trimSmall(dot(B.vecs,inv(M3)))
-#            if packingFraction(kmesh)>pfbest: #and not isequal(det(kmesh),0):
-#                [M3,K] = findmin(M3,B,type)
-##                    for iop in range(B.nops):
-##                        M3 = findmin_i(M3,B,iop)
-#                kmesh = trimSmall(dot(B.vecs,inv(M3)))
-#                if cost(M3,B,type) < lowcost and checksymmetry(kmesh,B):
-#                    lowcost = cost(M3,B,type)
-#                    pfbest = packingFraction(kmesh)
-#                    print "Rand M then search obeys sym"; print M3
-#                    print 'pf', packingFraction(kmesh)
-#                    print 'cost', cost(M3,B,type)
-#                    Nmesh = B.det/abs(det(kmesh))
-#                    print 'Nmesh', Nmesh, 'vs target', B.Nmesh                     
-        
-       
  #  Summary     
     pfs = [pfB]
     pftypes = ['B_latt']  
@@ -739,15 +530,7 @@ def bestmeshIter(Blatt,Nmesh):
          if sym_orth2fcc:
             pfs.append(pf_orth2fcc)
             pftypes.append('orth2fcc')
-            ks.append(kvecs_orth2fcc)          
-#        if sym_minsv:
-#            pfs.append(pf_minsv)
-#            pftypes.append('minsv')
-#            ks.append(kvecs_minsv)
-#        if sym_sv2fcc:
-#            pfs.append(pf_sv2fcc)
-#            pftypes.append('sv2fcc')
-#            ks.append(kvecs_sv2fcc)            
+            ks.append(kvecs_orth2fcc)                     
          if sym_maxpf:
              pfs.append(pf_maxpf)
              pftypes.append('maxpf')
