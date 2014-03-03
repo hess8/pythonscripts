@@ -683,43 +683,43 @@ def bestmeshIter(Blatt,Nmesh):
 
                             print;
                         else:
-                            print 'Packing fraction too small' 
+                            print '    Packing fraction too small' 
                     else:
-                        print 'Fails to improve mesh'    
+                        print '    Fails to improve mesh'    
                 delcost = cost(M,B,type) - oldcost
         
-    #random test around best M:
-    rrange = 3
-    nrand = 300
-    kmesh = trimSmall(dot(B.vecs,inv(M)))
-    pfbest = packingFraction(kmesh)
-    M2 = deepcopy(M)
-    M3 = M2
-    if 0.7405 - pfbest > 0.1:
-        print 'Check %i random variations on M in range %i, vs best packing %f' % (nrand, rrange,pfbest)        
-        for irun in range(nrand):
-            if fmod(irun,100) == 0: print irun
-            for i in range(3):
-                for j in range(3):
-#                        M3[i,j] = M3[i,j] + randint(-rrange,rrange+1)
-                    M3[i,j] = M2[i,j] + randint(-rrange,rrange+1)
-#            print;print 'Before scaling'; print M3
-            M3 = rint(M3 * (B.Nmesh/abs(det(M3)))**(1/3.0))
-#            print 'After scaling'; print M3              
-            kmesh = trimSmall(dot(B.vecs,inv(M3)))
-            if packingFraction(kmesh)>pfbest: #and not isequal(det(kmesh),0):
-                [M3,K] = findmin(M3,B,type)
-#                    for iop in range(B.nops):
-#                        M3 = findmin_i(M3,B,iop)
-                kmesh = trimSmall(dot(B.vecs,inv(M3)))
-                if cost(M3,B,type) < lowcost and checksymmetry(kmesh,B):
-                    lowcost = cost(M3,B,type)
-                    pfbest = packingFraction(kmesh)
-                    print "Rand M then search obeys sym"; print M3
-                    print 'pf', packingFraction(kmesh)
-                    print 'cost', cost(M3,B,type)
-                    Nmesh = B.det/abs(det(kmesh))
-                    print 'Nmesh', Nmesh, 'vs target', B.Nmesh                     
+#    #random test around best M:
+#    rrange = 3
+#    nrand = 300
+#    kmesh = trimSmall(dot(B.vecs,inv(M)))
+#    pfbest = packingFraction(kmesh)
+#    M2 = deepcopy(M)
+#    M3 = M2
+#    if 0.7405 - pfbest > 0.1:
+#        print 'Check %i random variations on M in range %i, vs best packing %f' % (nrand, rrange,pfbest)        
+#        for irun in range(nrand):
+#            if fmod(irun,100) == 0: print irun
+#            for i in range(3):
+#                for j in range(3):
+##                        M3[i,j] = M3[i,j] + randint(-rrange,rrange+1)
+#                    M3[i,j] = M2[i,j] + randint(-rrange,rrange+1)
+##            print;print 'Before scaling'; print M3
+#            M3 = rint(M3 * (B.Nmesh/abs(det(M3)))**(1/3.0))
+##            print 'After scaling'; print M3              
+#            kmesh = trimSmall(dot(B.vecs,inv(M3)))
+#            if packingFraction(kmesh)>pfbest: #and not isequal(det(kmesh),0):
+#                [M3,K] = findmin(M3,B,type)
+##                    for iop in range(B.nops):
+##                        M3 = findmin_i(M3,B,iop)
+#                kmesh = trimSmall(dot(B.vecs,inv(M3)))
+#                if cost(M3,B,type) < lowcost and checksymmetry(kmesh,B):
+#                    lowcost = cost(M3,B,type)
+#                    pfbest = packingFraction(kmesh)
+#                    print "Rand M then search obeys sym"; print M3
+#                    print 'pf', packingFraction(kmesh)
+#                    print 'cost', cost(M3,B,type)
+#                    Nmesh = B.det/abs(det(kmesh))
+#                    print 'Nmesh', Nmesh, 'vs target', B.Nmesh                     
         
        
  #  Summary     
