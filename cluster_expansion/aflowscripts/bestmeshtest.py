@@ -8,6 +8,7 @@ from numpy.linalg import norm
 from kmeshroutines import nstrip, readposcar
 #from bestmeshIterJan22 import bestmeshIter
 from bestmeshIter import bestmeshIter
+from bestmeshIter_vary_pf import bestmeshIter_vary_pf
 fprec=float64
 
 ################# script #######################
@@ -42,7 +43,15 @@ for dir in dirs:
 #        print 'reciprocal lattice vectors (rows)';print reciplatt
         totatoms = sum(natoms)
         Nmesh = Nkppra/totatoms
-        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter(reciplatt,Nmesh)
+#RESORE THIS        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter(reciplatt,Nmesh)
+ 
+# for trials where we want to vary pf for testing       
+        meshesfile = open('meshesfile','w')
+        meshesfile.write(dir+' ============\n')
+        meshesfile.close()
+        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter_vary_pf(reciplatt,Nmesh)
+# End trials
+
 #        [K.vecs, K.Nmesh, B.Nmesh, B.lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype(B),status]
         pfimprove = round(pfmax/pfB , 1)
         a0 = norm(reciplatt[:,0]); a1 = norm(reciplatt[:,1]); a2 = norm(reciplatt[:,2]); 
