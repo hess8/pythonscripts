@@ -106,6 +106,34 @@ from kmeshroutines.py import getkpts_vasp
 #    file2.writelines(kpointsfile) 
 #    file2.close()
 #    return 
+
+
+def writekpts_vasp_n(dir, mesh,n,type):
+    '''Write mesh m's to kpoints file, using integer division for cubic and fcc meshes'''   
+    file1 = open(maindir+dir+'/'+'KPOINTS','w')
+    kpointsfile = []
+    file1.close
+    file2 = open(maindir+dir+'/'+kptsfile,'w')
+    kpointsfile.append('For testing convergence vs n \n')
+    kpointsfile.append('0 \n')   
+    kpointsfile.append('Cartesian \n')
+    if type == 'cubic':
+        b = 1.0/n
+        kpointsfile.append('%12.8f 0.0 0.0\n' % b)
+        kpointsfile.append('0.0 %12.8f 0.0\n' % b)
+        kpointsfile.append('0.0 0.0 %12.8f\n' %  b)
+    if type == 'fcc':
+        b = 1.0/n/2.0
+        kpointsfile.append('0.0 %12.8f %12.8f\n' % (b,b))
+        kpointsfile.append('%12.8f 0.0 %12.8f\n' % (b,b))
+        kpointsfile.append('%12.8f %12.8f 0.0\n' % (b,b))
+    else:
+        sys.exit('Stop: type not found in writekpts_vasp_n')
+    kpointsfile.append('0.5 0.5 0.5\n' %b) #shift
+    file1.writelines(kpointsfile) 
+    file1.close()
+    return 
+
 #
 #def writejobfile(maindir,dir):
 #    '''read from a template in maindir, and put dir in job name'''
@@ -140,15 +168,15 @@ for dir in dirs:
         file1.close()
         if len(poscar) >0:
             os.chdir(currdir)
-            scale = np.sum(np.array(float(poscar[1])))
-            N = np.rint(Nkppra/np.sum(np.array(poscar[5].split(),dtype=np.int16))).astype(int) # number of kpts desired
-            reallatt[0,:] = np.array(poscar[2].split())
-            reallatt[1,:] = np.array(poscar[3].split())
-            reallatt[2,:] = np.array(poscar[4].split())
-            reallatt = scale*reallatt.astype(np.float)        
-            reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
-            mesh_ns = svmesh(N,reciplatt)
-#            writekpts_vasp(dir,mesh_ns) #correct kmesh
+#            scale = np.sum(np.array(float(poscar[1])))
+#            N = np.rint(Nkppra/np.sum(np.array(poscar[5].split(),dtype=np.int16))).astype(int) # number of kpts desired
+#            reallatt[0,:] = np.array(poscar[2].split())
+#            reallatt[1,:] = np.array(poscar[3].split())
+#            reallatt[2,:] = np.array(poscar[4].split())
+#            reallatt = scale*reallatt.astype(np.float)        
+#            reciplatt = 2*np.pi*np.transpose(np.linalg.inv(reallatt))
+
+            writekpts_vasp_n(dir, mesh,n,type):
             writejobfile(maindir,dir)
             os.system('rm slurm*')
 #            subprocess.call(['rm', 'slurm*'])

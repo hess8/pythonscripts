@@ -16,6 +16,7 @@ fprec=float64
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test2/'
 maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
@@ -26,11 +27,11 @@ Nkppra = 10000
 #reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
-file1 = open('meshsummary.csv','w')
+file1 = open('meshsummary.csv','a')
 file1.write('Structure,Lattice,amax/amin,pfB,pf_orth,pf_orth2fcc,pf_maxpf, pf_pf2fcc, pfmax, meshtype' + ',' \
              + 'Improvement,fcc compatibility,Nmesh,TargetNmesh,Nmesh/Target,cbest' + '\n')
 #for i,dir in enumerate(dirs):    
-#    if testfile in os.listdir(dir) and i >8638:
+
 for dir in dirs:
     if testfile in os.listdir(dir):        
         print 

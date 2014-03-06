@@ -28,7 +28,6 @@ def eigenvecfind(S,parentlatt):
     the plane of the first two vectors of S'''
 #    print 'S after array convert'; print S  
     eps = 1.0e-6
-    
     for iop in range(parentlatt.nops): #loop for printing only
         evals,evecs = eig(parentlatt.symops[:,:,iop])            
     for iop in range(parentlatt.nops):
@@ -93,38 +92,38 @@ def changewhich(M,B,run):
 #            print i,j, delInc, delDec
     return bestindex
 
-def changewhichdual(Mv,B,run):
-    ''' delij: for i 1..9 and j 1..9, find the biggest negative cost change when varying 
-    i by -1,0,1 and j by -1,0,1.  If i = j, then we vary that single index by the first entry''' 
-    delij = zeros((9,9,2,2),dtype=float)#change in cost fo
-    oldcost = cost(Mv.reshape((3,3)),B,run)
-    for iv in range(9):
-        for jv in range(iv,9):
-            
-            if iv == jv:
-                for k,delm_k in enumerate([-1,1]):
-                    Mv[iv] += delm_k
-                    delij[iv,iv,k,k] = cost(Mv.reshape((3,3)),B,run) - oldcost
-                    Mv[iv] += - delm_k  
-#                    print 'diag', iv,delij[iv,iv,k,k] 
-            else:
-                for k,delm_k in enumerate([-1,1]):
-                    for l,delm_l in enumerate([-1,1]):
-                        Mv[iv] += delm_k
-                        Mv[jv] += delm_l
-                        delij[iv,jv,k,l] = cost(Mv.reshape((3,3)),B,run) - oldcost
-                        Mv[iv] += -delm_k
-                        Mv[jv] += -delm_l 
-#                        print iv,jv,delm_k,delm_l,delij[iv,jv,k,l]
-                
-#    print 'min delij', min(delij)
-    print 'indices', unravel_index(argmin(delij), delij.shape)
-    print 'min delij'
-    print delij[unravel_index(argmin(delij), delij.shape)]
-
-    
-#    print delij
-    return [unravel_index(argmin(delij), delij.shape),delij[unravel_index(argmin(delij), delij.shape)]]
+#def changewhichdual(Mv,B,run):
+#    ''' delij: for i 1..9 and j 1..9, find the biggest negative cost change when varying 
+#    i by -1,0,1 and j by -1,0,1.  If i = j, then we vary that single index by the first entry''' 
+#    delij = zeros((9,9,2,2),dtype=float)#change in cost fo
+#    oldcost = cost(Mv.reshape((3,3)),B,run)
+#    for iv in range(9):
+#        for jv in range(iv,9):
+#            
+#            if iv == jv:
+#                for k,delm_k in enumerate([-1,1]):
+#                    Mv[iv] += delm_k
+#                    delij[iv,iv,k,k] = cost(Mv.reshape((3,3)),B,run) - oldcost
+#                    Mv[iv] += - delm_k  
+##                    print 'diag', iv,delij[iv,iv,k,k] 
+#            else:
+#                for k,delm_k in enumerate([-1,1]):
+#                    for l,delm_l in enumerate([-1,1]):
+#                        Mv[iv] += delm_k
+#                        Mv[jv] += delm_l
+#                        delij[iv,jv,k,l] = cost(Mv.reshape((3,3)),B,run) - oldcost
+#                        Mv[iv] += -delm_k
+#                        Mv[jv] += -delm_l 
+##                        print iv,jv,delm_k,delm_l,delij[iv,jv,k,l]
+#                
+##    print 'min delij', min(delij)
+#    print 'indices', unravel_index(argmin(delij), delij.shape)
+#    print 'min delij'
+#    print delij[unravel_index(argmin(delij), delij.shape)]
+#
+#    
+##    print delij
+#    return [unravel_index(argmin(delij), delij.shape),delij[unravel_index(argmin(delij), delij.shape)]]
 
 
 def findmin_i(M,B,iop):
@@ -152,8 +151,13 @@ def findmin_i(M,B,iop):
 #        print 'Best M'; print M
     else:
         print 'Ended without minimum after %i steps' % istep
+        print 'Restart with different M'
+        a = B.Nmesh**(1/3.0); c = 3;
+        M = array([[-a+5, a/c , a/c],[a/c,-a,a/c],[a/c,a/c,-a-5]])
 #        sys.exit('Stop')
     return trimSmall(M)
+      
+
 
 def findmin(M,B,run): #normal routine for varying a single element at a time. 
     '''Finds minimum cost for the lattice by varying the integers of m, in the element that gives steepest descent
@@ -171,7 +175,7 @@ def findmin(M,B,run): #normal routine for varying a single element at a time.
         else:
             M[bestindex[0],bestindex[1]] += bestindex[2]
 #            newcost = cost(M,B,run)
-            if run == 'minsvsym' and B.Nmesh/float(det(M))>1.2: M = M*2 # open up search space when when det(M) gets too low
+#            if run == 'minsvsym' and B.Nmesh/float(det(M))>1.2: M = M*2 # open up search space when when det(M) gets too low
 #            print; print M;print newcost
 
         istep += 1
@@ -202,10 +206,10 @@ def costi(M,B,iop):
 #                    print parentlatt.symops[:,:,iop] 
 #                    print 'Cartesian Lattice'
 #                    print lmat
-        Nscale =0*.05#.05; 
-        Ncost = Nscale * abs((B.det/det(kvecs))-B.Nmesh)/B.Nmesh 
-        shapescale = 0 * 0.01; shapecost = shapescale * surfvol(kvecs)
-        cost = operr  + Ncost + shapecost
+#        Nscale =0*.05#.05; 
+#        Ncost = Nscale * abs((B.det/det(kvecs))-B.Nmesh)/B.Nmesh 
+#        shapescale = 0 * 0.01; shapecost = shapescale * surfvol(kvecs)
+        cost = operr  #+ Ncost + shapecost
 
     return cost
 
@@ -231,7 +235,7 @@ def cost(M,B,run):
     elif run == 'minsvsym':
         Nscale =1*.05#.05; 
         Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
-        shapescale = 1 * 0.5; shapecost = shapescale * surfvol(K.vecs)
+        pfscale = 1 * 0.5; pfcost = pfscale * surfvol(K.vecs)
         symerr = symmetryError(K.vecs,B)
 #        print symerr
 #        cost = symerr *(1+Ncost)*(1+shapecost)
@@ -240,11 +244,11 @@ def cost(M,B,run):
         Nscale =1*.2; #*.2;
         Ncost = Nscale * abs((B.det/K.det)-B.Nmesh)/B.Nmesh 
         pf = packingFraction(K.vecs)
-        shapescale = 10 ; shapecost = shapescale * abs(pftarget - pf)/pftarget
+        pfscale = 10 ; pfcost = pfscale * abs(pftarget - pf)/pftarget
         symerr = symmetryError(K.vecs,B)
 #        print symerr          
-#        cost = symerr *(1+Ncost)*(1+shapecost)
-        cost = symerr  + Ncost + shapecost
+#        cost = symerr *(1+Ncost)*(1+pfcost)
+        cost = symerr  + Ncost + pfcost
     elif run == 'sym':   
         symerr = symmetryError(K.vecs,B)
 #        print symerr
@@ -401,9 +405,10 @@ def bestmeshIter_vary_pf(Blatt,Nmesh):
     
     meshesfile = open('meshesfile','a')
     meshesfile.write('N target %i\n' % B.Nmesh)
-    meshesfile.write('Format: pf then Nmesh then kmesh\n')    
+    meshesfile.write('Format: pf then Nmesh then kmesh\n\n')    
 
-    for pftry in frange(.3,.75,.2):
+    pflist = []
+    for pftry in frange(pfB/2,0.75,0.005):
         print '\nPacking fraction target',pftry
         B.pftarget = pftry  
         pf_orth=0; pf_orth2fcc=0; sym_orth = False; sym_orth2fcc = False
@@ -472,13 +477,13 @@ def bestmeshIter_vary_pf(Blatt,Nmesh):
                     print 'Packing fraction', pf_maxpf, 'vs original B', pfB  
                     print 'Nmesh', K.Nmesh, 'vs target', B.Nmesh 
                 delcost = cost(M,B,type) - oldcost
-    
         #write to files
 
 #        meshesfile.write('Packing fraction target %f\n' % pftry)
-        if symm:
+        if symm and pf_maxpf not in pflist:
+            pflist.append(pf_maxpf)
 #            meshesfile.write('Packing fraction achieved %f\n' % pf_maxpf)
-            meshesfile.write('%12.8f  %8.2f \n' % (pf_maxpf,K.Nmesh)) 
+            meshesfile.write('%12.8f  %8.3f \n' % (pf_maxpf,K.Nmesh)) 
 #            meshesfile.write('M\n')
 #            for i in range(3):
 #                for j in range(3):
@@ -489,14 +494,14 @@ def bestmeshIter_vary_pf(Blatt,Nmesh):
 #            meshesfile.write('k mesh\n')
             for i in range(3):
                 for j in range(3):
-                    meshesfile.write('%14.8f' % K.vecs[i,j])
+                    meshesfile.write('%18.12f' % K.vecs[i,j])
                 meshesfile.write('\n')
             meshesfile.write('\n') 
         else:
             'do nothing'
 #            meshesfile.write('Failed symmetry\n\n')     
-        
     meshesfile.close()        
+    
  #  Summary     
     pfs = [pfB]
     pftypes = ['B_latt']  

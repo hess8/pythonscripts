@@ -40,14 +40,19 @@ def searchsphere(aVecs):
 def dNN(latt):
     '''Finds nearest neighbor distance'''
     [m0,m1,m2] = searchsphere(latt)
-    dmin = 10000.0
-    for i in range(-m0, m0):
-        for j in range(-m1, m1):
-                for k in range(-m2, m2):
-                    d = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
-                    dnorm = norm(d)
-                    if dnorm < dmin and dnorm > 0.0:                    
-                        dmin = dnorm
+    if max([m0,m1,m2]) > 20: #Takes too long
+        dmin = 10000 
+    else:
+#        print '[m0,m1,m2]', [m0,m1,m2]
+#        print 'lattice'; print latt
+        dmin = 10000.0
+        for i in range(-m0, m0):
+            for j in range(-m1, m1):
+                    for k in range(-m2, m2):
+                        d = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
+                        dnorm = norm(d)
+                        if dnorm < dmin and dnorm > 0.0:                    
+                            dmin = dnorm
     return dmin
 
 def lattvec_u(A,u):
