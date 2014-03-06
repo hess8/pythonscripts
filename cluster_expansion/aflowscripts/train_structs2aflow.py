@@ -39,16 +39,17 @@ def otherPrep():
 ################# script #######################
 #filename='training_set_structures.dat'
 #filename='f11000.dat'
-filename='f1_50.dat'
-mainDir = '/fslhome/bch/cluster_expansion/alir/'
+filename='training_set_structures2.dat'
+mainDir = '/fslhome/bch/cluster_expansion/al.al.ntest/'
 #finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
-finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/'
+finalDir = '/fslhome/bch/cluster_expansion/al.al.ntest/AFLOWDATAn/'
 if not os.path.isdir(finalDir):
     os.system('mkdir %s' % finalDir)
 atomic = 'Al:Ir'
+#atomic = 'Al:Al'
 structs = readTrainStruc(mainDir,filename)
 print structs
 aflowCreateJobs(structs,atomic,finalDir)
-os.chdir(finalDir)
 otherPrep()
-print 'Done'
+#os.chdir(mainDir)
+#print 'Done'
