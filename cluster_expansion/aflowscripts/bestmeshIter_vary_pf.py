@@ -6,7 +6,7 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection, symmetryError,\
     latticeType, packingFraction, mink_reduce, lattvec_u,arenormal,\
-    unique_anorms, intsymops
+    unique_anorms, intsymops, create_poscar
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import transpose,rint,inner,multiply,size,argmin,argmax,nonzero,float64, identity
@@ -355,14 +355,44 @@ def orthsuper(B):
     else:
         sys.exit('Symmetry failed in orthsuper')
     return [K,pf,True]
-    
-def bestmeshIter_vary_pf(Blatt,Nmesh):
+
+def writekpts_vasp_pf(path,K,pf,Nmesh):
+    '''Write mesh  to kpoints file, using integer division for cubic and fcc meshes'''   
+    file1 = open(path +'KPOINTS','w')
+    kpointsfile = []
+    kpointsfile.append('%i kpoints for packing fraction pf=%6.4f\n' %(Nmesh,pf))
+    kpointsfile.append('0 \n')   
+    kpointsfile.append('Cartesian \n')
+    for i in range(3):
+        for j in range(3):
+            kpointsfile.append('%18.12f' % K[j,i]) #transpose for Vasp input
+        kpointsfile.append('\n')
+    kpointsfile.append('0.5 0.5 0.5\n' ) #shift
+    file1.writelines(kpointsfile) 
+    file1.close()
+    return 
+
+def writejobfile(path):
+    '''read from a template in maindir, and put  (structure label) in job name'''
+    file1 = open(path +'vaspjob','r')
+    jobfile = file1.readlines()
+    file1.close
+    struct = path.split('/')[-3]
+    pf = path.split('/')[-2]
+    for i in range(len(jobfile)):
+        jobfile[i]=jobfile[i].replace('myjob', struct+'_'+pf)
+    file2 = open(path+'/'+'vaspjob','w')
+    file2.writelines(jobfile) 
+    file2.close()
+    return
+
+def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     '''The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
     So K = B Inv(M).  Change M one element at a time to minimize the errors in symmetry and the cost in S/V and Nmesh '''
     
     ##############################################################
     ########################## Script ############################
-   
+    vaspinputdir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/vaspinput/'
     M = zeros((3,3),dtype = int)
     S = zeros((3,3),dtype = fprec)
     B = lattice()
@@ -406,9 +436,10 @@ def bestmeshIter_vary_pf(Blatt,Nmesh):
     meshesfile = open('meshesfile','a')
     meshesfile.write('N target %i\n' % B.Nmesh)
     meshesfile.write('Format: pf then Nmesh then kmesh\n\n')    
-
+    
     pflist = []
     for pftry in frange(pfB/2,0.75,0.005):
+        print'test1';print B.vecs
         print '\nPacking fraction target',pftry
         B.pftarget = pftry  
         pf_orth=0; pf_orth2fcc=0; sym_orth = False; sym_orth2fcc = False
@@ -497,6 +528,26 @@ def bestmeshIter_vary_pf(Blatt,Nmesh):
                     meshesfile.write('%18.12f' % K.vecs[i,j])
                 meshesfile.write('\n')
             meshesfile.write('\n') 
+            #create a dir and prepare for vasp run
+            newdir = str(round(pf_maxpf,4))
+            newpath = path + newdir + '/'
+            if not os.path.isdir(newpath):
+                os.system('mkdir %s' % newpath)
+            os.chdir(newpath)
+            os.system ('cp %s* %s' % (vaspinputdir,newpath))
+            os.system ('cp %sPOSCAR %s' % (path,newpath))  
+            writekpts_vasp_pf(newpath,K.vecs,pf_maxpf,K.Nmesh)
+            writejobfile(newpath)
+            subprocess.call(['sbatch', 'vaspjob']) #!!!!!!! Submit jobs
+            os.chdir(path) 
+            print 'Check M'
+            print dot(inv(K.vecs),B.vecs) 
+            print 'Check K'
+            print K.vecs 
+            print 'Check B'
+            print B.vecs
+            print 'Check pf'
+            print packingFraction(K.vecs)                       
         else:
             'do nothing'
 #            meshesfile.write('Failed symmetry\n\n')     
@@ -505,7 +556,7 @@ def bestmeshIter_vary_pf(Blatt,Nmesh):
  #  Summary     
     pfs = [pfB]
     pftypes = ['B_latt']  
-    ks  = [B.vecs/a]   
+    ks  = [B.vecs/a] #one solutions is to simply divide B by an integer
     if not (sym_minsv or sym_sv2fcc or sym_maxpf or pf_pf2fcc or sym_orth or sym_orth2fcc):
          meshtype = 'B_latt_revert' ; #status += 'MHPrevert;'
          K.vecs = B.vecs/a; K.det = abs(det(K.vecs)); K.Nmesh = abs(B.det/K.det)

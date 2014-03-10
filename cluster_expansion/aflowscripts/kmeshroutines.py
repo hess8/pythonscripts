@@ -284,70 +284,14 @@ def readposcar(filename, path):
     totatoms=sum(natoms)
     return [descriptor, scale, reallatt, reciplatt, natoms, postype, positions]
 
-
-def aflow2poscar(path): 
-    '''DON"T USE THIS>>>Need to use (-scale/volume)**(1/3.0)'''
-    file1 = open(path+'aflow.in','r')
-    aflowin = file1.readlines()
-    file1.close()
-    for i,line in enumerate(aflowin):
-        if 'VASP_POSCAR_MODE_EXPLICIT' in line:
-            istart = i+1
-            break #take only first instance (should be only one)
-    descriptor = nstrip(aflowin)[istart]
-    scale = float(nstrip(aflowin)[istart+1])
-    if scale < 0:
-        scale = (-scale)**(1/3.0)
-    cryststruc = array(aflowin[istart+2].split(), dtype=fprec)
-#    print scale
-#    print cryststruc
-    cryststruc[0:3] = scale*cryststruc[0:3]
-    scale = 1.0 #since we put it into real lattice above
-    print 'original a,b,c, alpha, beta, gamma'
-    print cryststruc
-    reallatt =  array(lattice_vecs(cryststruc)).astype(fprec)
-    print 'reordered new lattice: a,b,c, alpha, beta, gamma'
-    print abcalbega_latt(reallatt)
-
-    print 'Lattice from aflow.in a,b,c alpha,beta,gamma > POSCAR0'
-    print reallatt
-    print
-    reciplatt = 2*pi*transpose(inv(reallatt))
-    print 'reciprocal lattice vectors'
-    print reciplatt   
-#    #test
-#    prints
-#    print 'recip lattice traditional'
-#    reciplatt2 = array(lattice_vecs(cryststruc)).astype(fprec)
-#    a0 = reallatt[:,0]
-#    a1 = reallatt[:,1]
-#    a2 = reallatt[:,2]
-#    vol = dot(a0,cross(a1,a2))
-#    reciplatt2[:,0] = 2*pi*cross(a1,a2)/vol
-#    reciplatt2[:,1] = 2*pi*cross(a2,a0)/vol
-#    reciplatt2[:,2] = 2*pi*cross(a0,a1)/vol
-#    print reciplatt2   
-#    # end test
-    natoms = array(aflowin[istart+3].split(),dtype=int)
-    totatoms=sum(natoms)
-    positions = zeros((totatoms,3),dtype=fprec)
-    postype = aflowin[istart+4] #Direct or Cartesian
-    where = 0
-    for natom in natoms:
-        for i in range(natom):
-            for k in [0,1,2]:
-                positions[where,k] = float(aflowin[istart+5+where].split()[k])
-            where += 1
-    create_poscar('POSCAR',descriptor+'From aflow.in BCH',scale,reallatt,natoms,postype,positions,path)
-    totatoms=sum(natoms)
-    return totatoms
-
 def create_poscar(filename,descriptor, scale, latticevecs, natoms, type_pos, positions, path):
+    '''Write lattice vectors as rows, contrary to our convention.  
+    The positions vectors are in an Nx3 matrix, so as rows already'''
     poscar = open(path+filename,'w')
     poscar.write(descriptor+'\n')
     poscar.write(str(scale)+'\n')
     for i in [0,1,2]:
-        poscar.write('%20.15f %20.15f %20.15f \n' % (latticevecs[i,0], latticevecs[i,1], latticevecs[i,2]))         
+        poscar.write('%20.15f %20.15f %20.15f \n' % (latticevecs[0,i], latticevecs[1,i], latticevecs[2,i]))         
     for i in natoms:
         poscar.write(str(i)+'    ')
     poscar.write('\n')
@@ -358,6 +302,66 @@ def create_poscar(filename,descriptor, scale, latticevecs, natoms, type_pos, pos
             poscar.write('%20.15f %20.15f %20.15f \n' % (positions[where,0],positions[where,1],positions[where,2]))
             where += 1
     poscar.close()
+
+
+def aflow2poscar(path): 
+    '''DON"T USE THIS>>>Need to use (-scale/volume)**(1/3.0).  Use routine aconvaspPoscar.py'''
+#    file1 = open(path+'aflow.in','r')
+#    aflowin = file1.readlines()
+#    file1.close()
+#    for i,line in enumerate(aflowin):
+#        if 'VASP_POSCAR_MODE_EXPLICIT' in line:
+#            istart = i+1
+#            break #take only first instance (should be only one)
+#    descriptor = nstrip(aflowin)[istart]
+#    scale = float(nstrip(aflowin)[istart+1])
+#    if scale < 0:
+#        scale = (-scale)**(1/3.0)
+#    cryststruc = array(aflowin[istart+2].split(), dtype=fprec)
+##    print scale
+##    print cryststruc
+#    cryststruc[0:3] = scale*cryststruc[0:3]
+#    scale = 1.0 #since we put it into real lattice above
+#    print 'original a,b,c, alpha, beta, gamma'
+#    print cryststruc
+#    reallatt =  array(lattice_vecs(cryststruc)).astype(fprec)
+#    print 'reordered new lattice: a,b,c, alpha, beta, gamma'
+#    print abcalbega_latt(reallatt)
+#
+#    print 'Lattice from aflow.in a,b,c alpha,beta,gamma > POSCAR0'
+#    print reallatt
+#    print
+#    reciplatt = 2*pi*transpose(inv(reallatt))
+#    print 'reciprocal lattice vectors'
+#    print reciplatt   
+##    #test
+##    prints
+##    print 'recip lattice traditional'
+##    reciplatt2 = array(lattice_vecs(cryststruc)).astype(fprec)
+##    a0 = reallatt[:,0]
+##    a1 = reallatt[:,1]
+##    a2 = reallatt[:,2]
+##    vol = dot(a0,cross(a1,a2))
+##    reciplatt2[:,0] = 2*pi*cross(a1,a2)/vol
+##    reciplatt2[:,1] = 2*pi*cross(a2,a0)/vol
+##    reciplatt2[:,2] = 2*pi*cross(a0,a1)/vol
+##    print reciplatt2   
+##    # end test
+#    natoms = array(aflowin[istart+3].split(),dtype=int)
+#    totatoms=sum(natoms)
+#    positions = zeros((totatoms,3),dtype=fprec)
+#    postype = aflowin[istart+4] #Direct or Cartesian
+#    where = 0
+#    for natom in natoms:
+#        for i in range(natom):
+#            for k in [0,1,2]:
+#                positions[where,k] = float(aflowin[istart+5+where].split()[k])
+#            where += 1
+#    create_poscar('POSCAR',descriptor+'From aflow.in BCH',scale,reallatt,natoms,postype,positions,path)
+#    totatoms=sum(natoms)
+#    return totatoms
+
+
 
 def lattice_vecs(cryststruc):
     ''' Make lattice vectors from triclinic method of 

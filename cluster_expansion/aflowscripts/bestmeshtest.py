@@ -5,7 +5,7 @@ import sys,os,subprocess
 from numpy import zeros,transpose,array,sum,float64,rint
 from numpy.linalg import norm
 #import kmeshroutines as km
-from kmeshroutines import nstrip, readposcar
+from kmeshroutines import nstrip, readposcar,create_poscar
 #from bestmeshIterJan22 import bestmeshIter
 from bestmeshIter import bestmeshIter
 from bestmeshIter_vary_pf import bestmeshIter_vary_pf
@@ -30,16 +30,17 @@ dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 file1 = open('meshsummary.csv','a')
 file1.write('Structure,Lattice,amax/amin,pfB,pf_orth,pf_orth2fcc,pf_maxpf, pf_pf2fcc, pfmax, meshtype' + ',' \
              + 'Improvement,fcc compatibility,Nmesh,TargetNmesh,Nmesh/Target,cbest' + '\n')
-#for i,dir in enumerate(dirs):    
+#for i,directory in enumerate(dirs):    
 
-for dir in dirs:
-    if testfile in os.listdir(dir):        
+for directory in dirs:
+    if testfile in os.listdir(directory):        
         print 
-        print dir + '=========================================================='
-        path = maindir+dir+'/'
+        print directory + '=========================================================='
+        path = maindir+directory+'/'
         os.chdir(path)
 #        print readposcar('POSCAR',path)
         [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',path) #
+        create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
         os.chdir(maindir)
 #        print 'reciprocal lattice vectors (rows)';print reciplatt
         totatoms = sum(natoms)
@@ -48,9 +49,9 @@ for dir in dirs:
  
 # for trials where we want to vary pf for testing       
         meshesfile = open('meshesfile','w')
-        meshesfile.write(dir+' ============\n')
+        meshesfile.write(directory+' ============\n')
         meshesfile.close()
-        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter_vary_pf(reciplatt,Nmesh)
+        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter_vary_pf(reciplatt,Nmesh,path)
 # End trials
 
 #        [K.vecs, K.Nmesh, B.Nmesh, B.lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype(B),status]
@@ -60,7 +61,7 @@ for dir in dirs:
         aratio = round(amax/amin, 1)
         format = 16*'%s,'+'%s'
         file1.write(format %  \
-        (dir, lattype, str(aratio), str(pfB), str(pf_orth), str(pf_orth2fcc), str(pf_maxpf),str(pf_pf2fcc), str(pfmax), \
+        (directory, lattype, str(aratio), str(pfB), str(pf_orth), str(pf_orth2fcc), str(pf_maxpf),str(pf_pf2fcc), str(pfmax), \
          meshtype, str(pfimprove), str(fcctype), str(rint(Nmesh)), str(targetNmesh), str(round(Nmesh/targetNmesh,3)),str(cbest),status+'\n'))
 file1.close()
         

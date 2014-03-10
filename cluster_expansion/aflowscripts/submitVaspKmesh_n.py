@@ -34,7 +34,7 @@ import numpy as np
 
 
 def writekpts_vasp_n(path,n,type):
-    '''Write mesh m's to kpoints file, using integer division for cubic and fcc meshes'''   
+    '''Write mesh vectors to kpoints file, using integer division for cubic and fcc meshes'''   
     file1 = open(path +'KPOINTS','w')
     kpointsfile = []
     if type == 'cubic': kpointsfile.append('%i kpoints for cubic integer n=%i\n' %(n**3,n))
@@ -122,14 +122,22 @@ for dir in dirs:
 #            subprocess.call(['sbatch', 'vaspjob'])
             
             # Now create new dirs with different characteristics
-            os.chdir(maindir)
             type = 'cubic'
             for n in range(4,24,2):
                 createdir(currdir,n,type)      
             type = 'fcc'
             for n in range(1,15):
-                createdir(currdir,n,type)        
-            # submit vasp job                      
+                createdir(currdir,n,type)  
+#            type = 'bcc'
+#            for n in range(1,18):
+#                createdir(currdir,n,type)                       
+            # submit vasp job 
+        newdirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
+        for newdir in newdirs:
+            os.chdir(newdir)
+            subprocess.call(['sbatch', 'vaspjob'])
+            os.chdir(currdir)
+        os.chdir(maindir)                 
 print 'Done'
 
 
