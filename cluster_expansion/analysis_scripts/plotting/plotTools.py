@@ -20,6 +20,16 @@ def plotArray(x,y,matrix1,plotfile1,title1,xlabel1,ylabel1,plotmax):
     show()
     fig.savefig(plotfile1)
 
+def plotxy(x,y,plotfile1,title1,xlabel1,ylabel1):
+#    from __future__ import division 
+    from matplotlib.pyplot import *
+    fig = figure()
+    plot(x, y, 'ro')
+    title(title1)
+    xlabel(xlabel1)
+    ylabel(ylabel1)
+    show() 
+    fig.savefig(plotfile1)  
 
 def collate_plots(checkedList,plotName):
     import sys, os, subprocess

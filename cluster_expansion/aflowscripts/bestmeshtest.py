@@ -16,13 +16,15 @@ fprec=float64
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test2/'
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test2/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test2.10xNk/'
+
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
 
 testfile = 'POSCAR'
-Nkppra = 10000
+Nkppra = 10000*10
 
 #reallatt = zeros((3,3))
 os.chdir(maindir)
@@ -33,10 +35,10 @@ file1.write('Structure,Lattice,amax/amin,pfB,pf_orth,pf_orth2fcc,pf_maxpf, pf_pf
 #for i,directory in enumerate(dirs):    
 
 for directory in dirs:
-    if testfile in os.listdir(directory):        
+    path = maindir+directory+'/'
+    if testfile in os.listdir(path):        
         print 
         print directory + '=========================================================='
-        path = maindir+directory+'/'
         os.chdir(path)
 #        print readposcar('POSCAR',path)
         [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',path) #
@@ -45,7 +47,7 @@ for directory in dirs:
 #        print 'reciprocal lattice vectors (rows)';print reciplatt
         totatoms = sum(natoms)
         Nmesh = Nkppra/totatoms
-#RESORE THIS        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter(reciplatt,Nmesh)
+#RESTORE THIS        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter(reciplatt,Nmesh)
  
 # for trials where we want to vary pf for testing       
         meshesfile = open('meshesfile','w')
