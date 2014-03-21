@@ -126,6 +126,7 @@ def changewhich(M,B,run):
 #    return [unravel_index(argmin(delij), delij.shape),delij[unravel_index(argmin(delij), delij.shape)]]
 
 
+
 def findmin_i(M,B,iop):
     '''Finds minimum cost for the lattice by varying the integers of m, in the element that gives steepest descent
     The 'run' indicates the cost function to use'''
@@ -367,10 +368,27 @@ def writekpts_vasp_pf(path,K,pf,Nmesh):
         for j in range(3):
             kpointsfile.append('%18.12f' % K[j,i]) #transpose for Vasp input
         kpointsfile.append('\n')
-    kpointsfile.append('0.5 0.5 0.5\n' ) #shift
+#    kpointsfile.append('0.5 0.5 0.5\n' ) #shift
+    kpointsfile.append('0.0 0.0 0.0\n' ) #shift
     file1.writelines(kpointsfile) 
     file1.close()
     return 
+
+def writekpts_vasp_M(path,M,K):
+    '''write out kpoints file with IBZKPTS format.  This will specify all the kpoints and their weights. 
+    No shift is allowed for now'''
+    #Fill a 1st brilloun zone with mesh points.  We will chose the BZ to be that given by the parallepiped of (B1, B2, B3)
+    #Since B = KM.  We run trial mesh points over a grid made by the maximum and minimum values of columns of M and the three directions 
+    # of K.  The first row of M  gives the first k direction (first column of K).
+    Kv = K.vecs
+    B = dot(K.vecs,M)
+    for i2 in range(min(M[2,:]),max(M[2,:])):
+        for i1 in range(min(M[1,:]),max(M[1,:])):
+            for i0 in range(min(M[0,:]),max(M[0,:])):
+                ktry = i0*Kv[:,0] + i1*Kv[:,1] + i2*Kv[:,2] 
+
+    
+    
 
 def writejobfile(path):
     '''read from a template in maindir, and put  (structure label) in job name'''
@@ -439,7 +457,6 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     
     pflist = []
     for pftry in frange(pfB/2,0.75,0.005):
-        print'test1';print B.vecs
         print '\nPacking fraction target',pftry
         B.pftarget = pftry  
         pf_orth=0; pf_orth2fcc=0; sym_orth = False; sym_orth2fcc = False
@@ -480,16 +497,16 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
             iternpf += 1
             print 'Iteration',type,iternpf, '**********'
             [M,K] = findmin(M,B,type) 
-            print M
+            M = rint(M)
             itersym = 0            
             symm = False
             while not symm and itersym <itermaxsym: 
                 itersym += 1
                 print 'Symmetry iteration', itersym, '-------'         
 #                print 'Nmesh', abs(det(M)), 'packing', packingFraction(dot(B.vecs,inv(M)))
-                M = minkM(M,B)#; print'Mink reduced M'; print M    
+                M = rint(minkM(M,B))#; print'Mink reduced M'; print M    
                 for iop in range(B.nops):
-                    M = findmin_i(M,B,iop)
+                    M = rint(findmin_i(M,B,iop))#need this to clean up numerical precision problems
                     if abs(det(M)-B.Nmesh)/B.Nmesh > 0.15: #how far off from target N
                         M = rint(M * (B.Nmesh/abs(det(M)))**(1/3.0))
                         print 'Scaled M';print M                    
@@ -538,8 +555,6 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
             os.system ('cp %sPOSCAR %s' % (path,newpath))  
             writekpts_vasp_pf(newpath,K.vecs,pf_maxpf,K.Nmesh)
             writejobfile(newpath)
-            subprocess.call(['sbatch', 'vaspjob']) #!!!!!!! Submit jobs
-            os.chdir(path) 
             print 'Check M'
             print dot(inv(K.vecs),B.vecs) 
             print 'Check K'
@@ -547,7 +562,10 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
             print 'Check B'
             print B.vecs
             print 'Check pf'
-            print packingFraction(K.vecs)                       
+            print packingFraction(K.vecs)  
+#            print 'submitting job'            
+            subprocess.call(['sbatch', 'vaspjob']) #!!!!!!! Submit jobs
+            os.chdir(path)                      
         else:
             'do nothing'
 #            meshesfile.write('Failed symmetry\n\n')     

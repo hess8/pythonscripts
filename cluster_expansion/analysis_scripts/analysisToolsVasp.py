@@ -1,4 +1,5 @@
 import os, string, subprocess, math
+from numpy import zeros
 
 def addToList(folder,toCheckList):
     files = os.listdir(folder)
@@ -8,12 +9,12 @@ def addToList(folder,toCheckList):
             addToList(folder+path+'/',toCheckList)
     return toCheckList
 
-def checkFolders(toCheckList,checkedList,run):
-    checkedList = []
+def checkFolders(toCheckList,dirslist,run):
+    dirslist = []
     for path in toCheckList:
         if path.split('/')[-2] == run:
-            checkedList.append(path)
-    return checkedList            
+            dirslist.append(path)
+    return dirslist            
             
 
 def writedirnames(list):    
@@ -40,12 +41,42 @@ def writeEnergiesOszicar(list):
         enerfile.write(energy + '\n') #energy in last line
         os.chdir(lastfolder)
     enerfile.close()
-    os.chdir(lastfolder) 
+    os.chdir(lastfolder)
+     
+def enerparts(list):
+    '''Finds the 9 terms contributing to the total energy in vasp, as in:
+         Free energy of the ion-electron system (eV)
+          ---------------------------------------------------
+          alpha Z        PSCENC =        -0.43400971
+          Ewald energy   TEWEN  =      -150.19868154
+          -1/2 Hartree   DENC   =        -0.23270923
+          -exchange  EXHF       =         0.00000000
+          -V(xc)+E(xc)   XCENC  =       -52.00285543
+          PAW double counting   =        71.87483513       -8.01524693
+          entropy T*S    EENTRO =        -0.00011188
+          eigenvalues    EBANDS =        24.48126738
+          atomic energy  EATOM  =       107.07526000'''
+ 
+    enerparts = zeros((len(list),9),dtype = float)
+    for ifolder, folder in enumerate(list):
+        try:
+            outcar = open(folder + '/OUTCAR','r')
+            text = outcar.readlines()
+            outcar.close()           
+            for i in range(len(text)): #find last line matching text
+                if 'Free energy of the ion-electron system' in text[i]:
+                    nline = i
+            for i in range(9):
+                enerparts[ifolder,i] = float(text[nline+2+i].split('=')[-1].split()[0]) #to handle PAW line with two entries
+        except:
+            'go on' # can't read them
+    return enerparts
     
-def writeNk(list):     
+    
+def writeNkIBZ(list):     
     '''number of K points extracted from IBZKPT'''
     lastfolder = os.getcwd()
-    file = open('energies','w')
+    file = open('NkIBZ','w')
     for i in list:
         print i
 #        os.chdir(i)
@@ -63,12 +94,34 @@ def writeNk(list):
         os.chdir(lastfolder)
     file.close()
     os.chdir(lastfolder) 
+    
+def writeNk(list):     
+    '''number of K points intended,from comment in KPOINTS'''
+    lastfolder = os.getcwd()
+    file = open('Nk','w')
+    for i in list:
+        print i
+#        os.chdir(i)
+#        print os.getcwd()
+#        print os.listdir(os.getcwd())
+        try:
+            ibzkpt = open(i+'/KPOINTS','r')
+#            print ibzkpt.readlines()[1].split()
+            nk = ibzkpt.readlines()[0].split()[0]
+            ibzkpt.close()
+        except:
+            nk = '0'
+        print nk
+        file.write(nk + '\n')  
+        os.chdir(lastfolder)
+    file.close()
+    os.chdir(lastfolder)
         
-def writeDistances(checkedList,structure):
+def writeDistances(dirslist,structure):
     '''write distances of adatoms to file'''
     lastfolder = os.getcwd()
     distfile = open('distances','w')
-    for ielement,ipath in enumerate(checkedList):
+    for ielement,ipath in enumerate(dirslist):
         distfile.write(str(getDistance(ipath,structure)) +'\n')
     distfile.close()
     os.chdir(lastfolder)
@@ -126,12 +179,12 @@ def getDistance(folder,structure):
 def distance(vec1, vec2):
 	return math.sqrt(math.pow(vec1[0]-vec2[0],2)+math.pow(vec1[1]-vec2[1],2)+math.pow(vec1[2]-vec2[2],2))
 
-def writeCCDistances(checkedList):
+def writeCCDistances(dirslist):
     '''write distances of C-C expansions to file'''
     lastfolder = os.getcwd()
     ccdistfile = open('ccdistances','w')
     diffzfile = open('diffz','w')
-    for ielement,ipath in enumerate(checkedList):
+    for ielement,ipath in enumerate(dirslist):
         newdist = getCCDistance(ipath)
         ccdistfile.write(str(newdist[0]) +'\n')
         diffzfile.write(str(newdist[1]) +'\n')
@@ -182,9 +235,9 @@ def getElement(prefix,path):
     element = path[index1+len(prefix):index2]
     return element
     
-def writeElements(checkedList):    
+def writeElements(dirslist):    
     elemfile = open('elements','w')
-    for ielement,ipath in enumerate(checkedList):
+    for ielement,ipath in enumerate(dirslist):
         #get element name
         element = getElement('adatom_',ipath)
         elemfile.write(element +'\n')
@@ -207,11 +260,11 @@ def convergeCheck(folder,NSW):
     except:
         return False #True/False
     
-def elConvergeCheck(folder,NSW):
+def elConvergeCheck(folder,NELM):
     """Tests electronic convergence is done by whether the electronic step is less than NELM."""
     try:
         value = getElSteps(folder)
-        return value < NSW #True/False
+        return value < NELM #True/False
     except:
         return False #True/False
 
@@ -230,10 +283,10 @@ def getElSteps(folder):
         os.chdir(lastfolder)         
         return 9999
     
-def writeElSteps(checkedList):    
+def writeElSteps(dirslist):    
     '''writes number of steps to output file for each folder'''
     stepsfile = open('elsteps','w')
-    for ielement,path in enumerate(checkedList):
+    for ielement,path in enumerate(dirslist):
         stepsfile.write(str(getElSteps(path))+'\n')
     stepsfile.close()
 
@@ -255,18 +308,18 @@ def getSteps(folder):
         return 9999
     
     
-def writeSteps(checkedList):    
+def writeSteps(dirslist):    
     '''writes number of steps to output file for each folder'''
     stepsfile = open('steps','w')
-    for ielement,path in enumerate(checkedList):
+    for ielement,path in enumerate(dirslist):
         stepsfile.write(str(getSteps(path))+'\n')
     stepsfile.close()
     
     
-def writeFinish(checkedList): 
+def writeFinish(dirslist): 
     '''Writes Y or N depending on vasp finishing, for runs other than relaxation'''
     finishfile = open('finish','w')
-    for ielement,path in enumerate(checkedList):
+    for ielement,path in enumerate(dirslist):
         #get element name     
         if FinishCheck(path):
             finishfile.write('Y' +'\n')
@@ -274,13 +327,13 @@ def writeFinish(checkedList):
             finishfile.write('N' +'\n')
     finishfile.close()
    
-def writeConverge(checkedList): 
+def writeConverge(dirslist): 
     '''Writes Y or N depending on convergence AND vasp finishing'''
     convergefile = open('converge','w')
-    #get NSW, the max ionic steps allowed in the run.  Using first directory in checkedList
-    proc = subprocess.Popen(['grep','-i','NSW',checkedList[0]+'/INCAR'],stdout=subprocess.PIPE)
+    #get NSW, the max ionic steps allowed in the run.  Using first directory in dirslist
+    proc = subprocess.Popen(['grep','-i','NSW',dirslist[0]+'/INCAR'],stdout=subprocess.PIPE)
     NSW = int(proc.communicate()[0].split('=')[-1])
-    for ielement,path in enumerate(checkedList):
+    for ielement,path in enumerate(dirslist):
         #get element name
 #        element = getElement('adatom_',path)
 #        print element      
@@ -290,17 +343,17 @@ def writeConverge(checkedList):
             convergefile.write('N' +'\n')
     convergefile.close()
     
-def writeElConverge(checkedList): 
+def writeElConverge(dirslist): 
     '''Writes Y or N depending on convergence AND vasp finishing'''
     elconvergefile = open('elconverge','w')
-    #get NELM, the max electronic steps allowed in the run.  Using first directory in checkedList
-    proc = subprocess.Popen(['grep','-i','NELM',checkedList[0]+'/INCAR'],stdout=subprocess.PIPE)
+    #get NELM, the max electronic steps allowed in the run.  Using first directory in dirslist
+    proc = subprocess.Popen(['grep','-i','NELM',dirslist[0]+'/INCAR'],stdout=subprocess.PIPE)
     result =  proc.communicate()[0]
     NELM = int(result.split('=')[1].split()[0])
     file1 = open('nelm','w')
     file1.write(str(NELM))
     file1.close()
-    for ielement,path in enumerate(checkedList):  
+    for ielement,path in enumerate(dirslist):  
         if elConvergeCheck(path,NELM) and FinishCheck(path):
             elconvergefile.write('Y' +'\n')
         else:
@@ -316,6 +369,25 @@ def FinishCheck(folder):
     os.chdir(lastfolder)    
     return newstring[0].find('Voluntary') > -1 #True/False
 
+def cpuTime(folder):
+#    proc = subprocess.Popen(['tail', 'OUTCAR','|','grep','User'],shell=True,stdout=subprocess.PIPE)
+    lastfolder = os.getcwd()
+    os.chdir(folder)
+    proc = subprocess.Popen(['tail OUTCAR | grep User'],shell=True,stdout=subprocess.PIPE)
+    result =  proc.communicate()
+    os.chdir(lastfolder) 
+    try:
+        time =  float(result[0][-10:-3].strip()) #last few characters
+    except:
+        time = 0
+    print time
+    return time
 
-
+def writeCPUtime(list):    
+    '''writes number of steps to output file for each folder'''
+    file = open('cputime','w')
+    for path in list:
+        print path
+        file.write(str(cpuTime(path))+'\n')
+    file.close()
    

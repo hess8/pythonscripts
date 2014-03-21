@@ -15,16 +15,19 @@ fprec=float64
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test101x/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test2/'
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test2.10xNk/'
 
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test2/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test2.10xNk/'
+
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.10xNk/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.noshift/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
 
 testfile = 'POSCAR'
-Nkppra = 10000*10
+Nkppra = 10000#*10
 
 #reallatt = zeros((3,3))
 os.chdir(maindir)
@@ -65,6 +68,7 @@ for directory in dirs:
         file1.write(format %  \
         (directory, lattype, str(aratio), str(pfB), str(pf_orth), str(pf_orth2fcc), str(pf_maxpf),str(pf_pf2fcc), str(pfmax), \
          meshtype, str(pfimprove), str(fcctype), str(rint(Nmesh)), str(targetNmesh), str(round(Nmesh/targetNmesh,3)),str(cbest),status+'\n'))
+        file2 = open('lattype','w'); file2.write(lattype); file2.close()
 file1.close()
         
 print 'Done'
