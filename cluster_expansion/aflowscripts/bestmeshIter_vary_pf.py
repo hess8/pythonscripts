@@ -377,15 +377,67 @@ def writekpts_vasp_pf(path,K,pf,Nmesh):
 def writekpts_vasp_M(path,M,K):
     '''write out kpoints file with IBZKPTS format.  This will specify all the kpoints and their weights. 
     No shift is allowed for now'''
-    #Fill a 1st brilloun zone with mesh points.  We will chose the BZ to be that given by the parallepiped of (B1, B2, B3)
-    #Since B = KM.  We run trial mesh points over a grid made by the maximum and minimum values of columns of M and the three directions 
+    #Fill a 1st brilloun zone with mesh points.  We will chose the 1st BZ to be that given by the parallepiped of (B0, B1, B2)
+    #Since B = KM.  The first column of M determines the first column of B (B0) We run trial mesh points over a grid made by the maximum and minimum values of columns of M and the three directions 
     # of K.  The first row of M  gives the first k direction (first column of K).
+    print 'M in writekpts_vasp_M';print M
     Kv = K.vecs
-    B = dot(K.vecs,M)
-    for i2 in range(min(M[2,:]),max(M[2,:])):
-        for i1 in range(min(M[1,:]),max(M[1,:])):
-            for i0 in range(min(M[0,:]),max(M[0,:])):
-                ktry = i0*Kv[:,0] + i1*Kv[:,1] + i2*Kv[:,2] 
+    B = dot(Kv,M)
+    nBZpt = 0
+    Binv = inv(B)
+    npts = 0
+    ktryB = zeros((3,int(det(Kv)*2)))
+    for i2 in range(int(min(M[2,:])-10),int(max(M[2,:]))+10): #The rows of M determine how each vector (column) of M is used in the sum
+        for i1 in range(int(min(M[1,:])-10),int(max(M[1,:]))+10):
+            for i0 in range(int(min(M[0,:])-10),int(max(M[0,:]))+10):
+                ktry = i0*Kv[:,0] + i1*Kv[:,1] + i2*Kv[:,2]
+#                if i1 == 
+                print i0,i1,i2
+#                print ktry
+                #test whether it is in 1st BZ.  Transform first to basis of B:
+                
+                ktryB1 = trimSmall(dot(inv(B),transpose(ktry)))
+                for i in range(npts):
+                    if ktryB1 == ktryB[:,i]:
+                        break
+                #it's in the parallelpiped if it's componenets are all less than one and positive             
+                if min(ktryB1)>=0 and max(ktryB1)<1 :
+                    print 'ktryB';print ktryB1
+                    ktryB[:,npts] = trimSmall(dot(inv(B),transpose(ktry)))
+#                    print 'In 1BZ'
+                    npts += 1
+#    maxM = zeros((3,3),dtype = int)
+#    minM = zeros((3,3),dtype = int)
+#    N = zeros((3,3),dtype = int)
+#    for i in range(3):
+#        for j in range(3):
+#            maxM[i,j] = int(max(M[i,j],0))
+#            minM[i,j] = int(min(M[i,j],0))
+#    print maxM
+#    print minM
+#    npts = 0
+#    for i00 in range(minM[0,0],maxM[0,0]+1):
+#        for i10 in range(minM[1,0],maxM[1,0]+1):
+#            for i20 in range(minM[2,0],maxM[2,0]+1):
+#                for i01 in range(minM[0,1],maxM[0,1]+1):
+#                    for i11 in range(minM[1,1],maxM[1,1]+1):
+#                        for i21 in range(minM[2,1],maxM[2,1]+1):
+#                             for i02 in range(minM[0,2],maxM[0,2]+1):
+#                                 for i12 in range(minM[1,2],maxM[1,2]+1):
+#                                     for i22 in range(minM[2,2],maxM[2,2]+1):
+#                                         N = [
+#                                              [i00,i01,i02],
+#                                              [i10,i11,i12],
+#                                              [i20,i21,i22]
+#                                              ]
+#                                         pt = N
+#                                         #convert to B basis
+#                                         
+#                                         
+
+    print npts            
+    sys.exit('stop')  
+                
 
     
     
@@ -553,6 +605,7 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
             os.chdir(newpath)
             os.system ('cp %s* %s' % (vaspinputdir,newpath))
             os.system ('cp %sPOSCAR %s' % (path,newpath))  
+            writekpts_vasp_M(newpath,M,K)
             writekpts_vasp_pf(newpath,K.vecs,pf_maxpf,K.Nmesh)
             writejobfile(newpath)
             print 'Check M'
