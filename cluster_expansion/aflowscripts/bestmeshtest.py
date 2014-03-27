@@ -27,7 +27,7 @@ maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
 
 testfile = 'POSCAR'
-Nkppra = 10000#*10
+Nkppra = 1000#*10
 
 #reallatt = zeros((3,3))
 os.chdir(maindir)

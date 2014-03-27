@@ -10,7 +10,7 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import transpose,rint,inner,multiply,size,argmin,argmax,nonzero,float64, identity
-from numpy import ceil,real,unravel_index, outer, fmod
+from numpy import ceil,real,unravel_index, outer, fmod, amin, amax
 
 from scipy.optimize import minimize
 from copy import copy,deepcopy
@@ -380,32 +380,70 @@ def writekpts_vasp_M(path,M,K):
     #Fill a 1st brilloun zone with mesh points.  We will chose the 1st BZ to be that given by the parallepiped of (B0, B1, B2)
     #Since B = KM.  The first column of M determines the first column of B (B0) We run trial mesh points over a grid made by the maximum and minimum values of columns of M and the three directions 
     # of K.  The first row of M  gives the first k direction (first column of K).
-    print 'M in writekpts_vasp_M';print M
+    
+
     Kv = K.vecs
     B = dot(Kv,M)
     nBZpt = 0
     Binv = inv(B)
+#    #Dummy set up Monkhorst Pack:
+#    M = [[10,0,0],[0,10,0],[0,0,10]];
+#    Kv = dot(B,inv(M))
+
+#    
+#    #end dummy
+    print 'K vecsin writekpts_vasp_M';print (Kv)
+#    print 'transpose(Bvecs)in writekpts_vasp_M';print transpose(B)*100
+    print 'det of M', det(M)    
     npts = 0
-    ktryB = zeros((3,int(det(Kv)*2)))
-    for i2 in range(int(min(M[2,:])-10),int(max(M[2,:]))+10): #The rows of M determine how each vector (column) of M is used in the sum
-        for i1 in range(int(min(M[1,:])-10),int(max(M[1,:]))+10):
-            for i0 in range(int(min(M[0,:])-10),int(max(M[0,:]))+10):
+    ktryB = zeros((3,int(det(M)*2)))#!!!Change this *2 later when it's working
+    kpts =  zeros((3,int(det(M)*2)))
+#    print size(ktryB)
+#    for i2 in range(int(min(M[2,:])),int(max(M[2,:]))+10): #The rows of M determine how each vector (column) of M is used in the sum
+#        for i1 in range(int(min(M[1,:])),int(max(M[1,:]))+10):
+#            for i0 in range(int(min(M[0,:])),int(max(M[0,:]))+10):
+    print 'Min of M', amin(M)
+    print 'Max of M', amax(M)
+    imin = int(amin(M))
+    imax = int(amax(M))
+    for i2 in range(imin,imax): #The rows of M determine how each vector (column) of M is used in the sum
+        for i1 in range(imin,imax):
+            for i0 in range(imin,imax):
                 ktry = i0*Kv[:,0] + i1*Kv[:,1] + i2*Kv[:,2]
 #                if i1 == 
-                print i0,i1,i2
+#                print i0,i1,i2
 #                print ktry
-                #test whether it is in 1st BZ.  Transform first to basis of B:
                 
                 ktryB1 = trimSmall(dot(inv(B),transpose(ktry)))
-                for i in range(npts):
-                    if ktryB1 == ktryB[:,i]:
-                        break
-                #it's in the parallelpiped if it's componenets are all less than one and positive             
+#                for i in range(npts):
+#                    if ktryB1.all == ktryB[:,i].all:
+#                        print 'Found duplicate'
+#                        break
+               #test whether it is in 1st BZ.  Transform first to basis of B:
+               #it's in the parallelpiped if it's componenets are all less than one and positive             
                 if min(ktryB1)>=0 and max(ktryB1)<1 :
-                    print 'ktryB';print ktryB1
-                    ktryB[:,npts] = trimSmall(dot(inv(B),transpose(ktry)))
+                    kpts[:,npts] = ktry
+                    print i0,i1,i2, ktryB1
+#                    ktryB[:,npts] = ktryB1
+#                    kpts.append(ktryB1)
 #                    print 'In 1BZ'
                     npts += 1
+                    
+                                
+    #write POSCAR for vmd:  put B vectors in lattice, and kmesh in atomic positions
+    scale = 10       
+    poscar = open('POSCARk','w')
+    poscar.write('Cs I kpoints vs B'+'\n') #different sizes from this label
+    poscar.write('100.0\n')
+    for i in [0,1,2]:
+        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*B[0,i], scale*B[1,i], scale*B[2,i])) 
+    poscar.write('1 %i\n' %npts)      
+    poscar.write('Cartesian\n')
+    poscar.write('0.0 0.0 0.0\n') 
+    for i in range(npts):
+        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*kpts[0,i],scale*kpts[1,i],scale*kpts[2,i]))
+    poscar.close()
+                    
 #    maxM = zeros((3,3),dtype = int)
 #    minM = zeros((3,3),dtype = int)
 #    N = zeros((3,3),dtype = int)
@@ -435,13 +473,9 @@ def writekpts_vasp_M(path,M,K):
 #                                         
 #                                         
 
-    print npts            
+    print npts
     sys.exit('stop')  
                 
-
-    
-    
-
 def writejobfile(path):
     '''read from a template in maindir, and put  (structure label) in job name'''
     file1 = open(path +'vaspjob','r')
