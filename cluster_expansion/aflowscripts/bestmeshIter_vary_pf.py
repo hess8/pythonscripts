@@ -437,7 +437,7 @@ def writekpts_vasp_M(path,M,K):
                         if ktryB1[i]<-0.5: 
                             ktryB1[i] = ktryB1[i] + 1
                     print i0,i1,i2, ktryB1
-                    #convert to cartesian
+                    #convert back to cartesian
                     ktry = trimSmall(dot(B,transpose(ktryB1)))
                     kpts[:,npts] = ktry
                     
@@ -445,6 +445,8 @@ def writekpts_vasp_M(path,M,K):
 #                    kpts.append(ktryB1)
 #                    print 'In 1BZ'
                     npts += 1
+                #Apply symmetry operations and see which are identical to others
+                
                     
                                 
     #write POSCAR for vmd:  put B vectors in lattice, and kmesh in atomic positions
@@ -460,19 +462,7 @@ def writekpts_vasp_M(path,M,K):
     for i in range(npts):
         poscar.write('%20.15f %20.15f %20.15f \n' % (scale*kpts[0,i],scale*kpts[1,i],scale*kpts[2,i]))
     poscar.close()
-    
-#        scale = 10       
-    poscar = open('POSCARkBbasis','w')
-    poscar.write('Cs I kpoints vs B'+'\n') #different sizes from this label
-    poscar.write('1.0\n')
-    for i in [0,1,2]:
-        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*B[0,i], scale*B[1,i], scale*B[2,i])) 
-    poscar.write('1 %i\n' %npts)      
-    poscar.write('Cartesian\n')
-    poscar.write('0.0 0.0 0.0\n') 
-    for i in range(npts):
-        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*kpts[0,i],scale*kpts[1,i],scale*kpts[2,i]))
-    poscar.close()
+
                     
 #    maxM = zeros((3,3),dtype = int)
 #    minM = zeros((3,3),dtype = int)
