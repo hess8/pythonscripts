@@ -6,7 +6,7 @@ from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection, symmetryError,\
     latticeType, packingFraction, mink_reduce, lattvec_u,arenormal,\
-    unique_anorms, intsymops, create_poscar
+    unique_anorms, intsymops, create_poscar, searchsphere
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import transpose,rint,inner,multiply,size,argmin,argmax,nonzero,float64, identity
@@ -402,13 +402,19 @@ def writekpts_vasp_M(path,M,K):
 #    for i2 in range(int(min(M[2,:])),int(max(M[2,:]))+10): #The rows of M determine how each vector (column) of M is used in the sum
 #        for i1 in range(int(min(M[1,:])),int(max(M[1,:]))+10):
 #            for i0 in range(int(min(M[0,:])),int(max(M[0,:]))+10):
-    print 'Min of M', amin(M)
-    print 'Max of M', amax(M)
-    imin = int(amin(M))
-    imax = int(amax(M))
-    for i2 in range(imin,imax): #The rows of M determine how each vector (column) of M is used in the sum
-        for i1 in range(imin,imax):
-            for i0 in range(imin,imax):
+#    print 'Min of M', amin(M)
+#    print 'Max of M', amax(M)
+#    imin = int(amin(M))
+#    imax = int(amax(M))
+#    for i2 in range(imin,imax): #The rows of M determine how each vector (column) of M is used in the sum
+#        for i1 in range(imin,imax):
+#            for i0 in range(imin,imax):
+    [m0,m1,m2] = searchsphere(Kv)
+    print [m0,m1,m2]
+        
+    for i2 in range(int(min(m2*M[2,:])),int(max(m2*M[2,:]))): #The rows of M determine how each vector (column) of M is used in the sum
+        for i1 in range(int(min(m1*M[1,:])),int(max(m1*M[1,:]))):
+            for i0 in range(int(min(m0*M[0,:])),int(max(m0*M[0,:]))):
                 ktry = i0*Kv[:,0] + i1*Kv[:,1] + i2*Kv[:,2]
 #                if i1 == 
 #                print i0,i1,i2
@@ -420,10 +426,21 @@ def writekpts_vasp_M(path,M,K):
 #                        print 'Found duplicate'
 #                        break
                #test whether it is in 1st BZ.  Transform first to basis of B:
-               #it's in the parallelpiped if it's componenets are all less than one and positive             
-                if min(ktryB1)>=0 and max(ktryB1)<1 :
-                    kpts[:,npts] = ktry
+               #it's in the parallelpiped if its components are all less than one and positive             
+                eps = 1e-4
+                if min(ktryB1)>=0+eps and max(ktryB1)<1+eps :
+                    
+                    #translate to traditional 1BZ
+                    for i in range(3):
+                        if ktryB1[i]>0.5: 
+                            ktryB1[i] = ktryB1[i] - 1
+                        if ktryB1[i]<-0.5: 
+                            ktryB1[i] = ktryB1[i] + 1
                     print i0,i1,i2, ktryB1
+                    #convert to cartesian
+                    ktry = trimSmall(dot(B,transpose(ktryB1)))
+                    kpts[:,npts] = ktry
+                    
 #                    ktryB[:,npts] = ktryB1
 #                    kpts.append(ktryB1)
 #                    print 'In 1BZ'
@@ -434,7 +451,20 @@ def writekpts_vasp_M(path,M,K):
     scale = 10       
     poscar = open('POSCARk','w')
     poscar.write('Cs I kpoints vs B'+'\n') #different sizes from this label
-    poscar.write('100.0\n')
+    poscar.write('1.0\n')
+    for i in [0,1,2]:
+        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*B[0,i], scale*B[1,i], scale*B[2,i])) 
+    poscar.write('1 %i\n' %npts)      
+    poscar.write('Cartesian\n')
+    poscar.write('0.0 0.0 0.0\n') 
+    for i in range(npts):
+        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*kpts[0,i],scale*kpts[1,i],scale*kpts[2,i]))
+    poscar.close()
+    
+#        scale = 10       
+    poscar = open('POSCARkBbasis','w')
+    poscar.write('Cs I kpoints vs B'+'\n') #different sizes from this label
+    poscar.write('1.0\n')
     for i in [0,1,2]:
         poscar.write('%20.15f %20.15f %20.15f \n' % (scale*B[0,i], scale*B[1,i], scale*B[2,i])) 
     poscar.write('1 %i\n' %npts)      
