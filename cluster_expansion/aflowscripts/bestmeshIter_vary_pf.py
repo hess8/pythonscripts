@@ -374,7 +374,7 @@ def writekpts_vasp_pf(path,K,pf,Nmesh):
     file1.close()
     return 
 
-def writekpts_vasp_M(path,M,K):
+def writekpts_vasp_M(path,B,M,K):
     '''write out kpoints file with IBZKPTS format.  This will specify all the kpoints and their weights. 
     No shift is allowed for now'''
     #Fill a 1st brilloun zone with mesh points.  We will chose the 1st BZ to be that given by the parallepiped of (B0, B1, B2)
@@ -383,9 +383,9 @@ def writekpts_vasp_M(path,M,K):
     
 
     Kv = K.vecs
-    B = dot(Kv,M)
+    Bv = B.vecs
     nBZpt = 0
-    Binv = inv(B)
+    Binv = inv(Bv)
 #    #Dummy set up Monkhorst Pack:
 #    M = [[10,0,0],[0,10,0],[0,0,10]];
 #    Kv = dot(B,inv(M))
@@ -393,11 +393,11 @@ def writekpts_vasp_M(path,M,K):
 #    
 #    #end dummy
     print 'K vecsin writekpts_vasp_M';print (Kv)
-#    print 'transpose(Bvecs)in writekpts_vasp_M';print transpose(B)*100
+#    print 'transpose(Bvecs)in writekpts_vasp_M';print transpose(Bv)*100
     print 'det of M', det(M)    
-    npts = 0
-    ktryB = zeros((3,int(det(M)*2)))#!!!Change this *2 later when it's working
-    kpts =  zeros((3,int(det(M)*2)))
+    npts = -1
+    ktryB = zeros((3,int(det(M))))#!!!Change this *2 later when it's working
+    kpts =  zeros((3,int(det(M))))
 #    print size(ktryB)
 #    for i2 in range(int(min(M[2,:])),int(max(M[2,:]))+10): #The rows of M determine how each vector (column) of M is used in the sum
 #        for i1 in range(int(min(M[1,:])),int(max(M[1,:]))+10):
@@ -420,7 +420,7 @@ def writekpts_vasp_M(path,M,K):
 #                print i0,i1,i2
 #                print ktry
                 
-                ktryB1 = trimSmall(dot(inv(B),transpose(ktry)))
+                ktryB1 = trimSmall(dot(inv(Bv),transpose(ktry)))
 #                for i in range(npts):
 #                    if ktryB1.all == ktryB[:,i].all:
 #                        print 'Found duplicate'
@@ -429,7 +429,7 @@ def writekpts_vasp_M(path,M,K):
                #it's in the parallelpiped if its components are all less than one and positive             
                 eps = 1e-4
                 if min(ktryB1)>=0+eps and max(ktryB1)<1+eps :
-                    
+                    npts += 1
                     #translate to traditional 1BZ
                     for i in range(3):
                         if ktryB1[i]>0.5: 
@@ -438,16 +438,48 @@ def writekpts_vasp_M(path,M,K):
                             ktryB1[i] = ktryB1[i] + 1
                     print i0,i1,i2, ktryB1
                     #convert back to cartesian
-                    ktry = trimSmall(dot(B,transpose(ktryB1)))
+                    ktry = trimSmall(dot(Bv,transpose(ktryB1)))
                     kpts[:,npts] = ktry
                     
 #                    ktryB[:,npts] = ktryB1
 #                    kpts.append(ktryB1)
 #                    print 'In 1BZ'
-                    npts += 1
-                #Apply symmetry operations and see which are identical to others
+    npts = npts+1 #from starting at -1            
+    print 'Points in 1BZ',npts
+    #Apply symmetry operations and see which are identical to others.  All in Cartesian coords
+    kptssymm = zeros((3,npts))
+    weights = zeros((npts))
+    #record the first point
+    kptssymm[:,0] = kpts[:,0]
+    weights[0] = 1
+    nksymm = 1
+    
+    for i in range(1,npts):
+        #rotate
+        print i
+        found = False
+        for iop in range(B.nops):
+            krot = dot(B.symops[:,:,iop],kpts[:,i])
+            #test whether it matches any we have saved. 
+            for iksymm in range(nksymm):      
+                if  isequal(krot[0],kptssymm[0,iksymm]) and isequal(krot[1],kptssymm[1,iksymm]) and isequal(krot[2],kptssymm[2,iksymm]) :
+                    print 'Found equivalent point'
+                    weights[iksymm] += 1
+                    found = True # It better be equivalent to only one saved point
+                    break
+   
+            if found: 
+                break
+        if not found:
+            kptssymm[:,nksymm] = kpts[:,i]                
+            weights[nksymm] += 1
+            nksymm += 1  
+            print 'symm new point',nksymm  
+    print 'Points in reduced 1BZ',nksymm 
+    print 'Total weights',sum(weights)   
+    print 'Vol BZ/ vol irredBZ', npts/float(nksymm)
                 
-                    
+                   
                                 
     #write POSCAR for vmd:  put B vectors in lattice, and kmesh in atomic positions
     scale = 10       
@@ -455,7 +487,7 @@ def writekpts_vasp_M(path,M,K):
     poscar.write('Cs I kpoints vs B'+'\n') #different sizes from this label
     poscar.write('1.0\n')
     for i in [0,1,2]:
-        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*B[0,i], scale*B[1,i], scale*B[2,i])) 
+        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*Bv[0,i], scale*Bv[1,i], scale*Bv[2,i])) 
     poscar.write('1 %i\n' %npts)      
     poscar.write('Cartesian\n')
     poscar.write('0.0 0.0 0.0\n') 
@@ -493,7 +525,7 @@ def writekpts_vasp_M(path,M,K):
 #                                         
 #                                         
 
-    print npts
+
     sys.exit('stop')  
                 
 def writejobfile(path):
@@ -659,7 +691,7 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
             os.chdir(newpath)
             os.system ('cp %s* %s' % (vaspinputdir,newpath))
             os.system ('cp %sPOSCAR %s' % (path,newpath))  
-            writekpts_vasp_M(newpath,M,K)
+            writekpts_vasp_M(newpath,B,M,K)
             writekpts_vasp_pf(newpath,K.vecs,pf_maxpf,K.Nmesh)
             writejobfile(newpath)
             print 'Check M'
