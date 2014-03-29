@@ -99,7 +99,7 @@ struct = maindir.split('/')[-2]
 #plots
 titleadd = struct +','+ lattype +','+ title_detail 
 plotxy(names,energies,'vary_pf', titleadd + 'Vasp energy vs packing fraction','Packing fraction','eV')
-plotxy(Nk,NkIBZ,'NkIBZ', titleadd+' Kpoint numbers','Nk from det M','Nk in IBZKPT')
+#plotxy(Nk,NkIBZ,'NkIBZ', titleadd+' Kpoint numbers','Nk from det M','Nk in IBZKPT')
 plotxy(names,cputime,'cpu', titleadd + ' CPU Time','Packing fraction','CPU time(sec)')
 plotxy(NkIBZ,cputime,'cpu_vs_Nk', titleadd + ' CPU Time vs Nk in IBZKPT','Nk in IBZKPT','CPU time(sec)')
 

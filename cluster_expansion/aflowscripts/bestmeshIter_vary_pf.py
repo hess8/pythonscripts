@@ -357,6 +357,18 @@ def orthsuper(B):
         sys.exit('Symmetry failed in orthsuper')
     return [K,pf,True]
 
+def searchsphere2latt(a1Vecs,a2Vecs):
+   '''Decide how many lattice points to look in each direction to get all the
+   points in a sphere that contains all of the longest _primitive_ vectors of the second lattice (from GLH)'''
+   scale = 1.5  #1 is normal; others for testing
+   eps  = 1e-6
+   cell_volume = det(a1Vecs)
+   max_norm = max(norm(a2Vecs[:,0]),norm(a2Vecs[:,1]),norm(a2Vecs[:,2]))
+   n0 = scale*ceil(max_norm*norm(cross(a1Vecs[:,1],a1Vecs[:,2])/cell_volume)+eps)
+   n1 = scale*ceil(max_norm*norm(cross(a1Vecs[:,2],a1Vecs[:,0])/cell_volume)+eps)
+   n2 = scale*ceil(max_norm*norm(cross(a1Vecs[:,0],a1Vecs[:,1])/cell_volume)+eps)
+   return [int(n0),int(n1),int(n2)]
+
 def writekpts_vasp_pf(path,K,pf,Nmesh):
     '''Write mesh  to kpoints file, using integer division for cubic and fcc meshes'''   
     file1 = open(path +'KPOINTS','w')
@@ -379,52 +391,53 @@ def writekpts_vasp_M(path,B,M,K):
     No shift is allowed for now'''
     #Fill a 1st brilloun zone with mesh points.  We will chose the 1st BZ to be that given by the parallepiped of (B0, B1, B2)
     #Since B = KM.  The first column of M determines the first column of B (B0) We run trial mesh points over a grid made by the maximum and minimum values of columns of M and the three directions 
-    # of K.  The first row of M  gives the first k direction (first column of K).
-    
-
+    # of K.  The first row of M  gives the first k direction (first column of K)
+    eps = 1e-4
     Kv = K.vecs
     Bv = B.vecs
     nBZpt = 0
     Binv = inv(Bv)
+    #find diagonal of the 1BZ parallepiped
+    Bmax = norm(Bv[:,0]+Bv[:,1]+Bv[:,2])
+    
+#    Bv0norm = norm(Kv[:,0]); Kv1norm = norm(Kv[:,1]); Kv2norm = norm(Kv[:,2]);
+#    Kmaxstep = sqrt(Kv0norm**2 + Kv1norm**2 + Kv2norm**2 ) #largest distance spanned by 
+#    Kv0norm = norm(Kv[:,0]); Kv1norm = norm(Kv[:,1]); Kv2norm = norm(Kv[:,2]);
+#    Kmaxstep = sqrt(Kv0norm**2 + Kv1norm**2 + Kv2norm**2 ) #largest distance spanned by 
+    
 #    #Dummy set up Monkhorst Pack:
-#    M = [[10,0,0],[0,10,0],[0,0,10]];
-#    Kv = dot(B,inv(M))
-
-#    
+#    nMP = rint(det(M)**(1/3.0))
+#    M = array([[nMP,0,0],[0,nMP,0],[0,0,nMP]]);
+#    Kv = dot(Bv,inv(M))
 #    #end dummy
-    print 'K vecsin writekpts_vasp_M';print (Kv)
+    print 'M in writekpts_vasp_M';print (M)
+    print 'Kvecs in writekpts_vasp_M';print (Kv)
 #    print 'transpose(Bvecs)in writekpts_vasp_M';print transpose(Bv)*100
     print 'det of M', det(M)    
     npts = -1
-    ktryB = zeros((3,int(det(M))))#!!!Change this *2 later when it's working
-    kpts =  zeros((3,int(det(M))))
-#    print size(ktryB)
-#    for i2 in range(int(min(M[2,:])),int(max(M[2,:]))+10): #The rows of M determine how each vector (column) of M is used in the sum
-#        for i1 in range(int(min(M[1,:])),int(max(M[1,:]))+10):
-#            for i0 in range(int(min(M[0,:])),int(max(M[0,:]))+10):
-#    print 'Min of M', amin(M)
-#    print 'Max of M', amax(M)
-#    imin = int(amin(M))
-#    imax = int(amax(M))
-#    for i2 in range(imin,imax): #The rows of M determine how each vector (column) of M is used in the sum
-#        for i1 in range(imin,imax):
-#            for i0 in range(imin,imax):
-    [m0,m1,m2] = searchsphere(Kv)
-    print [m0,m1,m2]
-        
-    for i2 in range(int(min(m2*M[2,:])),int(max(m2*M[2,:]))): #The rows of M determine how each vector (column) of M is used in the sum
-        for i1 in range(int(min(m1*M[1,:])),int(max(m1*M[1,:]))):
-            for i0 in range(int(min(m0*M[0,:])),int(max(m0*M[0,:]))):
-                ktry = i0*Kv[:,0] + i1*Kv[:,1] + i2*Kv[:,2]
-#                if i1 == 
-#                print i0,i1,i2
-#                print ktry
-                
+    ktryB = zeros((3,rint(det(M))))# 
+    kpts =  zeros((3,rint(det(M))))
+    #The rows of M determine how each vector (column) of K is used in the sum.    
+    #The 1BZ parallelpiped must go from (0,0,0) to each of the other vertices 
+    #the close vertices are at B1,B2,B3.  So each element of each row must be considered.
+    #The far verictecs are at  for these three vectors taken in paris. 
+    #To reach the diagonal point of the parallelpiped, 
+    #which means that the sums of the rows must be part of the limits.
+    #To reach the three far vertices (not the tip), we have to take the columns of M in pairs:, 
+    #which means that we check the limits of the pairs among the elements of each row.
+    #in other words, the limits on the search for each row i of (coefficients of grid basis vector Ki) are the partial sums
+    #of the elements of each row:  min(0,a,b,c,a+b,a+c,b+c,a+b+c), max(0,a,b,c,a+b,a+c,b+c,a+b+c)
+    Msums = zeros((3,8),dtype = int)
+    for i in range(3):
+        a = M[i,0]; b = M[i,1];c = M[i,2];
+        Msums[i,0]=0; Msums[i,1]=a; Msums[i,2]=b;Msums[i,3]=c;
+        Msums[i,4]=a+b; Msums[i,5]=a+c; Msums[i,6]=b+c;  Msums[i,7]=a+b+c
+
+    for i2 in range(amin(Msums[2,:]),amax(Msums[2,:])): #The rows of M determine how each vector (column) of M is used in the sum
+        for i1 in range(amin(Msums[1,:]),amax(Msums[1,:])):
+            for i0 in range(amin(Msums[0,:]),amax(Msums[0,:])):
+                ktry = i0*Kv[:,0] + i1*Kv[:,1] + i2*Kv[:,2]              
                 ktryB1 = trimSmall(dot(inv(Bv),transpose(ktry)))
-#                for i in range(npts):
-#                    if ktryB1.all == ktryB[:,i].all:
-#                        print 'Found duplicate'
-#                        break
                #test whether it is in 1st BZ.  Transform first to basis of B:
                #it's in the parallelpiped if its components are all less than one and positive             
                 eps = 1e-4
@@ -436,19 +449,16 @@ def writekpts_vasp_M(path,B,M,K):
                             ktryB1[i] = ktryB1[i] - 1
                         if ktryB1[i]<-0.5: 
                             ktryB1[i] = ktryB1[i] + 1
-                    print i0,i1,i2, ktryB1
+#                    print i0,i1,i2, ktryB1
                     #convert back to cartesian
                     ktry = trimSmall(dot(Bv,transpose(ktryB1)))
                     kpts[:,npts] = ktry
-                    
-#                    ktryB[:,npts] = ktryB1
-#                    kpts.append(ktryB1)
-#                    print 'In 1BZ'
     npts = npts+1 #from starting at -1            
     print 'Points in 1BZ',npts
+    if npts != det(M): sys.exit('Stop. Number of grid points in the 1BZ is not equal to det(M)')
     #Apply symmetry operations and see which are identical to others.  All in Cartesian coords
     kptssymm = zeros((3,npts))
-    weights = zeros((npts))
+    weights = zeros((npts),dtype = int)
     #record the first point
     kptssymm[:,0] = kpts[:,0]
     weights[0] = 1
@@ -456,45 +466,66 @@ def writekpts_vasp_M(path,B,M,K):
     
     for i in range(1,npts):
         #rotate
-        print i
         found = False
         for iop in range(B.nops):
             krot = dot(B.symops[:,:,iop],kpts[:,i])
             #test whether it matches any we have saved. 
             for iksymm in range(nksymm):      
                 if  isequal(krot[0],kptssymm[0,iksymm]) and isequal(krot[1],kptssymm[1,iksymm]) and isequal(krot[2],kptssymm[2,iksymm]) :
-                    print 'Found equivalent point'
+#                    print 'Found equivalent point'
                     weights[iksymm] += 1
                     found = True # It better be equivalent to only one saved point
                     break
-   
             if found: 
                 break
         if not found:
             kptssymm[:,nksymm] = kpts[:,i]                
             weights[nksymm] += 1
             nksymm += 1  
-            print 'symm new point',nksymm  
+#            print 'symm new point',nksymm  
     print 'Points in reduced 1BZ',nksymm 
     print 'Total weights',sum(weights)   
     print 'Vol BZ/ vol irredBZ', npts/float(nksymm)
-                
-                   
+    #convert to basis of B lattice vectors
+    for i in range(nksymm):
+        kptssymm[:,i] = trimSmall(dot(inv(Bv),transpose(kptssymm[:,i])))             
                                 
-    #write POSCAR for vmd:  put B vectors in lattice, and kmesh in atomic positions
+#    #write POSCAR for vmd:  put B vectors in lattice, and kmesh in atomic positions
+#    scale = 10       
+#    poscar = open('POSCARk','w')
+#    poscar.write('Cs I kpoints vs B'+'\n') #different sizes from this label
+#    poscar.write('1.0\n')
+#    for i in [0,1,2]:
+#        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*Bv[0,i], scale*Bv[1,i], scale*Bv[2,i])) 
+#    poscar.write('1 %i\n' %npts)      
+#    poscar.write('Cartesian\n')
+#    poscar.write('0.0 0.0 0.0\n') 
+#    for i in range(npts):
+#        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*kpts[0,i],scale*kpts[1,i],scale*kpts[2,i]))
+#    poscar.close()
+    
+    #write POSCAR with irred BZ.  for vmd:  put B vectors in lattice, and kmesh in atomic positions
     scale = 10       
-    poscar = open('POSCARk','w')
+    poscar = open('POSCARkred','w')
     poscar.write('Cs I kpoints vs B'+'\n') #different sizes from this label
     poscar.write('1.0\n')
     for i in [0,1,2]:
         poscar.write('%20.15f %20.15f %20.15f \n' % (scale*Bv[0,i], scale*Bv[1,i], scale*Bv[2,i])) 
-    poscar.write('1 %i\n' %npts)      
+    poscar.write('1 %i\n' %nksymm)      
     poscar.write('Cartesian\n')
     poscar.write('0.0 0.0 0.0\n') 
-    for i in range(npts):
-        poscar.write('%20.15f %20.15f %20.15f \n' % (scale*kpts[0,i],scale*kpts[1,i],scale*kpts[2,i]))
+    for i in range(nksymm):
+        poscar.write('%20.15f %20.15f %20.15f %20.15f \n' % (scale*kptssymm[0,i],scale*kptssymm[1,i],scale*kptssymm[2,i], weights[i]))
     poscar.close()
 
+    
+    poscar = open('KPOINTS','w')
+    poscar.write('BCH generated via bestmeshiter'+'\n') #different sizes from this label
+    poscar.write('%i\n' % nksymm)
+    poscar.write('Reciprocal lattice units\n')
+    for i in range(nksymm):
+        poscar.write('%20.15f %20.15f %20.15f      %i\n' % (kptssymm[0,i],kptssymm[1,i],kptssymm[2,i], weights[i]))
+    poscar.close()
                     
 #    maxM = zeros((3,3),dtype = int)
 #    minM = zeros((3,3),dtype = int)
@@ -526,7 +557,7 @@ def writekpts_vasp_M(path,B,M,K):
 #                                         
 
 
-    sys.exit('stop')  
+#    sys.exit('stop')  
                 
 def writejobfile(path):
     '''read from a template in maindir, and put  (structure label) in job name'''
@@ -594,7 +625,8 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     meshesfile.write('Format: pf then Nmesh then kmesh\n\n')    
     
     pflist = []
-    for pftry in frange(pfB/2,0.75,0.005):
+#    for pftry in frange(pfB/2,0.75,0.005):
+    for pftry in frange(.4,0.75,0.005):
         print '\nPacking fraction target',pftry
         B.pftarget = pftry  
         pf_orth=0; pf_orth2fcc=0; sym_orth = False; sym_orth2fcc = False
@@ -683,6 +715,15 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
                     meshesfile.write('%18.12f' % K.vecs[i,j])
                 meshesfile.write('\n')
             meshesfile.write('\n') 
+            
+            M = dot(inv(K.vecs),B.vecs) #We assign K only when M is ideal, so remake the best M
+            print 'Check M'
+            print 'Check K'
+            print K.vecs 
+            print 'Check B'
+            print B.vecs
+            print 'Check pf'
+            print packingFraction(K.vecs) 
             #create a dir and prepare for vasp run
             newdir = str(round(pf_maxpf,4))
             newpath = path + newdir + '/'
@@ -692,16 +733,9 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
             os.system ('cp %s* %s' % (vaspinputdir,newpath))
             os.system ('cp %sPOSCAR %s' % (path,newpath))  
             writekpts_vasp_M(newpath,B,M,K)
-            writekpts_vasp_pf(newpath,K.vecs,pf_maxpf,K.Nmesh)
+#            writekpts_vasp_pf(newpath,K.vecs,pf_maxpf,K.Nmesh)
             writejobfile(newpath)
-            print 'Check M'
-            print dot(inv(K.vecs),B.vecs) 
-            print 'Check K'
-            print K.vecs 
-            print 'Check B'
-            print B.vecs
-            print 'Check pf'
-            print packingFraction(K.vecs)  
+ 
 #            print 'submitting job'            
             subprocess.call(['sbatch', 'vaspjob']) #!!!!!!! Submit jobs
             os.chdir(path)                      
