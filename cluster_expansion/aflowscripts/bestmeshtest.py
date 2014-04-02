@@ -9,6 +9,7 @@ from kmeshroutines import nstrip, readposcar,create_poscar
 #from bestmeshIterJan22 import bestmeshIter
 from bestmeshIter import bestmeshIter
 from bestmeshIter_vary_pf import bestmeshIter_vary_pf
+from bestmeshIter_MonkhorstPack import bestmeshIter_MonkhorstPack
 fprec=float64
 
 ################# script #######################
@@ -22,13 +23,13 @@ fprec=float64
 
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.10xNk/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.noshift/'
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^4/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testMP/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
 
 testfile = 'POSCAR'
-Nkppra = 10000#*10
-
+Nkppra = 100000#*10
 #reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
@@ -56,7 +57,8 @@ for directory in dirs:
         meshesfile = open('meshesfile','w')
         meshesfile.write(directory+' ============\n')
         meshesfile.close()
-        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter_vary_pf(reciplatt,Nmesh,path)
+#        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter_vary_pf(reciplatt,Nmesh,path)
+        bestmeshIter_MonkhorstPack(reciplatt,Nmesh,path)
 # End trials
 
 #        [K.vecs, K.Nmesh, B.Nmesh, B.lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype(B),status]

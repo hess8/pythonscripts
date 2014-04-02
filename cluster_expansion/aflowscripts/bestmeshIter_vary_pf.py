@@ -389,7 +389,7 @@ def writekpts_vasp_pf(path,K,pf,Nmesh):
 def writekpts_vasp_M(path,B,M,K):
     '''write out kpoints file with IBZKPTS format.  This will specify all the kpoints and their weights. 
     No shift is allowed for now'''
-    #Fill a 1st brilloun zone with mesh points.  We will chose the 1st BZ to be that given by the parallepiped of (B0, B1, B2)
+    #Fill a 1st brilloun zone with mesh points.  We will choose the 1st BZ to be that given by the parallepiped of (B0, B1, B2)
     #Since B = KM.  The first column of M determines the first column of B (B0) We run trial mesh points over a grid made by the maximum and minimum values of columns of M and the three directions 
     # of K.  The first row of M  gives the first k direction (first column of K)
     eps = 1e-4
@@ -397,26 +397,18 @@ def writekpts_vasp_M(path,B,M,K):
     Bv = B.vecs
     nBZpt = 0
     Binv = inv(Bv)
-    #find diagonal of the 1BZ parallepiped
-    Bmax = norm(Bv[:,0]+Bv[:,1]+Bv[:,2])
-    
-#    Bv0norm = norm(Kv[:,0]); Kv1norm = norm(Kv[:,1]); Kv2norm = norm(Kv[:,2]);
-#    Kmaxstep = sqrt(Kv0norm**2 + Kv1norm**2 + Kv2norm**2 ) #largest distance spanned by 
-#    Kv0norm = norm(Kv[:,0]); Kv1norm = norm(Kv[:,1]); Kv2norm = norm(Kv[:,2]);
-#    Kmaxstep = sqrt(Kv0norm**2 + Kv1norm**2 + Kv2norm**2 ) #largest distance spanned by 
-    
 #    #Dummy set up Monkhorst Pack:
 #    nMP = rint(det(M)**(1/3.0))
 #    M = array([[nMP,0,0],[0,nMP,0],[0,0,nMP]]);
 #    Kv = dot(Bv,inv(M))
-#    #end dummy
+    #end dummy
     print 'M in writekpts_vasp_M';print (M)
     print 'Kvecs in writekpts_vasp_M';print (Kv)
 #    print 'transpose(Bvecs)in writekpts_vasp_M';print transpose(Bv)*100
     print 'det of M', det(M)    
     npts = -1
-    ktryB = zeros((3,rint(det(M))))# 
-    kpts =  zeros((3,rint(det(M))))
+    ktryB = zeros((3,rint(det(M)*2)))# 
+    kpts =  zeros((3,rint(det(M)*2)))
     #The rows of M determine how each vector (column) of K is used in the sum.    
     #The 1BZ parallelpiped must go from (0,0,0) to each of the other vertices 
     #the close vertices are at B1,B2,B3.  So each element of each row must be considered.
@@ -428,34 +420,40 @@ def writekpts_vasp_M(path,B,M,K):
     #in other words, the limits on the search for each row i of (coefficients of grid basis vector Ki) are the partial sums
     #of the elements of each row:  min(0,a,b,c,a+b,a+c,b+c,a+b+c), max(0,a,b,c,a+b,a+c,b+c,a+b+c)
     Msums = zeros((3,8),dtype = int)
+
     for i in range(3):
         a = M[i,0]; b = M[i,1];c = M[i,2];
         Msums[i,0]=0; Msums[i,1]=a; Msums[i,2]=b;Msums[i,3]=c;
         Msums[i,4]=a+b; Msums[i,5]=a+c; Msums[i,6]=b+c;  Msums[i,7]=a+b+c
-
-    for i2 in range(amin(Msums[2,:]),amax(Msums[2,:])): #The rows of M determine how each vector (column) of M is used in the sum
-        for i1 in range(amin(Msums[1,:]),amax(Msums[1,:])):
-            for i0 in range(amin(Msums[0,:]),amax(Msums[0,:])):
+    ntry =0
+    for i2 in range(amin(Msums[2,:])-1,amax(Msums[2,:])+1): #The rows of M determine how each vector (column) of M is used in the sum
+        for i1 in range(amin(Msums[1,:])-1,amax(Msums[1,:])+1):
+            for i0 in range(amin(Msums[0,:])-1,amax(Msums[0,:])+1):
+                ntry += 1
                 ktry = i0*Kv[:,0] + i1*Kv[:,1] + i2*Kv[:,2]              
                 ktryB1 = trimSmall(dot(inv(Bv),transpose(ktry)))
                #test whether it is in 1st BZ.  Transform first to basis of B:
                #it's in the parallelpiped if its components are all less than one and positive             
                 eps = 1e-4
-                if min(ktryB1)>=0+eps and max(ktryB1)<1+eps :
+                if min(ktryB1)>0-eps and max(ktryB1)<1-eps :
                     npts += 1
+#                    print i0,i1,i2, trimSmall(ktryB1)
                     #translate to traditional 1BZ
                     for i in range(3):
-                        if ktryB1[i]>0.5: 
+                        if ktryB1[i]>0.5+eps: 
                             ktryB1[i] = ktryB1[i] - 1
-                        if ktryB1[i]<-0.5: 
+                        if ktryB1[i]<-0.5+eps: 
                             ktryB1[i] = ktryB1[i] + 1
-#                    print i0,i1,i2, ktryB1
+                    
                     #convert back to cartesian
                     ktry = trimSmall(dot(Bv,transpose(ktryB1)))
                     kpts[:,npts] = ktry
-    npts = npts+1 #from starting at -1            
+    npts = npts+1 #from starting at -1    
+    print 'Grid points tested',ntry     
     print 'Points in 1BZ',npts
-    if npts != det(M): sys.exit('Stop. Number of grid points in the 1BZ is not equal to det(M)')
+    if not isequal(npts,rint(det(M))): 
+        print det(M)
+        sys.exit('Stop. Number of grid points in the 1BZ is not equal to det(M)')
     #Apply symmetry operations and see which are identical to others.  All in Cartesian coords
     kptssymm = zeros((3,npts))
     weights = zeros((npts),dtype = int)
@@ -465,10 +463,16 @@ def writekpts_vasp_M(path,B,M,K):
     nksymm = 1
     
     for i in range(1,npts):
+        kB = trimSmall(dot(inv(Bv),transpose(kpts[:,i])))
+#        if isequal(kB[0],0.5) or  isequal(kB[1],0.5) or isequal(kB[2],0.5)  :
+#            print'Boundary point', kB
         #rotate
         found = False
         for iop in range(B.nops):
             krot = dot(B.symops[:,:,iop],kpts[:,i])
+            kB2 = trimSmall(dot(inv(Bv),transpose(krot)))
+#            if isequal(kB[0],0.5) or  isequal(kB[1],0.5) or isequal(kB[2],0.5)  :
+#                print kB2            
             #test whether it matches any we have saved. 
             for iksymm in range(nksymm):      
                 if  isequal(krot[0],kptssymm[0,iksymm]) and isequal(krot[1],kptssymm[1,iksymm]) and isequal(krot[2],kptssymm[2,iksymm]) :
@@ -527,36 +531,6 @@ def writekpts_vasp_M(path,B,M,K):
         poscar.write('%20.15f %20.15f %20.15f      %i\n' % (kptssymm[0,i],kptssymm[1,i],kptssymm[2,i], weights[i]))
     poscar.close()
                     
-#    maxM = zeros((3,3),dtype = int)
-#    minM = zeros((3,3),dtype = int)
-#    N = zeros((3,3),dtype = int)
-#    for i in range(3):
-#        for j in range(3):
-#            maxM[i,j] = int(max(M[i,j],0))
-#            minM[i,j] = int(min(M[i,j],0))
-#    print maxM
-#    print minM
-#    npts = 0
-#    for i00 in range(minM[0,0],maxM[0,0]+1):
-#        for i10 in range(minM[1,0],maxM[1,0]+1):
-#            for i20 in range(minM[2,0],maxM[2,0]+1):
-#                for i01 in range(minM[0,1],maxM[0,1]+1):
-#                    for i11 in range(minM[1,1],maxM[1,1]+1):
-#                        for i21 in range(minM[2,1],maxM[2,1]+1):
-#                             for i02 in range(minM[0,2],maxM[0,2]+1):
-#                                 for i12 in range(minM[1,2],maxM[1,2]+1):
-#                                     for i22 in range(minM[2,2],maxM[2,2]+1):
-#                                         N = [
-#                                              [i00,i01,i02],
-#                                              [i10,i11,i12],
-#                                              [i20,i21,i22]
-#                                              ]
-#                                         pt = N
-#                                         #convert to B basis
-#                                         
-#                                         
-
-
 #    sys.exit('stop')  
                 
 def writejobfile(path):
@@ -608,6 +582,9 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     print 'Packing fraction of B:', pfB  
     [B.symops,B.nops] = getGroup(B.vecs)
     B.msymops = intsymops(B) #integer sym operations in B basis
+#    print'Symmetry operators in basis of B'
+#    for i in range:
+#        print B.msymops[:,:,i];print 
 #    printops_eigs(B)
     B.lattype = latticeType(B.nops)
     print 'Lattice type:', B.lattype
@@ -625,8 +602,8 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     meshesfile.write('Format: pf then Nmesh then kmesh\n\n')    
     
     pflist = []
-#    for pftry in frange(pfB/2,0.75,0.005):
-    for pftry in frange(.4,0.75,0.005):
+    for pftry in frange(pfB/2,0.75,0.005):
+#    for pftry in frange(.13,0.75,0.005):
         print '\nPacking fraction target',pftry
         B.pftarget = pftry  
         pf_orth=0; pf_orth2fcc=0; sym_orth = False; sym_orth2fcc = False
@@ -716,8 +693,9 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
                 meshesfile.write('\n')
             meshesfile.write('\n') 
             
-            M = dot(inv(K.vecs),B.vecs) #We assign K only when M is ideal, so remake the best M
+            M = rint(dot(inv(K.vecs),B.vecs)) #We assign K only when M is ideal, so remake the best M
             print 'Check M'
+            print M
             print 'Check K'
             print K.vecs 
             print 'Check B'
