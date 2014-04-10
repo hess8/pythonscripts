@@ -255,13 +255,15 @@ def readposcar(filename, path):
     Saves vectors as columns, not rows which POSCAR uses'''
     file1 = open(path+filename,'r')
     poscar = file1.readlines()
+    poscar = nstrip(poscar)
+    print poscar
     file1.close()
-    descriptor = nstrip(poscar)[0]
-    scale = float(nstrip(poscar)[1])
+    descriptor = poscar[0].split()[0]
+    scale = float(poscar[1].split()[0])
     reallatt = zeros((3,3),dtype=fprec)
-    reallatt[:,0] = array(poscar[2].split())
-    reallatt[:,1] = array(poscar[3].split())
-    reallatt[:,2] = array(poscar[4].split())
+    reallatt[:,0] = array(poscar[2].split()[0:3])
+    reallatt[:,1] = array(poscar[3].split()[0:3])
+    reallatt[:,2] = array(poscar[4].split()[0:3])
 #    reallatt = reallatt.astype(fprec)
 #    print reallatt
     if scale < 0:
@@ -295,7 +297,7 @@ def create_poscar(filename,descriptor, scale, latticevecs, natoms, type_pos, pos
     for i in natoms:
         poscar.write(str(i)+'    ')
     poscar.write('\n')
-    poscar.write(type_pos)
+    poscar.write(type_pos+'\n')
     where = 0
     for natom in natoms:
         for i in range(natom):

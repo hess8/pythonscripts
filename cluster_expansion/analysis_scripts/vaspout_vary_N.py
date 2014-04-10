@@ -8,7 +8,7 @@ from numpy.linalg import norm
 from analysisToolsVasp import writeEnergiesOszicar, writedirnames, nstrip, writeNk, writeNkIBZ, \
   writeElConverge, writeElSteps, writeCPUtime, enerparts
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
-from plotTools import plotxy,vasputil_dosplot
+from plotTools import plotxy
 from pylab import *
 fprec=float64
 
@@ -18,16 +18,14 @@ fprec=float64
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test2/f6720/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^2/f5172/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test2.10xNk/f5172/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.10xNk/f3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.noshift/f3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/f3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^4/f3/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^5/f3/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/f3/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/silicon/'
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/CCf3/'
-#maindir = '/fslhome/bch/vasprun/bulk.crystals/silicon
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testMP/f3/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/f3varyN/0.7405/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/f3varyN/0.6802/'
 title_detail = ''
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
@@ -50,17 +48,6 @@ writeElConverge(dirs)
 writeElSteps(dirs)
 writeCPUtime(dirs)
 parts = enerparts(dirs)
-
-
-print 'Plotting DOS'
-for d in dirs:
-    path = maindir + d +'/'
-    try:
-        vasputil_dosplot([], ["DOSCAR"], path) #options, args, dir
-        plt.close()
-    except:
-        print 'Fail:'+ path
-
 #print'parts'; print parts
 #find deviation from average for each part
 means = mean(parts,axis=0)
@@ -73,7 +60,7 @@ try:
 except:
     lattype = ''
 ################# summary #################
-outfile = open('vary_pf.csv','w')
+outfile = open('vary_N.csv','w')
 outfile.write('pf,energy,el converged, el steps, Nkpoints, NIBZ,cputime(min\n')
  
 
@@ -115,7 +102,8 @@ outfile.close()
 struct = maindir.split('/')[-2]
 #plots
 titleadd = struct +','+ lattype +','+ title_detail 
-plotxy(names,energies,'vary_pf', titleadd + 'Vasp energy vs packing fraction','Packing fraction','eV')
+names = [str(float(names[i])**3) for i in range(len(names))]
+plotxy(names,energies,'vary_Nmesh', titleadd + 'Vasp energy vs N_mesh','N_mesh','eV')
 #plotxy(Nk,NkIBZ,'NkIBZ', titleadd+' Kpoint numbers','Nk from det M','Nk in IBZKPT')
 plotxy(names,cputime,'cpu', titleadd + ' CPU Time','Packing fraction','CPU time(sec)')
 plotxy(NkIBZ,cputime,'cpu_vs_Nk', titleadd + ' CPU Time vs Nk in IBZKPT','Nk in IBZKPT','CPU time(sec)')

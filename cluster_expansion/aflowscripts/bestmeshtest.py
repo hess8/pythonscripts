@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 '''    Tests routine for finding best mesh via symmetry eigenvectors, for each structure in dir
 '''
 import sys,os,subprocess
@@ -9,7 +9,7 @@ from kmeshroutines import nstrip, readposcar,create_poscar
 #from bestmeshIterJan22 import bestmeshIter
 from bestmeshIter import bestmeshIter
 from bestmeshIter_vary_pf import bestmeshIter_vary_pf
-from bestmeshIter_MonkhorstPack import bestmeshIter_MonkhorstPack
+from bestmeshIter_vary_N import bestmeshIter_vary_N
 fprec=float64
 
 ################# script #######################
@@ -23,13 +23,16 @@ fprec=float64
 
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.10xNk/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.noshift/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^4/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^3/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/f3varyN/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testMP/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testMP/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
+maindir = '/fslhome/bch/cluster_expansion/sisi/test10^3/'
 
 testfile = 'POSCAR'
-Nkppra = 100000#*10
+Nkppra = 1000#*10
 #reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
@@ -56,9 +59,8 @@ for directory in dirs:
 # for trials where we want to vary pf for testing       
         meshesfile = open('meshesfile','w')
         meshesfile.write(directory+' ============\n')
-        meshesfile.close()
-#        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter_vary_pf(reciplatt,Nmesh,path)
-        bestmeshIter_MonkhorstPack(reciplatt,Nmesh,path)
+        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter_vary_pf(reciplatt,Nmesh,path)
+#        bestmeshIter_vary_N(reciplatt,Nmesh,path)
 # End trials
 
 #        [K.vecs, K.Nmesh, B.Nmesh, B.lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype(B),status]

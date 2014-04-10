@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import os, subprocess, sys, time 
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
@@ -196,7 +197,7 @@ def writejobfile(path):
     file2.close()
     return
 
-def bestmeshIter_MonkhorstPack(Blatt,Nmesh,path):
+def bestmeshIter_vary_N(Blatt,Nmesh,path):
     '''The kmesh can be related to the reciprocal lattice B by  B = KM, where M is an integer 3x3 matrix
     So K = B Inv(M).  Change M one element at a time to minimize the errors in symmetry and the cost in S/V and Nmesh '''
     
@@ -251,12 +252,33 @@ def bestmeshIter_MonkhorstPack(Blatt,Nmesh,path):
     meshesfile.write('Format: pf then Nmesh then kmesh\n\n')    
     
     pflist = []
-    for div in [256,128,64,32,16,8,4,2,1]:
-        print '\nDivisor',div
-        nMP = rint((Nmesh/div)**(1/3.0))
-        M = array([[nMP,0,0],[0,nMP,0],[0,0,nMP]]);
+#    M0 = array([[2,   2,   2,],
+#                    [2,   2,   -2],
+#                    [-2,   2,   -2]])
+#    
+#      0.74050000    64.000 
+#-5   1   -3   
+#6   2   2   
+#3   1   -3   
+    M0 = array([[-5,   1, -3,],
+                    [6,   2,   2],
+                    [3,   1,   -3]])
+    
+#    for div in [256,128,64,32,16,8,4,2,1]:
+#        print '\nDivisor',div
+#        nMP = rint((Nmesh/div)**(1/3.0))
+#        M = array([[nMP,0,0],[0,nMP,0],[0,0,nMP]]);
+ 
+
+    for fac in [1,2,3,4,5,6,7,8]: 
+        print '\nMultiplier',fac       
+        
+        M = fac*M0
+#        M = array([[4,12,-4],
+#                   [-11,4,-26],
+#                   [-26,-4,-11]]);
         K = lattice();K.vecs = trimSmall(dot(B.vecs,inv(M)));K.det = abs(det(K.vecs)); K.Nmesh = B.det/K.det             
-        print 'Number of points',nMP**3
+        print 'Number of points',det(M)
         print 'Check M'
         print M
         print 'Check K'
@@ -266,7 +288,7 @@ def bestmeshIter_MonkhorstPack(Blatt,Nmesh,path):
         print 'Check pf'
         print packingFraction(K.vecs) 
         #create a dir and prepare for vasp run
-        newdir = str(nMP)
+        newdir = str(K.Nmesh)
         newpath = path + newdir + '/'
         if not os.path.isdir(newpath):
             os.system('mkdir %s' % newpath)

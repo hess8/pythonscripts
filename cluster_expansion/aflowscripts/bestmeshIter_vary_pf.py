@@ -597,13 +597,15 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     pfA = packingFraction(A.vecs)
     print 'Packing fraction of A:', pfA    
     
-    meshesfile = open('meshesfile','a')
+#    print 'current dir for meshesfile', os.getcwd()
+    meshesfile = open('meshesfile','w')
+#    meshesfile = open('meshesfile2','w')
     meshesfile.write('N target %i\n' % B.Nmesh)
     meshesfile.write('Format: pf then Nmesh then kmesh\n\n')    
     
     pflist = []
     for pftry in frange(pfB/2,0.75,0.005):
-#    for pftry in frange(.13,0.75,0.005):
+#    for pftry in frange(.5,0.505,0.005):
         print '\nPacking fraction target',pftry
         B.pftarget = pftry  
         pf_orth=0; pf_orth2fcc=0; sym_orth = False; sym_orth2fcc = False
@@ -687,12 +689,14 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
 ##            meshesfile.write('\n') 
                     
 #            meshesfile.write('k mesh\n')
+            M = rint(dot(inv(K.vecs),B.vecs))
             for i in range(3):
                 for j in range(3):
-                    meshesfile.write('%18.12f' % K.vecs[i,j])
+                    meshesfile.write('%i   ' % int(rint(M[i,j])))
                 meshesfile.write('\n')
             meshesfile.write('\n') 
-            
+            meshesfile.flush()  
+
             M = rint(dot(inv(K.vecs),B.vecs)) #We assign K only when M is ideal, so remake the best M
             print 'Check M'
             print M
