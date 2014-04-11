@@ -256,7 +256,7 @@ def readposcar(filename, path):
     file1 = open(path+filename,'r')
     poscar = file1.readlines()
     poscar = nstrip(poscar)
-    print poscar
+#    print poscar
     file1.close()
     descriptor = poscar[0].split()[0]
     scale = float(poscar[1].split()[0])

@@ -553,7 +553,8 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     
     ##############################################################
     ########################## Script ############################
-    vaspinputdir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/vaspinput/'
+    npathsegs = len(path.split('/'))
+    vaspinputdir = '/'.join(path.split('/')[0:npathsegs-2])
     M = zeros((3,3),dtype = int)
     S = zeros((3,3),dtype = fprec)
     B = lattice()
@@ -562,7 +563,6 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     status = ''
     pf_minsv = 0; pf_sv2fcc = 0; pf_maxpf = 0; pf_pf2fcc = 0; #kvecs_pf2fcc = identity(3)
     sym_maxpf = False;  sym_sv2fcc = False; sym_minsv = False; sym_pf2fcc = False
-    a = rint(Nmesh**(1/3.0)); f = int(Nmesh/a/a)
     print 'Target mesh number', Nmesh
        
     B.vecs = Blatt/2/pi  #Don't use 2pi constants in reciprocal lattice here
@@ -605,7 +605,7 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     
     pflist = []
     for pftry in frange(pfB/2,0.75,0.005):
-#    for pftry in frange(.5,0.505,0.005):
+#    for pftry in frange(.3,0.505,0.005):
         print '\nPacking fraction target',pftry
         B.pftarget = pftry  
         pf_orth=0; pf_orth2fcc=0; sym_orth = False; sym_orth2fcc = False
@@ -615,9 +615,14 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
         ctest = []
         type = 'maxpfsym'; print type
         ctrials = [3]
+        a = rint(Nmesh**(1/3.0));# f = int(Nmesh/a/a)
+        print 'M scale a',a
         for c in ctrials:        
-            M = array([[-a+2, a/c , a/c],[a/c,-a,a/c],[a/c,a/c,-a-2]])  #bcc like best avg pf on 50: 0.66
-#            M = array([[2, a/c , a/c],[a/c,0,a/c],[a/c,a/c,-2]]) #fcc like best avg pf on 50: 0.59
+#            M = array([[-a+5, a/c , a/c],[a/c,-a,a/c],[a/c,a/c,-a-5]])  #bcc like best avg pf on 50: 0.66
+#            M = array([[-16 ,  1 ,  5 ],  
+#                [6 ,  -10 ,  5],   
+#                [-6  , -1  , 6  ]])
+            M = array([[5, a/c , a/c],[a/c,0,a/c],[a/c,a/c,-5]]) #fcc like best avg pf on 50: 0.59
             M = rint(M * (B.Nmesh/abs(det(M)))**(1/3.0))
             print 'Start mesh trial'; print M              
             [M,K] = findmin(M,B,type)

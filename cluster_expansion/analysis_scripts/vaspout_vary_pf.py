@@ -22,12 +22,13 @@ fprec=float64
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.10xNk/f3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.noshift/f3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/f3/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^4/f3/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^3/f3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^5/f3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/f3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/silicon/'
-maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/CCf3/'
-#maindir = '/fslhome/bch/vasprun/bulk.crystals/silicon
+#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/CCf3/'
+maindir = '/fslhome/bch/cluster_expansion/sisi/test10^4/sidet2/'
+
 title_detail = ''
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
@@ -60,6 +61,7 @@ for d in dirs:
         plt.close()
     except:
         print 'Fail:'+ path
+    os.chdir(maindir)
 
 #print'parts'; print parts
 #find deviation from average for each part
