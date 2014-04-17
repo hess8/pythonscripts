@@ -2,7 +2,7 @@
 ################# functions #######################
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round,ceil
-from numpy import zeros,nonzero,float64, sort, argsort,mod
+from numpy import zeros,nonzero,float64, sort, argsort, mod, amin, amax
 fprec=float64
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
@@ -258,7 +258,7 @@ def readposcar(filename, path):
     poscar = nstrip(poscar)
 #    print poscar
     file1.close()
-    descriptor = poscar[0].split()[0]
+    descriptor = poscar[0]
     scale = float(poscar[1].split()[0])
     reallatt = zeros((3,3),dtype=fprec)
     reallatt[:,0] = array(poscar[2].split()[0:3])
@@ -275,8 +275,8 @@ def readposcar(filename, path):
     reciplatt = 2*pi*transpose(inv(reallatt))
     natoms = array(poscar[5].split(),dtype=int)
     totatoms=sum(natoms)
-    positions = zeros((totatoms,3),dtype=fprec)
-    postype = poscar[6] #Direct or Cartesian
+    positions = zeros((totatoms,3))
+    postype = poscar[6].split()[0] #Direct or Cartesian
     whichatom = 0
     for natom in natoms:
         for i in range(natom):
@@ -287,13 +287,13 @@ def readposcar(filename, path):
     return [descriptor, scale, reallatt, reciplatt, natoms, postype, positions]
 
 def create_poscar(filename,descriptor, scale, latticevecs, natoms, type_pos, positions, path):
-    '''Write lattice vectors as rows, contrary to our convention.  
+    '''Write lattice vectors to POSCAR as rows, contrary to our convention.  
     The positions vectors are in an Nx3 matrix, so as rows already'''
     poscar = open(path+filename,'w')
     poscar.write(descriptor+'\n')
     poscar.write(str(scale)+'\n')
     for i in [0,1,2]:
-        poscar.write('%20.15f %20.15f %20.15f \n' % (latticevecs[0,i], latticevecs[1,i], latticevecs[2,i]))         
+        poscar.write('%20.15f %20.15f %20.15f \n' % (latticevecs[0,i], latticevecs[1,i], latticevecs[2,i])) #this column becomes a row in POSCAR       
     for i in natoms:
         poscar.write(str(i)+'    ')
     poscar.write('\n')
@@ -828,3 +828,100 @@ def test2free(M,B,A):
     print 'RSinitial,Sinitial*m'; print trimSmall(dot(A.symops[:,:,2],Stest1));print trimSmall(dot(Stest1,mmat1))
 
 #    print 'm from inverse':  
+
+def points_in_ppiped(M,A):
+    '''For lattice A, make a superlattice S = AM.  Find all the points on the lattice that lie in
+    the parallelpiped formed by the vectors of S.'''
+    eps = 1e-4
+    print 'M in points_in_ppiped';print (M)
+    print 'A in points_in_ppiped';print (A)
+    S = dot(A,M)
+    print 'Superlattice vectors';print S
+#    print 'transpose(Secs)in writekpts_vasp_M';print transpose(S)*100
+    print 'det of M', det(M)    
+    npts = -1
+#    ptryS = zeros((3,rint(det(M)*2)))# 
+    latpts =  zeros((rint(det(M)),3))
+    #The rows of M determine how each vector (column) of K is used in the sum.    
+    #The 1BZ parallelpiped must go from (0,0,0) to each of the other vertices 
+    #the close vertices are at B1,B2,B3.  So each element of each row must be considered.
+    #The far verictecs are at  for these three vectors taken in paris. 
+    #To reach the diagonal point of the parallelpiped, 
+    #which means that the sums of the rows must be part of the limits.
+    #To reach the three far vertices (not the tip), we have to take the columns of M in pairs:, 
+    #which means that we check the limits of the pairs among the elements of each row.
+    #in other words, the limits on the search for each row i of (coefficients of grid basis vector Ki) are the partial sums
+    #of the elements of each row:  min(0,a,b,c,a+b,a+c,b+c,a+b+c), max(0,a,b,c,a+b,a+c,b+c,a+b+c)
+    Msums = zeros((3,8),dtype = int)
+    for i in range(3):
+        a = M[i,0]; b = M[i,1];c = M[i,2];
+        Msums[i,0]=0; Msums[i,1]=a; Msums[i,2]=b;Msums[i,3]=c;
+        Msums[i,4]=a+b; Msums[i,5]=a+c; Msums[i,6]=b+c;  Msums[i,7]=a+b+c
+    ntry =0
+    for i2 in range(amin(Msums[2,:])-1,amax(Msums[2,:])+1): #The rows of M determine how each vector (column) of M is used in the sum
+        for i1 in range(amin(Msums[1,:])-1,amax(Msums[1,:])+1):
+            for i0 in range(amin(Msums[0,:])-1,amax(Msums[0,:])+1):
+                ntry += 1
+                ptry = i0*A[:,0] + i1*A[:,1] + i2*A[:,2]              
+                ptryS = trimSmall(dot(inv(S),transpose(ptry)))
+               #test whether it is in parallelpiped.  Transform first to basis of S:
+               #it's in the parallelpiped if its components are all less than one and positive             
+                eps = 1e-4
+                if min(ptryS)>0-eps and max(ptryS)<1-eps :
+                    npts += 1
+                    #translate to cell centered at the origin (voronoi cell)
+                    for i in range(3):
+                        if ptryS[i]>0.5+eps: 
+                            ptryS[i] = ptryS[i] - 1
+                        if ptryS[i]<-0.5+eps: 
+                            ptryS[i] = ptryS[i] + 1                   
+                    #convert back to cartesian
+                    ptry = trimSmall(dot(S,transpose(ptryS)))
+                    latpts[npts,:] = ptry
+    npts = npts+1 #from starting at -1    
+    print 'Lattice points tested',ntry     
+    print 'Lattice points in superlattice cell:',npts
+    if not isequal(npts,rint(det(M))): 
+        sys.exit('Stop. Number of lattice points in the supperlattice cell is not equal to det(M)')
+    return [S,latpts] 
+
+def poscar2super(path1,path2,M):
+    '''reads a poscar, creates a superlattice S given by M, then writes its poscar'''
+    [descriptor, scale, A, reciplatt, natoms, postype, positions] = readposcar('POSCAR', path1)
+    totatoms=sum(natoms)
+    if postype[0] == 'D' or postype == 'd': #Direct...convert to cartesian
+        where = 0
+        for natom in natoms:
+            for i in range(natom):
+                positions[where,:] =  positions[where,0]*A[:,0] + positions[where,1]*A[:,1] + positions[where,2]*A[:,2] 
+                where += 1
+        postype = 'Cartesian'         
+          
+    [S,latpts] = points_in_ppiped(M,A) #latpts Nx3
+    nexpand = int(rint(det(M))) #should be same as latpts.shape[0]
+    #find positions of each type of atom
+    print 'Superlattice atom positions'
+    pos2 = zeros((totatoms*nexpand,3))
+    where = 0
+    for i in range(totatoms):
+        for ilat in range(nexpand):    
+#                print latpts[ilat,:] ; print positions[where,:]           
+                pos2[where,:] = latpts[ilat,:] + positions[i,:]
+                print pos2[where,:]
+                where += 1
+    print pos2
+    print nexpand*natoms
+    create_poscar('POSCAR',descriptor+' Superlattice ', scale, S, nexpand*natoms, postype, pos2, path2)      
+    
+            
+#    print pos.shape
+#    natoms = pos.shape[1] # the atomic positions are rows, 3xN array
+#    posS = zeros((npts,3))
+#    for i in range(npts):
+#        for r in pos:
+#            print r + latpts[:,i]
+#            posS[i,:] = r + latpts[:,i]
+             
+ 
+#
+      

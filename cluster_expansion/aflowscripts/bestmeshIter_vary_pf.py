@@ -395,8 +395,8 @@ def writekpts_vasp_M(path,B,M,K):
     eps = 1e-4
     Kv = K.vecs
     Bv = B.vecs
-    nBZpt = 0
-    Binv = inv(Bv)
+#    nBZpt = 0
+#    Binv = inv(Bv)
 #    #Dummy set up Monkhorst Pack:
 #    nMP = rint(det(M)**(1/3.0))
 #    M = array([[nMP,0,0],[0,nMP,0],[0,0,nMP]]);
@@ -541,7 +541,7 @@ def writejobfile(path):
     struct = path.split('/')[-3]
     pf = path.split('/')[-2]
     for i in range(len(jobfile)):
-        jobfile[i]=jobfile[i].replace('myjob', struct+'_'+pf)
+        jobfile[i]=jobfile[i].replace('myjob', struct+'^5_'+pf)
     file2 = open(path+'/'+'vaspjob','w')
     file2.writelines(jobfile) 
     file2.close()
@@ -553,8 +553,11 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     
     ##############################################################
     ########################## Script ############################
+#    print path.split('/')
     npathsegs = len(path.split('/'))
-    vaspinputdir = '/'.join(path.split('/')[0:npathsegs-2])
+#    print npathsegs
+    vaspinputdir = '/'.join(path.split('/')[0:npathsegs-3])+'/vaspinput/' #up two levels, 2 are for spaces at beg and end
+#    print vaspinputdir
     M = zeros((3,3),dtype = int)
     S = zeros((3,3),dtype = fprec)
     B = lattice()

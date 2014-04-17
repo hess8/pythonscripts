@@ -32,7 +32,7 @@ fprec=float64
 maindir = '/fslhome/bch/cluster_expansion/sisi/test10^3/'
 
 testfile = 'POSCAR'
-Nkppra = 1000#*10
+Nkppra = 100000#*10  
 #reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])

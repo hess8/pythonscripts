@@ -27,7 +27,7 @@ fprec=float64
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/f3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/silicon/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/CCf3/'
-maindir = '/fslhome/bch/cluster_expansion/sisi/test10^4/sidet2/'
+maindir = '/fslhome/bch/cluster_expansion/sisi/test10^5/'
 
 title_detail = ''
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
