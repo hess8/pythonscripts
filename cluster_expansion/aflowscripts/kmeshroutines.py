@@ -37,22 +37,42 @@ def searchsphere(aVecs):
    n2 = scale*ceil(max_norm*norm(cross(aVecs[:,0],aVecs[:,1])/cell_volume)+eps)
    return [int(n0),int(n1),int(n2)]
 
+#def dNN(latt):
+#    '''Finds nearest neighbor distance'''
+#    [m0,m1,m2] = searchsphere(latt)
+##    print 'searching lattice integers',[m0,m1,m2]
+##    if max([m0,m1,m2]) > 20: #Takes too long
+##        dmin = 10000 
+##    else:
+##        print '[m0,m1,m2]', [m0,m1,m2]
+##        print 'lattice'; print latt
+#    dmin = 10000.0
+#    for i in range(-m0, m0):
+#        for j in range(-m1, m1):
+#                for k in range(-m2, m2):
+#                    d = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
+#                    dnorm = norm(d)
+#                    if dnorm < dmin and dnorm > 0.0:                    
+#                        dmin = dnorm
+#    return dmin
+
 def dNN(latt):
-    '''Finds nearest neighbor distance'''
-    [m0,m1,m2] = searchsphere(latt)
-    if max([m0,m1,m2]) > 20: #Takes too long
-        dmin = 10000 
-    else:
+    '''Finds nearest neighbor distance, using Voronoi cell '''
+    [m0,m1,m2]= searchsphere(latt)
+#    print 'searching lattice integers',[m0,m1,m2]
+#    if max([m0,m1,m2]) > 20: #Takes too long
+#        dmin = 10000 
+#    else:
 #        print '[m0,m1,m2]', [m0,m1,m2]
 #        print 'lattice'; print latt
-        dmin = 10000.0
-        for i in range(-m0, m0):
-            for j in range(-m1, m1):
-                    for k in range(-m2, m2):
-                        d = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
-                        dnorm = norm(d)
-                        if dnorm < dmin and dnorm > 0.0:                    
-                            dmin = dnorm
+    dmin = 10000.0
+    for i in range(-m0, m0):
+        for j in range(-m1, m1):
+                for k in range(-m2, m2):
+                    d = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
+                    dnorm = norm(d)
+                    if dnorm < dmin and dnorm > 0.0:                    
+                        dmin = dnorm
     return dmin
 
 def lattvec_u(A,u):
@@ -151,7 +171,8 @@ def lattvec_u(A,u):
 def packingFraction(latt):
 #    print 'dNN', dNN(latt)
     vol = abs(det(latt))
-    vsphere = 4/3.0*pi*(dNN(latt)/2)**3.0  
+    vsphere = 4/3.0*pi*(dNN(latt)/2)**3.0 
+#    print 'nearest neightbor',dNN(latt) 
     return round(vsphere/vol,4)
 
 def isinteger(x):
@@ -830,18 +851,19 @@ def test2free(M,B,A):
 #    print 'm from inverse':  
 
 def points_in_ppiped(M,A):
+    detM = abs(int(rint(det(M))))
     '''For lattice A, make a superlattice S = AM.  Find all the points on the lattice that lie in
     the parallelpiped formed by the vectors of S.'''
     eps = 1e-4
-    print 'M in points_in_ppiped';print (M)
-    print 'A in points_in_ppiped';print (A)
+#    print 'M in points_in_ppiped';print (M)
+#    print 'A in points_in_ppiped';print (A)
     S = dot(A,M)
-    print 'Superlattice vectors';print S
+#    print 'Superlattice vectors';print S
 #    print 'transpose(Secs)in writekpts_vasp_M';print transpose(S)*100
-    print 'det of M', det(M)    
+#    print 'det of M', det(M)    
     npts = -1
 #    ptryS = zeros((3,rint(det(M)*2)))# 
-    latpts =  zeros((rint(det(M)),3))
+    latpts =  zeros((rint(detM),3))
     #The rows of M determine how each vector (column) of K is used in the sum.    
     #The 1BZ parallelpiped must go from (0,0,0) to each of the other vertices 
     #the close vertices are at B1,B2,B3.  So each element of each row must be considered.
@@ -874,19 +896,21 @@ def points_in_ppiped(M,A):
                         if ptryS[i]>0.5+eps: 
                             ptryS[i] = ptryS[i] - 1
                         if ptryS[i]<-0.5+eps: 
-                            ptryS[i] = ptryS[i] + 1                   
+                            ptryS[i] = ptryS[i] + 1 
+#                    print 'Shifted ptryS',   ptryS               
                     #convert back to cartesian
                     ptry = trimSmall(dot(S,transpose(ptryS)))
                     latpts[npts,:] = ptry
     npts = npts+1 #from starting at -1    
-    print 'Lattice points tested',ntry     
-    print 'Lattice points in superlattice cell:',npts
-    if not isequal(npts,rint(det(M))): 
+#    print 'Points tested',ntry     
+#    print 'Points in superlattice cell:',npts
+    if not isequal(npts,rint(detM)): 
         sys.exit('Stop. Number of lattice points in the supperlattice cell is not equal to det(M)')
-    return [S,latpts] 
+    return [S,latpts]
 
 def poscar2super(path1,path2,M):
     '''reads a poscar, creates a superlattice S given by M, then writes its poscar'''
+    detM = abs(int(rint(det(M)))) #should be same as latpts.shape[0]
     [descriptor, scale, A, reciplatt, natoms, postype, positions] = readposcar('POSCAR', path1)
     totatoms=sum(natoms)
     if postype[0] == 'D' or postype == 'd': #Direct...convert to cartesian
@@ -896,32 +920,20 @@ def poscar2super(path1,path2,M):
                 positions[where,:] =  positions[where,0]*A[:,0] + positions[where,1]*A[:,1] + positions[where,2]*A[:,2] 
                 where += 1
         postype = 'Cartesian'         
-          
     [S,latpts] = points_in_ppiped(M,A) #latpts Nx3
-    nexpand = int(rint(det(M))) #should be same as latpts.shape[0]
+    print 'Lattice points in superlattice'
+    for i in range(detM):
+        print latpts[i,:]
     #find positions of each type of atom
     print 'Superlattice atom positions'
-    pos2 = zeros((totatoms*nexpand,3))
+    pos2 = zeros((totatoms*detM,3))
     where = 0
     for i in range(totatoms):
-        for ilat in range(nexpand):    
+        for j in range(detM):    
 #                print latpts[ilat,:] ; print positions[where,:]           
-                pos2[where,:] = latpts[ilat,:] + positions[i,:]
+                pos2[where,:] = latpts[j,:] + positions[i,:]
                 print pos2[where,:]
                 where += 1
-    print pos2
-    print nexpand*natoms
-    create_poscar('POSCAR',descriptor+' Superlattice ', scale, S, nexpand*natoms, postype, pos2, path2)      
-    
-            
-#    print pos.shape
-#    natoms = pos.shape[1] # the atomic positions are rows, 3xN array
-#    posS = zeros((npts,3))
-#    for i in range(npts):
-#        for r in pos:
-#            print r + latpts[:,i]
-#            posS[i,:] = r + latpts[:,i]
-             
- 
-#
+#    print 'Inverse of S';print inv(S)
+    create_poscar('POSCAR',descriptor+' Superlattice ', scale, S, detM*natoms, postype, pos2, path2)      
       

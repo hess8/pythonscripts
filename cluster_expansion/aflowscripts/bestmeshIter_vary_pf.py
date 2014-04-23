@@ -59,8 +59,10 @@ def minkM(M,B):
         kvecs = transpose(mink_reduce(transpose(kvecs), 1e-4)) #fortran routines use vectors as rows
         M = rint(dot(inv(kvecs),B.vecs))
     return trimSmall(M)
-#
-def changewhich_i(M,B,iop):
+
+def changewhich_i(M2,B,iop):
+    '''Version with hnf'''
+    M = deepcopy(M2)
     bestgrad = 0
     bestdel = zeros((3,3),dtype=int)
     Mold = M
@@ -68,15 +70,31 @@ def changewhich_i(M,B,iop):
 #    print 'oldcost',oldcost
     bestindex=[-1,-1,0]#initialize
     for i in range(3):
-        for j in range(3):
-            M[i,j] += 1;delInc = costi(M,B,iop)-oldcost; M[i,j] += -1
+        for j in range(0,i+1):
+            delInc = 0; delDec = 0
+            Mtemp = deepcopy(M)
+            #increment
+            M[i,j] += 1
+            if i != j and M[i,j] == M[i,i]: #nondiagonal elements of row must be less than diagonal
+                    M[i,i] += 1
+            delInc = costi(M,B,iop)-oldcost
             if delInc < 0 and delInc < bestgrad: bestindex = [i,j,1];bestgrad = delInc
-            M[i,j] += -1;delDec = costi(M,B,iop)-oldcost;M[i,j] += 1;
+            M = Mtemp
+            #decrement
+            if M[i,j]>0: M[i,j] += -1
+            if i == j: #nondiagonal elements of row must be less than diagonal
+                for k in range(0,i):
+                    if M[i,k] == M[i,i]:
+                        M[i,k] += -1
+            delDec = costi(M,B,iop)-oldcost 
             if delDec < 0 and delDec < bestgrad: bestindex = [i,j,-1];bestgrad = delDec
+            M = Mtemp
 #            print i,j, delInc, delDec
     return bestindex
 
-def changewhich(M,B,run):
+def changewhich(M2,B,run):
+    '''Version with hnf'''
+    M = deepcopy(M2)
     bestgrad = 0
     bestdel = zeros((3,3),dtype=int)
     Mold = M
@@ -84,13 +102,62 @@ def changewhich(M,B,run):
 #    print 'oldcost',oldcost
     bestindex=[-1,-1,0]#initialize
     for i in range(3):
-        for j in range(3):
-            M[i,j] += 1;delInc = cost(M,B,run)-oldcost; M[i,j] += -1
+        for j in range(0,i+1):
+            delInc = 0; delDec = 0
+            Mtemp = deepcopy(M)
+            #increment
+            M[i,j] += 1
+            if i != j and M[i,j] == M[i,i]: #nondiagonal elements of row must be less than diagonal
+                    M[i,i] += 1
+            delInc = cost(M,B,run)-oldcost
             if delInc < 0 and delInc < bestgrad: bestindex = [i,j,1];bestgrad = delInc
-            M[i,j] += -1;delDec = cost(M,B,run)-oldcost;M[i,j] += 1;
+            M = Mtemp
+#            print 'M after increment run';print M
+            #decrement
+            if M[i,j]>0: M[i,j] += -1
+            if i == j: #nondiagonal elements of row must be less than diagonal
+                for k in range(0,i):
+                    if M[i,k] == M[i,i]:
+                        M[i,k] += -1
+#            print 'M after decrement';print M
+            delDec = cost(M,B,run)-oldcost 
             if delDec < 0 and delDec < bestgrad: bestindex = [i,j,-1];bestgrad = delDec
+            M = Mtemp
 #            print i,j, delInc, delDec
     return bestindex
+ 
+#
+#def changewhich_i(M,B,iop):
+#    bestgrad = 0
+#    bestdel = zeros((3,3),dtype=int)
+#    Mold = M
+#    oldcost = costi(Mold,B,iop)
+##    print 'oldcost',oldcost
+#    bestindex=[-1,-1,0]#initialize
+#    for i in range(3):
+#        for j in range(3):
+#            M[i,j] += 1;delInc = costi(M,B,iop)-oldcost; M[i,j] += -1
+#            if delInc < 0 and delInc < bestgrad: bestindex = [i,j,1];bestgrad = delInc
+#            M[i,j] += -1;delDec = costi(M,B,iop)-oldcost;M[i,j] += 1;
+#            if delDec < 0 and delDec < bestgrad: bestindex = [i,j,-1];bestgrad = delDec
+##            print i,j, delInc, delDec
+#    return bestindex
+#
+#def changewhich(M,B,run):
+#    bestgrad = 0
+#    bestdel = zeros((3,3),dtype=int)
+#    Mold = M
+#    oldcost = cost(Mold,B,run)
+##    print 'oldcost',oldcost
+#    bestindex=[-1,-1,0]#initialize
+#    for i in range(3):
+#        for j in range(3):
+#            M[i,j] += 1;delInc = cost(M,B,run)-oldcost; M[i,j] += -1
+#            if delInc < 0 and delInc < bestgrad: bestindex = [i,j,1];bestgrad = delInc
+#            M[i,j] += -1;delDec = cost(M,B,run)-oldcost;M[i,j] += 1;
+#            if delDec < 0 and delDec < bestgrad: bestindex = [i,j,-1];bestgrad = delDec
+##            print i,j, delInc, delDec
+#    return bestindex
 
 #def changewhichdual(Mv,B,run):
 #    ''' delij: for i 1..9 and j 1..9, find the biggest negative cost change when varying 
@@ -141,8 +208,10 @@ def findmin_i(M,B,iop):
 #            print 'newcost',newcost
             break
         else:
+#            print 'M before change';print M
+#            print bestindex[0],bestindex[1]
             M[bestindex[0],bestindex[1]] += bestindex[2]
-#            print 'M altered in findmin_i';print M
+            print 'M altered in findmin_i';print M
             newcost = costi(M,B,iop)
 #            print; print M;print newcost
         istep += 1
@@ -152,9 +221,9 @@ def findmin_i(M,B,iop):
 #        print 'Best M'; print M
     else:
         print 'Ended without minimum after %i steps' % istep
-        print 'Restart with different M'
-        a = B.Nmesh**(1/3.0); c = 3;
-        M = array([[-a+5, a/c , a/c],[a/c,-a,a/c],[a/c,a/c,-a-5]])
+#        print 'Restart with different M'
+#        a = B.Nmesh**(1/3.0); c = 3;
+#        M = array([[-a+5, a/c , a/c],[a/c,-a,a/c],[a/c,a/c,-a-5]])
 #        sys.exit('Stop')
     return trimSmall(M)
       
@@ -165,16 +234,18 @@ def findmin(M,B,run): #normal routine for varying a single element at a time.
     The 'run' indicates the cost function to use'''
     maxsteps = 10000
     istep = 1
-    M = minkM(M,B)#;print'Mink reduced M'; print M   
+#    M = minkM(M,B)#;print'Mink reduced M'; print M   
     while istep<maxsteps:
 
 #        sys.exit('stop')
         bestindex = changewhich(M,B,run)
+#        print 'bestindex',bestindex        
         if bestindex[2]==0:#found minimum
 #            newcost = cost(M,B,run)
             break
         else:
             M[bestindex[0],bestindex[1]] += bestindex[2]
+#            print 'M altered in findmin';print M
 #            newcost = cost(M,B,run)
 #            if run == 'minsvsym' and B.Nmesh/float(det(M))>1.2: M = M*2 # open up search space when when det(M) gets too low
 #            print; print M;print newcost
@@ -541,7 +612,7 @@ def writejobfile(path):
     struct = path.split('/')[-3]
     pf = path.split('/')[-2]
     for i in range(len(jobfile)):
-        jobfile[i]=jobfile[i].replace('myjob', struct+'^5_'+pf)
+        jobfile[i]=jobfile[i].replace('myjob', struct+'^4_'+pf)
     file2 = open(path+'/'+'vaspjob','w')
     file2.writelines(jobfile) 
     file2.close()
@@ -607,7 +678,8 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
     meshesfile.write('Format: pf then Nmesh then kmesh\n\n')    
     
     pflist = []
-    for pftry in frange(pfB/2,0.75,0.005):
+#    for pftry in frange(pfB/2,0.75,0.005):
+    for pftry in frange(pfB/2,0.75,0.01):
 #    for pftry in frange(.3,0.505,0.005):
         print '\nPacking fraction target',pftry
         B.pftarget = pftry  
@@ -619,17 +691,29 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
         type = 'maxpfsym'; print type
         ctrials = [3]
         a = rint(Nmesh**(1/3.0));# f = int(Nmesh/a/a)
+        randnums = zeros(9)
         print 'M scale a',a
-        for c in ctrials:        
-#            M = array([[-a+5, a/c , a/c],[a/c,-a,a/c],[a/c,a/c,-a-5]])  #bcc like best avg pf on 50: 0.66
+        for c in ctrials:
+#            ri = [randint(5) for i in range(9)]
+#            M = array([[-a+ri[0], a/c +ri[1] , a/c+ri[2]],[a/c+ri[3],-a+ri[4],a/c+ri[5]],\
+#                        [a/c+ri[6],a/c+ri[7],-a+ri[8]]])  #bcc like best avg pf on 50: 0.66
+
+#HNF::::::
+            M = array([[a, 0 , 0],
+                       [a/c,a,0],\
+                        [a/c,a/c,a]])  #bcc like best avg pf on 50: 0.66
+
+#           
+#            M = array([[-a+1, a/c , a/c],[a/c,-a,a/c],[a/c,a/c,-a-1]])  #bcc like best avg pf on 50: 0.66
+#            M = array([[a, 0,0],[0,a,0],[0,0,a+3]])
 #            M = array([[-16 ,  1 ,  5 ],  
 #                [6 ,  -10 ,  5],   
 #                [-6  , -1  , 6  ]])
-            M = array([[5, a/c , a/c],[a/c,0,a/c],[a/c,a/c,-5]]) #fcc like best avg pf on 50: 0.59
+#            M = array([[5, a/c , a/c],[a/c,0,a/c],[a/c,a/c,-5]]) #fcc like best avg pf on 50: 0.59
             M = rint(M * (B.Nmesh/abs(det(M)))**(1/3.0))
             print 'Start mesh trial'; print M              
-            [M,K] = findmin(M,B,type)
-            print 'Test trial M'; print M
+#            [M,K] = findmin(M,B,type)
+#            print 'Test trial M'; print M
             ctest.append(cost(M,B,type))
 #        print'Trial costs',ctest                           
         cbest = ctrials[argmin(ctest)]
@@ -661,9 +745,10 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
                 itersym += 1
                 print 'Symmetry iteration', itersym, '-------'         
 #                print 'Nmesh', abs(det(M)), 'packing', packingFraction(dot(B.vecs,inv(M)))
-                M = rint(minkM(M,B))#; print'Mink reduced M'; print M    
+#                M = rint(minkM(M,B))#; print'Mink reduced M'; print M    
                 for iop in range(B.nops):
-                    M = rint(findmin_i(M,B,iop))#need this to clean up numerical precision problems
+                    M = rint(findmin_i(M,B,iop))
+#                    M = rint(minkM(M,B))#; print'Mink reduced M'; print M 
                     if abs(det(M)-B.Nmesh)/B.Nmesh > 0.15: #how far off from target N
                         M = rint(M * (B.Nmesh/abs(det(M)))**(1/3.0))
                         print 'Scaled M';print M                    
@@ -722,12 +807,12 @@ def bestmeshIter_vary_pf(Blatt,Nmesh,path):
             os.chdir(newpath)
             os.system ('cp %s* %s' % (vaspinputdir,newpath))
             os.system ('cp %sPOSCAR %s' % (path,newpath))  
-            writekpts_vasp_M(newpath,B,M,K)
+            print 'SKIPPING writekpts_vasp_M AND submission'
+#            writekpts_vasp_M(newpath,B,M,K)
 #            writekpts_vasp_pf(newpath,K.vecs,pf_maxpf,K.Nmesh)
             writejobfile(newpath)
- 
-#            print 'submitting job'            
-            subprocess.call(['sbatch', 'vaspjob']) #!!!!!!! Submit jobs
+           
+#            subprocess.call(['sbatch', 'vaspjob']) #!!!!!!! Submit jobs
             os.chdir(path)                      
         else:
             'do nothing'

@@ -25,14 +25,15 @@ fprec=float64
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test.noshift/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/f3varyN/'
-#maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
+maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testMP/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
-maindir = '/fslhome/bch/cluster_expansion/sisi/test10^3/'
+#maindir = '/fslhome/bch/cluster_expansion/sisi/test10^3/'
+#maindir = '/fslhome/bch/cluster_expansion/sisi/test10^4/'
 
 testfile = 'POSCAR'
-Nkppra = 100000#*10  
+Nkppra = 10000#*10  
 #reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
