@@ -508,14 +508,12 @@ def writekpts_vasp_M(path,B,M,K):
                 eps = 1e-4
                 if min(ktryB1)>0-eps and max(ktryB1)<1-eps :
                     npts += 1
-#                    print i0,i1,i2, trimSmall(ktryB1)
                     #translate to traditional 1BZ
                     for i in range(3):
                         if ktryB1[i]>0.5+eps: 
                             ktryB1[i] = ktryB1[i] - 1
                         if ktryB1[i]<-0.5+eps: 
-                            ktryB1[i] = ktryB1[i] + 1
-                    
+                            ktryB1[i] = ktryB1[i] + 1 
                     #convert back to cartesian
                     ktry = trimSmall(dot(Bv,transpose(ktryB1)))
                     kpts[:,npts] = ktry
@@ -535,15 +533,11 @@ def writekpts_vasp_M(path,B,M,K):
     
     for i in range(1,npts):
         kB = trimSmall(dot(inv(Bv),transpose(kpts[:,i])))
-#        if isequal(kB[0],0.5) or  isequal(kB[1],0.5) or isequal(kB[2],0.5)  :
-#            print'Boundary point', kB
         #rotate
         found = False
         for iop in range(B.nops):
             krot = dot(B.symops[:,:,iop],kpts[:,i])
-            kB2 = trimSmall(dot(inv(Bv),transpose(krot)))
-#            if isequal(kB[0],0.5) or  isequal(kB[1],0.5) or isequal(kB[2],0.5)  :
-#                print kB2            
+            kB2 = trimSmall(dot(inv(Bv),transpose(krot)))        
             #test whether it matches any we have saved. 
             for iksymm in range(nksymm):      
                 if  isequal(krot[0],kptssymm[0,iksymm]) and isequal(krot[1],kptssymm[1,iksymm]) and isequal(krot[2],kptssymm[2,iksymm]) :
