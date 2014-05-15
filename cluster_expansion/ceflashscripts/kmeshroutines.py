@@ -232,7 +232,7 @@ def orthdef(latt):
     return abs(od)
 
 def nstrip(list):
-#    '''Strips off /n'''
+#    '''Strips off \n'''
     import string
     list2 = []
     for string1 in list:   

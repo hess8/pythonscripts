@@ -1,0 +1,63 @@
+'''Convention here is COLUMNS of matrices as vectors'''
+################# functions #######################
+from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
+from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round,ceil
+from numpy import zeros,nonzero,float64, sort, argsort, mod, amin, amax
+fprec=float64
+#from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
+from numpy.linalg import norm, det, inv, eig
+from numpy import int as np_int
+from random import random, randrange
+from ctypes import byref, cdll, c_double, c_int
+import time, os, subprocess, sys
+
+utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so') 
+#had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
+getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
+
+def readfile(filepath):
+    file1 = open(filepath,'r')
+    lines = file1.readlines()
+    file1.close()
+    return lines
+
+def writefile(lines,filepath):
+    file1 = open(filepath,'w')
+    file1.writelines(lines) 
+    file1.close()
+    return
+
+def getline(index,filepath): 
+    lines = readfile(filepath)
+    return lines[index].strip()
+    
+
+def readstructs(filepath):
+    lines = readfile(filepath)
+    structs = [line.split()[1] for line in lines] #2nd column
+    return structs
+
+def readunderlatt(filepath):
+    lines = readfile(filepath)
+    latt = zeros((3,3),dtype=float)
+    latt[:,0] = array(lines[2].split()[0:3])
+    latt[:,1] = array(lines[3].split()[0:3])
+    latt[:,2] = array(lines[4].split()[0:3])
+    return latt
+   
+def scaleposcar(scale):
+    '''replaces 'scale factor' with the numeric value'''
+    lines = readfile('POSCAR')
+    lines[1]=lines[1].replace('scale factor', scale)
+    writefile(lines,'POSCAR')
+    
+def getscale(atomic, structchar):
+    commstr= 'aconvasp --proto=%s:%s | aconvasp --poscar>POSCAR' % (structchar+'1',atomic)   #for POSCAR creation of first in list, to get scale      
+    os.system(commstr)
+    file1 = open('POSCAR','r')
+    poscar = file1.readlines()
+#    poscar = nstrip(poscar)
+    scale = poscar[1].strip().split()[0] #string
+    return scale
+
+    
