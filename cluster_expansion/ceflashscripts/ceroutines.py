@@ -37,7 +37,7 @@ def readstructs(filepath):
     structs = [line.split()[1] for line in lines] #2nd column
     return structs
 
-def readunderlatt(filepath):
+def readlatt(filepath):
     lines = readfile(filepath)
     latt = zeros((3,3),dtype=float)
     latt[:,0] = array(lines[2].split()[0:3])
@@ -45,11 +45,12 @@ def readunderlatt(filepath):
     latt[:,2] = array(lines[4].split()[0:3])
     return latt
    
-def scaleposcar(scale):
+def scaleposcar(scale2):
     '''replaces 'scale factor' with the numeric value'''
     lines = readfile('POSCAR')
-    lines[1]=lines[1].replace('scale factor', scale)
+    lines[1]=lines[1].replace('scale factor', str(scale2))
     writefile(lines,'POSCAR')
+    print 'POSCAR scale', scale2
     
 def getscale(atomic, structchar):
     commstr= 'aconvasp --proto=%s:%s | aconvasp --poscar>POSCAR' % (structchar+'1',atomic)   #for POSCAR creation of first in list, to get scale      
@@ -60,4 +61,31 @@ def getscale(atomic, structchar):
     scale = poscar[1].strip().split()[0] #string
     return scale
 
+def getL(platt):
+    A = readlatt('POSCAR')
+    print 'Lattice'; print A
+    L = dot(inv(platt),A)
+    return L 
+
+def writekpts_cubic_n(n,shift):
+    file1 = open('KPOINTS','w')
+    file1.write('BCH equiv kpts'+'\n') 
+    file1.write('0\n')
+    file1.write('Cartesian\n')
+    file1.write('%f 0.00 0.00\n' % float(1.0/n))
+    file1.write('0.00 %f 0.00\n' % float(1.0/n))
+    file1.write('0.00 0.00 %f\n' % float(1.0/n))
+    file1.write('%s %s %s\n' % (shift, shift, shift))
+    file1.close()
+
+def writekpts_fcc_n(n,shift):
+    file1 = open('KPOINTS','w')
+    file1.write('BCH equiv kpts'+'\n') 
+    file1.write('0\n')
+    file1.write('Cartesian\n')
+    file1.write('0.00 %f %f\n' % (0.5*float(1.0/n),0.5*float(1.0/n)))
+    file1.write('%f 0.00 %f\n' % (0.5*float(1.0/n),0.5*float(1.0/n)))
+    file1.write('%f %f 0.00 \n' % (0.5*float(1.0/n),0.5*float(1.0/n)))
+    file1.write('%s %s %s\n' % (shift, shift, shift))
+    file1.close()    
     

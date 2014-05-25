@@ -1,6 +1,18 @@
 import os, string, subprocess, math
 from numpy import zeros
 
+def readfile(filepath):
+    file1 = open(filepath,'r')
+    lines = file1.readlines()
+    file1.close()
+    return lines
+
+def writefile(lines,filepath):
+    file1 = open(filepath,'w')
+    file1.writelines(lines) 
+    file1.close()
+    return
+
 def addToList(folder,toCheckList):
     files = os.listdir(folder)
     for path in files:
@@ -390,4 +402,17 @@ def writeCPUtime(list):
         print path
         file.write(str(cpuTime(path))+'\n')
     file.close()
-   
+    
+def getdata(list,name):
+    'reads files that have simply a single line. Returned as string.  convert to float, int if needed'
+    data = []
+    for dir in list:
+        data.append(readfile(dir+'/'+name)[0])
+    return data
+
+def getms(list):
+    '''finds the m factor out of the path name which is in the form f45_8.  8 is the m factor'''
+    ms = []
+    for dir in list:
+        ms.append(dir.split('_')[-1].strip())
+    return ms
