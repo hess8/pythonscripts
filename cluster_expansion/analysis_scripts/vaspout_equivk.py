@@ -14,9 +14,10 @@ from pylab import *
 fprec=float64
 
 ################# script #######################
-maindir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.fccmesh/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.fccmesh/'
+maindir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
 
-title_detail = 'fcc mesh, Al:Al'
+title_detail = '' # 'fcc mesh, Al:Al'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
 
@@ -106,14 +107,14 @@ plotxy(NkIBZ,cputime,'cpu_vs_Nk', titleadd + ' CPU Time vs Nk in IBZKPT','Nk in 
 
 
 #combine with cubic mesh results 
-cubdir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.fccmesh/'
-title_detail = 'fcc mesh, Al:Al'
+cubdir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
+#title_detail = 'fcc mesh, Al:Al'
 testfile = 'POSCAR'
 os.chdir(cubdir)
 dirscub = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 print dirscub
 writeEnergiesOszicar(dirscub)
-file = open(maindir+'energies','r')
+file = open('energies','r')
 energiescub = nstrip(file.readlines())
 file.close() 
 writedirnames(dirscub)
@@ -121,9 +122,12 @@ detscub = getdata(dirscub,'detL')
 detscub = [float(detscub[i]) for i in range(len(detscub))]
 mscub = array(getms(dirscub),dtype = int)
 nscub = [str(float(mscub[i]*detscub[i])) for i in range(len(detscub))]
+#print len(dirscub),len(energiescub), len(detscub)
 en_per_atomcub = [str(float(energiescub[i])/detscub[i]) for i in range(len(detscub))]
 os.chdir(maindir)
-nscaled = [float(ms[i]*dets[i])*4**(1/3.0) for i in range(len(dets))]
+
+
+nscaled = [float(ms[i]*dets[i])*4**(1/3.0) for i in range(len(dets))] #scale fcc
 x1 = nscaled #scale fcc n to the cubic n 
 y1 = en_per_atom
 x2 = nscub
@@ -132,16 +136,12 @@ from matplotlib.pyplot import *
 fig = figure()
 plot(x1, y1, 'ro',label = 'fcc mesh')
 plot(x2, y2, 'bo',label = 'cub mesh')
-title('Vasp energy vs n (defines grid). n_fcc scaled to cubic')
+title('Al:Al Vasp energy vs n (defines grid). n_fcc scaled to cubic')
 xlabel('n cubic, effective')
 ylabel('eV')
 legend(loc='lower right')
 show() 
 fig.savefig('vary_n_fcc_scaled_to_cub')  
-
-
-#plotxy(,,'vary_n_fcc_scaled_to_cub', titleadd + 'Vasp energy vs n (defines grid)','n','eV')
-
 
 
 #enerparts deviations plots

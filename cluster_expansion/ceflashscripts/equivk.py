@@ -200,10 +200,16 @@ If the Kmesh is fcc, then...
 atomic = 'Al:Al'
 maindir = '/fslhome/bch/cluster_expansion/alir/enumtest/'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.myk/'
-#finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
-finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.fccmesh/'
-meshtype = 'cub'
-meshtype = 'fcc'
+finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
+#finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.fccmesh/'
+print finaldir.split('.')
+if 'cub' in finaldir.split('.')[-1]:
+    meshtype = 'cub'
+elif 'fcc' in finaldir.split('.')[-1]:
+    meshtype = 'fcc'
+else:
+    sys.exit('finaldir must contain cub or fcc characters')
+    
 if not os.path.isdir(finaldir): os.system('mkdir %s' % finaldir)
 vaspinputdir = maindir + 'vaspinput/'
 structfile = '/fslhome/bch/cluster_expansion/alir/f3_50.dat'
@@ -230,8 +236,8 @@ print 'Volume scale for one atom in unit cell', scale
 structs = readstructs(structfile)
 #multlist = [2,3,4,5,6]
 #multlist = [3,5]
-multlist = [2,4,6]
-#multlist = [5]
+#multlist = [2,4,6]
+multlist = [7,8]
 #labeledstructs = [structchar + struct for struct in structs]
 for struct in structs: #these are simply the numbers with no prefix
     for m in multlist:
