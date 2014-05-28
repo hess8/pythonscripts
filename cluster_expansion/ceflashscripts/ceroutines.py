@@ -61,6 +61,13 @@ def getscale(atomic, structchar):
     scale = poscar[1].strip().split()[0] #string
     return scale
 
+def getscalePOSCAR(): #assumes a POSCAR with volume factor of 1 is already in the main directory, with the correct scale
+    file1 = open('POSCAR','r')
+    poscar = file1.readlines()
+#    poscar = nstrip(poscar)
+    scale = poscar[1].strip().split()[0] #string
+    return scale
+
 def getL(platt):
     A = readlatt('POSCAR')
     print 'Lattice'; print A
@@ -83,7 +90,7 @@ def writekpts_fcc_n(n,shift):
     file1.write('BCH equiv kpts'+'\n') 
     file1.write('0\n')
     file1.write('Cartesian\n')
-    file1.write('0.00 %20.15f %%20.15f\n' % (0.5*float(1.0/n),0.5*float(1.0/n)))
+    file1.write('0.00 %20.15f %20.15f\n' % (0.5*float(1.0/n),0.5*float(1.0/n)))
     file1.write('%20.15f 0.00 %20.15f\n' % (0.5*float(1.0/n),0.5*float(1.0/n)))
     file1.write('%20.15f %20.15f 0.00 \n' % (0.5*float(1.0/n),0.5*float(1.0/n)))
     file1.write('%s %s %s\n' % (shift, shift, shift))

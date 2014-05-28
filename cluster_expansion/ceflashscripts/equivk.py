@@ -24,7 +24,7 @@ from itertools import combinations
 from pylab import frange
 
 
-from ceroutines import readfile,readstructs,readlatt,scaleposcar, getscale, getline, getL, \
+from ceroutines import readfile,readstructs,readlatt,scaleposcar, getscale, getscalePOSCAR, getline, getL, \
     writekpts_cubic_n,writekpts_fcc_n,writefile
 
 def writekpts_vasp_M(path,Bv,M,nops,symmops):
@@ -185,6 +185,10 @@ def writejobfile(path):
     file2.close()
     return
 
+
+# ==================================================================================
+# ==================================================================================
+# ==================================================================================
 ''' 
 Here we read in lattice in the 'scale free' manner, i.e. every cubic lattic is 100, 010, 001. 
 The real lattice is A = PL, where P is the parent lattice and L is an integer matrix.  
@@ -198,24 +202,35 @@ If the Kmesh is fcc, then...
 '''
 
 atomic = 'Al:Al'
-maindir = '/fslhome/bch/cluster_expansion/alir/enumtest/'
+#maindir = '/fslhome/bch/cluster_expansion/alir/enumtest/'
+maindir = '/fslhome/bch/cluster_expansion/sisi/equivk/'
+
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.myk/'
-finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
+#finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
+#finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubictest/'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.fccmesh/'
+finaldir = maindir + 'structs.cubmesh/'
+#finaldir = maindir + 'structs.fccmesh/'
 print finaldir.split('.')
 if 'cub' in finaldir.split('.')[-1]:
     meshtype = 'cub'
+#    multlist = [2,3]
+    multlist = [2,3,4,5,6,7,8]
+#    multlist = [2,3,4,5,6,7,8,10,12,14,16]
 elif 'fcc' in finaldir.split('.')[-1]:
     meshtype = 'fcc'
+#    multlist = [2,3]
+    multlist = [2,3,4,5]  #5*4^(1/3) =~ 8, for fcc scaling
+#    multlist = [2,3,4,5,6,8,10]
 else:
     sys.exit('finaldir must contain cub or fcc characters')
     
 if not os.path.isdir(finaldir): os.system('mkdir %s' % finaldir)
 vaspinputdir = maindir + 'vaspinput/'
-structfile = '/fslhome/bch/cluster_expansion/alir/f3_50.dat'
-
+structfile = '../f4_50.dat'
 #structfile = '/fslhome/bch/cluster_expansion/alir/f4_5.dat'
-enumfile = maindir + 'struct_enum.in.fcc'  
+#enumfile = maindir + 'struct_enum.in.fcc'  
+enumfile = maindir + 'struct_enum.in.si'  
 structchar = getline(0,enumfile).split('.')[-1][0]
 
 
@@ -229,15 +244,17 @@ print 'Parent lattice';print platt
 #enumerate lattice
 os.chdir(maindir)
 #os.system('enum.x %s' % enumfile)
-#get scale from AFLOW
-scale = getscale(atomic,structchar)
-print 'Volume scale for one atom in unit cell', scale
+##get scale from AFLOW
+#scale = getscale(atomic,structchar)
+#get scale from POSCAR of unit cell volume factor 1, in maindir
+scale = getscalePOSCAR()
+print 'Volume scale for unit cell volume factor 1', scale
 #read struct list
 structs = readstructs(structfile)
-#multlist = [2,3,4,5,6]
+
 #multlist = [3,5]
 #multlist = [2,4,6]
-multlist = [7,8]
+#multlist = [7,8]
 #labeledstructs = [structchar + struct for struct in structs]
 for struct in structs: #these are simply the numbers with no prefix
     for m in multlist:
