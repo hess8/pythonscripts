@@ -28,6 +28,7 @@ def plotxy(x,y,plotfile1,title1,xlabel1,ylabel1):
     title(title1)
     xlabel(xlabel1)
     ylabel(ylabel1)
+#    ylim((-11.5,-10.5))
     show() 
     fig.savefig(plotfile1)  
 

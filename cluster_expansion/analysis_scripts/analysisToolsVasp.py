@@ -1,5 +1,17 @@
 import os, string, subprocess, math
-from numpy import zeros
+from numpy import zeros, delete
+from copy import deepcopy
+
+def isinteger(x):
+    return isequal(abs(rint(x)-x), 0)
+
+def isequal(x,y):
+    eps = 5.0e-5
+    return abs(x-y)<eps
+
+def isreal(x):
+    eps = 1.0e-6
+    return abs(x.imag)<eps
 
 def readfile(filepath):
     file1 = open(filepath,'r')
@@ -416,3 +428,42 @@ def getms(list):
     for dir in list:
         ms.append(dir.split('_')[-1].strip())
     return ms
+
+def writefermi(dirslist):    
+    '''e-fermi for each folder'''
+    stepsfile = open('efermi','w')
+    for ielement,path in enumerate(dirslist):
+        stepsfile.write(str(getEf(path))+'\n')
+    stepsfile.close()
+
+def getEf(folder): 
+    '''Finds fermi energy from OUTCAR'''
+    lastdir = os.getcwd()
+    os.chdir(folder)
+    try:
+        outcar = open('OUTCAR','r')
+        text = outcar.readlines()
+        proc = subprocess.Popen(['grep','-i','E-fermi','OUTCAR'],stdout=subprocess.PIPE)
+        newstring = proc.communicate()
+        ef = newstring[0].split()[2]
+        print ef
+    except:
+        ef = str(0.00)
+    os.chdir(lastdir)
+    return ef
+
+def removezeros(arrlist):
+    '''Useful for plotting, when arrays have zeros from unfinished jobs.  Arrays all have the same length.  If any has a zero as an element, remove that index's element in all arrays'''
+    #make a list of all locations where zeros occur
+    zerolist = []
+    arrlist2 = deepcopy(arrlist)
+    for array in arrlist:
+        for i in range(len(array)):
+            if isequal(float(array[i]),0.0) and i not in zerolist:
+                print 'removing zeros at location',i
+                zerolist.append(i)
+    for j,array in enumerate(arrlist):
+        arrlist2[j] = delete(arrlist[j],zerolist)
+    return arrlist2
+            
+        
