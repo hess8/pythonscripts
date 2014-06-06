@@ -131,6 +131,16 @@ for maindir in [path + 'structs.cubmesh/']:
     xlabel('e-fermi (ev)')
     ylabel('error')   
     fig.savefig('ef_log_err')  
+
+    #log(err) vs efermi zoomed
+    fig = figure()
+    semilogy(efermis,err,'ro')
+    title(titleadd + ' Error vs e-fermi')
+    xlabel('e-fermi (ev)')
+    ylabel('error') 
+    xlim((8.05, 8.1))  
+    fig.savefig('ef_log_err_zoomed')  
+
     
     #log(err) vs NkIBZ
     fig = figure()
@@ -139,7 +149,6 @@ for maindir in [path + 'structs.cubmesh/']:
     xlabel('Nk')
     ylabel('error')   
     fig.savefig('nk_log_err')  
-
     
     #plotxy(Nk,NkIBZ,'NkIBZ', titleadd+' Kpoint numbers','Nk from det M','Nk in IBZKPT')
 #    plotxy(xaxis,cputime,'cpu', titleadd + ' CPU Time','Packing fraction','CPU time(sec)')

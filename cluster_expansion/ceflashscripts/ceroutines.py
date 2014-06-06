@@ -44,10 +44,21 @@ def readlatt(filepath):
     latt[:,1] = array(lines[3].split()[0:3])
     latt[:,2] = array(lines[4].split()[0:3])
     return latt
-   
+
+def natoms_zeros(filepath): #if there is a zero in the natoms list, remove it
+    lines = readfile(filepath)
+    os.system('rm POSCAR')
+#    print 'n atoms line', lines[5]
+    atoms = lines[5].split()
+    if '0' in atoms: atoms.remove('0')
+    lines[5] = ' '.join(atoms)+'\n'
+#    print 'after', lines[5]
+    writefile(lines,filepath)
+    
 def scaleposcar(scale2):
     '''replaces 'scale factor' with the numeric value'''
     lines = readfile('POSCAR')
+#    os.system('rm POSCAR')
     lines[1]=lines[1].replace('scale factor', str(scale2))
     writefile(lines,'POSCAR')
     print 'POSCAR scale', scale2
@@ -59,14 +70,14 @@ def getscale(atomic, structchar):
     poscar = file1.readlines()
 #    poscar = nstrip(poscar)
     scale = poscar[1].strip().split()[0] #string
-    return scale
+    return float(scale)
 
 def getscalePOSCAR(): #assumes a POSCAR with volume factor of 1 is already in the main directory, with the correct scale
     file1 = open('POSCAR','r')
     poscar = file1.readlines()
 #    poscar = nstrip(poscar)
     scale = poscar[1].strip().split()[0] #string
-    return scale
+    return float(scale)
 
 def getL(platt):
     A = readlatt('POSCAR')
@@ -94,5 +105,11 @@ def writekpts_fcc_n(n,shift):
     file1.write('%20.15f 0.00 %20.15f\n' % (0.5*float(1.0/n),0.5*float(1.0/n)))
     file1.write('%20.15f %20.15f 0.00 \n' % (0.5*float(1.0/n),0.5*float(1.0/n)))
     file1.write('%s %s %s\n' % (shift, shift, shift))
-    file1.close()    
+    file1.close()  
+    
+def makestr2poscar(struct):
+        os.system('makestr.x %s %s' % ('struct_enum.out', struct)) #creates poscar-like vasp.0xxxx file
+        makestr_out = subprocess.check_output('ls vasp.0*', shell=True).strip()
+        os.system('cp %s POSCAR' % makestr_out)
+        natoms_zeros('POSCAR')  
     

@@ -25,7 +25,7 @@ from pylab import frange
 
 
 from ceroutines import readfile,readstructs,readlatt,scaleposcar, getscale, getscalePOSCAR, getline, getL, \
-    writekpts_cubic_n,writekpts_fcc_n,writefile
+    writekpts_cubic_n,writekpts_fcc_n,writefile, makestr2poscar
 
 def writekpts_vasp_M(path,Bv,M,nops,symmops):
     '''write out kpoints file with IBZKPTS format.  This will specify all the kpoints and their weights. 
@@ -201,10 +201,13 @@ If the Kmesh is fcc, then...
 
 '''
 
-atomic = 'Al:Al'
+#atomic = 'Al:Al'
+#atomic = 'Si:Si'
 #maindir = '/fslhome/bch/cluster_expansion/alir/enumtest/'
 maindir = '/fslhome/bch/cluster_expansion/sisi/equivk/'
-
+enumfile = maindir + 'struct_enum.in.si'
+#enumfile = maindir + 'struct_enum.in.fcc' 
+structfile = '../f1_3.dat'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.myk/'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubictest/'
@@ -223,14 +226,11 @@ elif 'fcc' in finaldir.split('.')[-1]:
     multlist = [2,3,4,5]  #5*4^(1/3) =~ 8, for fcc scaling
 #    multlist = [2,3,4,5,6,8,10]
 else:
-    sys.exit('finaldir must contain cub or fcc characters')
+    sys.exit('finaldir must contain cub or fcc substring')
     
 if not os.path.isdir(finaldir): os.system('mkdir %s' % finaldir)
-vaspinputdir = maindir + 'vaspinput/'
-structfile = '../f4_50.dat'
-#structfile = '/fslhome/bch/cluster_expansion/alir/f4_5.dat'
-#enumfile = maindir + 'struct_enum.in.fcc'  
-enumfile = maindir + 'struct_enum.in.si'  
+vaspinputdir = maindir + 'vaspinput/'  
+   
 structchar = getline(0,enumfile).split('.')[-1][0]
 
 
@@ -248,7 +248,9 @@ os.chdir(maindir)
 #scale = getscale(atomic,structchar)
 #get scale from POSCAR of unit cell volume factor 1, in maindir
 scale = getscalePOSCAR()
-print 'Volume scale for unit cell volume factor 1', scale
+if scale < 0: #convert to simple length scale
+    scale = (-scale/abs(det(platt)))**(1/3.0)
+print 'Length scale for poscar', scale
 #read struct list
 structs = readstructs(structfile)
 
@@ -262,8 +264,7 @@ for struct in structs: #these are simply the numbers with no prefix
         print;print dir
         if not os.path.isdir(finaldir+dir): os.system('mkdir %s' % finaldir+dir)              
         os.chdir(finaldir+dir)
-        os.system('makestr.x %s %s' % (maindir+'struct_enum.out', struct)) #creates poscar-like vasp.
-        os.system('cp vasp.* \POSCAR')
+        makestr2poscar(struct)
         if m == multlist[0] : #things to do only once per structure
             A = readlatt('POSCAR')
             [symops,nops] = getGroup(A)
@@ -280,7 +281,7 @@ for struct in structs: #these are simply the numbers with no prefix
             print 'Fcc mesh compatibility for fcc lattice):'
             print 'detL*bccsq*trans(inv(L))'; print dL*dot(bccsq,transpose(inv(L)))
             
-        scaleposcar(float(scale)*dL) #inserts scale into appropriate spot. Reflects the larger volume when detL>1
+        scaleposcar(scale) #inserts length scale into appropriate spot.
         writefile([str(dL)],finaldir+dir+'detL')
         writefile([lattype],finaldir+dir+'lattype')
         os.system ('cp %s* %s' % (vaspinputdir,'.'))
