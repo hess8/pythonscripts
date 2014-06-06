@@ -426,7 +426,7 @@ def getms(list):
     '''finds the m factor out of the path name which is in the form f45_8.  8 is the m factor'''
     ms = []
     for dir in list:
-        ms.append(dir.split('_')[-1].strip())
+        ms.append(int(dir.split('_')[-1].strip()))
     return ms
 
 def writefermi(dirslist):    
@@ -466,4 +466,5 @@ def removezeros(arrlist):
         arrlist2[j] = delete(arrlist[j],zerolist)
     return arrlist2
             
+        
         

@@ -17,9 +17,21 @@ fprec=float64
 title_detail =  'Al:Al, cubic mesh,f3-50 '
 testfile = 'POSCAR'
 
+def getibest(dirs):
+#    mrange = []
+    mmax = 0
+    for i,dir in enumerate(dirs):
+        if dir[1]=='1' and dir[2]=='_':
+            m = int(dir.split('_')[-1])
+            if m > mmax:
+                ibest = i
+                mmax = m
+#            mrange.append(m)
+    return mmax, ibest
+
 ################# script #######################
-#path = '/fslhome/bch/cluster_expansion/sisi/equivk/'
-path = '/fslhome/bch/cluster_expansion/alir/enumtest/'
+path = '/fslhome/bch/cluster_expansion/sisi/equivk/'
+#path = '/fslhome/bch/cluster_expansion/alir/enumtest/'
 #path = '/fslhome/bch/cluster_expansion/alir/enumtest/test/'
 cubdir = path + 'structs.cubmesh/' #for plotting comparison
 for maindir in [path + 'structs.cubmesh/']:
@@ -30,13 +42,16 @@ for maindir in [path + 'structs.cubmesh/']:
     #reallatt = zeros((3,3))
     os.chdir(maindir)
     dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
+    [mmax, ibest] = getibest(dirs)
+    print 'energy of structure 1, multiplier %i, index %i used as ebest' % (mmax, ibest)
+
     #file1 = open('varypf.csv','a')
     #file1.write('Structure,Lattice,amax/amin,pfB,pf_orth,pf_orth2fcc,pf_maxpf, pf_pf2fcc, pfmax, meshtype' + ',' \
     #             + 'Improvement,fcc compatibility,Nmesh,TargetNmesh,Nmesh/Target,cbest' + '\n')
     #for i,directory in enumerate(dirs):    
     print dirs
     writeEnergiesOszicar(dirs) 
-#    writefermi(dirs) #skip so don't have to read it every time
+    writefermi(dirs) #skip so don't have to read it every time
     writedirnames(dirs)
     writeNkIBZ(dirs)
     #writeNk(dirs)
@@ -94,12 +109,20 @@ for maindir in [path + 'structs.cubmesh/']:
     file = open(maindir+'cputime','r')
     cputime = nstrip(file.readlines())
     file.close()
+      
+    for i,stri in enumerate(elconverge): #make sure nonconverged runs have 0 energy
+        if stri == 'N':
+            energies[i] = '0.0'
+            print 'Run at location %s is not converged; removed' % i
+    
     
     en_per_atom = array([float(energies[i])/dets[i] for i in range(len(dets))])
-    ns = [str(float(ms[i]*dets[i])) for i in range(len(dets))]
+    ebest = en_per_atom[ibest]
+    print 'ebest', ebest
+    ns = [ms[j]*dets[j] for j in range(len(dets))]
     
     for i in range(len(names)):
-        linei = names[i]+','+ns[i]+','+energies[i]+','+efermis[i]+','+str(dets[i])+','+str(en_per_atom[i])+','+elconverge[i]+','+elsteps[i]+','+NkIBZ[i]+','+ str(round(float(cputime[i])/60,2))+'\n'        
+        linei = names[i]+','+str(ns[i])+','+energies[i]+','+efermis[i]+','+str(dets[i])+','+str(en_per_atom[i])+','+elconverge[i]+','+elsteps[i]+','+NkIBZ[i]+','+ str(round(float(cputime[i])/60,2))+'\n'        
         outfile.write(linei)    
     outfile.close() 
     
@@ -113,9 +136,11 @@ for maindir in [path + 'structs.cubmesh/']:
     plotxy(ns,en_per_atom,'en_per_atom', titleadd + 'Vasp energy vs n (defines grid)','n','eV')
     
     #log(err) vs ns  
+    ebest = e
 #    ebest = en_per_atom[argmax(ns)] ########## Need to find a better "best"
-    N = len(en_per_atom); 
-    ebest = average(en_per_atom)#[int(N/2):]) #take last half average as the best (largest n's)
+#    N = len(en_per_atom); 
+#    ebest = float(readfile('ebest').strip())
+#    ebest = average(en_per_atom)#[int(N/2):]) #take last half average as the best (largest n's)
     err = abs(en_per_atom-ebest)/abs(ebest)
     fig = figure()
     semilogy(ns,err,'ro')

@@ -217,8 +217,8 @@ finaldir = maindir + 'structs.cubmesh/'
 print finaldir.split('.')
 if 'cub' in finaldir.split('.')[-1]:
     meshtype = 'cub'
-#    multlist = [2,3]
-    multlist = [2,3,4,5,6,7,8]
+    multlist = [8]
+#    multlist = [2,3,4,5,6,7,8]
 #    multlist = [2,3,4,5,6,7,8,10,12,14,16]
 elif 'fcc' in finaldir.split('.')[-1]:
     meshtype = 'fcc'
