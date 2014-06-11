@@ -209,9 +209,10 @@ for maindir in [path + 'structs.cubmesh/']:
     #find deviation from average for each part
     means = mean(parts3,axis=0)
     partsbest = parts3[-1,:]
+    partserr = parts3 #initialize
     for j in range(8):
         for i in range(len(dets)):
-            if abs(partsbest[j]>0):
+            if abs(partsbest[j])>0:
                 partserr[i,j] = abs((parts3[i,j]-partsbest[j])/partsbest[j])
             else:
                 partserr[i,j] = 1e-12
@@ -221,7 +222,7 @@ for maindir in [path + 'structs.cubmesh/']:
     fig = figure()
     #rcParams['axes.color_cycle']=['r','g']
     ax1 = fig.add_subplot(111)
-    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
+#    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
     N = size(deviations,axis = 1)
     enerlabels = ['alpha Z ','Ewald energy','-1/2 Hartree','-exchange','-V(xc)+E(xc)','PAW double counting',\
                   'entropy T*S','eigenvalues','atomic energy']
@@ -231,10 +232,12 @@ for maindir in [path + 'structs.cubmesh/']:
     fig = figure()
     #rcParams['axes.color_cycle']=['r','g']
     ax1 = fig.add_subplot(111)
-    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
+#    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
     N = size(deviations,axis = 1)
     enerlabels = ['alpha Z ','Ewald energy','-1/2 Hartree','-exchange','-V(xc)+E(xc)','PAW double counting',\
                   'entropy T*S','eigenvalues','atomic energy']   
+    xlabel('grid n')
+    ylabel('error (eV)') 
     #ylim((-3.7,-3.8))
     
     #
@@ -250,9 +253,26 @@ for maindir in [path + 'structs.cubmesh/']:
     
     for i in range(N):
         ax1.semilogy(ns, partserr[:,i],label=enerlabels[i],linestyle='None',color=cm.jet(1.*(i+1)/N), marker = 'o') # marker = 'o',
-    plt.legend(loc='lower left');
+    plt.legend(loc='upper right');
     show()
     fig.savefig('enerparts_err') 
+    
+    ##### same plot, but vs NkfullBZ and loglog
+    
+    fig = figure()
+    #rcParams['axes.color_cycle']=['r','g']
+    ax1 = fig.add_subplot(111)
+#    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
+    N = size(deviations,axis = 1)
+    enerlabels = ['alpha Z ','Ewald energy','-1/2 Hartree','-exchange','-V(xc)+E(xc)','PAW double counting',\
+                  'entropy T*S','eigenvalues','atomic energy']  
+    xlabel('Nk in unreduced BZ')
+    ylabel('relative error')     
+    for i in range(N):
+        ax1.loglog(NkfullBZ, partserr[:,i],label=enerlabels[i],linestyle='None',color=cm.jet(1.*(i+1)/N), marker = 'o') # marker = 'o',
+    plt.legend(loc='upper right');
+    show()
+    fig.savefig('enerparts_err_NKfullBZ') 
     
 #        plotxy(ns,parts3[:,7],'eigen_dev_vs_n', titleadd + 'Eigenvalue deviation vs n','n','eV')
   
