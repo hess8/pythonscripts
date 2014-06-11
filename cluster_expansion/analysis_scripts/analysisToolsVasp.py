@@ -1,4 +1,4 @@
-import os, string, subprocess, math
+import os, string, subprocess, math, sys
 from numpy import zeros, delete
 from copy import deepcopy
 
@@ -48,24 +48,24 @@ def writedirnames(list):
     namesfile.close()
 
 def writeEnergiesOszicar(list):           
-    lastfolder = os.getcwd()
     enerfile = open('energies','w')
     for i in list:
         print i
-#        os.chdir(i)
-#        print os.getcwd()
-#        print os.listdir(os.getcwd())
         try:
-            oszicar = open(i+'/OSZICAR','r')
-            energy = oszicar.readlines()[-1].split()[2]
-            oszicar.close()
+            lines = readfile(i+'/OSZICAR')
+#            print 'Oszicar last line length',len(lines[-1].split())
+#            print lines[-1].split()
+            if len(lines[-1].split())>1:
+                energy = lines[-1].split()[2]
+            else: 
+                energy = '0'
         except:
     		energy = '0'
+        if energy =="F=": energy = lines[-1].split()[3]
         print energy
         enerfile.write(energy + '\n') #energy in last line
-        os.chdir(lastfolder)
     enerfile.close()
-    os.chdir(lastfolder)
+
      
 def enerparts(list):
     '''Finds the 9 terms contributing to the total energy in vasp, as in:
@@ -446,7 +446,7 @@ def getEf(folder):
         proc = subprocess.Popen(['grep','-i','E-fermi','OUTCAR'],stdout=subprocess.PIPE)
         newstring = proc.communicate()
         ef = newstring[0].split()[2]
-        print ef
+        print folder, ef
     except:
         ef = str(0.00)
     os.chdir(lastdir)
@@ -464,7 +464,7 @@ def removezeros(arrlist):
                 zerolist.append(i)
     for j,array in enumerate(arrlist):
         arrlist2[j] = delete(arrlist[j],zerolist)
-    return arrlist2
+    return [arrlist2,zerolist]
             
         
         

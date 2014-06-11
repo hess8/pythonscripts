@@ -204,10 +204,12 @@ If the Kmesh is fcc, then...
 #atomic = 'Al:Al'
 #atomic = 'Si:Si'
 #maindir = '/fslhome/bch/cluster_expansion/alir/enumtest/'
-maindir = '/fslhome/bch/cluster_expansion/sisi/equivk/'
-enumfile = maindir + 'struct_enum.in.si'
-#enumfile = maindir + 'struct_enum.in.fcc' 
-structfile = '../f1_3.dat'
+#maindir = '/fslhome/bch/cluster_expansion/sisi/equivk/'
+maindir = '/fslhome/bch/cluster_expansion/cucu/equivk/'
+#enumfile = maindir + 'struct_enum.in.si'
+enumfile = maindir + 'struct_enum.in.fcc' 
+structfile = '../f1_50.dat'
+#structfile = '../f1.dat'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.myk/'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubictest/'
@@ -217,9 +219,9 @@ finaldir = maindir + 'structs.cubmesh/'
 print finaldir.split('.')
 if 'cub' in finaldir.split('.')[-1]:
     meshtype = 'cub'
-    multlist = [8]
+    multlist = []
 #    multlist = [2,3,4,5,6,7,8]
-#    multlist = [2,3,4,5,6,7,8,10,12,14,16]
+    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24]
 elif 'fcc' in finaldir.split('.')[-1]:
     meshtype = 'fcc'
 #    multlist = [2,3]
@@ -298,7 +300,9 @@ for struct in structs: #these are simply the numbers with no prefix
 #            print 'test Bo';print transpose(inv(platt))
             print 'M matrix for fcc mesh'; print M
             print 'det M (kpoints in unreduced 1BZ)', det(M)
+            
             writekpts_fcc_n(n,shift)
+        writefile([str(abs(det(M)))],finaldir+dir+'detM')
         
 #        writekpts_vasp_M(finaldir+dir,B,M,Bnops,Bsymops) #define K's explicitly!!!
 

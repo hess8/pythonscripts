@@ -108,7 +108,7 @@ def writekpts_fcc_n(n,shift):
     file1.close()  
     
 def makestr2poscar(struct):
-        print os.system('makestr.x %s %s' % ('../../struct_enum.out', struct)) #creates poscar-like vasp.0xxxx file
+        os.system('makestr.x %s %s' % ('../../struct_enum.out', struct)) #creates poscar-like vasp.0xxxx file
         makestr_out = subprocess.check_output('ls vasp.0*', shell=True).strip()
         os.system('cp %s POSCAR' % makestr_out)
         natoms_zeros('POSCAR')  
