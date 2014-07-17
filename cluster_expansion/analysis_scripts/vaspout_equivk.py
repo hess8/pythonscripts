@@ -15,7 +15,7 @@ from copy import deepcopy
 fprec=float64
 
 #title_detail =  'Si:Si'
-title_detail =  'Si:Si, cubic mesh,f1-50,ediff 1e-7 '
+title_detail =  'Si:Si,no symmetry,cubic mesh,f1-50,ediff 1e-7 '
 #title_detail =  'Al:Al, cubic mesh,f1-50,ediff 1e-7 '
 #title_detail =  'Cu:Cu, cubic mesh,f1-50,ediff 1e-7 '
 testfile = 'POSCAR'
@@ -33,7 +33,8 @@ def getibest(dirs):
     return mmax, ibest
 
 ################# script #######################
-path = '/fslhome/bch/cluster_expansion/sisi/equivk/'
+#path = '/fslhome/bch/cluster_expansion/sisi/equivk/'
+path = '/fslhome/bch/cluster_expansion/sisi/nosymequivk/'
 #path = '/fslhome/bch/cluster_expansion/alir/enumtest/'
 #path = '/fslhome/bch/cluster_expansion/cucu/equivk/'
 
@@ -133,6 +134,8 @@ for maindir in [path + 'structs.cubmesh/']:
     struct = maindir.split('/')[-2]
     #plots
     [[ns,ms,en_per_atom,efermis,NkIBZ,NkfullBZ,dets],zerolist] = removezeros([ns,ms,en_per_atom,efermis,NkIBZ,NkfullBZ,dets])#for structures that were not finished and have zero entries
+#    ebest = en_per_atom[argmax(ns)]
+#    efbest = efermis[argmax(ns)]
     parts2 = deepcopy(parts); parts2 = delete(parts,zerolist,axis=0)
     parts3 = array([parts2[i]/dets[i] for i in range(len(dets))])
     err = abs(en_per_atom-ebest)/abs(ebest) #do these again with only the finished runs
@@ -147,6 +150,9 @@ for maindir in [path + 'structs.cubmesh/']:
 #    N = len(en_per_atom); 
 #    ebest = float(readfile('ebest').strip())
 #    ebest = average(en_per_atom)#[int(N/2):]) #take last half average as the best (largest n's)
+
+    print ns
+    print err
 
     fig = figure()
     semilogy(ns,err,'ro')
@@ -205,40 +211,39 @@ for maindir in [path + 'structs.cubmesh/']:
     ylabel('error')   
     fig.savefig('NkfullBZ_loglog_err') 
     
-    #enerparts deviations plots
+    #eigenerr plot
+    eigenbest = parts3[-1,7] #take the last eigenvalue contribution to total energy as best
+    eigenerr = plotxy(ns,parts3[:,7],'eigen_dev_vs_n', titleadd + 'Eigenvalue err vs n','n','eV')
+   
+##  enerparts deviations (eV) plots
     #find deviation from average for each part
     means = mean(parts3,axis=0)
+    deviations = abs(parts3 - means) + 1e-12 #last term to handle zero entries
+    #print'deviations';print deviations
+    
     partsbest = parts3[-1,:]
-    partserr = parts3 #initialize
+    print 'partsbest',partsbest
+#    sys.exit('stop')
+    partserr = zeros((len(dets),8))
+    partsdev = zeros((len(dets),8))
     for j in range(8):
         for i in range(len(dets)):
             if abs(partsbest[j])>0:
                 partserr[i,j] = abs((parts3[i,j]-partsbest[j])/partsbest[j])
+                partsdev[i,j] = abs(parts3[i,j]-partsbest[j])
             else:
                 partserr[i,j] = 1e-12
-    
-    deviations = abs(parts3 - means) + 1e-12 #last term to handle zero entries
-    #print'deviations';print deviations
-    fig = figure()
-    #rcParams['axes.color_cycle']=['r','g']
-    ax1 = fig.add_subplot(111)
-#    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
-    N = size(deviations,axis = 1)
-    enerlabels = ['alpha Z ','Ewald energy','-1/2 Hartree','-exchange','-V(xc)+E(xc)','PAW double counting',\
-                  'entropy T*S','eigenvalues','atomic energy']
-    eigenbest = parts3[-1,7] #take the last eigenvalue contribution to total energy as best
-    eigenerr = plotxy(ns,parts3[:,7],'eigen_dev_vs_n', titleadd + 'Eigenvalue err vs n','n','eV')
+                partsdev[i,j] = 1e-12
 
     fig = figure()
-    #rcParams['axes.color_cycle']=['r','g']
     ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
-    N = size(deviations,axis = 1)
+
     enerlabels = ['alpha Z ','Ewald energy','-1/2 Hartree','-exchange','-V(xc)+E(xc)','PAW double counting',\
-                  'entropy T*S','eigenvalues','atomic energy']   
+                  'entropy T*S','eigenvalues','atomic energy']
     xlabel('grid n')
     ylabel('error (eV)') 
-    #ylim((-3.7,-3.8))
+    ylim((1e-12,1e0))
     
     #
     #  alpha Z        PSCENC =        -0.43400971
@@ -250,27 +255,24 @@ for maindir in [path + 'structs.cubmesh/']:
     #  entropy T*S    EENTRO =        -0.00011188
     #  eigenvalues    EBANDS =        24.48126738
     #  atomic energy  EATOM  =       107.07526000
-    
+    N = size(partserr,axis = 1)    
     for i in range(N):
-        ax1.semilogy(ns, partserr[:,i],label=enerlabels[i],linestyle='None',color=cm.jet(1.*(i+1)/N), marker = 'o') # marker = 'o',
-    plt.legend(loc='upper right');
+        ax1.semilogy(ns, deviations[:,i],label=enerlabels[i],linestyle='None',color=cm.jet(1.*(i+1)/N), marker = 'o') # marker = 'o',
+    plt.legend(loc='upper right',prop={'size':6});
     show()
-    fig.savefig('enerparts_err') 
+    fig.savefig('enerparts_deV') 
     
-    ##### same plot, but vs NkfullBZ and loglog
-    
+    ##### same plot, but relative error and vs NkfullBZ and loglog   
     fig = figure()
     #rcParams['axes.color_cycle']=['r','g']
     ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
-    N = size(deviations,axis = 1)
-    enerlabels = ['alpha Z ','Ewald energy','-1/2 Hartree','-exchange','-V(xc)+E(xc)','PAW double counting',\
-                  'entropy T*S','eigenvalues','atomic energy']  
     xlabel('Nk in unreduced BZ')
-    ylabel('relative error')     
+    ylabel('relative error') 
+    ylim((1e-12,1e0))    
     for i in range(N):
-        ax1.loglog(NkfullBZ, partserr[:,i],label=enerlabels[i],linestyle='None',color=cm.jet(1.*(i+1)/N), marker = 'o') # marker = 'o',
-    plt.legend(loc='upper right');
+        ax1.loglog(NkfullBZ, deviations[:,i],label=enerlabels[i],linestyle='None',color=cm.jet(1.*(i+1)/N), marker = 'o') # marker = 'o',
+    plt.legend(loc='upper right',prop={'size':6});
     show()
     fig.savefig('enerparts_err_NKfullBZ') 
     
