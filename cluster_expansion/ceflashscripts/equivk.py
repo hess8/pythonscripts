@@ -190,11 +190,11 @@ def writejobfile(path):
 # ==================================================================================
 # ==================================================================================
 ''' 
-Here we read in lattice in the 'scale free' manner, i.e. every cubic lattic is 100, 010, 001. 
+Here we read lattice in a 'scale free' manner, i.e. every cubic lattic is 100, 010, 001. 
 The real lattice is A = PL, where P is the parent lattice and L is an integer matrix.  
-We are forming a mesh K in the form B = KM.  
+We are forming a mesh K in the form B = KM, then scale it for use.   
 
-IF the K mesh is cubic, then M is nB, where n is a multiple of
+IF the K mesh is cubic, then M is nB (again scale free), where n is a multiple of
 the volume factor det(L), and B = trans(inv(A))
 
 If the Kmesh is fcc, then...
@@ -204,11 +204,12 @@ If the Kmesh is fcc, then...
 #atomic = 'Al:Al'
 #atomic = 'Si:Si'
 #maindir = '/fslhome/bch/cluster_expansion/alir/enumtest/'
-#maindir = '/fslhome/bch/cluster_expansion/sisi/equivk/'
-maindir = '/fslhome/bch/cluster_expansion/sisi/nosymequivk/'
-#maindir = '/fslhome/bch/cluster_expansion/cucu/equivk/'
-enumfile = maindir + 'struct_enum.in.si'
-#enumfile = maindir + 'struct_enum.in.fcc' 
+#maindir = '/fslhome/bch/cluster_expansion/sisi/equivk_encut500/'
+#maindir = '/fslhome/bch/cluster_expansion/sisi/equivk_ismear0/'
+#maindir = '/fslhome/bch/cluster_expansion/sisi/nosymequivk/'
+maindir = '/fslhome/bch/cluster_expansion/cucu/equivk_encut500/'
+#enumfile = maindir + 'struct_enum.in.si'
+enumfile = maindir + 'struct_enum.in.fcc' 
 structfile = '../f1_50.dat'
 #structfile = '../f1.dat'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.myk/'
