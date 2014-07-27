@@ -70,7 +70,7 @@ for path in ['/fslhome/bch/cluster_expansion/sisi/equivk_encut500/','/fslhome/bc
         #for i,directory in enumerate(dirs):    
         print dirs
         writeEnergiesOszicar(dirs) 
-#        writefermi(dirs) #skip so don't have to read it every time
+        writefermi(dirs) #skip so don't have to read it every time
         writedirnames(dirs)
         writeNkIBZ(dirs)
         #writeNk(dirs)

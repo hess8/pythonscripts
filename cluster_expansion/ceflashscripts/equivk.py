@@ -203,11 +203,11 @@ If the Kmesh is fcc, then...
 
 #atomic = 'Al:Al'
 #atomic = 'Si:Si'
-#maindir = '/fslhome/bch/cluster_expansion/alir/enumtest/'
+maindir = '/fslhome/bch/cluster_expansion/alal/equivk_encut500/'
 #maindir = '/fslhome/bch/cluster_expansion/sisi/equivk_encut500/'
 #maindir = '/fslhome/bch/cluster_expansion/sisi/equivk_ismear0/'
 #maindir = '/fslhome/bch/cluster_expansion/sisi/nosymequivk/'
-maindir = '/fslhome/bch/cluster_expansion/cucu/equivk_encut500/'
+#maindir = '/fslhome/bch/cluster_expansion/cucu/equivk_encut500/'
 #enumfile = maindir + 'struct_enum.in.si'
 enumfile = maindir + 'struct_enum.in.fcc' 
 structfile = '../f1_50.dat'
