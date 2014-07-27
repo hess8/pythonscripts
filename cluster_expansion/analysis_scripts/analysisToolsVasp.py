@@ -19,7 +19,7 @@ def readfile(filepath):
     file1.close()
     return lines
 
-def writefile(lines,filepath):
+def writefile(lines,filepath): #need to have \n's inserted already
     file1 = open(filepath,'w')
     file1.writelines(lines) 
     file1.close()
