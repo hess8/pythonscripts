@@ -53,6 +53,7 @@ def writeEnergiesOszicar(list):
         print i
         try:
             lines = readfile(i+'/OSZICAR')
+            print lines
 #            print 'Oszicar last line length',len(lines[-1].split())
 #            print lines[-1].split()
             if len(lines[-1].split())>1:
