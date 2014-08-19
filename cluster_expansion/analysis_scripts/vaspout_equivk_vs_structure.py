@@ -15,11 +15,7 @@ from pylab import *
 from copy import deepcopy
 fprec=float64
 
-#title_detail =  'Si:Si'
-#title_detail =  'Si:Si,no symmetry,cubic mesh,f1-50,ediff 1e-7 '
-title_detail =  'Al:Al'
-#title_detail =  'Cu:Cu, cubic mesh,f1-50,ediff 1e-7 '
-testfile = 'POSCAR'
+
 
 def getibest(dirs):
 #    mrange = []
@@ -27,6 +23,7 @@ def getibest(dirs):
     for i,dir in enumerate(dirs):
         if dir[1]=='1' and dir[2]=='_':
             m = int(dir.split('_')[-1])
+            print dir, m
             if m > mmax:
                 ibest = i
                 mmax = m
@@ -40,23 +37,41 @@ def getibest(dirs):
 ################# script #######################
 
 
+
+
+
 #path = '/fslhome/bch/cluster_expansion/sisi/equivk/'
 #path = '/fslhome/bch/cluster_expansion/sisi/nosymequivk/'
-path = '/fslhome/bch/cluster_expansion/alal/equivk_encut500/'
+#path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6_encut300/'
+path = '/fslhome/bch/cluster_expansion/alal/cubic_al/equivk_c1-6_encut500/'
 #path = '/fslhome/bch/cluster_expansion/cucu/equivk/'
 
-structselect = ['f1','f3']#need to have f1 in here
-
 cubdir = path + 'structs.cubmesh/' #for plotting comparison
+
+
+#title_detail =  'Si:Si'
+#title_detail =  'Si:Si,no symmetry,cubic mesh,f1-50,ediff 1e-7 '
+title_detail =  'Cubic Al:Al (2.86 ang), cubic mesh, encut 500'
+#title_detail =  'Cu:Cu, cubic mesh,f1-50,ediff 1e-7 '
+
+structselect = ['c1','c3']#,'f7', 'f8','f9','f10']#need to have f1 in here
+
+
+testfile = 'POSCAR'
+
+
+
 for maindir in [path + 'structs.cubmesh/']:
 #for maindir in [path + 'structs.cubtest/']:
     tempdir = maindir+'structselect/'
+
 
     #reallatt = zeros((
     os.chdir(maindir)
     dirs1 = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
     if not os.path.isdir(tempdir): os.makedirs(tempdir)
     os.chdir(tempdir) #put lists for each structure in here, writing over them as we go
+    os.system('rm *')
     for structi in structselect: 
         dirs = []
         dirsfull = []
@@ -65,9 +80,11 @@ for maindir in [path + 'structs.cubmesh/']:
                 dirs.append(dir)
                 dirsfull.append(maindir+dir)
         print dirs
-        if structi == 'f1':
+        if structi ==  structselect[0]:
             [mmax, ibest] = getibest(dirs)
             print 'energy of structure 1, multiplier %i, index %i used as ebest' % (mmax, ibest)  
+        
+        #ibest = 17 ###################TEMP  ONLY !!!!!!!!!!!!!!!!!!!!!
         writeEnergiesOszicar(dirsfull) 
         writefermi(dirsfull) #skip so don't have to read it every time
         writedirnames(dirsfull)
@@ -83,30 +100,37 @@ for maindir in [path + 'structs.cubmesh/']:
         lattypes = getdata(dirsfull,'lattype')
         ms = array(getms(dirsfull),dtype = int)
         
+        filesstructselect = sorted([f for f in os.listdir(os.getcwd())])
+
         #os.chdir(mainDir)
         
         file = open(tempdir+'energies','r')
         energies = nstrip(file.readlines())
         file.close()
+        os.system('mv %s %s' % ('energies', 'energies'+structi))
         
         file = open(tempdir+'efermi','r')
         efermis = nstrip(file.readlines())
         file.close()
-           
+        os.system('mv %s %s' % ('efermi', 'efermi'+structi))
+                   
         file = open(tempdir+'NkIBZ','r')
         NkIBZ = nstrip(file.readlines())
         file.close()
+        os.system('mv %s %s' % ('NkIBZ', 'NkIBZ'+structi))        
         
         file = open(tempdir+'elsteps','r')
         elsteps = nstrip(file.readlines())
         file.close()
         elsteps
+        os.system('mv %s %s' % ('elsteps', 'elsteps'+structi))
         
         file = open(tempdir+'elconverge','r')
         elconverge = nstrip(file.readlines())
         file.close()
-        
-          
+        os.system('mv %s %s' % ('elconverge', 'elconverge'+structi))
+        #keep from overwriting these files:
+
         for i,stri in enumerate(elconverge): #make sure nonconverged runs have 0 energy
             if stri == 'N':
                 energies[i] = '0.0'
@@ -114,11 +138,11 @@ for maindir in [path + 'structs.cubmesh/']:
         
         en_per_atom = array([float(energies[i])/dets[i] for i in range(len(dets))])
         efermis = array([float(efermis[i]) for i in range(len(efermis))])        
-        if structi == 'f1': #comparing everything to it for now
+        if structi ==  structselect[0]: #comparing everything to it for now
             ebest = en_per_atom[ibest]
-            efbest = float(efermis[ibest])
-        print 'ebest', ebest
-        print 'e-fermi best', efbest
+            efbest = float(efermis[ibest]) 
+            print 'ebest', ebest
+            print 'e-fermi best', efbest
         err = abs(en_per_atom-ebest)
         ef_err = abs(efermis - efbest)
         ns = [ms[j]*dets[j] for j in range(len(dets))]  
@@ -127,8 +151,8 @@ for maindir in [path + 'structs.cubmesh/']:
         [[ns,ms,en_per_atom,efermis,NkIBZ,NkfullBZ,dets],zerolist] = removezeros([ns,ms,en_per_atom,efermis,NkIBZ,NkfullBZ,dets])#for structures that were not finished and have zero entries
         #    ebest = en_per_atom[argmax(ns)]
         #    efbest = efermis[argmax(ns)]
-        err = abs(en_per_atom-ebest)+1e-12 #do these again with only the finished runs
-        ef_err = abs(efermis - efbest)+1e-12
+        err = abs(en_per_atom-ebest)+1e-8 #do these again with only the finished runs
+        ef_err = abs(efermis - efbest)+1e-8
 
         #write important arrays to file
         writefile([str(j)+'\n' for j in ns],'ns%s' % structi)
@@ -146,13 +170,13 @@ ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
 xlabel('n in cubic grid')
 ylabel('Error (eV)') 
-title('Structure noise:\nTheoretical values: max k on struct 1')
+title('Structure noise '+title_detail+':\nTheoretical values: max n on struct 1; 1e-8 mark')
 xlim((0,55))
 #ylim((1e-12,1e0))
 for i,structi in enumerate(structselect):  
     nlist = readfile('ns%s' % structi)
     errlist = readfile('err%s' % structi)
-    ax1.semilogy(nlist, errlist,label=structi,linestyle='None',color=cm.jet(1.*(i+1)/3), marker = 'o') # marker = 'o',
+    ax1.semilogy(nlist, errlist,label=structi,linestyle='None',color=cm.jet(1.*(i+1)/len(structselect)), marker = 'o') # marker = 'o',
 plt.legend(loc='upper right',prop={'size':14});
 show()
 fig.savefig('log_err_vs_n_structs') 

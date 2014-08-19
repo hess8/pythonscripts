@@ -15,8 +15,8 @@ from copy import deepcopy
 fprec=float64
 
 #title_detail =  'Si:Si'
-title_detail =  'Si:Si,no symmetry,cubic mesh,f1-50,ediff 1e-7 '
-#title_detail =  'Al:Al, cubic mesh,f1-50,ediff 1e-7 '
+#title_detail =  'Si:Si,no symmetry,cubic mesh,f1-50,ediff 1e-7 '
+title_detail =  'Cubic Al:Al (2.86 ang), cubic mesh, encut 500'
 #title_detail =  'Cu:Cu, cubic mesh,f1-50,ediff 1e-7 '
 testfile = 'POSCAR'
 
@@ -29,13 +29,13 @@ def getibest(dirs):
             if m > mmax:
                 ibest = i
                 mmax = m
-#            mrange.append(m)
     return mmax, ibest
 
 ################# script #######################
 #path = '/fslhome/bch/cluster_expansion/sisi/equivk/'
-path = '/fslhome/bch/cluster_expansion/sisi/nosymequivk/'
-#path = '/fslhome/bch/cluster_expansion/alir/enumtest/'
+#path = '/fslhome/bch/cluster_expansion/alal/equivk/'
+#path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6_encut500/'
+path = '/fslhome/bch/cluster_expansion/alal/cubic_al/equivk_c1-6_encut500/'
 #path = '/fslhome/bch/cluster_expansion/cucu/equivk/'
 
 cubdir = path + 'structs.cubmesh/' #for plotting comparison
@@ -57,7 +57,7 @@ for maindir in [path + 'structs.cubmesh/']:
     #for i,directory in enumerate(dirs):    
     print dirs
     writeEnergiesOszicar(dirs) 
-#    writefermi(dirs) #skip so don't have to read it every time
+    writefermi(dirs) #skip so don't have to read it every time
     writedirnames(dirs)
     writeNkIBZ(dirs)
     #writeNk(dirs)
@@ -138,8 +138,8 @@ for maindir in [path + 'structs.cubmesh/']:
 #    efbest = efermis[argmax(ns)]
     parts2 = deepcopy(parts); parts2 = delete(parts,zerolist,axis=0)
     parts3 = array([parts2[i]/dets[i] for i in range(len(dets))])
-    err = abs(en_per_atom-ebest)/abs(ebest) #do these again with only the finished runs
-    ef_err = abs(efermis - efbest)/abs(efbest)    
+    err = (en_per_atom-ebest) #do these again with only the finished runs
+    ef_err = efermis - efbest
     #en_per_atom vs ns  
     titleadd = ''+ title_detail  
     plotxy(ns,en_per_atom,'en_per_atom', titleadd + 'Vasp energy vs n (defines grid)','n','eV')
