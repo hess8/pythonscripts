@@ -1,5 +1,7 @@
 #!/usr/bin/python
-'''    
+''' 
+Plots equivk mesh convergence for two (or more different runs).  Can't find an easy way to handle the different number
+of points in each run due to not converging/finishings   
 '''
 
 import sys,os,subprocess
@@ -39,9 +41,10 @@ def getibest(dirs):
 
 #for path in ['/fslhome/bch/cluster_expansion/sisi/equivk_encut500/','/fslhome/bch/cluster_expansion/alal/equivk_encut500/'\
 #              , '/fslhome/bch/cluster_expansion/cucu/equivk_encut500/']:
-for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
-              , '/fslhome/bch/cluster_expansion/alal/equivk_f1-6_encut500/']:
+paths = ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
+              , '/fslhome/bch/cluster_expansion/alal/equivk_f1-6_encut500/']
 
+for ipath, path in enumerate(paths):            
     if 'sisi' in path:
         title_detail =  'Si:Si, cubic mesh '
     elif 'alal' in path:
@@ -51,9 +54,6 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
     else:
         sys.exit('Stop. Cannot assign title to type') 
     title_detail += path.split('/')[-2]
-
-
-
 
 #    cubdir = path + 'structs.cubmesh/' #for plotting comparison
     for maindir in [path + 'structs.cubmesh/']:
@@ -142,8 +142,9 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
         efbest = float(efermis[ibest])
         print 'ebest', ebest
         print 'e-fermi best', efbest
-        err = abs(en_per_atom-ebest)/abs(ebest)
-        ef_err = abs(efermis - efbest)/abs(efbest)
+        #calculate errors for all runs, even unfinished ones
+        err = abs(en_per_atom-ebest) 
+        ef_err = abs(efermis - efbest) 
         ns = [ms[j]*dets[j] for j in range(len(dets))]  
         for i in range(len(names)):
             linei = names[i]+','+str(ns[i])+','+energies[i]+','+str(efermis[i])+','+str(dets[i])+','+str(en_per_atom[i])+','+str(err[i])+','+str(ef_err[i])+','+elconverge[i]+','+elsteps[i]+','+NkIBZ[i]+','+ str(round(float(cputime[i])/60,2))+'\n'        
@@ -157,9 +158,9 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
     #    efbest = efermis[argmax(ns)]
         parts2 = deepcopy(parts); parts2 = delete(parts,zerolist,axis=0)
         parts3 = array([parts2[i]/dets[i] for i in range(len(dets))])
-        errabs = abs(en_per_atom-ebest)
-        err = abs(en_per_atom-ebest)/abs(ebest) #do these again with only the finished runs
-        ef_err = abs(efermis - efbest)/abs(efbest)    
+        #recalculate errors for fewer finished runs. 
+        err = abs(en_per_atom-ebest)   
+        ef_err = abs(efermis - efbest) 
         #en_per_atom vs ns  
         titleadd = ''+ title_detail  
         plotxy(ns,en_per_atom,'en_per_atom', titleadd + 'Vasp energy vs n (defines grid)','n','eV')
@@ -179,7 +180,8 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
         title(titleadd + ' Error vs n (defines grid)')
         xlabel('n')
         ylabel('error')
-        fig.savefig('vary_n_log_err')  
+        fig.savefig('vary_n_log_err') 
+        close 
         
         #log(err) vs efermi
         fig = figure()
@@ -188,6 +190,7 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
         xlabel('e-fermi (ev)')
         ylabel('error')   
         fig.savefig('ef_log_err')  
+        close
     
         #log(err) vs efermi zoomed
         fig = figure()
@@ -197,6 +200,7 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
         ylabel('error') 
         xlim((8.07, 8.08))  
         fig.savefig('ef_log_err_zoomed')  
+        close
         
         #log(ef_err) vs NkfullBZ zoomed
         fig = figure()
@@ -206,6 +210,7 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
         ylabel('error in Ef') 
     #    ylim((8.07, 8.08))  
         fig.savefig('err_ef_loglog_NkfullBZ')
+        close
     
         #log(err) vs NkIBZ
         fig = figure()
@@ -213,7 +218,8 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
         title(titleadd + ' Error vs Nk in IBZKPT')
         xlabel('Nk')
         ylabel('error')   
-        fig.savefig('nk_log_err')  
+        fig.savefig('nk_log_err') 
+        close 
         
         #log(err) vs log(NkIBZ)
         fig = figure()
@@ -222,6 +228,7 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
         xlabel('Nk')
         ylabel('error')   
         fig.savefig('nk_loglog_err') 
+        close
         
         #log(err) vs log(NkfullBZ)
         fig = figure()
@@ -230,6 +237,7 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
         xlabel('Nk in unreduced BZ')
         ylabel('error')   
         fig.savefig('NkfullBZ_loglog_err') 
+        close
         
         #eigenerr plot
         eigenbest = parts3[-1,7] #take the last eigenvalue contribution to total energy as best
@@ -281,6 +289,7 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
         plt.legend(loc='upper right',prop={'size':6});
         show()
         fig.savefig('enerparts_deV') 
+        close
         
         ##### same plot, but relative error and vs NkfullBZ and loglog   
         fig = figure()
@@ -294,39 +303,55 @@ for path in ['/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'\
             ax1.loglog(NkfullBZ, deviations[:,i],label=enerlabels[i],linestyle='None',color=cm.jet(1.*(i+1)/N), marker = 'o') # marker = 'o',
         plt.legend(loc='upper right',prop={'size':6});
         show()
-        fig.savefig('enerparts_err_NKfullBZ') 
+        fig.savefig('enerparts_err_NKfullBZ')
+        close 
         
         #Save error for each type of structure
-        if 'sisi' in path:
-            err_si = errabs
-            ns_si = ns
-        elif 'alal' in path:
-            err_al = errabs
-            ns_al = ns
-        elif 'cucu' in path:
-            err_cu = errabs
-            ns_cu = ns  
+        if ipath ==0: 
+            err_0 = err
+            ef_err0 = ef_err
+            ns_0 = ns
+        elif ipath ==1: 
+            err_1 = err
+            ef_err1 = ef_err
+            ns_1 = ns
         else:
-            sys.exit('Stop. Cannot assign error to type')  
+            sys.exit('Stop. Cannot assign error to run')  
 
-nlist = [ns_si,ns_al,ns_cu]
-errlist = [err_si,err_al,err_cu]
-labels = ['Si','Al','Cu']
+nlist = [ns_0,ns_1]
+errlist = [err_0,err_1]
+eF_errlist = [ef_err0,ef_err1]
+labels = ['Prec: accurate (2x NXF)','Prec: high']
 os.chdir('/fslhome/bch/cluster_expansion/')
 fig = figure()
 ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
 xlabel('n in cubic grid')
 ylabel('Error (eV)') 
-title('Structure noise: Al:Al, Cu:Cu, Si:Si(Ismear=0)\nTheoretical values: max k on struct 1')
+title('Structure noise: Al:Al\nTheoretical values: max k on struct 1')
 xlim((0,55))
 #ylim((1e-12,1e0))
-for i in range(3):    
+for i in range(len(nlist)):    
     ax1.semilogy(nlist[i], errlist[i],label=labels[i],linestyle='None',color=cm.jet(1.*(i+1)/3), marker = 'o') # marker = 'o',
 plt.legend(loc='upper right',prop={'size':14});
 show()
-fig.savefig('log_err_vs_n_al,cu,si') 
+fig.savefig('log_err_vs_n_acc_vs_high') 
+close
 
+fig = figure()
+ax1 = fig.add_subplot(111)
+#    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
+xlabel('n in cubic grid')
+ylabel('Efermi error (eV)') 
+title('E-Fermi Structure noise: Al:Al\nTheoretical values: max k on struct 1')
+xlim((0,55))
+#ylim((1e-12,1e0))
+for i in range(len(nlist)):    
+    ax1.semilogy(nlist[i], eF_errlist[i],label=labels[i],linestyle='None',color=cm.jet(1.*(i+1)/3), marker = 'o') # marker = 'o',
+plt.legend(loc='upper right',prop={'size':14});
+show()
+fig.savefig('log_EFerr_vs_n_acc_vs_high')
+close
             
 #        plotxy(ns,parts3[:,7],'eigen_dev_vs_n', titleadd + 'Eigenvalue deviation vs n','n','eV')
   

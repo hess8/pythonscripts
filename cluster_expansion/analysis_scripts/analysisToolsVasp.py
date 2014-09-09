@@ -46,20 +46,24 @@ def writedirnames(list):
     for name in list:
         namesfile.write(name +'\n')
     namesfile.close()
+    
+def getEnergy(dir):
+    lines = readfile(dir+'/OSZICAR')
+    print lines
+#            print 'Oszicar last line length',len(lines[-1].split())
+#            print lines[-1].split()
+    if len(lines[-1].split())>1:
+        energy = lines[-1].split()[2]
+    else: 
+        energy = '0'
+    return energy
 
 def writeEnergiesOszicar(list):           
     enerfile = open('energies','w')
     for i in list:
         print i
         try:
-            lines = readfile(i+'/OSZICAR')
-            print lines
-#            print 'Oszicar last line length',len(lines[-1].split())
-#            print lines[-1].split()
-            if len(lines[-1].split())>1:
-                energy = lines[-1].split()[2]
-            else: 
-                energy = '0'
+            energy = getEnergy(i)
         except:
     		energy = '0'
         if energy =="F=": energy = lines[-1].split()[3]

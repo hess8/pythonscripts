@@ -16,7 +16,7 @@ fprec=float64
 
 #title_detail =  'Si:Si'
 #title_detail =  'Si:Si,no symmetry,cubic mesh,f1-50,ediff 1e-7 '
-title_detail =  'Cubic Al:Al (2.86 ang), cubic mesh, encut 500'
+title_detail =  'FCC Al:Al, cubic mesh, Accurate precision'
 #title_detail =  'Cu:Cu, cubic mesh,f1-50,ediff 1e-7 '
 testfile = 'POSCAR'
 
@@ -32,14 +32,14 @@ def getibest(dirs):
     return mmax, ibest
 
 ################# script #######################
-#path = '/fslhome/bch/cluster_expansion/sisi/equivk/'
+#path = '/fslhome/bch/cluster_expansion/alal/cubic_al/equivk_c1-6_accurate/'
 #path = '/fslhome/bch/cluster_expansion/alal/equivk/'
 #path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6_encut500/'
-path = '/fslhome/bch/cluster_expansion/alal/cubic_al/equivk_c1-6_encut500/'
+path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'
 #path = '/fslhome/bch/cluster_expansion/cucu/equivk/'
 
 cubdir = path + 'structs.cubmesh/' #for plotting comparison
-for maindir in [path + 'structs.cubmesh/']:
+for maindir in [path + 'structs.cubmesh/',path + 'structs.fccmesh/']:
 #for maindir in [path + 'structs.cubtest/']:
 #path + 'structs.cubmesh/',
 #path + 'structs.fccmesh/'
@@ -48,6 +48,7 @@ for maindir in [path + 'structs.cubmesh/']:
     #reallatt = zeros((3,3))
     os.chdir(maindir)
     dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
+    if 'structselect' in dirs: dirs.remove('structselect')
     [mmax, ibest] = getibest(dirs)
     print 'energy of structure 1, multiplier %i, index %i used as ebest' % (mmax, ibest)
 
@@ -123,8 +124,9 @@ for maindir in [path + 'structs.cubmesh/']:
     efbest = float(efermis[ibest])
     print 'ebest', ebest
     print 'e-fermi best', efbest
-    err = abs(en_per_atom-ebest)/abs(ebest)
-    ef_err = abs(efermis - efbest)/abs(efbest)
+    #for spreadsheet:
+    err = abs(en_per_atom-ebest) 
+    ef_err = abs(efermis - efbest) 
     ns = [ms[j]*dets[j] for j in range(len(dets))]  
     for i in range(len(names)):
         linei = names[i]+','+str(ns[i])+','+energies[i]+','+str(efermis[i])+','+str(dets[i])+','+str(en_per_atom[i])+','+str(err[i])+','+str(ef_err[i])+','+elconverge[i]+','+elsteps[i]+','+NkIBZ[i]+','+ str(round(float(cputime[i])/60,2))+'\n'        
@@ -138,11 +140,12 @@ for maindir in [path + 'structs.cubmesh/']:
 #    efbest = efermis[argmax(ns)]
     parts2 = deepcopy(parts); parts2 = delete(parts,zerolist,axis=0)
     parts3 = array([parts2[i]/dets[i] for i in range(len(dets))])
-    err = (en_per_atom-ebest) #do these again with only the finished runs
-    ef_err = efermis - efbest
+#    for plots
+    err = abs(en_per_atom-ebest)+1e-9 #do these again with only the finished runs
+    ef_err = abs(efermis - efbest)+1e-9
     #en_per_atom vs ns  
     titleadd = ''+ title_detail  
-    plotxy(ns,en_per_atom,'en_per_atom', titleadd + 'Vasp energy vs n (defines grid)','n','eV')
+#    plotxy(ns,en_per_atom,'en_per_atom', titleadd + 'Vasp energy vs n (defines grid)','n','eV')
     
 
 
@@ -175,7 +178,7 @@ for maindir in [path + 'structs.cubmesh/']:
     title(titleadd + ' Error vs e-fermi')
     xlabel('e-fermi (ev)')
     ylabel('error') 
-    xlim((8.07, 8.08))  
+    xlim((8.06, 8.08))  
     fig.savefig('ef_log_err_zoomed')  
     
     #log(ef_err) vs NkfullBZ zoomed
@@ -202,6 +205,15 @@ for maindir in [path + 'structs.cubmesh/']:
     xlabel('Nk')
     ylabel('error')   
     fig.savefig('nk_loglog_err') 
+    
+        
+    #log(err_EF) vs log(NkIBZ)
+    fig = figure()
+    loglog(NkIBZ,ef_err,'ro')
+    title(titleadd + ' E-Fermi Error vs Nk in IBZKPT')
+    xlabel('Nk')
+    ylabel('error')   
+    fig.savefig('nk_loglog_errEF') 
     
     #log(err) vs log(NkfullBZ)
     fig = figure()
@@ -293,70 +305,72 @@ for maindir in [path + 'structs.cubmesh/']:
 #    plotxy(xaxis,cputime,'cpu', titleadd + ' CPU Time','Packing fraction','CPU time(sec)')
 #    plotxy(NkIBZ,cputime,'cpu_vs_Nk', titleadd + ' CPU Time vs Nk in IBZKPT','Nk in IBZKPT','CPU time(sec)')
 
-##combine with cubic mesh results 
-#
-##title_detail = 'fcc mesh, Al:Al'
-#testfile = 'POSCAR'
-#os.chdir(cubdir)
-#dirscub = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
-#print dirscub
-#writeEnergiesOszicar(dirscub)
-#file = open('energies','r')
-#energiescub = nstrip(file.readlines())
-#file.close() 
-#writedirnames(dirscub)
-#detscub = getdata(dirscub,'detL')
-#detscub = [float(detscub[i]) for i in range(len(detscub))]
-#mscub = array(getms(dirscub),dtype = int)
-#nscub = [str(float(mscub[i]*detscub[i])) for i in range(len(detscub))]
-##print len(dirscub),len(energiescub), len(detscub)
-#en_per_atomcub = array([float(energiescub[i])/detscub[i] for i in range(len(detscub))])
-#os.chdir(maindir)
-#
-##fcc and cubic comparison
-#nscaled = [float(ms[i]*dets[i])*4**(1/3.0) for i in range(len(dets))] #scale fcc
-#x1 = nscaled #scale fcc n to the cubic n 
-#y1 = en_per_atom
-#x2 = nscub
-#y2 = en_per_atomcub
-#from matplotlib.pyplot import *
-#fig = figure()
-#plot(x1, y1, 'ro',label = 'fcc mesh')
-#plot(x2, y2, 'bo',label = 'cub mesh')
-#title(titleadd + ' Vasp energy vs n (defines grid). n_fcc scaled to cubic')
-#xlabel('n cubic, effective')
-#ylabel('eV')
-#legend(loc='lower right')
-##ylim((-3.8,-3.7))
-#show() 
-#fig.savefig('vary_n_fcc_scaled_to_cub')  
-#
-##log plot of above
-#ebest = en_per_atomcub[argmax(nscub)]
-##ebest = -10.8392895
-#print 'ebest',ebest
-#errfcc = abs(en_per_atom-ebest)/abs(ebest)
-#errcub = abs(en_per_atomcub-ebest)/abs(ebest)
-##print errfcc
-##print errcub
-##print log10(errfcc)
-##print log10(errcub)
-#
-#fig = figure()
-#x1 = nscaled #scale fcc n to the cubic n 
-#y1 = errfcc
-#x2 = nscub
-#y2 = errcub
-#semilogy(x1, y1, 'ro',label = 'fcc mesh')
-#semilogy(x2, y2, 'bo',label = 'cub mesh')
-#title(titleadd + ' Vasp energy vs n (defines grid). n_fcc scaled to cubic')
-#xlabel('n cubic, effective')
-#ylabel('eV')
-#legend(loc='lower right')
-#ylim((1e-8,1e-2))
-##xlim((0,68))
-#show() 
-#fig.savefig('vary_n_log_err_fcc_cub')  
+#combine with cubic mesh results 
+
+#title_detail = 'fcc mesh, Al:Al'
+testfile = 'POSCAR'
+os.chdir(cubdir)
+dirscub = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
+print dirscub
+writeEnergiesOszicar(dirscub)
+file = open('energies','r')
+energiescub = nstrip(file.readlines())
+file.close() 
+writedirnames(dirscub)
+detscub = getdata(dirscub,'detL')
+detscub = [float(detscub[i]) for i in range(len(detscub))]
+mscub = array(getms(dirscub),dtype = int)
+nscub = [str(float(mscub[i]*detscub[i])) for i in range(len(detscub))]
+#print len(dirscub),len(energiescub), len(detscub)
+en_per_atomcub = array([float(energiescub[i])/detscub[i] for i in range(len(detscub))])
+os.chdir(maindir)
+
+#fcc and cubic comparison
+nscaled = [float(ms[i]*dets[i])*4**(1/3.0) for i in range(len(dets))] #scale fcc
+x1 = nscaled #scale fcc n to the cubic n 
+y1 = en_per_atom
+x2 = nscub
+y2 = en_per_atomcub
+from matplotlib.pyplot import *
+fig = figure()
+plot(x1, y1, 'ro',label = 'fcc mesh')
+plot(x2, y2, 'bo',label = 'cub mesh')
+title(titleadd + ' Vasp energy vs n (defines grid). n_fcc scaled to cubic')
+xlabel('n cubic, effective')
+ylabel('eV')
+legend(loc='lower right')
+#ylim((-3.8,-3.7))
+show() 
+fig.savefig('vary_n_fcc_scaled_to_cub')  
+
+#log plot of above
+ebest = en_per_atomcub[argmax(nscub)]
+#ebest = -10.8392895
+print 'ebest',ebest
+errfcc = abs(en_per_atom-ebest) 
+errcub = abs(en_per_atomcub-ebest) 
+#print errfcc
+#print errcub
+#print log10(errfcc)
+#print log10(errcub)
+
+fig = figure()
+x1 = nscaled #scale fcc n to the cubic n 
+y1 = errfcc
+x2 = nscub
+y2 = errcub
+print 'nscaled', nscaled
+print 'errfcc', errfcc
+semilogy(x1, y1, 'ro',label = 'fcc mesh')
+semilogy(x2, y2, 'bo',label = 'cub mesh')
+title(titleadd + ' Vasp energy vs n (defines grid). n_fcc scaled to cubic')
+xlabel('n cubic, effective')
+ylabel('eV')
+legend(loc='lower right')
+ylim((1e-8,1e-2))
+#xlim((0,68))
+show() 
+fig.savefig('vary_n_log_err_fcc_cub')  
 #
 #
 
