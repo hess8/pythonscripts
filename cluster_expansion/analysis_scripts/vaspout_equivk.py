@@ -14,9 +14,9 @@ from pylab import *
 from copy import deepcopy
 fprec=float64
 
-#title_detail =  'Si:Si'
+title_detail =  'Si:Si, -Accurate- precision'
 #title_detail =  'Si:Si,no symmetry,cubic mesh,f1-50,ediff 1e-7 '
-title_detail =  'FCC Al:Al, cubic mesh, Accurate precision'
+#title_detail =  'FCC Al:Al, cubic mesh, Accurate precision'
 #title_detail =  'Cu:Cu, cubic mesh,f1-50,ediff 1e-7 '
 testfile = 'POSCAR'
 
@@ -35,8 +35,9 @@ def getibest(dirs):
 #path = '/fslhome/bch/cluster_expansion/alal/cubic_al/equivk_c1-6_accurate/'
 #path = '/fslhome/bch/cluster_expansion/alal/equivk/'
 #path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6_encut500/'
-path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'
+#path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'
 #path = '/fslhome/bch/cluster_expansion/cucu/equivk/'
+path ='/fslhome/bch/cluster_expansion/sisi/equivk_accurate/'
 
 cubdir = path + 'structs.cubmesh/' #for plotting comparison
 for maindir in [path + 'structs.cubmesh/',path + 'structs.fccmesh/']:
@@ -147,13 +148,6 @@ for maindir in [path + 'structs.cubmesh/',path + 'structs.fccmesh/']:
     titleadd = ''+ title_detail  
 #    plotxy(ns,en_per_atom,'en_per_atom', titleadd + 'Vasp energy vs n (defines grid)','n','eV')
     
-
-
-#    ebest = en_per_atom[argmax(ns)] ########## Need to find a better "best"
-#    N = len(en_per_atom); 
-#    ebest = float(readfile('ebest').strip())
-#    ebest = average(en_per_atom)#[int(N/2):]) #take last half average as the best (largest n's)
-
     print ns
     print err
 
@@ -344,9 +338,6 @@ show()
 fig.savefig('vary_n_fcc_scaled_to_cub')  
 
 #log plot of above
-ebest = en_per_atomcub[argmax(nscub)]
-#ebest = -10.8392895
-print 'ebest',ebest
 errfcc = abs(en_per_atom-ebest) 
 errcub = abs(en_per_atomcub-ebest) 
 #print errfcc
@@ -359,8 +350,8 @@ x1 = nscaled #scale fcc n to the cubic n
 y1 = errfcc
 x2 = nscub
 y2 = errcub
-print 'nscaled', nscaled
-print 'errfcc', errfcc
+#print 'nscaled', nscaled
+#print 'errfcc', errfcc
 semilogy(x1, y1, 'ro',label = 'fcc mesh')
 semilogy(x2, y2, 'bo',label = 'cub mesh')
 title(titleadd + ' Vasp energy vs n (defines grid). n_fcc scaled to cubic')
@@ -368,11 +359,9 @@ xlabel('n cubic, effective')
 ylabel('eV')
 legend(loc='lower right')
 ylim((1e-8,1e-2))
-#xlim((0,68))
+xlim((0,40))
 show() 
 fig.savefig('vary_n_log_err_fcc_cub')  
-#
-#
 
 #      
 print 'Done'

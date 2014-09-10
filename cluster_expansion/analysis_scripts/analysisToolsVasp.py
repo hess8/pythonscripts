@@ -470,6 +470,9 @@ def removezeros(arrlist):
     for j,array in enumerate(arrlist):
         arrlist2[j] = delete(arrlist[j],zerolist)
     return [arrlist2,zerolist]
-            
+                
+
+    
+             
         
         
