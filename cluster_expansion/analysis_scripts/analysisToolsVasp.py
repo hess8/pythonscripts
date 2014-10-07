@@ -53,7 +53,8 @@ def getEnergy(dir):
 #            print 'Oszicar last line length',len(lines[-1].split())
 #            print lines[-1].split()
     if len(lines[-1].split())>1:
-        energy = lines[-1].split()[2]
+        energy = lines[-1].split()[2]  #Free energy
+#        energy = lines[-1].split()[4] #E0 (lim sigma ->zero)
     else: 
         energy = '0'
     return energy
@@ -282,7 +283,7 @@ def nstrip(list):
     return list2
     
 def convergeCheck(folder,NSW):
-    """Tests whether force convergence is done by whether the last line of Oszicar is less than NSW."""
+    """Tests whether ionic convergence is done by whether the last line of Oszicar is less than NSW."""
     try:
         value = getSteps(folder)
         return value < NSW #True/False

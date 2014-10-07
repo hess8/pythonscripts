@@ -217,14 +217,17 @@ If the Kmesh is fcc, then...
 #maindir = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6_encut500/'
 #maindir = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'
 
-maindir = '/fslhome/bch/cluster_expansion/sisi/equivk_accurate/'
+#maindir = '/fslhome/bch/cluster_expansion/sisi/equivk_accurate/'
 #maindir = '/fslhome/bch/cluster_expansion/alal/cubic_al/equivk_c1-6_accurate/'
-#maindir = '/fslhome/bch/cluster_expansion/sisi/nosymequivk/'
-#maindir = '/fslhome/bch/cluster_expansion/cucu/equivk_encut500/'
-enumfile = maindir + 'struct_enum.in.si'
+maindir = '/fslhome/bch/cluster_expansion/alal/equivk_f-16.tetra.noBlochl/'
+#maindir = '/fslhome/bch/cluster_expansion/cucu/equivk_accurate/'
+#maindir = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6.tetra/'
+#maindir = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6.sigma.02/'
+#enumfile = maindir + 'struct_enum.in.si'
 #enumfile = maindir + 'struct_enum.in.cub' 
-#enumfile = maindir + 'struct_enum.in.fcc' 
+enumfile = maindir + 'struct_enum.in.fcc' 
 #structfile = '../c1_6.dat'
+#structfile = '../f1.dat'
 structfile = '../f1_6.dat'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.myk/'
 #finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
@@ -238,16 +241,17 @@ if 'cub' in finaldir.split('.')[-1]:
     meshtype = 'cub'
     multlist = []
 #    multlist = [2,3,4,5,6,7,8]
-#    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24,26,29,33,38,45] #this is m
-    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24,26,28,32,36,38,40,42,44] #this is m
+    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24] #this is m
+#    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24,26,28,32,36,38,40,42,44] #this is m
 #    multlist = [40,42,44] #this is m
-#    multlist = [28,32,36,40,42,44]    
+#    multlist = [2]    
 
 elif 'fcc' in finaldir.split('.')[-1]:
     meshtype = 'fcc'
 #    multlist = [2,3]
 #    multlist = [2,3,4,5]  #5*4^(1/3) =~ 8, for fcc scaling
-    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24,26,28]  #44/4^(1/3) = 28
+#    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24,26,28]  #44/4^(1/3) = 28
+    multlist = [2,3,4,5,6,8,10,12]  #44/4^(1/3) = 28
 else:
     sys.exit('finaldir must contain cub or fcc substring')
     
@@ -330,5 +334,6 @@ for struct in structs: #these are simply the numbers with no prefix
         writejobfile(finaldir+dir)
         if n <= nmax:#(don't submit the biggest jobs
             ''
+            
             subprocess.call(['sbatch', 'vaspjob']) #!!!!!!! Submit jobs
 print 'done'
