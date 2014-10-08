@@ -33,13 +33,17 @@ class tetrahedrons:
         delete(self.idk,s_[:,it])
     
     def add(self,tet1):
-        print shape(self.idk)
-        print shape(tet1.idk)
-        tet1.wgt = reshape(tet1.wgt,(1,shape(tet1.wgt)[0]))
-        self.wgt = append(self.wgt,tet1.wgt, axis = 0)
-        tet1.vecs = reshape(tet1.vecs,(shape(tet1.vecs)[0],shape(tet1.vecs)[1],1))
-        append(self.vecs,tet1.vecs, axis = 2)
-        append(self.idk,tet1.idk, axis = 1)
+        print shape(tet1.vol)
+        print shape(self.vol)
+        arr = reshape(tet1.wgt,(1,shape(tet1.wgt)[0]))
+        self.wgt = self.wgt = append(self.wgt,arr, axis = 0)
+        arr = reshape(tet1.vecs,(shape(tet1.vecs)[0],shape(tet1.vecs)[1],1))
+        self.vecs = append(self.vecs,arr,axis = 2)
+        arr = reshape(tet1.idk,(shape(tet1.idk)[0],1))
+        self.idk = append(self.idk,arr,axis = 1)
+        arr = array(tet1.vol)
+        self.vol = append(self.vol,arr)
+        self.ntet += 1
     
     def get_tetweights(self,dir):
         lines = nstrip(readfile(dir+'tetwgt'))
@@ -71,19 +75,32 @@ class tetrahedrons:
         if ntet2 != self.ntet: print 'Warning! NTET in IBZKPTS differs from this program''s'
         for it in range(self.ntet):
             self.idk[:,it] = lines[5+nk+it].split()[1:]  #skip the weights           
-             
+            self.idk[:,it] = self.idk[:,it] -1 #(converting from Fortran counting to python)
+
 class kpoints:
     def __init__(self):
         self.nk = []
         self.nbands = 0   
         self.vecs = []
-        self.idtet = []#connection table to tetrahedra it is a corner to.  Each k is part of 4 tets, 
+        self.idt = []#connection table to tetrahedra it is a corner to.  Each k is part of 4 tets, 
         self.ener = [] 
         
     def add(self,kpt1):
-        append(self.vecs,kpt1.vecs, axis = 1)
-        append(self.vecs,kpt1.idtet, axis = 1)
+#        print shape(self.idt)
+#        print shape(kpt1.idt)
+        self.nk += 1
+        arr = reshape(kpt1.idt,(shape(kpt1.idt)[0],1))
+        self.idt = append(self.idt,arr,axis = 1)
+        #add 4 rows of -1 to  the bottom of the id matrix for the 4 new tets
+        add = zeros((4,self.nk),dtype = int) - 1
+        self.idt = append(self.idt,add,axis = 0) 
+        print shape(self.vecs)
+        print shape(kpt1.vecs)
+        arr = reshape(kpt1.vecs,(shape(kpt1.vecs)[0],1))              
+        self.vecs = append(self.vecs,arr, axis = 1)
+        print self.vecs
 
+        
     def get_eigen(self,dir):
         lines = nstrip(readfile(dir+'eigenv'))
         self.nk = int(lines[0].split()[0])
@@ -100,7 +117,16 @@ class kpoints:
         if nk2 != self.nk: print 'Warning! Nkpts in IBZKPTS differs from this program''s'
         for ik in range(self.nk):
             self.vecs[:,ik] = lines[ik+3].split()[:3] #don't read weights'
-                 
+
+    def make_ids(self,tet):  #creates the connection ids table between this kpoint and the tetrahedrons it is part of
+        self.idt = -1 + zeros((tet.ntet,self.nk),dtype=int) #no entry is designated -1, becuase we use tet 0 as the first one.
+        idcount = zeros(self.nk) #each may contribute to 4 tetrahedra. In full BZ is it exactly 4. Here it may be less because of symmetry
+        for ik in range(self.nk):
+            for itet in range(tet.ntet):
+                if ik in tet.idk[:,itet]: 
+                    self.idt[idcount[ik],ik] = itet
+                    idcount[ik] += 1
+                                       
 ################# script #######################
 dir = '/fslhome/bch/cluster_expansion/alal/test/f1_2/'
 tet = tetrahedrons()
@@ -127,12 +153,11 @@ kp.rd_ibzkpt(dir)
 print 'kpoint vecs'
 print kp.vecs
 print 'nk',kp.nk
-print tet.idk[:,1]
-
-#read in connection table
+kp.make_ids(tet)
+print 'kpoint connection to tets'
+print kp.idt
 
 #find partially occupied tets
-
 tet_partial = []
 for it in range(tet.ntet):
     for ib in range (1,tet.nbands): #testing weights against filled first band
@@ -149,17 +174,18 @@ for it in range(tet.ntet):
 newk = kpoints() #just one member, so we can add it
 newt = tetrahedrons() #just one member, so we can add it
 #newt.wgt = zeros((1,kp.nbands),dtype = float64)
-triads = [[0,1,2],[1,2,3],[2,3,0],[3,0,1]] #four faces of old tetrahedron
+triads = [[0,1,2],[1,2,3],[2,3,0],[3,0,1]] #four faces of old tet with new center become four new tets
 for it in tet_partial:   
     #add 4 new tets to end, created by adding tets connecting center and other tets
 #    print tet.vecs[:,:,it]
+    oldntet = tet.ntet
     newk.vecs = zeros(3,dtype = float64)
     newt.vecs = zeros((3,4),dtype = float64)
-    for ic in range(4): newk.vecs[:] += tet.vecs[:,ic,it]/4.000000000000000  #new center
-    for triad in triads:
+    newk.idt = zeros(tet.ntet,dtype = int)
+    for ic in range(4): newk.vecs[:] += tet.vecs[:,ic,it]/4.000000000000000  #center is new kpoint
+    for triad in triads: #make a new tetrahedron
         newt.vecs[:,0] = newk.vecs[:]
 #        print newt.vecs[:,0]
-
 #        print triad
         for ic in range(1,4): 
 #            print triad[ic-1]
@@ -170,14 +196,22 @@ for it in tet_partial:
         vc = newt.vecs[:,3]-newt.vecs[:,0]
 #        print 'va, vb, vc',va, vb, vc
         newt.vol = abs(dot(va,cross(vb,vc))/2.0)
-#        print 'newt.vol',newt.vol
+        print 'newt.vol',newt.vol
         newt.wgt = tet.wgt[it,:]*newt.vol/tet.vol[it]
-        print 'newt.wgt',newt.wgt
-        newt.idk = [kp.nk+1].append([tet.idk[ic] for ic in triad])    
-        #still need ids XXXX       
+#        print 'newt.wgt',newt.wgt
+        newt.idk = append(array([kp.nk+1]),[tet.idk[ic,it] for ic in triad])    
         tet.add(newt)
     #still need ids
-#    kp.add(newk)
+    for j in range(oldntet):
+        if j < 4: #this is connected to only 4
+            newk.idt[j] = oldntet+j
+        else:
+            newk.idt[j] = -1
+    print newk.idt
+    print kp.idt
+    print kp.nk
+    kp.add(newk)
+#    sys.exit()
 print 'tet weights'
 print tet.ntet,tet.wgt
 print 'Energies'
