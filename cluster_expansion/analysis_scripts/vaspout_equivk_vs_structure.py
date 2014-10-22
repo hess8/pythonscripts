@@ -42,8 +42,9 @@ def getibest(dirs):
 
 #path = '/fslhome/bch/cluster_expansion/sisi/equivk/'
 #path = '/fslhome/bch/cluster_expansion/sisi/nosymequivk/'
-#path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6_encut300/'
-path = '/fslhome/bch/cluster_expansion/alal/cubic_al/equivk_c1-6_encut500/'
+#path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6_encut500/'
+
+path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'
 #path = '/fslhome/bch/cluster_expansion/cucu/equivk/'
 
 cubdir = path + 'structs.cubmesh/' #for plotting comparison
@@ -51,10 +52,10 @@ cubdir = path + 'structs.cubmesh/' #for plotting comparison
 
 #title_detail =  'Si:Si'
 #title_detail =  'Si:Si,no symmetry,cubic mesh,f1-50,ediff 1e-7 '
-title_detail =  'Cubic Al:Al (2.86 ang), cubic mesh, encut 500'
+title_detail =  'Al:Al cubic mesh,PREC = High'
 #title_detail =  'Cu:Cu, cubic mesh,f1-50,ediff 1e-7 '
 
-structselect = ['c1','c3']#,'f7', 'f8','f9','f10']#need to have f1 in here
+structselect = ['f1','f3','f4','f5','f6']#,'f7', 'f8','f9','f10']#need to have f1 in here
 
 
 testfile = 'POSCAR'
@@ -84,7 +85,6 @@ for maindir in [path + 'structs.cubmesh/']:
             [mmax, ibest] = getibest(dirs)
             print 'energy of structure 1, multiplier %i, index %i used as ebest' % (mmax, ibest)  
         
-        #ibest = 17 ###################TEMP  ONLY !!!!!!!!!!!!!!!!!!!!!
         writeEnergiesOszicar(dirsfull) 
         writefermi(dirsfull) #skip so don't have to read it every time
         writedirnames(dirsfull)
@@ -170,7 +170,7 @@ ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
 xlabel('n in cubic grid')
 ylabel('Error (eV)') 
-title('Structure noise '+title_detail+':\nTheoretical values: max n on struct 1; 1e-8 mark')
+title('Structure noise '+title_detail+':\nReference energy: max n on struct 1; 1e-8 mark')
 xlim((0,55))
 #ylim((1e-12,1e0))
 for i,structi in enumerate(structselect):  

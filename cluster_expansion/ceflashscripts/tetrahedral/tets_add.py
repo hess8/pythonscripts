@@ -1,8 +1,6 @@
-
 #!/usr/bin/python
 '''    
 '''
-
 import sys,os,subprocess
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/') 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
@@ -34,7 +32,6 @@ class tetrahedrons:
         self.vecs = delete(self.vecs,it,2)
         self.idk = delete(self.idk,it,1)
         self.vol = delete(self.vol,it)
-        print 'remove', it, self.vwgt[it]
         self.vwgt = delete(self.vwgt,it)
     
     def add(self,tet1):
@@ -95,6 +92,7 @@ class kpoints:
         self.idt = []#connection table to tetrahedra it is a corner to.  Each k is part of 4 tets, 
         self.ener = [] 
         self.degen = []
+        self.twgt = [] #weight derived from tetrahedra volume weight, not from symmetry ops on kpoints
         
     def add(self,kpt1):
         self.nk += 1
@@ -125,19 +123,34 @@ class kpoints:
             for it in range(tet.ntet):
                 if ik in tet.idk[:,it]: 
                     self.idt[idcount[ik],ik] = it
-                    idcount[ik] += 1    
+                    idcount[ik] += 1   
+    def twgt2kwgt(self,tet):
+        self.twgt = zeros(self.nk,dtype=float)
+        for ik in range(self.nk):
+            for it in range(tet.ntet):
+                for ic in range(4):
+                    if ik == tet.idk[ic,it]: 
+                        self.twgt[ik] += tet.vwgt[it]/4.0
+        for ik in range(self.nk):
+            if mod(self.twgt[ik],1) == 0.5:
+                self.twgt = self.twgt * 2.0 #so we have integers
+                break
+        print 'Unscaled k point weights from tets'
+        for ik in range(self.nk): print ik, self.twgt[ik]
+        print 'Total weight',sum(self.twgt)
                               
 class write_vasp:
     def __init__(self):
         ''''''
     def kpfile(self,tet,kp,dir):
+        print 'Writing KPOINTS to dir %s' % dir
         f = open(dir+'KPOINTS','w')
         f.write('BCH generated from tets_add.py\n')        
         f.write(str(kp.nk)+'\n')
         f.write('Reciprocal\n')
         for ik in range(kp.nk):
-            f.write('%16.12f %16.12f %16.12f    1.0\n' % (kp.vecs[0,ik],kp.vecs[1,ik],kp.vecs[2,ik]) )      
-        f.write('Tetrahedrac\n')
+            f.write('%16.12f %16.12f %16.12f %16.12f\n' % (kp.vecs[0,ik],kp.vecs[1,ik],kp.vecs[2,ik],1.0))  #kp.twgt[ik]) )      
+        f.write('Tetrahedra\n')
         f.write('%i       %16.12f\n' % (tet.ntet,tet.volscale))
         for it in range(tet.ntet):
             f.write('%f   %i    %i   %i   %i\n'  % (tet.vwgt[it],tet.idk[0,it]+1,tet.idk[1,it]+1,tet.idk[2,it]+1,tet.idk[3,it]+1))
@@ -181,28 +194,88 @@ def add_tets(tet,kp):
                 newk.idt[j] = tet.ntet+j
             else:
                 newk.idt[j] = -1
-        kp.add(newk)    
-                                              
+        kp.add(newk)
+ 
+class query:
+    def __init__(self):
+        ''''''         
+    def sum_fermi(self,tet,kp):
+        eps = 1e-6 
+        sumfwgt = 0.0
+        sumpartial = 0.0
+        sumfilled = 0.0
+        for it in range(tet.ntet):
+            for ib in range(kp.nbands):
+                sumfwgt += tet.fwgt[it,ib]
+                if tet.fwgt[it,ib]>eps and abs(tet.fwgt[it,ib] - tet.fwgt[it,0])>eps:
+    #                print it,ib,tet.fwgt[it,ib]
+                    sumpartial += tet.fwgt[it,ib]
+                else:
+                    sumfilled  += tet.fwgt[it,ib]            
+    
+        print 'fermi weight of partial tets', sumpartial
+        print 'fermi weight of filled tets', sumfilled
+        print 'total fermi weight', sumfwgt   
+        return sumfwgt
+    
+    def tetwgt(self,tet,kp):
+        ''' '''
+        print 'Tet, band, weight' 
+        for it in range(tet.ntet):
+           print [it,[tet.fwgt[it,ib]  for ib in range(kp.nbands)]]
+
+    def ener(self,kp):
+        ''' '''
+        print 'Kpt, band, ev' 
+        for ik in range(kp.nk):
+           print [ik,[kp.ener[ik,ib]  for ib in range(kp.nbands)]]
+           
+#    def ebands(self,tet,kp):
+#        ''''''
+#        etot = 0.0
+#        for it in range(tet.ntet):
+#            for ib in range(kp.nbands):
+#                for ic in range(4):
+#                    etot += tet.fwgt[it,ib]
+            
+            
+#    
+#    def tetwgt2kpwgt(self,tet,kp):
+#        kw = zeros(kp.nk,dtype=float)
+#        for ik in range(kp.nk):
+#            for it in range(tet.ntet):
+#                for ic in range(4):
+#                    if ik == tet.idk[ic,it]: 
+#                        kw[ik] += tet.vwgt[it]/4.0
+#        print 'Unscaled k point weights from tets'
+#        for ik in range(kp.nk): print ik, kw[ik]
+#        print 'Total weight',sum(kw)
+#                                     
+                                                  
 ################# script #######################
-maindir = '/fslhome/bch/cluster_expansion/alal/test/f1_2/'
+#maindir = '/fslhome/bch/cluster_expansion/alal/test/f1_2/'
+maindir = '/fslhome/bch/cluster_expansion/alal/test/f1_4/'
 tet = tetrahedrons()
 kp = kpoints()
 wrtvasp = write_vasp()
+q = query()
 
 set_printoptions(precision=12)
 os.chdir(maindir)
 dir = '1init/'
 tet.get_tetweights(dir)
-print 'tet fermi weights'
-print tet.ntet,tet.fwgt
+
 kp.get_eigen(dir)
-print 'Energies'
-print kp.ener
+q.ener(kp)
 tet.get_tetvecs(dir)
+#q.tetwgt(tet,kp) #prints
+
+#print 'tet8', sum(tet.fwgt[8,:]);tet8=sum(tet.fwgt[8,:])
 print 'tet vecs'
 print tet.vecs
 tet.rd_ibzkpt(dir)
 print 'tet ids to kpoints'
+kp.twgt2kwgt(tet) #kpweights from tetweights
 print tet.idk
 print 'tet volume weights'
 print tet.vwgt
@@ -217,7 +290,11 @@ kp.make_ids(tet)
 print 'kpoint connection to tets'
 print kp.idt
 
+sumfwgt1 = q.sum_fermi(tet,kp)
 add_tets(tet,kp)
+
+sumfwgt2 = q.sum_fermi(tet,kp)
+kp.twgt2kwgt(tet) #kpweights from tetweights
 #print 'tet weights'
 #print tet.ntet,tet.fwgt
 #print 'Energies'
@@ -241,30 +318,36 @@ add_tets(tet,kp)
 
 #### VASP run with added k's
 dir = '2addk/'
-print 'Writing KPOINTS to dir 2addk'
+wrtvasp.kpfile(tet,kp,dir)  
 #run vasp !!
 
 print 'Get new eigenvals, weights, but not vecs'
 tet.get_tetweights(dir)
 
-print 'tet fermi weights'
-print tet.ntet,tet.fwgt
+kp.twgt2kwgt(tet) #kpweights from tetweights
 kp.get_eigen(dir)
-print 'Energies'
-print kp.ener
+q.ener(kp)
 
-### Add more kpoints
-#weights are getting below integers:
+sumfwgt3 = q.sum_fermi(tet,kp)
 
+
+#print 'tet 8old', tet8
+#print 'tet 26-29' ,sum(tet.fwgt[26:30,:])
+#print sumfwgt3
+if abs(sumfwgt3-sumfwgt1)>1e-7: print '  SOMEHOW LOSING FERMI WEIGHT IN VASP!'    
+
+#### Add more kpoints
+##weights are getting below integers:
+#
 add_tets(tet,kp)
 tet.volscale = tet.volscale/4.0
 tet.vwgt = tet.vwgt*4.0
-
-#### VASP run with added k's
+#
+##### VASP run with added k's
 dir = '3addk/'
-print 'Writing KPOINTS to dir 3addk'
 wrtvasp.kpfile(tet,kp,dir)   
 
- 
+
+
 print 'Done'
 
