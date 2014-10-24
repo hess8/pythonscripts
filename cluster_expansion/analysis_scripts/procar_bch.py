@@ -33,7 +33,7 @@ class procar:
     def incar(self,dir):
         lines = nstrip(readfile(dir+'INCAR'))
         for line in lines:
-            if ('ISPIN' in line) or ('ispin' in line): self.spin = line.split('=')[1]
+            if ('ISPIN' in line) or ('ispin' in line): self.spin = int(line.split('=')[1])
             if ('LORBIT' in line) or ('lorbit' in line): 
                 lorbit = int(line.split('=')[1])
                 if lorbit in [0,10]: #no lm decomposition
@@ -53,13 +53,14 @@ class procar:
 #        self.kvecs = zeros((3,self.nk),dtype = float)
         self.kweights = zeros((self.nk),dtype = float)
         self.ener = zeros((self.nk, self.nbands),dtype = float) 
-        print self.nk,self.nbands,len(self.orbs),self.spin      
+#        print self.nk+self.nbands+len(self.orbs)+self.spin    
+#        self.weights = zeros((34,80,3,2),dtype = float)
         self.weights = zeros((self.nk,self.nbands,len(self.orbs),self.spin),dtype = float)
         
         #read weights
         #last is number of blank or labeling lines in eigenvalue info set
         ipos = 1
-        for ispin in range(spin):
+        for ispin in range(self.spin):
             ipos += 2; print 'ipos for spin %i:  %i' % (ispin,ipos)
             for ik in range(self.nk):
                 self.kvecs[:,ik] = lines[ipos].split()[3:6]
