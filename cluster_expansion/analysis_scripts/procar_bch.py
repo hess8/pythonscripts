@@ -50,34 +50,33 @@ class procar:
         self.nbands = int(lines[1].split(':')[2].split()[0])
         self.nions = int(lines[1].split(':')[3])
         #initialize
-#        self.kvecs = zeros((3,self.nk),dtype = float)
+        self.kvecs = zeros((3,self.nk),dtype = float)
         self.kweights = zeros((self.nk),dtype = float)
         self.ener = zeros((self.nk, self.nbands),dtype = float) 
-#        print self.nk+self.nbands+len(self.orbs)+self.spin    
-#        self.weights = zeros((34,80,3,2),dtype = float)
+        self.occ = zeros((self.nk, self.nbands),dtype = float) 
         self.weights = zeros((self.nk,self.nbands,len(self.orbs),self.spin),dtype = float)
         
         #read weights
-        #last is number of blank or labeling lines in eigenvalue info set
-        ipos = 1
+        ipos = 2
         for ispin in range(self.spin):
-            ipos += 2; print 'ipos for spin %i:  %i' % (ispin,ipos)
+            ipos += 1; # print 'ipos for spin %i:  %i' % (ispin,ipos)
             for ik in range(self.nk):
                 self.kvecs[:,ik] = lines[ipos].split()[3:6]
-                self.weights[ik] = float(lines[ipos].split()[11])
+                self.kweights[ik] = float(lines[ipos].split()[8])
                 ipos += 2
                 for ib in range(self.nbands):
                     self.ener[ik,ib] = float(lines[ipos].split()[4])
                     self.occ[ik,ib] = float(lines[ipos].split()[7])
-                    ipos += 2
+                    ipos += 3
                     for i in range(self.nions):
+                        print ipos
                         tempw = lines[ipos].split()[1:self.norbs+1]
-                        weights[ik,ib,:,ispin] = tempw
+                        print tempw
+                        self.weights[ik,ib,:,ispin] = tempw
                         ipos += 1
                     ipos += 2
-            
-                               
-                                                  
+                ipos += 1
+                                                                                             
 ################# script #######################
 #maindir = '/fslhome/bch/cluster_expansion/alal/test/f1_2/'
 maindir = '/fslhome/bch/cluster_expansion/graphene/analysis/1220/DOS/'
