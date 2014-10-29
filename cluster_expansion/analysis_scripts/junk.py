@@ -29,7 +29,8 @@ from plotTools import plotxy,vasputil_dosplot
 maindir = '/fslhome/bch/trash/'
 os.chdir(maindir)
 
-for file in ['8x8_DOSCAR_Struct_105', '16x16_DOSCAR_Struct_105','32x32_DOSCAR_Struct_105']:
-    vasputil_dosplot([], [file], maindir) #options, args, dir
-    os.system('mv dos.png %s.png' % file)
-print 'done'
+ar = array([[1,2],[3,4]])
+s1 = slice(None,None)
+s2 = slice(1,3)
+print ar[s1,s2]
+print ar[:,1]
