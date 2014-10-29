@@ -452,7 +452,6 @@ def getEf(folder):
         proc = subprocess.Popen(['grep','-i','E-fermi','OUTCAR'],stdout=subprocess.PIPE)
         newstring = proc.communicate()
         ef = newstring[0].split()[2]
-        print folder, ef
     except:
         ef = str(0.00)
     os.chdir(lastdir)

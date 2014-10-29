@@ -8,9 +8,7 @@ from numpy import zeros,transpose,array,sum,float64,rint,mean,set_printoptions,s
     delete,append,cross,dot,nditer,exp
 from numpy.linalg import norm
 #from numpy.ndarray import flatten
-from analysisToolsVasp import writeEnergiesOszicar, writedirnames, nstrip, writeNk, writeNkIBZ, \
-  writeElConverge, writeElSteps, writeCPUtime, enerparts, getdata, readfile, writefile, \
-  getms, writefermi, removezeros
+from analysisToolsVasp import nstrip, getEf, readfile
 
 from plotTools import plotxy
 from pylab import *
@@ -86,8 +84,8 @@ class dos:
     def __init__(self):     
         ''' Creates a density of states plot from procar data '''
         self.title = []
-        self.xlabel = 'Energy (eV)'
-        self.ylabel = 'Density of states'
+        self.xlabel = '$E-E_F$ (eV)'
+        self.ylabel = 'Density of states (arb. units)'
         self.legend = []
         self.colors = []
         self.fig = []
@@ -101,31 +99,24 @@ class dos:
         title(title1)
         xlabel(self.xlabel)
         ylabel(self.ylabel)  
-        plt.legend(loc='upper right',prop={'size':6}); 
+#        legend(loc='upper right',prop={'size':6}); 
 #        for i in range(N):
 #            ax1.loglog(NkfullBZ, deviations[:,i],label=enerlabels[i],linestyle='None',color=cm.jet(1.*(i+1)/N), marker = 'o') # marker = 'o',
-
     
-    def plotline(self,procar,pr_slice):
+    def plotline(self,procar,pr_slice,Ef,leg_in):
         '''Adds a line to a plot'''
-        dE = 0.01 #plot resolution (bin width in eV
+        dE = 0.03 #plot resolution (bin width in eV
         ngauss = 10 #gaussian width is 2ngauss+1 plot bins
-#        gauss_dE = 0.005 #width of each gaussian resolution
-        emin = amin(procar.ener.flatten()) 
-        emax = amax(procar.ener.flatten()) 
-        print emin, emax
+        eshifted = procar.ener - Ef
+        emin = amin(eshifted.flatten()) 
+        emax = amax(eshifted.flatten()) 
         nE = int(ceil((emax - emin)/dE)) + 1 + 2*ngauss
         d_arr = zeros(nE,dtype = float)
         e_arr = zeros(nE,dtype = float)
         e_arr = [emin-ngauss*dE + i*dE for i in range(nE)]
-        gaussw = array([exp(-(float(i)/float(ngauss/2))**2) for i in range(-ngauss,ngauss+1)])
-        
-        for i in range(-ngauss,ngauss+1): print i, exp(-(float(i)/float(ngauss/2))**2)
-        
+        gaussw = array([exp(-(float(i)/float(ngauss/2))**2) for i in range(-ngauss,ngauss+1)])       
         gaussw = gaussw/sum(gaussw) #normalized to 1
-        print gaussw
         sum1 = 0.0
-#        print self.sliceparse(pr_slice.ions, procar.nions)
         for ispin in self.sliceparse(pr_slice.spin,procar.nspin):
             for ik in self.sliceparse(pr_slice.ks,procar.nk):
                 kw = procar.kweights[ik]
@@ -134,24 +125,15 @@ class dos:
                     occ = procar.occ[ik,ib,ispin]
                     for ii in self.sliceparse(pr_slice.ions, procar.nions):
                         for io in self.sliceparse(pr_slice.orbs,procar.norbs):                     
-#                            print procar.weights[ik,ib,ii,io,ispin],kw,occ  
                             wener += procar.weights[ik,ib,ii,io,ispin]   
                             sum1 += procar.weights[ik,ib,ii,io,ispin]        
-                    wener = wener * kw * occ
+                    wener = wener * kw #* occ  #leave off occ if you want empty states
                     if wener > 0.0:
-                        ie = self.iener(procar.ener[ik,ib,ispin],emin,ngauss,dE)
-                        d_arr[ie-ngauss:ie+ngauss+1] += wener*gaussw
-                        
-#                    print procar.ener[ik,ib,ispin], self.iener(procar.ener[ik,ib,ispin],emin,ngauss,dE),wener
-                            
+                        ie = self.iener(eshifted[ik,ib,ispin],emin,ngauss,dE)
+                        d_arr[ie-ngauss:ie+ngauss+1] += wener*gaussw                      
         print 'total weight', sum1
-        print 'nE',nE
-                            
-                        
-                                                
-        
-        plot(e_arr,d_arr)
-    
+        plot(e_arr,d_arr,label=leg_in)
+       
     def iener(self,e,emin,ngauss,dE):
         '''Gives closest index in e_array for a particular energy.  emin maps onto position ngauss'''
         return int(ceil((e-emin)/dE ))+ ngauss
@@ -182,7 +164,8 @@ class dos:
 #            return slice(None,None)
 #        else: 
 #            return slice(int(slicetxt), int(slicetxt)+1)   
-    def plotend(self,file):        
+    def plotend(self,file):    
+        legend()#loc='upper right'),#prop={'size':6});     
         show()
         self.fig.savefig(file)
         close 
@@ -198,17 +181,25 @@ class pr_slice():
 ################# script #######################
 #maindir = '/fslhome/bch/cluster_expansion/alal/test/f1_2/'
 #maindir = '/fslhome/bch/cluster_expansion/graphene/analysis/1220/DOS/'
-maindir = '/fslhome/bch/cluster_expansion/graphene/analysis/1220/DOSlorbit11/'
+maindir = '/fslhome/bch/cluster_expansion/graphene/analysis/1220/DOSlorbit11x30/'
+#maindir = '/fslhome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_W/ISIF_4/IBRION_2/ISPIN_2/dos/'
 os.chdir(maindir)
+Ef = float(getEf(maindir))
 pcr = procar();dos = dos();pr_slice = pr_slice()
 pcr.incar(maindir)
 pcr.read(maindir+'PROCAR')
 
 #DOS
 dos.plotinit('W Structure 1220')
-#pr_slice.ions = ['1','5:']
-dos.plotline(pcr,pr_slice)
+pr_slice.ions = ['1-12']
+dos.plotline(pcr,pr_slice,Ef,'C atoms')
+pr_slice.ions = ['13-16']
+dos.plotline(pcr,pr_slice,Ef,'H atoms')
+pr_slice.ions = ['17:']
+dos.plotline(pcr,pr_slice,Ef,'W atoms')
+pr_slice.ions = ['all']
+dos.plotline(pcr,pr_slice,Ef,'Total')
+
 dos.plotend('DOSall')            
 
 print 'Done'
-
