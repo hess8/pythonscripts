@@ -95,7 +95,7 @@ class dos:
         self.fig = figure()
         #rcParams['axes.color_cycle']=['r','g']
         self.ax1 = self.fig.add_subplot(111)
-        self.ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
+        self.ax1.set_color_cycle(['r','b','g', 'k','c', 'm', 'y'])
         title(title1)
         xlabel(self.xlabel)
         ylabel(self.ylabel)  
@@ -190,16 +190,27 @@ pcr.incar(maindir)
 pcr.read(maindir+'PROCAR')
 
 #DOS
-dos.plotinit('W Structure 1220')
-pr_slice.ions = ['1-12']
-dos.plotline(pcr,pr_slice,Ef,'C atoms')
-pr_slice.ions = ['13-16']
-dos.plotline(pcr,pr_slice,Ef,'H atoms')
-pr_slice.ions = ['17:']
-dos.plotline(pcr,pr_slice,Ef,'W atoms')
-pr_slice.ions = ['all']
-dos.plotline(pcr,pr_slice,Ef,'Total')
+#dos.plotinit('W Structure 1220')
+#pr_slice.ions = ['1-12']
+#dos.plotline(pcr,pr_slice,Ef,'C atoms')
+#pr_slice.ions = ['13-16']
+#dos.plotline(pcr,pr_slice,Ef,'H atoms')
+#pr_slice.ions = ['17:']
+#dos.plotline(pcr,pr_slice,Ef,'W atoms')
+#pr_slice.ions = ['all']
+#dos.plotline(pcr,pr_slice,Ef,'Total')
 
-dos.plotend('DOSall')            
+dos.plotinit('W Structure 1220')
+pr_slice.ions = ['17:']
+pr_slice.orbs = ['1']
+dos.plotline(pcr,pr_slice,Ef,'S of W')
+pr_slice.orbs = ['2-4']
+dos.plotline(pcr,pr_slice,Ef,'P of W')
+pr_slice.orbs = ['5-9']
+dos.plotline(pcr,pr_slice,Ef,'D of W')
+pr_slice.orbs = ['all']
+dos.plotline(pcr,pr_slice,Ef,'Total W')
+
+dos.plotend('DOS_W_orbs')            
 
 print 'Done'

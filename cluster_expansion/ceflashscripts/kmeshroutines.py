@@ -603,7 +603,7 @@ def checkq(user):
         subprocess.check_output = f
     ####### above needed for python versions lower than 2.7.
 ################# script #######################
-    maxDays = 4 #days to run this script
+    maxDays = 30 #days to run this script
     waitMin = 0.2 #minutes between checking         
     #os.system('rm slurm-*.out') 
     starttime = time.time()    
@@ -613,7 +613,8 @@ def checkq(user):
     #    pending = subprocess.check_output(['squeue','-u',user,'-n',jobname,'--state=PENDING'])
     #    running = subprocess.check_output(['squeue','-u',user,'-n',jobname,'--state=RUNNING'])
     #    locked = subprocess.check_output(['find','-name','LOCK','|','wc','-l']) #gives error
-        print pending
+        #print pending
+        print running
         pending = pending.splitlines()
         running = running.splitlines() 
         print 'Jobs that are pending: ',len(pending)-1 #one line is header     

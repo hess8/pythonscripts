@@ -59,7 +59,7 @@ class RunVasp:
                                              'normal/POSCAR','normal/POTCAR','normal/REPORT',
                                              'normal/vasprun.xml','normal/XDATCAR','DOS'])
                             self.makeDOS_INCAR()
-                            self.makeDOSJobFile()
+                            self.makeDOSJobFile(self.atomList[i]+structure) #bch 
                             subprocess.call(['cp','DOS/CONTCAR','DOS/POSCAR'])
                             os.chdir(elementDir)
             else:
@@ -129,6 +129,7 @@ class RunVasp:
             incar.write("SIGMA=0.1\n")
             incar.write("LWAVE=.TRUE.\n")
             incar.write("LCHARG=.TRUE.\n")
+            incar.write("NPAR = 4\n") 
     
             incar.close()
 
@@ -150,14 +151,14 @@ class RunVasp:
         incar.write("SIGMA=0.1\n")
         incar.write("LWAVE=.TRUE.\n")
         incar.write("LCHARG=.TRUE.\n")
-    
+        incar.write("NPAR = 4\n")    
         incar.close()
 
     def makeDOS_INCAR(self):
         """ Creates an INCAR file for the Density of States run in VASP.  The notable changes are:
                 IBRION=-1 -- This tells VASP not to move the ions.
                 NSW=0     -- This tells VASP that there will be no ionic relaxation steps.
-                LORBIT=10 -- This creates the PROCAR file which can be used to project onto the C, H, and M atoms. """
+                LORBIT=11 -- This creates the PROCAR file which can be used to project onto the C, H, and M atoms. """
                 
         incar = open('DOS/INCAR','w')
         
@@ -171,11 +172,11 @@ class RunVasp:
         incar.write("ISMEAR=0\n")
         incar.write("ISPIN=2\n")
         incar.write("LREAL=Auto\n")
-        incar.write("LORBIT=10\n")
+        incar.write("LORBIT=11\n")
         incar.write("SIGMA=0.1\n")
         incar.write("LWAVE=.TRUE.\n")
         incar.write("LCHARG=.TRUE.\n")
-    
+        incar.write("NPAR = 4\n")    
         incar.close()
         
     def makeKPOINTS(self, num1, num2):
@@ -282,34 +283,53 @@ class RunVasp:
                 
                 CHPotcar.close()
                                             
-    def makeJobFiles(self):
+    def makeJobFiles(self):#bch name
         """ Creates a standard job file for submitting a VASP job on the supercomputer. """
     
         dirList = self.atomList
         
         for direc in dirList:
+            name = direc #bch (which atom)
             jobFile = open(direc + '/job','w')
     
             jobFile.write("#!/bin/bash\n\n")
-            jobFile.write("#SBATCH --time=01:00:00\n")
+            jobFile.write("#SBATCH --time=00:30:00\n")
             jobFile.write("#SBATCH --ntasks=16\n")
             jobFile.write("#SBATCH --mem-per-cpu=1024M\n")
-            jobFile.write("#SBATCH --mail-user=erandemswens@gmail.com\n")
+            jobFile.write("#SBATCH --mail-user=hess.byu@gmail.com\n")              
             jobFile.write("#SBATCH --mail-type=FAIL\n")
+            jobFile.write("#SBATCH --mail-type=END\n") 
+            jobFile.write("#SBATCH --job-name=%s\n" % name) #bch                      
             jobFile.write("\nmpiexec vasp533 > vasp.out\n")
     
             jobFile.close()
     
-    def makeDOSJobFile(self):
+    def addStructName(self,nameadd):
+        print os.getcwd()
+        jobfile = open('job','r')
+        lines = jobfile.readlines()
+        print lines
+        jobfile.close()
+        jobfile = open('job','w')
+        for line in lines:
+            if 'job-name' in line: 
+                jobfile.write(line.strip('\n') + '_'+ nameadd + '\n')
+            else:
+                jobfile.write(line)
+        jobfile.close()      
+        
+    def makeDOSJobFile(self,name):#bch name
         
         jobFile = open('DOS/job','w')
         
         jobFile.write("#!/bin/bash\n\n")
-        jobFile.write("#SBATCH --time=01:00:00\n")
+        jobFile.write("#SBATCH --time=0:30:00\n")
         jobFile.write("#SBATCH --ntasks=16\n")
         jobFile.write("#SBATCH --mem-per-cpu=1024M\n")
-        jobFile.write("#SBATCH --mail-user=erandemswens@gmail.com\n")
+        jobFile.write("#SBATCH --mail-user=hess.byu@gmail.com\n")
         jobFile.write("#SBATCH --mail-type=FAIL\n")
+        jobFile.write("#SBATCH --mail-type=END\n")  
+        jobFile.write("#SBATCH --job-name=%s\n" % name)
         jobFile.write("\nmpiexec vasp533 > vasp.out\n")
     
         jobFile.close()
@@ -338,8 +358,7 @@ class RunVasp:
             
             for structure in structures:
                 structureDir = os.path.abspath(structure)
-                subprocess.call(['cp', 'KPOINTS', 'INCAR', 'job', 'vasp533', structureDir])
-                
+                subprocess.call(['cp', 'KPOINTS', 'INCAR', 'job', 'vasp533', structureDir]) # bch
                 poscar = open(structureDir + '/POSCAR','r')
                 poscarLines = [line.strip() for line in poscar]
                 poscar.close()
@@ -370,7 +389,10 @@ class RunVasp:
                     structures.append(item)
             
             for structure in structures:
+#                if not(self.finishCheck(structure) and self.convergeCheck(structure, 2)): #finaldir
+                    #bch put this case here to not run finished jobs
                 os.chdir(structure)
+                self.addStructName(structure) #bch adds structure to name
                 proc = subprocess.Popen(['sbatch','job'], stdout=subprocess.PIPE)
                 jobid = proc.communicate()[0].split()[3]
                 subprocess.call(['echo', 'Submitted job ' + jobid])
@@ -445,8 +467,8 @@ class RunVasp:
         self.makeLowINCARs()
         self.makePurePOTCARs()
         self.makePOTCARs()
-        self.makeKPOINTS(8, 8)
-        self.makeJobFiles()
+        self.makeKPOINTS(6, 6) #bch changed from 8 8
+        self.makeJobFiles() 
         self.copyVaspExec()
         
         self.fillDirectories(structList)

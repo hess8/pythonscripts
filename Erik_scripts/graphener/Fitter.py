@@ -31,7 +31,7 @@ class Fitter:
             subprocess.call(['cp',self.enumFolder + 'lat.in', fitsDir])
             subprocess.call(['cp',self.enumFolder + 'clusters.out', fitsDir])
             subprocess.call(['cp',atomDir + '/structures.in', fitsDir])
-            subprocess.call(['cp',atomDir + '/structures.holdout', fitsDir])
+            subprocess.call(['cp',self.neededFilesDir + '/structures.holdout', fitsDir]) #bch cp from neededfiles
             
             infile = open(self.neededFilesDir + 'CS.in','r')
             inlines = [line for line in infile]

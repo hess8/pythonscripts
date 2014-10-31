@@ -42,7 +42,7 @@ class JobManager:
                 for structure in structList[i]:
                     structureDir = atomDir + '/' + structure
                     if os.path.isdir(structureDir):
-                        if self.FinishCheck(structureDir) and self.convergeCheck(structureDir, 400):
+                        if self.FinishCheck(structureDir) and self.convergeCheck(structureDir, self.getNSW()):#bch was 400
                             total += 1
                             converged += 1
                         else:
@@ -67,6 +67,10 @@ class JobManager:
         os.chdir(lastfolder)   
          
         return newstring[0].find('Voluntary') > -1 #True/False
+    
+    def getNSW(self): #bch
+        proc = subprocess.Popen(['grep','-i','NSW','INCAR'],stdout=subprocess.PIPE) 
+        return int(proc.communicate()[0].split('=')[-1])         
 
     def convergeCheck(self, folder, NSW):
         """Tests whether force convergence is done by whether the last line of Oszicar is less than NSW."""
@@ -74,7 +78,7 @@ class JobManager:
             value = self.getSteps(folder)
             return value < NSW #True/False
         except:
-            return False #True/False
+            return False  
 
     def getSteps(self, folder):
         '''number of steps in relaxation, as an integer'''
@@ -104,8 +108,8 @@ class JobManager:
                     structDir = atomDir + '/' + struct
                     if os.path.isdir(structDir):
                         normalDir = structDir + '/normal'
-                        if os.path.isdir(normalDir):
-                            if self.FinishCheck(normalDir) and self.convergeCheck(normalDir, 400):
+                        if os.path.isdir(normalDir):                                          
+                            if self.FinishCheck(normalDir) and self.convergeCheck(normalDir, self.getNSW()):
                                 total += 1
                                 converged += 1
                             else:
@@ -128,8 +132,8 @@ class JobManager:
                     structDir = atomDir + '/' + struct
                     if os.path.isdir(structDir):
                         dosDir = structDir + '/DOS'
-                        if os.path.isdir(dosDir):
-                            if self.FinishCheck(dosDir) and self.convergeCheck(dosDir, 2):
+                        if os.path.isdir(dosDir):     
+                            if self.FinishCheck(dosDir) and self.convergeCheck(dosDir, self.getNSW()):  #bch nsw vs 2
                                 total += 1
                                 converged += 1
                             else:
@@ -154,7 +158,7 @@ class JobManager:
         start_time = time.time()
         event_time = start_time
         while not finished:
-            event_time += 600
+            event_time += 60 #bch
             s.enterabs(event_time, 1, self.reportFinshed, ([self.vaspRunner.getCurrentJobIds()]))
             s.run()
             finished = self.reportFinshed(self.vaspRunner.getCurrentJobIds())

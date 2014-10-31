@@ -1,8 +1,8 @@
-ATOMS: W Re  # Metal atoms to combine with C and H
-VOL_RANGE: 1 7  # Start and end cell sizes.
+ATOMS: Li  # Metal atoms to combine with C and H
+VOL_RANGE: 1 8  # Start and end cell sizes.
 CLUSTER_NUMS: 100 200 0 0 0 0 0 0 0 0  # Pairs, triplets, 4-bodies, etc.
-TRAINING_STRUCTS: 250  # Number of structures to extract from the enumeration
-FITTING_STRUCTS: 100  # Number of structures going in the structures.in file
+TRAINING_STRUCTS: 25  # Number of structures to extract from the enumeration
+FITTING_STRUCTS: 10  # Number of structures going in the structures.in file
 STRUCT_SUBSETS: 3  # Number of sets of size FITTING_STRUCTS to perform fits with.
 PLOT_TITLE: 'GSS Plot'  # Title of gss plots
 XLAB:  'Concentration (H / H + M)' # x-label of gss plots

@@ -52,6 +52,7 @@ class MakeUncleFiles:
         self.atomCounts = []
         
         self.energy = 0.0
+        self.finaldir = '' #bch
     
     def initialize(self):
         self.infile = None
@@ -104,7 +105,12 @@ class MakeUncleFiles:
             value = self.getSteps(folder)
             return value < NSW #True/False
         except:
-            return False #True/False
+            return False  
+
+    def getNSW(self): #bch
+        proc = subprocess.Popen(['grep','-i','NSW','INCAR'],stdout=subprocess.PIPE) 
+        return int(proc.communicate()[0].split('=')[-1])   
+
 
     def getSteps(self, folder):
         '''number of steps in relaxation, as an integer'''
@@ -131,8 +137,9 @@ class MakeUncleFiles:
         self.structList = []
         
         lastDir = os.getcwd()
-        
+        print os.getcwd() #bch
         for atom in self.atoms:
+            print atom #bch
             atomDir = lastDir + '/' + atom
             os.chdir(atomDir)
             pureHdir = os.getcwd() + '/1'
@@ -152,11 +159,13 @@ class MakeUncleFiles:
                         
             dirList = os.listdir(atomDir)
             for item in dirList:
+                print 'item',item #bch
                 fullPath = os.path.abspath(item)
+                print fullPath
                 if os.path.isdir(fullPath):
-                    if os.path.isdir(fullPath + '/DOS'):
-                        if self.FinishCheck(fullPath + '/DOS') and self.convergeCheck(fullPath + '/DOS', 2):
-                        
+                    if os.path.isdir(fullPath + self.finaldir): #bch finaldir indtead of '/DOS'
+                        print self.FinishCheck(fullPath + self.finaldir) , self.convergeCheck(fullPath + self.finaldir, self.getNSW()) #BCH nsw
+                        if self.FinishCheck(fullPath + self.finaldir) and self.convergeCheck(fullPath + self.finaldir, self.getNSW()): #finaldir
                             # Check for concentration
                             self.setAtomCounts(fullPath)
                         
@@ -288,7 +297,7 @@ class MakeUncleFiles:
     def closeOutFiles(self):
         """ Closes both the structures.in and structures.holdout files. """
         self.infile.close()
-        self.holdoutFile.close()
+#        self.holdoutFile.close()
 
     def setIDString(self, poscarDir):
         """ Sets the first written line of each structure to the form:
@@ -359,7 +368,7 @@ class MakeUncleFiles:
     def writeHeader(self):
         """ Writes the headers of the structures.in and structures.holdout files. """
         self.infile.write(self.header)
-        self.holdoutFile.write(self.header)
+#        self.holdoutFile.write(self.header)
     
     def writeDashedLine(self):
         """ Writes a dashed line in the structures.in/.holdout files as a separator between
@@ -410,12 +419,12 @@ class MakeUncleFiles:
         """ Calls all the methods needed to write all the needed information about the current
             structure to the structures.in or structures.holdout files.  Puts a maximum of 10%
             of the structures in the structures.holdout file. """
-        if self.holdoutCount / float(len(self.structList[atomInd])) < .10 and random() < .15:
-            self.outfile = self.holdoutFile
-            self.holdoutCount += 1
-        else:
-            self.outfile = self.infile
-            self.inCount += 1
+#        if self.holdoutCount / float(len(self.structList[atomInd])) < .10 and random() < .15:
+#            self.outfile = self.holdoutFile
+#            self.holdoutCount += 1
+#        else:
+        self.outfile = self.infile #bch removed holdout info
+        self.inCount += 1
         
         #self.outfile = self.infile
         self.setIDString(poscarDir)
@@ -441,6 +450,7 @@ class MakeUncleFiles:
             return 'in'
 
     def makeUncleFiles(self):
+        print 'in makeUncleFiles bch'
         self.setStructureList()
         
         for i in xrange(len(self.atoms)):
@@ -449,15 +459,16 @@ class MakeUncleFiles:
                 subprocess.call(['echo', '\nCreating structures.in and structures.holdout files for ' + self.atoms[i] + '\n'])
                 self.initialize()
                 self.infile = open(atomDir + '/structures.in','w')
-                self.holdoutFile = open(atomDir + '/structures.holdout','w')
+#                self.holdoutFile = open(atomDir + '/structures.holdout','w')
                 self.sortStructsByFormEnergy(i)
                 self.writeHeader()
                 
                 num = 0
                 structuresInCount = 0
+                print 'structlist bch', self.structList
                 for structure in self.structList[i]:
-                    if structuresInCount >= 500:    # Write a maximum of 500 structures to the file
-                        break                       # for any given atom.
+#                    if structuresInCount >= 500:    # Write a maximum of 500 structures to the file
+#                        break                       # for any given atom.
                     whichFile = self.writePOSCAR(structure, i)
                     if whichFile == 'in':
                         structuresInCount += 1

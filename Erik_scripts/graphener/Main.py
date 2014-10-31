@@ -11,11 +11,8 @@ from copy import deepcopy
 
 import Enumerator, Extractor, Structs2Poscar, JobManager, MakeUncleFiles, Fitter, GSS, Analyzer, DistanceInfo
 
-#currDir = \currDir = '/fslhome/bch/cluster_expansion/graphene/vacancy_hollow/
-
 def readSettingsFile():
     currDir = os.getcwd()
-#    currDir = '/fslhome/bch/cluster_expansion/graphene/vacancy_hollow/erikrun/'
     infile = open(currDir + '/needed_files/settings.in', 'r')
     inlines = []
     for line in infile:
@@ -143,12 +140,14 @@ if __name__ == '__main__':
      
         # Start VASP jobs and wait until they all complete or time out.
         manager = JobManager.JobManager(atomList)
-        manager.runLowJobs(toCalculate)
-        manager.runNormalJobs(toCalculate)
-        manager.runDOSJobs(toCalculate)
+        manager.runLowJobs(toCalculate) 
+        finaldir = '/'  #low precision only
+#        manager.runNormalJobs(toCalculate) #bch
+#        manager.runDOSJobs(toCalculate) #bch
     
         # Create structures.in and structures.holdout files for each atom.
         uncleFileMaker = MakeUncleFiles.MakeUncleFiles(atomList)
+        uncleFileMaker.finaldir = finaldir #bch
         uncleFileMaker.makeUncleFiles()
         
         # Get all the structs that have been through VASP calculations for each atom. These
