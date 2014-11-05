@@ -120,7 +120,7 @@ class RunVasp:
             incar.write("ISIF=4\n")
             incar.write("NSW=400\n")
             incar.write("Algo=VeryFast\n")
-            incar.write("PREC=Low\n")
+            incar.write("PREC=Normal\n") #BCH was LOW!
             incar.write("EDIFF=5E-4\n")
             incar.write("EDIFFG=5E-4\n")
             incar.write("ISMEAR=0\n")
@@ -130,7 +130,7 @@ class RunVasp:
             incar.write("LWAVE=.TRUE.\n")
             incar.write("LCHARG=.TRUE.\n")
             incar.write("NPAR = 4\n") 
-    
+            incar.write("BMIX = 0.3\n") #BCH 
             incar.close()
 
     def makeNormalINCAR(self):
@@ -151,7 +151,8 @@ class RunVasp:
         incar.write("SIGMA=0.1\n")
         incar.write("LWAVE=.TRUE.\n")
         incar.write("LCHARG=.TRUE.\n")
-        incar.write("NPAR = 4\n")    
+        incar.write("NPAR = 4\n")   
+        incar.write("BMIX = 0.3\n") #BCH          
         incar.close()
 
     def makeDOS_INCAR(self):
@@ -293,7 +294,7 @@ class RunVasp:
             jobFile = open(direc + '/job','w')
     
             jobFile.write("#!/bin/bash\n\n")
-            jobFile.write("#SBATCH --time=00:30:00\n")
+            jobFile.write("#SBATCH --time=06:00:00\n")
             jobFile.write("#SBATCH --ntasks=16\n")
             jobFile.write("#SBATCH --mem-per-cpu=1024M\n")
             jobFile.write("#SBATCH --mail-user=hess.byu@gmail.com\n")              
@@ -323,7 +324,7 @@ class RunVasp:
         jobFile = open('DOS/job','w')
         
         jobFile.write("#!/bin/bash\n\n")
-        jobFile.write("#SBATCH --time=0:30:00\n")
+        jobFile.write("#SBATCH --time=6:00:00\n")
         jobFile.write("#SBATCH --ntasks=16\n")
         jobFile.write("#SBATCH --mem-per-cpu=1024M\n")
         jobFile.write("#SBATCH --mail-user=hess.byu@gmail.com\n")

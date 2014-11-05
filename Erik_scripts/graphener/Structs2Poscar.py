@@ -44,8 +44,7 @@ class Structs2Poscar:
                 if self.contains(structNum, self.structList[i]):
                     structDir = os.getcwd() + '/' + self.atoms[i] + '/' + structNum
                     if os.path.isdir(structDir):
-                        ''
-#                        subprocess.call('rm -r ' + structDir + '/*', shell=True) #bch stop clearing files
+                        subprocess.call('rm -r ' + structDir + '/*', shell=True)  
                     else:
                         subprocess.call(['mkdir', structDir])                    
                     

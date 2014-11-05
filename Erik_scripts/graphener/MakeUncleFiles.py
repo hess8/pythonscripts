@@ -465,7 +465,6 @@ class MakeUncleFiles:
                 
                 num = 0
                 structuresInCount = 0
-                print 'structlist bch', self.structList
                 for structure in self.structList[i]:
 #                    if structuresInCount >= 500:    # Write a maximum of 500 structures to the file
 #                        break                       # for any given atom.
