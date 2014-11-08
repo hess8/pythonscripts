@@ -67,44 +67,28 @@ class PlotGraphene:
         
         # Extract the lattice vectors.
         if self.uncle:
-            # We first need to find where the "z-vector" is.  It will contain a '********' in the 
-            # first column.
-            vecInds = []
-            for i in [2,3,4]:
-                zvec = False
-                comps = poscarLines[i].strip().split()
-                for j in xrange(3):
-                    stringComp = comps[j]
-                    if list(stringComp)[0] == '*':
-                        zvec = True
-                
-                if not zvec:
-                    vecInds.append(i)
-                
             scrambledVec = []
-            scrambledVec = poscarLines[vecInds[0]].strip().split()
+            scrambledVec = poscarLines[2].strip().split()
             self.lattVec1 = [float(scrambledVec[1]), float(scrambledVec[2]), float(scrambledVec[0])]
             
-            scrambledVec = poscarLines[vecInds[1]].strip().split()
+            scrambledVec = poscarLines[3].strip().split()
             self.lattVec2 = [float(scrambledVec[1]), float(scrambledVec[2]), float(scrambledVec[0])]
         else:
-            # We first need to find where the "z-vector" is.  We will know it is the z-vector if
-            # its components are [0, 0, 15].  The Converter class makes this possible.
-            vecInds = []
-            for i in [2,3,4]:
-                zvec = False
-                comps = poscarLines[i].strip().split()
-                if float(comps[0]) == 0.0 and float(comps[1]) == 0.0 and float(comps[2]) == 15.0:
-                    zvec = True
-                
-                if not zvec:
-                    vecInds.append(i)
-
-            self.lattVec1 = poscarLines[vecInds[0]].strip().split()
+            self.lattVec1 = poscarLines[2].strip().split()
             self.lattVec1 = [float(comp) for comp in self.lattVec1]
             
-            self.lattVec2 = poscarLines[vecInds[1]].strip().split()
+            self.lattVec2 = poscarLines[3].strip().split()
             self.lattVec2 = [float(comp) for comp in self.lattVec2]
+            
+            if sum(self.lattVec1[:2]) == 0.0: 
+                self.lattVec1 = poscarLines[4].strip().split()
+                self.lattVec1 = [float(comp) for comp in self.lattVec1] 
+            if sum(self.lattVec2[:2]) == 0.0: 
+                self.lattVec2 = poscarLines[4].strip().split()
+                self.lattVec2 = [float(comp) for comp in self.lattVec2]      
+                
+            print'lv1',self.lattVec1  
+            print'lv2',self.lattVec2       
         
         # Get the number of each type of atom.
         if self.uncle:
@@ -126,24 +110,21 @@ class PlotGraphene:
             if self.uncle:
                 # If it is an UNCLE file, they don't explicitly state the C positions, so we run
                 # this twice.  Once for the C positions and once for the H and M positions.
-                self.getPositionsFromDirectCoordinates(positionLines, vecInds)
-                self.getPositionsFromDirectCoordinates(positionLines, vecInds)
+                self.getPositionsFromDirectCoordinates(positionLines)
+                self.getPositionsFromDirectCoordinates(positionLines)
             else:
                 self.getPositionsFromDirectCoordinates(positionLines)
         else:
             self.getPositionsFromCartesianCoordinates(positionLines)        
             
-    def getPositionsFromDirectCoordinates(self, positionLines, vecInds):
-        # Convert the vecInds to be zero-based.
-        vecInds = [ind - 2 for ind in vecInds]
-        
+    def getPositionsFromDirectCoordinates(self, positionLines):
         zcoord = 1.0
         for line in positionLines:
             position = line.strip().split()
             position = [float(comp) for comp in position]
             
-            comp1 = [position[vecInds[0]] * self.lattVec1[0], position[vecInds[0]] * self.lattVec1[1], position[vecInds[0]] * self.lattVec1[2]]
-            comp2 = [position[vecInds[1]] * self.lattVec2[0], position[vecInds[1]] * self.lattVec2[1], position[vecInds[1]] * self.lattVec2[2]]
+            comp1 = [position[0] * self.lattVec1[0], position[0] * self.lattVec1[1], position[0] * self.lattVec1[2]]
+            comp2 = [position[1] * self.lattVec2[0], position[1] * self.lattVec2[1], position[1] * self.lattVec2[2]]
             
             self.origXlist.append(float(comp1[0] + comp2[0]))
             self.xlist.append(float(comp1[0] + comp2[0]))
@@ -152,7 +133,6 @@ class PlotGraphene:
             self.origZlist.append(zcoord)
             self.zlist.append(zcoord)
             
-            # TODO:  Need to correct this buckling.
             if zcoord == 1.0:
                 zcoord = -1.0
             else:
@@ -172,6 +152,9 @@ class PlotGraphene:
         self.figure = plt.gcf()
         self.figure.gca().set_aspect('equal')
         plt.axis([0, 15, 0, 15])
+    
+    def getAtomCounts(self):
+        return self.atomCounts
        
     def periodicByVecs(self, vec1num, vec2num):
         
@@ -250,7 +233,7 @@ class PlotGraphene:
             slope2 = self.lattVec2[1] / self.lattVec2[0]
         
         xPoints = np.arange(-20, 20, .1)
-        
+        print'slope1, slope2', slope1, slope2
         for i in range(10):
             self.shiftLineByVec1(i, xPoints, slope2)
             self.shiftLineByVec1(-i, xPoints, slope2)
@@ -264,21 +247,21 @@ class PlotGraphene:
             plt.plot(((ntimes * self.lattVec1[0]), (ntimes * self.lattVec1[0])), (0, 15), color='k')
         else:
             plt.plot(xPoints, 
-                    (slope * xPoints) + (slope * (-ntimes * self.lattVec1[0])) + (ntimes * self.lattVec1[1]), color='k')
+                     (slope * xPoints) + (slope * (-ntimes * self.lattVec1[0])) + (ntimes * self.lattVec1[1]), color='k')
     
     def shiftLineByVec2(self, ntimes, xPoints, slope):
         if slope == 0:
             plt.plot(xPoints, (slope * xPoints) + (-ntimes * self.lattVec2[1]), color='k')
         elif slope == 'vertical':
-            plt.plot(((ntimes * self.lattVec2[0]), (ntimes * self.lattVec2[0])), (0, 15), color='k')
+            plt.plot(((ntimes * self.lattVec1[0]), (ntimes * self.lattVec2[0])), (0, 15), color='k')
         else:
             plt.plot(xPoints, 
                      (slope * xPoints) + (slope * (-ntimes * self.lattVec2[0])) + (ntimes * self.lattVec2[1]), color='k')
         
     def saveFigure(self):
         plt.plot()
-        #plt.gca().axes.get_xaxis().set_visible(False)
-        #plt.gca().axes.get_yaxis().set_visible(False)
+        plt.gca().axes.get_xaxis().set_visible(False)
+        plt.gca().axes.get_yaxis().set_visible(False)
         plt.savefig(self.poscarFile + "_plot.png", bbox_inches='tight')
  
 #==================================================================================================       
@@ -303,7 +286,6 @@ if __name__ == "__main__":
         elif sys.argv[3] == "-u" or sys.argv[3] == "-U":
             plotter = PlotGraphene(sys.argv[1], sys.argv[2], "-u", "!")
         else:
-            #Error! 
             error = True
             print "USAGE: python PlotGraphene.py  /path/to/folder/  filename  [ -p | -u ]  [-z]"
     
@@ -311,7 +293,11 @@ if __name__ == "__main__":
         plotter = PlotGraphene(sys.argv[1], sys.argv[2], "-p", "!")
     
     if not error:
-        plotter.fillByVecs(10)
+        if plotter.getAtomCounts()[0] > 4:
+            plotter.fillByVecs(5)
+        else:
+            plotter.fillByVecs(10)
+            
         plotter.addLines()
         plotter.saveFigure()
             
