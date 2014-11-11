@@ -4,7 +4,7 @@ Created on Aug 26, 2014
 @author: eswens13
 '''
 
-import os, subprocess
+import os, subprocess, sys
 from random import seed
 from numpy import zeros
 from copy import deepcopy
@@ -102,6 +102,11 @@ if __name__ == '__main__':
     [atomList, volRange, clusterNums, trainingStructs, fitStructs, fitSubsets, plotTitle, xlabel, ylabel] = readSettingsFile()
     uncleOutput = open('uncle_output.txt','w') # All output from UNCLE will be written to this file.
     
+    manager = JobManager.JobManager(atomList) #bch
+#    manager.runSingleAtoms()#bch
+#    manager.runHexMono()#bch
+#    sys.exit('stop bch Main')
+    
     enumerator = Enumerator.Enumerator(atomList, volRange, clusterNums, trainingStructs, uncleOutput)
     subprocess.call(['echo','\nEnumerating symmetrically unique structures. . .\n'])
     enumerator.enumerate()
@@ -139,7 +144,8 @@ if __name__ == '__main__':
         toPoscar.convertOutputsToPoscar()
      
         # Start VASP jobs and wait until they all complete or time out.
-        manager = JobManager.JobManager(atomList)
+#        manager = JobManager.JobManager(atomList) #bch
+
         manager.runLowJobs(toCalculate) 
         finaldir = '/'  #low precision only
 #        manager.runNormalJobs(toCalculate) #bch

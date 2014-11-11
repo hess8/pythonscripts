@@ -61,6 +61,38 @@ class GSS:
                     else:
                         outfile.write(inlines[i])
                 outfile.close()
+                
+                #Binding energy bch
+                infile = open(self.neededFilesDir + 'BE_plot.gp','r')
+                inlines = [line for line in infile]
+                infile.close()
+                outfile = open(gssDir + 'BE_plot.gp','w')
+                for i in xrange(len(inlines)):
+                    if i == 3:
+                        outfile.write("set xlabel \"" + self.xlabel.replace('Metal',atom) + "\"\n")#bch
+                    elif i == 4:
+                        outfile.write("set ylabel \"" + self.ylabel + "\"\n")
+                    elif i == 5:
+                        outfile.write("set title \"" + 'Binding energy vs graphene'+ " (" + atom + ")\"\n")
+                    else:
+                        outfile.write(inlines[i])
+                outfile.close()
+
+                #Hexagonal formation energy energy bch
+                infile = open(self.neededFilesDir + 'HFE_plot.gp','r')
+                inlines = [line for line in infile]
+                infile.close()
+                outfile = open(gssDir + 'HFE_plot.gp','w')
+                for i in xrange(len(inlines)):
+                    if i == 3:
+                        outfile.write("set xlabel \"" + self.xlabel.replace('Metal',atom) + "\"\n")#bch
+                    elif i == 4:
+                        outfile.write("set ylabel \"" + self.ylabel + "\"\n")
+                    elif i == 5:
+                        outfile.write("set title \"" + 'Formation energy vs H2, metal hex monolayer'+ " (" + atom + ")\"\n")
+                    else:
+                        outfile.write(inlines[i])
+                outfile.close()
     
     def performGroundStateSearch(self, iteration):
         lastDir = os.getcwd()
@@ -77,9 +109,14 @@ class GSS:
         for atom in self.atoms:
             gssDir = os.getcwd() + '/' + atom + '/gss/'
             if os.path.isdir(gssDir):
-                subprocess.call(['echo', '\nMaking plot of ground states for ' + atom + '. . .\n'])
+                subprocess.call(['echo', '\nMaking plot of ground states and VASP binding energy for ' + atom + '. . .\n'])
                 os.chdir(gssDir)
+                subprocess.call(['cp', '../vaspFE.out', '.'])
+                subprocess.call(['cp', '../vaspBE.out', '.'])
+                subprocess.call(['cp', '../vaspHFE.out', '.'])                                     
                 subprocess.call(['gnuplot', 'gss_plot.gp'])
+                subprocess.call(['gnuplot', 'BE_plot.gp'])
+                subprocess.call(['gnuplot', 'HFE_plot.gp'])
                 subprocess.call(['mv','gss.out','gss_' + str(iteration) + '.out'])
                 subprocess.call(['mv','gss.pdf','gss_' + str(iteration) + '.pdf'])
                 os.chdir(lastDir)

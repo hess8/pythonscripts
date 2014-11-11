@@ -78,6 +78,7 @@ class Extractor:
         subprocess.call(['echo','\nExtracting structures from struct_enum.out\n'])
         lastDir = os.getcwd()
         os.chdir(lastDir + '/enum')
+        print self.structList
         uniqueSet = set(self.structList[0])
         
         # Only extract the union of all the sets of structures.  (No duplicates)

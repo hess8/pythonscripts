@@ -7,7 +7,7 @@ Number of labels:  2
 Number of d-vectors:   2
   0.1000   1.4209   0.0000 0/1/
  -0.1000   2.8417   0.0000 0/1/
-Min and Max cell sizes:  1  7
+Min and Max cell sizes:  1  8
 Epsilon:   0.1000E-02
 full/part mode: FULL
 Concentration ranges are *not* specified. Using  the full-conc-range algorithm (original enum algorithm).

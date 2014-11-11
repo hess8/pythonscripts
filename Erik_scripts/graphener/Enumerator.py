@@ -25,6 +25,7 @@ class Enumerator:
         self.enumFile = 'enum/struct_enum.out'
         self.enumExec = os.path.abspath('needed_files/enum.x')
         self.uncleOut = uncleOutput
+        subprocess.call(['rm', '-r', 'enum'])
 
     def changeEnumFile(self):
         """ In order to build the clusters that will be used in the cluster expansion correctly, 

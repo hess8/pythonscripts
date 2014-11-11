@@ -145,10 +145,18 @@ class JobManager:
             subprocess.call(['echo','\t%d structures converged.' % converged])
             subprocess.call(['echo','\t%d structures did not converge.' % notConverged])
     
+    def runSingleAtoms(self): #bch   
+        subprocess.call(['echo','\nPreparing and running single atom directories\n']) #bch   
+        self.vaspRunner.makeRunSingleDirectories() #bch    
+
+    def runHexMono(self): #bch   
+        subprocess.call(['echo','\nPreparing and running hexagonal metal monolayers directories\n']) #bch   
+        self.vaspRunner.makeRunHexMono() #bch        
+    
     def runLowJobs(self, structList):
         subprocess.call(['echo','\nPreparing directories for VASP. . .\n'])
         self.vaspRunner.prepareForVasp(structList)
-    
+   
         s = scheduler(time.time, time.sleep)
     
         subprocess.call(['echo','\nStarting low-precision ionic relaxation. . .\n'])

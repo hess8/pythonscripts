@@ -13,6 +13,115 @@ class RunVasp:
         
         self.currJobIds = []
         
+    def makeRunSingleDirectories(self): #bch all
+        topDir = os.getcwd()
+        if not os.path.isdir('single_atoms'): os.mkdir('single_atoms')
+        os.chdir('single_atoms')
+#        os.system('rm -r -f *')
+        for atom in self.atomList:
+            os.mkdir(atom)
+            os.chdir(atom)
+            atomPotcar = "/fslhome/bch/fsl_groups/hessgroup/vaspfiles/src/potpaw_PBE/" + atom + '/POTCAR'
+            if os.path.exists(atomPotcar):
+                subprocess.call(['cp', atomPotcar, '.'])
+            else:
+                system.exit('Failed to read POTCAR in makeSingleDirectories')                
+            jobFile = open('job','w')
+            jobFile.write("#!/bin/bash\n\n")
+            jobFile.write("#SBATCH --time=03:00:00\n")
+            jobFile.write("#SBATCH --ntasks=1\n")
+            jobFile.write("#SBATCH --mem-per-cpu=4G\n")
+            jobFile.write("#SBATCH --mail-user=hess.byu@gmail.com\n")              
+            jobFile.write("#SBATCH --mail-type=FAIL\n")
+            jobFile.write("#SBATCH --mail-type=END\n") 
+            jobFile.write("#SBATCH --job-name=isol_%s\n" % atom)           
+            jobFile.write("\nmpiexec vasp533 > vasp.out\n") 
+            jobFile.close()
+            incar = open('INCAR','w')
+            incar.write("IBRION=-1\n")
+            incar.write("NELM=400\n")
+            incar.write("PREC=High\n")
+            incar.write("EDIFF=1E-6\n")
+            incar.write("ISPIN=2\n")
+            incar.write("LWAVE=.FALSE.\n")
+            incar.write("LCHARG=.FALSE.\n")         
+            incar.close()            
+            kpoints = open('KPOINTS','w')
+            kpoints.write("Automatic mesh\n")
+            kpoints.write("0\n")
+            kpoints.write("Gamma\n")
+            kpoints.write('1 1 1\n')
+            kpoints.write('0 0 0')
+            kpoints.close()
+            poscar = open('POSCAR','w') 
+            poscar.write('Isolated atom\n')
+            poscar.write('1\n')
+            poscar.write('20 0 0\n') 
+            poscar.write('0 20 0\n')
+            poscar.write('0.0 0.0 20.0\n')
+            poscar.write('1\n')
+            poscar.write('Cartesian\n')
+            poscar.write('0 0 0\n')
+            poscar.close()
+            subprocess.call(['sbatch','job'])
+            os.chdir('../')      
+        os.chdir(topDir)  
+        
+    def makeRunHexMono(self): #bch all
+        topDir = os.getcwd()
+        if not os.path.isdir('hex_monolayer_refs'): os.mkdir('hex_monolayer_refs')
+        os.chdir('hex_monolayer_refs')
+#        os.system('rm -r -f *')
+        for atom in self.atomList:
+            os.mkdir(atom)
+            os.chdir(atom)
+            atomPotcar = "/fslhome/bch/fsl_groups/hessgroup/vaspfiles/src/potpaw_PBE/" + atom + '/POTCAR'
+            if os.path.exists(atomPotcar):
+                subprocess.call(['cp', atomPotcar, '.'])
+            else:
+                system.exit('Failed to read POTCAR in makeSingleDirectories')                
+            jobFile = open('job','w')
+            jobFile.write("#!/bin/bash\n\n")
+            jobFile.write("#SBATCH --time=03:00:00\n")
+            jobFile.write("#SBATCH --ntasks=1\n")
+            jobFile.write("#SBATCH --mem-per-cpu=4G\n")
+            jobFile.write("#SBATCH --mail-user=hess.byu@gmail.com\n")              
+            jobFile.write("#SBATCH --mail-type=FAIL\n")
+            jobFile.write("#SBATCH --mail-type=END\n") 
+            jobFile.write("#SBATCH --job-name=hexm%s\n" % atom)           
+            jobFile.write("\nmpiexec vasp533 > vasp.out\n") 
+            jobFile.close()
+            incar = open('INCAR','w')
+            incar.write("IBRION=2\n")
+            incar.write("ISIF=4\n")
+            incar.write("NSW=400\n")
+            incar.write("PREC=High\n")
+            incar.write("EDIFF=1E-6\n")
+            incar.write("ISPIN=2\n")
+            incar.write("LWAVE=.FALSE.\n")
+            incar.write("LCHARG=.FALSE.\n")         
+            incar.close()            
+            kpoints = open('KPOINTS','w')
+            kpoints.write("Automatic mesh\n")
+            kpoints.write("0\n")
+            kpoints.write("Gamma\n")
+            kpoints.write('8 8 8\n')
+            kpoints.write('0 0 0')
+            kpoints.close()
+            poscar = open('POSCAR','w') 
+            poscar.write('Hexagonal metal monolayer\n')
+            poscar.write('1.5\n') #scale larger than graphene
+            poscar.write('2.13128850  -1.23050000  0\n') 
+            poscar.write('2.13128850   1.23050000 0\n')
+            poscar.write('0.00000000   0.00000000  15.00000000\n')
+            poscar.write('1\n')
+            poscar.write('Cartesian\n')
+            poscar.write('0 0 0\n')
+            poscar.close()
+            subprocess.call(['sbatch','job'])
+            os.chdir('../')      
+        os.chdir(topDir)    
+
     def makeNormalDirectories(self, structList):
         topDir = os.getcwd()
         for i in xrange(len(self.atomList)):
@@ -29,6 +138,7 @@ class RunVasp:
                                          'OSZICAR','OUTCAR','PCDAT',
                                          'POSCAR','POTCAR','REPORT',
                                          'vasprun.xml','job','XDATCAR','normal'])
+                        subprocess.call(['mv','CHG','CHGCAR','WAVECAR','normal'])#bch                     
                         self.makeNormalINCAR()
                         subprocess.call(['cp','normal/CONTCAR','normal/POSCAR'])
                         os.chdir(elementDir)
@@ -58,6 +168,8 @@ class RunVasp:
                                              'normal/OSZICAR','normal/OUTCAR','normal/PCDAT',
                                              'normal/POSCAR','normal/POTCAR','normal/REPORT',
                                              'normal/vasprun.xml','normal/XDATCAR','DOS'])
+                            subprocess.call(['mv','normal/CHG','normal/CHGCAR','normal/WAVECAR','DOS'])#bch                     
+
                             self.makeDOS_INCAR()
                             self.makeDOSJobFile(self.atomList[i]+structure) #bch 
                             subprocess.call(['cp','DOS/CONTCAR','DOS/POSCAR'])
@@ -120,9 +232,9 @@ class RunVasp:
             incar.write("ISIF=4\n")
             incar.write("NSW=400\n")
             incar.write("Algo=VeryFast\n")
-            incar.write("PREC=Normal\n") #BCH was LOW!
-            incar.write("EDIFF=5E-4\n")
-            incar.write("EDIFFG=5E-4\n")
+            incar.write("PREC=Low\n") #BCH was LOW!
+            incar.write("EDIFF=2E-3\n")
+            incar.write("EDIFFG=2E-3\n")
             incar.write("ISMEAR=0\n")
             incar.write("ISPIN=2\n")
             incar.write("LREAL=Auto\n")
@@ -237,7 +349,7 @@ class RunVasp:
                 subprocess.call(['echo','Removing POTCAR . . .'])
                 potcar.close()
                 subprocess.call(['rm','POTCAR'])
-                return
+                return # ? indent?  bch
     
     def makePurePOTCARs(self):
         """ Some of the structures that need to be submitted to VASP for relaxation are what we call
@@ -300,7 +412,7 @@ class RunVasp:
             jobFile.write("#SBATCH --mail-user=hess.byu@gmail.com\n")              
             jobFile.write("#SBATCH --mail-type=FAIL\n")
             jobFile.write("#SBATCH --mail-type=END\n") 
-            jobFile.write("#SBATCH --job-name=%s\n" % name) #bch                      
+            jobFile.write("#SBATCH --job-name=%s\n" % name) #bch  adds atom name.  Later we add structure name                    
             jobFile.write("\nmpiexec vasp533 > vasp.out\n")
     
             jobFile.close()

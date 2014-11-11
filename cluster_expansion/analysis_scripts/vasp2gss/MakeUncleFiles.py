@@ -52,6 +52,8 @@ class MakeUncleFiles:
         self.atomCounts = []
         
         self.energy = 0.0
+        self.singleE = [] #bch
+        self.hexE = [] #bch
         self.finaldir = '' #bch
     
     def initialize(self):
@@ -84,19 +86,62 @@ class MakeUncleFiles:
         
         self.atomCounts = []
         
-        self.energy = 0.0      
+        self.energy = 0.0  
+
+    def readfile(self,filepath): #bch
+        file1 = open(filepath,'r')
+        lines = file1.readlines()
+        file1.close()
+        return lines
+
+    def electronicConvergeFinish(self,dir): #bch
+        '''Test requires electronic convergence AND vasp finishing'''
+        #get NELM, the max electronic steps allowed in the run.  Using first directory in dirslist
+        proc = subprocess.Popen(['grep','-i','NELM',dir+'/INCAR'],stdout=subprocess.PIPE)
+        result =  proc.communicate()[0]
+        NELM = int(result.split('=')[1].split()[0])
+        return self.elConvergeCheck(dir,NELM) and self.FinishCheck(dir)
     
-    def FinishCheck(self, folder):
+    def elConvergeCheck(self,folder,NELM): #bch
+        """Tests electronic convergence is done by whether the electronic step is less than NELM."""
+        try:
+            value = self.getElSteps(folder)
+            return value < NELM #True/False
+        except:
+            return False #True/False
+
+    def getElSteps(self,folder):#bch
+        '''number of electronic steps for isolated runs'''
+        lastfolder = os.getcwd()
+        os.chdir(folder)
+        try:
+            oszicar = open('OSZICAR','r') 
+            laststep = oszicar.readlines()[-2].split()[1] # Next to last line, 2nd entry
+            oszicar.close()
+            os.chdir(lastfolder) 
+            value = int(laststep)
+            return value         
+        except:
+            os.chdir(lastfolder)         
+            return 9999    
+        
+    def getEnergy(self,dir): #bch
+        lines = self.readfile(dir+'/OSZICAR')
+        if len(lines[-1].split())>1:
+            energy = float(lines[-1].split()[2])  #Free energy
+        else: 
+            energy = 0.0
+        return energy
+   
+    def FinishCheck(self,dir):
         """ Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR.  The input
             parameter, folder, is the directory containing OUTCAR, not the OUTCAR file itself. """
             
         lastfolder = os.getcwd()
-        os.chdir(folder)
-        
-        proc = subprocess.Popen(['grep', 'Voluntary', 'OUTCAR'],stdout=subprocess.PIPE)
+        os.chdir(dir) 
+        proc = subprocess.Popen(['grep', 'Voluntary', dir+'/OUTCAR'],stdout=subprocess.PIPE)
         newstring = proc.communicate()
         os.chdir(lastfolder)   
-         
         return newstring[0].find('Voluntary') > -1 #True/False
 
     def convergeCheck(self, folder, NSW):
@@ -107,10 +152,9 @@ class MakeUncleFiles:
         except:
             return False  
 
-    def getNSW(self): #bch
-        proc = subprocess.Popen(['grep','-i','NSW','INCAR'],stdout=subprocess.PIPE) 
+    def getNSW(self,dir): #bch
+        proc = subprocess.Popen(['grep','-i','NSW',dir+'/INCAR'],stdout=subprocess.PIPE) 
         return int(proc.communicate()[0].split('=')[-1])   
-
 
     def getSteps(self, folder):
         '''number of steps in relaxation, as an integer'''
@@ -138,7 +182,6 @@ class MakeUncleFiles:
         
         lastDir = os.getcwd()
         for atom in self.atoms:
-            print atom #bch
             atomDir = lastDir + '/' + atom
             os.chdir(atomDir)
             pureHdir = os.getcwd() + '/1'
@@ -165,10 +208,9 @@ class MakeUncleFiles:
                 if os.path.isdir(fullPath):
 #                if os.path.isdir(self.finalDir): #bch finaldir indtead of '/DOS'
 #                        print self.FinishCheck(fullPath + self.finaldir) , self.convergeCheck(fullPath + self.finaldir, self.getNSW()) #BCH nsw
-                    if self.FinishCheck(fullPath + self.finaldir) and self.convergeCheck(fullPath + self.finaldir, self.getNSW()): #finaldir
+                    if self.FinishCheck(fullPath + self.finaldir) and self.convergeCheck(fullPath + self.finaldir, self.getNSW(fullPath + self.finaldir)): #finaldir
                         # Check for concentration
                         self.setAtomCounts(fullPath)
-                    
                         concentration = 0.0
                         if self.atomCounts[0] == 0:
                             concentration = 1.0
@@ -193,8 +235,10 @@ class MakeUncleFiles:
             os.chdir(lastDir)
     
     def sortStructsByFormEnergy(self, atomInd):
-        '''Besides sorting, writes vasp formation energies vs concentration to vaspFE.out so can be plotted with fitted data'''  #bch
-        
+        '''Besides sorting, writes vasp formation energies vs concentration to vaspFE.out so can be plotted with fitted data.
+        Also writes vaspBE, which gives the structure's binding energy per adatom relative to graphene and separated adatoms
+        Also writes vaspHFE, which is a formation energy with the metal atom taken from a relaxed hexagonal monolayer of the metal'''  #bch  
+             
         lastDir = os.getcwd()
         os.chdir(lastDir + '/' + self.atoms[atomInd])
         pureHdir = os.getcwd() + '/1'
@@ -207,10 +251,16 @@ class MakeUncleFiles:
         self.setAtomCounts(pureMdir)
         self.setEnergy(pureMdir)
         self.pureMenergy = float(self.energy)
+        eIsolatedH = -1.115 #bch
+        eIsolatedC = -1.3179 #bch
+        eH2 = -6.7591696/2.0 #bch
+        energyGraphene = -18.456521 #for 2 C atoms #bch
         
         formEnergyList = []
         sortedStructs = []
-        vaspFEfile = open('gss/vaspFE.out','w') #bch  
+        vaspFEfile = open('vaspFE.out','w') #bch 
+        vaspBEfile = open('vaspBE.out','w') #bch 
+        vaspHFEfile = open('vaspHFE.out','w') #bch  
         for structDir in self.structList[atomInd]:
             self.setAtomCounts(structDir)
             self.setEnergy(structDir)
@@ -222,14 +272,20 @@ class MakeUncleFiles:
             else:
                 concentration = float(float(self.atomCounts[1]) / float(self.atomCounts[0] + self.atomCounts[1]))
                         
-            print structEnergy,concentration,self.pureMenergy,self.pureHenergy
-            print structEnergy - (concentration * self.pureMenergy + (1.0 - concentration) * self.pureHenergy)
             formationEnergy = structEnergy - (concentration * self.pureMenergy + (1.0 - concentration) * self.pureHenergy)
             formEnergyList.append([formationEnergy, structDir])
-            print formationEnergy
-            print
-            vaspFEfile.write('{:12.8f}{:12.8f}\n'.format(concentration,formationEnergy))#bch                   
+            vaspFEfile.write('{:12.8f}{:12.8f}\n'.format(concentration,formationEnergy))#bch 
+            
+            ncarbon = self.atomCounts[0] + self.atomCounts[1] #bch:  
+            bindEnergy = structEnergy - (self.atomCounts[0]*eIsolatedH + self.atomCounts[1]*self.singleE[atomInd] + ncarbon*energyGraphene/2)/ float(self.atomCounts[0] + self.atomCounts[1]) #2 atoms in graphene 
+            vaspBEfile.write('{:12.8f}{:12.8f}\n'.format(concentration,bindEnergy))#bch  
+            print   structEnergy , concentration , self.hexE[atomInd] , (1.0 - concentration) , eH2
+            hexFormationEnergy = structEnergy - energyGraphene/2  - (concentration * self.hexE[atomInd] + (1.0 - concentration) * eH2)
+            vaspHFEfile.write('{:12.8f}{:12.8f}\n'.format(concentration,hexFormationEnergy))#bch    
+                                      
         vaspFEfile.close()#bch
+        vaspBEfile.close()#bch
+        vaspHFEfile.close()#bch
         formEnergyList.sort()
         
         for pair in formEnergyList:
@@ -455,21 +511,44 @@ class MakeUncleFiles:
             return 'holdout'
         else:
             return 'in'
+        
+    def singleAtomsEnergies(self,dir1): #bch
+        self.singleE = zeros(len(self.atoms),dtype = float) +100  #default to large number so can tell if not read
+        print 
+        subprocess.call(['echo', '\nReading single atom energies\n'])
+        for i,atom in enumerate(self.atoms):
+            dir2 = dir1 + '/single_atoms'+'/'+atom
+            if self.electronicConvergeFinish(dir2): 
+                print'Energy of {} atom: {:8.4f} '.format(atom,self.getEnergy(dir2))
+                self.singleE[i] = self.getEnergy(dir2)  
+        os.chdir(dir1)   
+
+    def hexMonolayerEnergies(self,dir1): #bch
+        self.hexE = zeros(len(self.atoms),dtype = float) +100  #default to large number so can tell if not read
+        print 
+        subprocess.call(['echo', '\nReading hexagonal monolayer energies\n'])
+        for i,atom in enumerate(self.atoms):
+            dir2 = dir1 + '/hex_monolayer_refs'+'/'+atom
+            if self.FinishCheck(dir2) and self.convergeCheck(dir2, self.getNSW(dir2)): #finaldir
+                print'Energy of {} monolayer (per atom): {:8.4f} '.format(atom,self.getEnergy(dir2))
+                self.hexE[i] = self.getEnergy(dir2)  
+        os.chdir(dir1)               
 
     def makeUncleFiles(self):
-        print 'in makeUncleFiles bch'
-        self.setStructureList()
+        self.singleAtomsEnergies(os.getcwd())  #bch
+        self.hexMonolayerEnergies(os.getcwd())   #bch
         
+        self.setStructureList()
+       
         for i in xrange(len(self.atoms)):
             atomDir = os.getcwd() + '/' + self.atoms[i]
             if os.path.isdir(atomDir):
                 subprocess.call(['echo', '\nCreating structures.in and structures.holdout files for ' + self.atoms[i] + '\n'])
                 self.initialize()
                 self.infile = open(atomDir + '/structures.in','w')
-#                self.holdoutFile = open(atomDir + '/structures.holdout','w')
+                self.holdoutFile = open(atomDir + '/structures.holdout','w')
                 self.sortStructsByFormEnergy(i)
-                self.writeHeader()
-                
+                self.writeHeader()        
                 num = 0
                 structuresInCount = 0
                 for structure in self.structList[i]:

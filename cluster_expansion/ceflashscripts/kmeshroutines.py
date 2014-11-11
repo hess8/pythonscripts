@@ -607,9 +607,11 @@ def checkq(user):
     waitMin = 0.2 #minutes between checking         
     #os.system('rm slurm-*.out') 
     starttime = time.time()    
-    while time.time()-starttime < maxDays*3600*24: 
-        pending = subprocess.check_output(['squeue','-u',user,'--state=PENDING'])
-        running = subprocess.check_output(['squeue','-u',user,'--state=RUNNING'])    
+    while time.time()-starttime < maxDays*3600*24:
+#        alias sq='squeue -o "%.7i %.9P %.18j %.8u %.2t %.10M %.6D %R" -u bch' 
+        
+        pending = subprocess.check_output(['squeue','-o','%.7i %.9P %.18j %.8u %.2t %.10M %.6D %R','-u',user,'--state=PENDING'])
+        running = subprocess.check_output(['squeue','-o','%.7i %.7P %.15j %.5u %.2t %.10M %.6D %R','-u',user,'--state=RUNNING'])    
     #    pending = subprocess.check_output(['squeue','-u',user,'-n',jobname,'--state=PENDING'])
     #    running = subprocess.check_output(['squeue','-u',user,'-n',jobname,'--state=RUNNING'])
     #    locked = subprocess.check_output(['find','-name','LOCK','|','wc','-l']) #gives error

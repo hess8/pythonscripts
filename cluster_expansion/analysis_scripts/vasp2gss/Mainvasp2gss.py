@@ -67,6 +67,9 @@ def readSettingsFile():
         
         elif line.split()[0] == 'YLAB:':
             ylabel = line.split('\'')[1]
+
+        elif line.split()[0] == 'SINGLE_DIR:': #bch
+            ylabel = line.split('\'')[1]
     
     return [atoms, volRange, clusterNums, trainStructs, fitStructs, fitSubsets, plotTitle, xlabel, ylabel]
 
@@ -136,121 +139,12 @@ if __name__ == '__main__':
     gss.makeGSSDirectories()
     gss.performGroundStateSearch(iteration)
     gss.makePlots(iteration)
-    gssStructs = gss.getAllGSSStructures(iteration, failedStructs)
     
-    # Check the lowest 100 hundred structs from VASP against the lowest 100 structs from UNCLE
-    # for each atom.  If they match, then that atom has converged and we remove it from the 
-    # lists.
-    removeAtoms = []
-    removeGss = []
-    removeVasp = []
-    for i in xrange(len(vaspStructs)):
-        atomLength = len(vaspStructs[i])
-        if atomLength >= 100:
-            if equals(vaspStructs[i][:100], gssStructs[i][:100]):
-                removeAtoms.append(atomList[i])
-                removeGss.append(gssStructs[i])
-                removeVasp.append(vaspStructs[i])
-        else:
-            # If there are not yet 100 structs that have converged in VASP.
-            if equals(vaspStructs[i][:atomLength], gssStructs[i][:atomLength]):
-                removeAtoms.append(atomList[i])
-                removeGss.append(gssStructs[i])
-                removeVasp.append(vaspStructs[i])
-    
-    for i in xrange(len(removeAtoms)):
-        atomList.remove(removeAtoms[i])
-    for i in xrange(len(removeGss)):
-        gssStructs.remove(removeGss[i])
-    for i in xrange(len(removeVasp)):
-        vaspStructs.remove(removeVasp[i])
-    
-    # If all of the atoms have converged, exit the loop.  Else, keep going.
-    if len(atomList) > 0:
-        changed = True
-                
-    if not changed:
-        subprocess.call(['echo','\n----------------- The loop has converged! ---------------'])
-
-    # Print the lowest energy structures that have been through VASP calculations to a file.
-    try:
-        lowestStructsFile.write('==============================================================\n')
-        lowestStructsFile.write('\tIteration: ' + str(iteration) + '\n')
-        lowestStructsFile.write('==============================================================\n')
-        for i in xrange(len(vaspStructs)):
-            lowestStructsFile.write('\n******************** ' + atomList[i] + ' ********************\n')
-            atomLength = len(vaspStructs[i])
-            if atomLength >= 100:
-                for j in xrange(len(vaspStructs[i][:100])):
-                    if (j + 1) % 20 == 0 or j == 99:
-                        lowestStructsFile.write(str(vaspStructs[i][j]) + '\n')
-                    else:
-                        lowestStructsFile.write(str(vaspStructs[i][j]) + ', ')
-            else:
-                for j in xrange(len(vaspStructs[i][:atomLength])):
-                    if (j + 1) % 20 == 0 or j == atomLength - 1:
-                        lowestStructsFile.write(str(vaspStructs[i][j]) + '\n')
-                    else:
-                        lowestStructsFile.write(str(vaspStructs[i][j]) + ', ')
-        lowestStructsFile.flush()
-        os.fsync(lowestStructsFile.fileno())
-    except IOError:
-        subprocess.call(['echo','\n~~~~~~~~~~ Couldn\'t write to lowest_vasp file. ~~~~~~~~~~\n'])
-    
-    # Write the all the structures that have failed VASP calculations to a file.
-    # TODO: Only write the failed structures that are unique to this iteration to the file.
-    try:
-        failedFile.write('==============================================================\n')
-        failedFile.write('\tIteration: ' + str(iteration) + '\n')
-        failedFile.write('==============================================================\n')
-        for i in xrange(len(failedStructs)):
-            failedFile.write('\n******************** ' + atomList[i] + ' ********************\n')
-            for j in xrange(len(failedStructs[i])):
-                if (j + 1) % 20 == 0 or j == len(failedStructs[i]) - 1:
-                    failedFile.write(str(failedStructs[i][j]) + '\n')
-                else:
-                    failedFile.write(str(failedStructs[i][j]) + ', ')
-        failedFile.flush()
-        os.fsync(failedFile.fileno())
-    except IOError:
-        subprocess.call(['echo','\n~~~~~~~~~~ Couldn\'t write to failed_vasp file. ~~~~~~~~~~\n'])
-            
-    # Add the 100 structures with the lowest formation energy that have not been through VASP
-    # calculations (converged or failed) to the newStructs list for each remaining atom.
-    newStructs = []
-    added = zeros(len(atomList))
-    for i in xrange(len(gssStructs)):
-        atomStructs = []
-        for j in xrange(len(gssStructs[i])):
-            if added[i] >= 100:
-                break
-            elif not contains(gssStructs[i][j], vaspStructs[i]):
-                atomStructs.append(str(gssStructs[i][j]))
-                added[i] += 1
-        newStructs.append(atomStructs)
-    
-    # Print the new GSS structures to a file.
-    try:
-        lowestGssFile.write('==================================================================\n')
-        lowestGssFile.write('\tIteration: ' + str(iteration) + '\n')
-        lowestGssFile.write('==================================================================\n')
-        for i in xrange(len(newStructs)):
-            lowestGssFile.write('\n***************** ' + atomList[i] + ' *******************\n')
-            atomLength = len(newStructs[i])
-            if atomLength >= 100:
-                for j in xrange(len(newStructs[i])):
-                    if (j + 1) % 20 == 0 or j == 99:
-                        lowestGssFile.write(str(newStructs[i][j]) + '\n')
-                    else:
-                        lowestGssFile.write(str(newStructs[i][j]) + ', ')
-        lowestGssFile.flush()
-        os.fsync(lowestGssFile.fileno())
-    except IOError:
-        subprocess.call(['echo','\n~~~~~~~~~~ Couldn\'t write to lowest_gss file. ~~~~~~~~~~\n'])
 
     uncleOutput.close()
     lowestStructsFile.close()
     lowestGssFile.close()
+    print  'Done'
     # Should do some analysis after the loop has finished as well.
         
 
