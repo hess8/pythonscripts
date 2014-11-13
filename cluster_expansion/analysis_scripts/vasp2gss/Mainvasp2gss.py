@@ -4,7 +4,7 @@ Starts with completed vasp files, fits and performs ground state search.  No loo
 
 import os, subprocess,sys
 from random import seed
-from numpy import zeros
+from numpy import zeros,sqrt,std,amax,amin
 from copy import deepcopy
 sys.path.append('/bluehome2/bch/pythonscripts/Erik_scripts/Graphener-d77cc/graphener/') 
 import MakeUncleFiles, Fitter, GSS, Analyzer, DistanceInfo
@@ -96,6 +96,16 @@ def equals(alist, blist):
         return False
     else:
         return True
+    
+def getDiffE(priority, elast, atomList):
+    '''Finds the L1 norm energy change between iterations, weighted by priority'''
+    ediff = priority[:,:]['energy'] - elast
+    ediffL1 = zeros(len(atomList))
+    for iatom in range(len(atomList)):
+        priorsum = sum(priority[iatom,:]['prior'])
+        ediff[iatom,:] = abs(ediff[iatom,:]) * priority[iatom,:]['prior']/priorsum
+        ediffL1[iatom] = sqrt(sum(ediff[iatom,:]))
+    return ediffL1
           
 if __name__ == '__main__':
     seed()
@@ -106,8 +116,9 @@ if __name__ == '__main__':
 
 #    maindir = os.getcwd()
     [atomList, volRange, clusterNums, trainingStructs, fitStructs, fitSubsets, plotTitle, xlabel, ylabel] = readSettingsFile()
-    uncleOutput = open('uncle_output.txt','w') # All output from UNCLE will be written to this file.
-    
+    uncleOutput = open('uncle_output.txt','w') # All output from UNCLE will be written to this file.    
+    ntot = 17010 #replace with enumerator method #bch
+    elast = zeros((ntot,len(atomList)),dtype=float) #energies of last iteration, sorted by structure name
     newStructs = []
     gssStructs = []
     lowestStructsFile = open('lowest_vasp.txt','w')
@@ -139,26 +150,17 @@ if __name__ == '__main__':
     gss.makeGSSDirectories()
     gss.performGroundStateSearch(iteration)
     gss.makePlots(iteration)
+    
     gss.getAllGSSStructures(iteration, failedStructs)
-    gss.getPriorities(iteration)
-
+    priority = gss.getGssInfo(iteration) 
+    diffe = getDiffE(priority, elast,atomList)
+    print 'diffe',diffe
+    elast = priority[:,:]['energy']
+    
     uncleOutput.close()
     lowestStructsFile.close()
     lowestGssFile.close()
     failedFile.close()
     print  'Done'
     # Should do some analysis after the loop has finished as well.
-        
-
-    
-        
-    
-    
- 
- 
- 
- 
- 
- 
- 
     

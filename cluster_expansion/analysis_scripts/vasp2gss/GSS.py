@@ -4,7 +4,7 @@ Created on Aug 29, 2014
 @author: eswens13
 '''
 import os, subprocess
-from numpy import amin, amax, sort, zeros, array, floor, exp, ceil
+from numpy import amin, amax, sort, zeros, array, floor, exp, ceil, median
 
 class GSS:
     
@@ -171,14 +171,14 @@ class GSS:
             
         return allStructs
     
-    def getPriorities(self,iteration):  #bch
+    def getGssInfo(self,iteration):  #bch
         lastDir = os.getcwd()
         dir = lastDir
         self.getNcs()
         Ntot = sum(self.Ncs)        
         numberCs = len(self.Ncs)
         print 'Number of concentrations:' ,numberCs       
-        self.priorities = zeros((len(self.atoms),Ntot),dtype = [('struct', 'S10'), ('prior', float)])
+        self.priorities = zeros((len(self.atoms),Ntot),dtype = [('struct', 'S10'),('energy', float), ('prior', float)])
 #        e_cutoff = zeros(numberCs,dtype = float)
         for iatom in range(len(self.atoms)):
             atomDir = dir + '/' + self.atoms[iatom] + '/gss'
@@ -192,37 +192,33 @@ class GSS:
                 gss_info[i-2]['conc'] = conc
                 gss_info[i-2]['energy'] = formEnergy
             gss_info = sort(gss_info, order=['conc','energy']) #sorts low to high
-            cutoff_percent = 0.05 #approx percentile of energy sorted structs for each concentration
-#            de = 0.1 #eV: width of cutoff
+            emin = amin(gss_info[:]['energy'])
+            emed = median(gss_info[:]['energy'])
+            width_percent = 0.01   #weight the bottom % strongly
             iplace = 0
             for ic,Nc in enumerate(self.Ncs):
-#                icutoff = iplace + floor(cutoff_percent*Nc) 
-                icutoff = iplace #lowest energy for this concentration
-#                ecut = gss_info[icutoff]['energy']
-#                print ic, floor(cutoff_percent*Nc), ecut
-                width = ceil(cutoff_percent*Nc) 
+                imin = iplace #place of lowest energy for this concentration
+                eminc = gss_info[imin]['energy'] #lowest energy for this concentration
+                width = ceil(width_percent*Nc) + 2*width_percent*Nc*max(0,(emed-eminc)/(emed-emin)) #last term favors the lowest energy structures globally.  Is zero when eminc is at or above the median energy for this atom
                 for n in range(Nc):
                     istr = iplace+n
                     self.priorities[iatom,istr]['struct'] = gss_info[istr]['struct']
-
                     en = gss_info[istr]['energy']
-                    self.priorities[iatom,istr]['prior'] = 100 * exp(-(istr-icutoff)/width) #100/(exp((istr-icutoff)/width)+1)
+                    self.priorities[iatom,istr]['energy'] = en
+                    self.priorities[iatom,istr]['prior'] = 100 * exp(-(istr-imin)/width) 
                 iplace += Nc
-            prior_sorted = sort(self.priorities[iatom,:],order = ['prior'])
-            sortedfile = open(atomDir+'/priorities_sorted.out','w')
             priorfile = open(atomDir+'/priorities.out','w')
             priorfile.write('structure,priority,concentration,FEnergy\n')
             for i in range(Ntot):
                 priorfile.write('{:10s}{:10.6f}{:8.4f}{:10.6f}\n'.format( \
                     self.priorities[iatom,i]['struct'],self.priorities[iatom,i]['prior'], \
-                       gss_info[i]['conc'],gss_info[i]['energy']))
-                sortedfile.write('{:10s}{:10.6f}\n'.format(prior_sorted[i]['struct'],prior_sorted[i]['prior']))                
+                       gss_info[i]['conc'],gss_info[i]['energy']))               
             priorfile.close()
-            sortedfile.close
             os.chdir(atomDir)
             os.system('sort -g -r -k 2 priorities.out > priorities_sorted.out') #puts highest priorites at top
 #            print sort(self.priorities[iatom,:], order = ['prior'] )
-        os.chdir(lastDir)                 
+        os.chdir(lastDir)
+        return self.priorities                 
             
     def getNcs(self): #bch
         '''Find the number of structures at each concentration''' 
@@ -242,7 +238,7 @@ class GSS:
                 self.Ncs.append(Nc) #for the previous concentration           
                 Nc = 1
                 conc_old = conc
-        self.Ncs.append(1) #for the pure H conentration
+        self.Ncs.append(1) #for the pure H concentration
         os.chdir(lastDir)
         
  
