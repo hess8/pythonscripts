@@ -242,7 +242,7 @@ class RunVasp:
             incar.write("LWAVE=.TRUE.\n")
             incar.write("LCHARG=.TRUE.\n")
             incar.write("NPAR = 4\n") 
-            incar.write("BMIX = 0.3\n") #BCH 
+            #incar.write("BMIX = 0.3\n") #BCH 
             incar.close()
 
     def makeNormalINCAR(self):
@@ -264,7 +264,7 @@ class RunVasp:
         incar.write("LWAVE=.TRUE.\n")
         incar.write("LCHARG=.TRUE.\n")
         incar.write("NPAR = 4\n")   
-        incar.write("BMIX = 0.3\n") #BCH          
+        #incar.write("BMIX = 0.3\n") #BCH          
         incar.close()
 
     def makeDOS_INCAR(self):

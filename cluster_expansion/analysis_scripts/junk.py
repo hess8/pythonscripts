@@ -26,11 +26,8 @@ from pylab import *
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
 from plotTools import plotxy,vasputil_dosplot
  
-maindir = '/fslhome/bch/trash/'
-os.chdir(maindir)
-
-ar = array([[1,2],[3,4]])
-s1 = slice(None,None)
-s2 = slice(1,3)
-print ar[s1,s2]
-print ar[:,1]
+b =  array([(1, 4.0, 'Hello'), (2, 6.0, 'World')],
+      dtype=[('f0', '>i4'), ('f1', '>f4'), ('f2', '|S10')])
+print b[0]['f0']
+b[1][1] = 3.2
+print b

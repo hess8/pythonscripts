@@ -104,7 +104,7 @@ if __name__ == '__main__':
 ##    dir = '/fslhome/bch/cluster_expansion/graphene/Li_Al/'
 #    os.chdir(dir)
 
-    
+#    maindir = os.getcwd()
     [atomList, volRange, clusterNums, trainingStructs, fitStructs, fitSubsets, plotTitle, xlabel, ylabel] = readSettingsFile()
     uncleOutput = open('uncle_output.txt','w') # All output from UNCLE will be written to this file.
     
@@ -139,11 +139,13 @@ if __name__ == '__main__':
     gss.makeGSSDirectories()
     gss.performGroundStateSearch(iteration)
     gss.makePlots(iteration)
-    
+    gss.getAllGSSStructures(iteration, failedStructs)
+    gss.getPriorities(iteration)
 
     uncleOutput.close()
     lowestStructsFile.close()
     lowestGssFile.close()
+    failedFile.close()
     print  'Done'
     # Should do some analysis after the loop has finished as well.
         

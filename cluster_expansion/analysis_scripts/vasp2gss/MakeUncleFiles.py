@@ -143,14 +143,25 @@ class MakeUncleFiles:
         newstring = proc.communicate()
         os.chdir(lastfolder)   
         return newstring[0].find('Voluntary') > -1 #True/False
+    
+    def energyDropCheck(self,dir):
+        '''tests whether the energies have dropped in OSZICAR...rising energies are unphysical 
+        and show a numerical convergence problem. The factor like 0.99 allows for very small energy rises only'''
+        lines = self.readfile(dir+'/OSZICAR') 
+        energies = []
+        for line in lines:
+            if 'F=' in line:
+                energies.append(float(line.split()[2]))
+#        print energies
+        return energies[-1] <= 0.99*energies[0]      
 
     def convergeCheck(self, folder, NSW):
-        """Tests whether force convergence is done by whether the last line of Oszicar is less than NSW."""
-        try:
-            value = self.getSteps(folder)
-            return value < NSW #True/False
-        except:
-            return False  
+        """Tests whether ionic convergence is done, by whether the last line of Oszicar is less than NSW."""
+#        try:
+        value = self.getSteps(folder)
+        return value < NSW and self.energyDropCheck(folder)
+#        except:
+#            return False  
 
     def getNSW(self,dir): #bch
         proc = subprocess.Popen(['grep','-i','NSW',dir+'/INCAR'],stdout=subprocess.PIPE) 
@@ -265,7 +276,7 @@ class MakeUncleFiles:
             self.setAtomCounts(structDir)
             self.setEnergy(structDir)
             structEnergy = float(self.energy)
-        
+            struct = structDir.split('/')[-1] #bch
             concentration = 0.0
             if self.atomCounts[0] == 0:
                 concentration = 1.0
@@ -274,14 +285,13 @@ class MakeUncleFiles:
                         
             formationEnergy = structEnergy - (concentration * self.pureMenergy + (1.0 - concentration) * self.pureHenergy)
             formEnergyList.append([formationEnergy, structDir])
-            vaspFEfile.write('{:12.8f}{:12.8f}\n'.format(concentration,formationEnergy))#bch 
+            vaspFEfile.write('{:10s} {:12.8f} {:12.8f}\n'.format(struct,concentration,formationEnergy))#bch 
             
             ncarbon = self.atomCounts[0] + self.atomCounts[1] #bch:  
             bindEnergy = structEnergy - (self.atomCounts[0]*eIsolatedH + self.atomCounts[1]*self.singleE[atomInd] + ncarbon*energyGraphene/2)/ float(self.atomCounts[0] + self.atomCounts[1]) #2 atoms in graphene 
-            vaspBEfile.write('{:12.8f}{:12.8f}\n'.format(concentration,bindEnergy))#bch  
-            print   structEnergy , concentration , self.hexE[atomInd] , (1.0 - concentration) , eH2
+            vaspBEfile.write('{:10s} {:12.8f} {:12.8f}\n'.format(struct,concentration,bindEnergy))#bch  
             hexFormationEnergy = structEnergy - energyGraphene/2  - (concentration * self.hexE[atomInd] + (1.0 - concentration) * eH2)
-            vaspHFEfile.write('{:12.8f}{:12.8f}\n'.format(concentration,hexFormationEnergy))#bch    
+            vaspHFEfile.write('{:10s} {:12.8f} {:12.8f}\n'.format(struct,concentration,hexFormationEnergy))#bch    
                                       
         vaspFEfile.close()#bch
         vaspBEfile.close()#bch
@@ -514,24 +524,29 @@ class MakeUncleFiles:
         
     def singleAtomsEnergies(self,dir1): #bch
         self.singleE = zeros(len(self.atoms),dtype = float) +100  #default to large number so can tell if not read
-        print 
         subprocess.call(['echo', '\nReading single atom energies\n'])
+        file = open(dir1 +'/single_atoms/single_atom_energies','w')
         for i,atom in enumerate(self.atoms):
             dir2 = dir1 + '/single_atoms'+'/'+atom
             if self.electronicConvergeFinish(dir2): 
-                print'Energy of {} atom: {:8.4f} '.format(atom,self.getEnergy(dir2))
-                self.singleE[i] = self.getEnergy(dir2)  
+                print 'Energy of {} atom: {:8.4f} \n'.format(atom,self.getEnergy(dir2))
+                file.write('{} atom: {:12.8f} \n'.format(atom,self.getEnergy(dir2)))
+                self.singleE[i] = self.getEnergy(dir2)
+        file.close()  
         os.chdir(dir1)   
 
     def hexMonolayerEnergies(self,dir1): #bch
+        file = open(dir1 +'/hex_monolayer_refs/hex_energies','w')
         self.hexE = zeros(len(self.atoms),dtype = float) +100  #default to large number so can tell if not read
-        print 
         subprocess.call(['echo', '\nReading hexagonal monolayer energies\n'])
         for i,atom in enumerate(self.atoms):
             dir2 = dir1 + '/hex_monolayer_refs'+'/'+atom
             if self.FinishCheck(dir2) and self.convergeCheck(dir2, self.getNSW(dir2)): #finaldir
-                print'Energy of {} monolayer (per atom): {:8.4f} '.format(atom,self.getEnergy(dir2))
-                self.hexE[i] = self.getEnergy(dir2)  
+                print'{} monolayer (per atom): {:8.4f} '.format(atom,self.getEnergy(dir2))
+                file.write('{} monolayer (per atom): {:8.4f} \n'.format(atom,self.getEnergy(dir2)))
+                self.hexE[i] = self.getEnergy(dir2) 
+            else:
+                file.write('{} monolayer not converged \n'.format(atom))
         os.chdir(dir1)               
 
     def makeUncleFiles(self):
