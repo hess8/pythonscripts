@@ -175,8 +175,9 @@ class GSS:
         lastDir = os.getcwd()
         dir = lastDir
         self.getNcs()
-        Ntot = sum(self.Ncs) 
-        numberCs = len(self.Ncs)               
+        Ntot = sum(self.Ncs)        
+        numberCs = len(self.Ncs)
+        print 'Number of concentrations:' ,numberCs       
         self.priorities = zeros((len(self.atoms),Ntot),dtype = [('struct', 'S10'), ('prior', float)])
 #        e_cutoff = zeros(numberCs,dtype = float)
         for iatom in range(len(self.atoms)):
@@ -191,8 +192,6 @@ class GSS:
                 gss_info[i-2]['conc'] = conc
                 gss_info[i-2]['energy'] = formEnergy
             gss_info = sort(gss_info, order=['conc','energy']) #sorts low to high
-            for i in range(Ntot):
-                print i, gss_info[i]
             cutoff_percent = 0.05 #approx percentile of energy sorted structs for each concentration
 #            de = 0.1 #eV: width of cutoff
             iplace = 0
@@ -209,15 +208,21 @@ class GSS:
                     en = gss_info[istr]['energy']
                     self.priorities[iatom,istr]['prior'] = 100 * exp(-(istr-icutoff)/width) #100/(exp((istr-icutoff)/width)+1)
                 iplace += Nc
+            prior_sorted = sort(self.priorities[iatom,:],order = ['prior'])
+            sortedfile = open(atomDir+'/priorities_sorted.out','w')
             priorfile = open(atomDir+'/priorities.out','w')
             priorfile.write('structure,priority,concentration,FEnergy\n')
             for i in range(Ntot):
                 priorfile.write('{:10s}{:10.6f}{:8.4f}{:10.6f}\n'.format( \
                     self.priorities[iatom,i]['struct'],self.priorities[iatom,i]['prior'], \
                        gss_info[i]['conc'],gss_info[i]['energy']))
+                sortedfile.write('{:10s}{:10.6f}\n'.format(prior_sorted[i]['struct'],prior_sorted[i]['prior']))                
             priorfile.close()
+            sortedfile.close
+            os.chdir(atomDir)
+            os.system('sort -g -r -k 2 priorities.out > priorities_sorted.out') #puts highest priorites at top
 #            print sort(self.priorities[iatom,:], order = ['prior'] )
-                       
+        os.chdir(lastDir)                 
             
     def getNcs(self): #bch
         '''Find the number of structures at each concentration''' 
@@ -233,6 +238,7 @@ class GSS:
             if conc == conc_old:
                 Nc += 1
             else: 
+                print conc_old,Nc
                 self.Ncs.append(Nc) #for the previous concentration           
                 Nc = 1
                 conc_old = conc
