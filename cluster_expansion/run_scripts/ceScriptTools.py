@@ -219,7 +219,7 @@ class ceTools:
 #            else:
 #                self.ToRunList.append(parpath+"/")
 #
-#    def FinishCheck(self,folder):
+#    def finishCheck(self,folder):
 #        """Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""
 #        lastfolder = os.getcwd()
 #        os.chdir(folder)

@@ -5,7 +5,7 @@ import sys,os,subprocess
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/') 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
 from numpy import zeros,transpose,array,sum,float64,rint,mean,set_printoptions,s_,\
-    delete,append,cross,dot,nditer,exp
+    delete,append,cross,dot,nditer,exp,cumsum
 from numpy.linalg import norm
 #from numpy.ndarray import flatten
 from analysisToolsVasp import nstrip, getEf, readfile
@@ -90,8 +90,11 @@ class dos:
         self.colors = []
         self.fig = []
         self.ax1 = []
+#        self.maxY =0 #the largest y in the region of interest
+        self.minEplot = [] #the lowest energy to include in the plot.  Then maxY will be found in this range...
        
-    def plotinit(self,title1):
+    def plotinit(self,title1,minEplot):
+        self.minEplot = minEplot
         self.fig = figure()
         #rcParams['axes.color_cycle']=['r','g']
         self.ax1 = self.fig.add_subplot(111)
@@ -99,17 +102,35 @@ class dos:
         title(title1)
         xlabel(self.xlabel)
         ylabel(self.ylabel)  
-#        legend(loc='upper right',prop={'size':6}); 
+
 #        for i in range(N):
 #            ax1.loglog(NkfullBZ, deviations[:,i],label=enerlabels[i],linestyle='None',color=cm.jet(1.*(i+1)/N), marker = 'o') # marker = 'o',
     
     def plotline(self,procar,pr_slice,Ef,leg_in):
         '''Adds a line to a plot'''
+        [e_arr,d_arr] = self.plotcalc(procar,pr_slice,Ef)                            
+        plot(e_arr,d_arr,label=leg_in)
+
+    def plotcumsumline(self,procar,pr_slice,Ef,leg_in):
+        '''Adds a line to a plot, just as with plotline, but the only difference is 
+        that is plots the cumulutive sum'''
+        [e_arr,d_arr] = self.plotcalc(procar,pr_slice,Ef)    
+        plot(e_arr,cumsum(d_arr),label=leg_in)
+
+    def plotcumEsumline(self,procar,pr_slice,Ef,leg_in):
+        '''Adds a line to a plot, just as with plotline, but the only difference is 
+        that is plots the cumulative total E: sum(n(E)E)''' 
+        [e_arr,d_arr] = self.plotcalc(procar,pr_slice,Ef)
+        temp_arr = e_arr * d_arr  #element wise mult 
+        plot(e_arr,cumsum(temp_arr),label=leg_in)
+
+    def plotcalc(self,procar,pr_slice,Ef):
         dE = 0.03 #plot resolution (bin width in eV
         ngauss = 10 #gaussian width is 2ngauss+1 plot bins
         eshifted = procar.ener - Ef
         emin = amin(eshifted.flatten()) 
-        emax = amax(eshifted.flatten()) 
+        emax = amax(eshifted.flatten())
+        imin = max(0,self.iener(self.minEplot,emin,ngauss,dE)) 
         nE = int(ceil((emax - emin)/dE)) + 1 + 2*ngauss
         d_arr = zeros(nE,dtype = float)
         e_arr = zeros(nE,dtype = float)
@@ -127,24 +148,25 @@ class dos:
                         for io in self.sliceparse(pr_slice.orbs,procar.norbs):                     
                             wener += procar.weights[ik,ib,ii,io,ispin]   
                             sum1 += procar.weights[ik,ib,ii,io,ispin]        
-                    wener = wener * kw #* occ  #leave off occ if you want empty states
+                    wener = wener * kw #* occ  #leave off the factor occ if you want to plot empty states!
                     if wener > 0.0:
                         ie = self.iener(eshifted[ik,ib,ispin],emin,ngauss,dE)
-                        d_arr[ie-ngauss:ie+ngauss+1] += wener*gaussw                      
-        print 'total weight', sum1
-        plot(e_arr,d_arr,label=leg_in)
+                        d_arr[ie-ngauss:ie+ngauss+1] += wener*gaussw 
+        print 'integrated electron weight in line', sum1  
+        return e_arr[imin:],d_arr[imin:]              
        
     def iener(self,e,emin,ngauss,dE):
-        '''Gives closest index in e_array for a particular energy.  emin maps onto position ngauss'''
+        '''Gives closest index in e_array for a particular energy.  emin maps has position ngauss above zero'''
         return int(ceil((e-emin)/dE ))+ ngauss
         
     def sliceparse(self,slicelist,N):
-        '''Slices here are just lists of indices. Must convert from VASP's numbering to python's (-1)'''
+        '''Slices here are just lists of indices. Must convert from VASP's numbering to python's (-1)
+        2:4 includes 2,3,4'''
         list1 = []
         for slicetxt in slicelist:
             if '-' in slicetxt:
                 list1.append(range(int(slicetxt.split('-')[0]),int(slicetxt.split('-')[1])))
-            elif ':' in slicetxt: # e.g.  "6:" input is "5:: output  ":7" input is ":7" output'
+            elif ':' in slicetxt: # e.g.  "6:" input is "5:" output  ":7" input is ":7" output'
                 splt = slicetxt.split(':')
                 if splt[0] == ':' : list1.append(range(0,int(splt[1])))
                 else: list1.append(range(int(splt[0])-1,N))
@@ -165,7 +187,7 @@ class dos:
 #        else: 
 #            return slice(int(slicetxt), int(slicetxt)+1)   
     def plotend(self,file):    
-        legend()#loc='upper right'),#prop={'size':6});     
+        legend(loc='upper left')    
         show()
         self.fig.savefig(file)
         close 
@@ -179,9 +201,16 @@ class pr_slice():
         self.orbs = ['all']
 #        dosarr = zeros()                                                                 
 ################# script #######################
+
+'''Final all atomic folders (capitalized names) in maindir, and identify which stucture folders 
+have DOS runs.  Create '''
 #maindir = '/fslhome/bch/cluster_expansion/alal/test/f1_2/'
 #maindir = '/fslhome/bch/cluster_expansion/graphene/analysis/1220/DOS/'
-maindir = '/fslhome/bch/cluster_expansion/graphene/analysis/1220/DOSlorbit11x30/'
+#maindir = '/fslhome/bch/cluster_expansion/graphene/analysis/1220/DOSlorbit11x30/'
+atom1 = 'V'
+atom2 = 'C'
+maindir = '/fslhome/bch/cluster_expansion/graphene/analysis/{}_sv_simpleDOS/3/DOS/'.format(atom1)
+
 #maindir = '/fslhome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_W/ISIF_4/IBRION_2/ISPIN_2/dos/'
 os.chdir(maindir)
 Ef = float(getEf(maindir))
@@ -200,17 +229,69 @@ pcr.read(maindir+'PROCAR')
 #pr_slice.ions = ['all']
 #dos.plotline(pcr,pr_slice,Ef,'Total')
 
-dos.plotinit('W Structure 1220')
-pr_slice.ions = ['17:']
+minEplot = -100 #lower x axis limit
+dos.plotinit('DOS {} Structure 3'.format(atom1),minEplot) #title
+pr_slice.ions = ['3:'] #atoms start counting at 1
 pr_slice.orbs = ['1']
-dos.plotline(pcr,pr_slice,Ef,'S of W')
+dos.plotline(pcr,pr_slice,Ef,'S of {}'.format(atom1))
 pr_slice.orbs = ['2-4']
-dos.plotline(pcr,pr_slice,Ef,'P of W')
+dos.plotline(pcr,pr_slice,Ef,'P of {}'.format(atom1))
 pr_slice.orbs = ['5-9']
-dos.plotline(pcr,pr_slice,Ef,'D of W')
+dos.plotline(pcr,pr_slice,Ef,'D of {}'.format(atom1))
 pr_slice.orbs = ['all']
-dos.plotline(pcr,pr_slice,Ef,'Total W')
+dos.plotline(pcr,pr_slice,Ef,'Total {}'.format(atom1))
 
-dos.plotend('DOS_W_orbs')            
+pr_slice.ions = ['1-2'] #atoms start counting at 1
+pr_slice.orbs = ['1']
+dos.plotline(pcr,pr_slice,Ef,'S of C')
+pr_slice.orbs = ['2-4']
+dos.plotline(pcr,pr_slice,Ef,'P of C')
+pr_slice.orbs = ['all']
+dos.plotline(pcr,pr_slice,Ef,'Total C')
 
+dos.plotend('DOS_{}C_orbs'.format(atom1)) #file 
+#=======================
+# Make cumulative sum plots
+dos.plotinit('Cumulative DOS {} Structure 3'.format(atom1),minEplot) #title
+pr_slice.ions = ['3:'] #atoms start counting at 1
+pr_slice.orbs = ['1']
+dos.plotcumsumline(pcr,pr_slice,Ef,'S of {}'.format(atom1))
+pr_slice.orbs = ['2-4']
+dos.plotcumsumline(pcr,pr_slice,Ef,'P of {}'.format(atom1))
+pr_slice.orbs = ['5-9']
+dos.plotcumsumline(pcr,pr_slice,Ef,'D of {}'.format(atom1))
+pr_slice.orbs = ['all']
+dos.plotcumsumline(pcr,pr_slice,Ef,'Total {}'.format(atom1))
+
+pr_slice.ions = ['1-2'] #atoms start counting at 1
+pr_slice.orbs = ['1']
+dos.plotcumsumline(pcr,pr_slice,Ef,'S of C')
+pr_slice.orbs = ['2-4']
+dos.plotcumsumline(pcr,pr_slice,Ef,'P of C')
+pr_slice.orbs = ['all']
+dos.plotcumsumline(pcr,pr_slice,Ef,'Total C')
+
+dos.plotend('CumDOS_{}C_orbs'.format(atom1)) #file 
+       
+# Make cumulative total energy plots
+dos.plotinit('Total energy {} Structure 3'.format(atom1),minEplot) #title
+pr_slice.ions = ['3:'] #atoms start counting at 1
+pr_slice.orbs = ['1']
+dos.plotcumEsumline(pcr,pr_slice,Ef,'S of {}'.format(atom1))
+pr_slice.orbs = ['2-4']
+dos.plotcumEsumline(pcr,pr_slice,Ef,'P of {}'.format(atom1))
+pr_slice.orbs = ['5-9']
+dos.plotcumEsumline(pcr,pr_slice,Ef,'D of {}'.format(atom1))
+pr_slice.orbs = ['all']
+dos.plotcumEsumline(pcr,pr_slice,Ef,'Total {}'.format(atom1))
+
+pr_slice.ions = ['1-2'] #atoms start counting at 1
+pr_slice.orbs = ['1']
+dos.plotcumEsumline(pcr,pr_slice,Ef,'S of C')
+pr_slice.orbs = ['2-4']
+dos.plotcumEsumline(pcr,pr_slice,Ef,'P of C')
+pr_slice.orbs = ['all']
+dos.plotcumEsumline(pcr,pr_slice,Ef,'Total C')
+
+dos.plotend('CumETot_{}C_orbs'.format(atom1)) #file 
 print 'Done'

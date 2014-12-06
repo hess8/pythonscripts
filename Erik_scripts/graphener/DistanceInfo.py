@@ -61,7 +61,7 @@ class DistanceInfo:
     def getStructureList(self):
         return self.structList
     
-    def getAtomList(self):
+    def getatoms(self):
         return self.atoms
     
     def getOriginalPositions(self, structureDir):
@@ -506,7 +506,7 @@ class DistanceInfo:
 
     def getDistanceInfo(self):
         topDir = os.getcwd()
-        for atom in self.getAtomList():
+        for atom in self.getatoms():
             atomDir = topDir + '/' + atom
             if os.path.isdir(atomDir):
                 subprocess.call(['echo','********************'])

@@ -9,7 +9,7 @@ from random import seed
 from numpy import zeros
 from copy import deepcopy
 
-import Enumerator, Extractor, Structs2Poscar, JobManager, MakeUncleFiles, Fitter, GSS, Analyzer, DistanceInfo
+import Enumerator, Extractor, StructsToPoscar, JobManager, MakeUncleFiles, Fitter, GSS, Analyzer, DistanceInfo
 
 def readSettingsFile():
     currDir = os.getcwd()
@@ -99,15 +99,15 @@ def equals(alist, blist):
 if __name__ == '__main__':
     seed()
     
-    [atomList, volRange, clusterNums, trainingStructs, fitStructs, fitSubsets, plotTitle, xlabel, ylabel] = readSettingsFile()
+    [atoms, volRange, clusterNums, trainingStructs, fitStructs, fitSubsets, plotTitle, xlabel, ylabel] = readSettingsFile()
     uncleOutput = open('uncle_output.txt','w') # All output from UNCLE will be written to this file.
     
-    manager = JobManager.JobManager(atomList) #bch
+    manager = JobManager.JobManager(atoms) #bch
 #    manager.runSingleAtoms()#bch
 #    manager.runHexMono()#bch
 #    sys.exit('stop bch Main')
     
-    enumerator = Enumerator.Enumerator(atomList, volRange, clusterNums, trainingStructs, uncleOutput)
+    enumerator = Enumerator.Enumerator(atoms, volRange, clusterNums, trainingStructs, uncleOutput)
     subprocess.call(['echo','\nEnumerating symmetrically unique structures. . .\n'])
     enumerator.enumerate()
     
@@ -128,7 +128,7 @@ if __name__ == '__main__':
         subprocess.call(['echo','========================================================\n'])
         
         # Extract the pseudo-POSCARs from struct_enum.out
-        extractor = Extractor.Extractor(atomList, uncleOutput)
+        extractor = Extractor.Extractor(atoms, uncleOutput)
         if iteration == 1:
             extractor.setTrainingStructs()
         elif iteration > 1:
@@ -140,38 +140,38 @@ if __name__ == '__main__':
         # Convert the extracted pseudo-POSCARs to VASP POSCAR files, make directories for them
         # and put the POSCARs in their corresponding directories.
         subprocess.call(['echo','\nConverting outputs to VASP inputs. . .\n'])
-        toPoscar = Structs2Poscar.Structs2Poscar(atomList, toCalculate)
+        toPoscar = StructsToPoscar.StructsToPoscar(atoms, toCalculate)
         toPoscar.convertOutputsToPoscar()
      
         # Start VASP jobs and wait until they all complete or time out.
-#        manager = JobManager.JobManager(atomList) #bch
+#        manager = JobManager.JobManager(atoms) #bch
 
         manager.runLowJobs(toCalculate) 
-        finaldir = '/'  #low precision only
+        finalDir = '/'  #low precision only
 #        manager.runNormalJobs(toCalculate) #bch
 #        manager.runDOSJobs(toCalculate) #bch
     
         # Create structures.in and structures.holdout files for each atom.
-        uncleFileMaker = MakeUncleFiles.MakeUncleFiles(atomList)
-        uncleFileMaker.finaldir = finaldir #bch
+        uncleFileMaker = MakeUncleFiles.MakeUncleFiles(atoms)
+        uncleFileMaker.finalDir = finalDir #bch
         uncleFileMaker.makeUncleFiles()
         
         # Get all the structs that have been through VASP calculations for each atom. These
         # should be sorted by formation energy during the work done by makeUncleFiles()
-        [vaspStructs, failedStructs] = uncleFileMaker.getStructureList()
+        [enumpast, newlyFailed] = uncleFileMaker.getStructureList()
         structuresInLengths = uncleFileMaker.getStructuresInLengths() 
         
         # Perform a fit to the VASP data in structures.in for each atom.
-        fitter = Fitter.Fitter(atomList, fitStructs, fitSubsets, structuresInLengths, uncleOutput)
+        fitter = Fitter.Fitter(atoms, fitStructs, fitSubsets, structuresInLengths, uncleOutput)
         fitter.makeFitDirectories()
         fitter.fitVASPData(iteration)
     
         # Perform a ground state search on the fit for each atom.    
-        gss = GSS.GSS(atomList, volRange, plotTitle, xlabel, ylabel, uncleOutput)
+        gss = GSS.GSS(atoms, volRange, plotTitle, xlabel, ylabel, uncleOutput)
         gss.makeGSSDirectories()
         gss.performGroundStateSearch(iteration)
         gss.makePlots(iteration)
-        gssStructs = gss.getAllGSSStructures(iteration, failedStructs)
+        gssStructs = gss.getAllGSSStructures(iteration, newlyFailed)
         
         # Check the lowest 100 hundred structs from VASP against the lowest 100 structs from UNCLE
         # for each atom.  If they match, then that atom has converged and we remove it from the 
@@ -179,29 +179,29 @@ if __name__ == '__main__':
         removeAtoms = []
         removeGss = []
         removeVasp = []
-        for i in xrange(len(vaspStructs)):
-            atomLength = len(vaspStructs[i])
+        for i in xrange(len(enumpast)):
+            atomLength = len(enumpast[i])
             if atomLength >= 100:
-                if equals(vaspStructs[i][:100], gssStructs[i][:100]):
-                    removeAtoms.append(atomList[i])
+                if equals(enumpast[i][:100], gssStructs[i][:100]):
+                    removeAtoms.append(atoms[i])
                     removeGss.append(gssStructs[i])
-                    removeVasp.append(vaspStructs[i])
+                    removeVasp.append(enumpast[i])
             else:
                 # If there are not yet 100 structs that have converged in VASP.
-                if equals(vaspStructs[i][:atomLength], gssStructs[i][:atomLength]):
-                    removeAtoms.append(atomList[i])
+                if equals(enumpast[i][:atomLength], gssStructs[i][:atomLength]):
+                    removeAtoms.append(atoms[i])
                     removeGss.append(gssStructs[i])
-                    removeVasp.append(vaspStructs[i])
+                    removeVasp.append(enumpast[i])
         
         for i in xrange(len(removeAtoms)):
-            atomList.remove(removeAtoms[i])
+            atoms.remove(removeAtoms[i])
         for i in xrange(len(removeGss)):
             gssStructs.remove(removeGss[i])
         for i in xrange(len(removeVasp)):
-            vaspStructs.remove(removeVasp[i])
+            enumpast.remove(removeVasp[i])
         
         # If all of the atoms have converged, exit the loop.  Else, keep going.
-        if len(atomList) > 0:
+        if len(atoms) > 0:
             changed = True
                     
         if not changed:
@@ -212,21 +212,21 @@ if __name__ == '__main__':
             lowestStructsFile.write('==============================================================\n')
             lowestStructsFile.write('\tIteration: ' + str(iteration) + '\n')
             lowestStructsFile.write('==============================================================\n')
-            for i in xrange(len(vaspStructs)):
-                lowestStructsFile.write('\n******************** ' + atomList[i] + ' ********************\n')
-                atomLength = len(vaspStructs[i])
+            for i in xrange(len(enumpast)):
+                lowestStructsFile.write('\n******************** ' + atoms[i] + ' ********************\n')
+                atomLength = len(enumpast[i])
                 if atomLength >= 100:
-                    for j in xrange(len(vaspStructs[i][:100])):
+                    for j in xrange(len(enumpast[i][:100])):
                         if (j + 1) % 20 == 0 or j == 99:
-                            lowestStructsFile.write(str(vaspStructs[i][j]) + '\n')
+                            lowestStructsFile.write(str(enumpast[i][j]) + '\n')
                         else:
-                            lowestStructsFile.write(str(vaspStructs[i][j]) + ', ')
+                            lowestStructsFile.write(str(enumpast[i][j]) + ', ')
                 else:
-                    for j in xrange(len(vaspStructs[i][:atomLength])):
+                    for j in xrange(len(enumpast[i][:atomLength])):
                         if (j + 1) % 20 == 0 or j == atomLength - 1:
-                            lowestStructsFile.write(str(vaspStructs[i][j]) + '\n')
+                            lowestStructsFile.write(str(enumpast[i][j]) + '\n')
                         else:
-                            lowestStructsFile.write(str(vaspStructs[i][j]) + ', ')
+                            lowestStructsFile.write(str(enumpast[i][j]) + ', ')
             lowestStructsFile.flush()
             os.fsync(lowestStructsFile.fileno())
         except IOError:
@@ -238,13 +238,13 @@ if __name__ == '__main__':
             failedFile.write('==============================================================\n')
             failedFile.write('\tIteration: ' + str(iteration) + '\n')
             failedFile.write('==============================================================\n')
-            for i in xrange(len(failedStructs)):
-                failedFile.write('\n******************** ' + atomList[i] + ' ********************\n')
-                for j in xrange(len(failedStructs[i])):
-                    if (j + 1) % 20 == 0 or j == len(failedStructs[i]) - 1:
-                        failedFile.write(str(failedStructs[i][j]) + '\n')
+            for i in xrange(len(newlyFailed)):
+                failedFile.write('\n******************** ' + atoms[i] + ' ********************\n')
+                for j in xrange(len(newlyFailed[i])):
+                    if (j + 1) % 20 == 0 or j == len(newlyFailed[i]) - 1:
+                        failedFile.write(str(newlyFailed[i][j]) + '\n')
                     else:
-                        failedFile.write(str(failedStructs[i][j]) + ', ')
+                        failedFile.write(str(newlyFailed[i][j]) + ', ')
             failedFile.flush()
             os.fsync(failedFile.fileno())
         except IOError:
@@ -253,13 +253,13 @@ if __name__ == '__main__':
         # Add the 100 structures with the lowest formation energy that have not been through VASP
         # calculations (converged or failed) to the newStructs list for each remaining atom.
         newStructs = []
-        added = zeros(len(atomList))
+        added = zeros(len(atoms))
         for i in xrange(len(gssStructs)):
             atomStructs = []
             for j in xrange(len(gssStructs[i])):
                 if added[i] >= 100:
                     break
-                elif not contains(gssStructs[i][j], vaspStructs[i]):
+                elif not contains(gssStructs[i][j], enumpast[i]):
                     atomStructs.append(str(gssStructs[i][j]))
                     added[i] += 1
             newStructs.append(atomStructs)
@@ -270,7 +270,7 @@ if __name__ == '__main__':
             lowestGssFile.write('\tIteration: ' + str(iteration) + '\n')
             lowestGssFile.write('==================================================================\n')
             for i in xrange(len(newStructs)):
-                lowestGssFile.write('\n***************** ' + atomList[i] + ' *******************\n')
+                lowestGssFile.write('\n***************** ' + atoms[i] + ' *******************\n')
                 atomLength = len(newStructs[i])
                 if atomLength >= 100:
                     for j in xrange(len(newStructs[i])):

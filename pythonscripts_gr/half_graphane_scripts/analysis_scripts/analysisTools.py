@@ -234,7 +234,7 @@ def writeFinish(checkedList):
     finishfile = open('finish','w')
     for ielement,path in enumerate(checkedList):
         #get element name     
-        if FinishCheck(path):
+        if finishCheck(path):
             finishfile.write('Y' +'\n')
         else:
             finishfile.write('N' +'\n')
@@ -250,7 +250,7 @@ def writeConverge(checkedList):
         #get element name
 #        element = getElement('adatom_',path)
 #        print element      
-        if convergeCheck(path,NSW) and FinishCheck(path):
+        if convergeCheck(path,NSW) and finishCheck(path):
             convergefile.write('Y' +'\n')
         else:
             convergefile.write('N' +'\n')
@@ -267,13 +267,13 @@ def writeElConverge(checkedList):
     file1.write(str(NELM))
     file1.close()
     for ielement,path in enumerate(checkedList):  
-        if elConvergeCheck(path,NELM) and FinishCheck(path):
+        if elConvergeCheck(path,NELM) and finishCheck(path):
             elconvergefile.write('Y' +'\n')
         else:
             elconvergefile.write('N' +'\n')
     elconvergefile.close()
 
-def FinishCheck(folder):
+def finishCheck(folder):
 #        """Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""
     lastfolder = os.getcwd()
     os.chdir(folder)

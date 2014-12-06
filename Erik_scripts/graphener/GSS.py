@@ -91,7 +91,7 @@ class GSS:
     
         return False
     
-    def getAllGSSStructures(self, iteration, failedStructs):
+    def getAllGSSStructures(self, iteration, newlyFailed):
         allStructs = []
         for n in xrange(len(self.atoms)):
             atomStructs = []
@@ -106,7 +106,7 @@ class GSS:
                     struct = int(line.strip().split()[0])
                     
                     # Do not include structures that failed VASP calculations.
-                    if not self.contains(struct, failedStructs[n]):
+                    if not self.contains(struct, newlyFailed[n]):
                         structsByEnergy.append([formEnergy, struct])
                 i += 1
             infile.close()

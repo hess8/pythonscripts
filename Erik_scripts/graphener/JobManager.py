@@ -21,7 +21,7 @@ class JobManager:
         self.atoms = atoms
         self.vaspRunner = RunVasp.RunVasp(self.atoms)
     
-    def reportFinshed(self, jobIds):
+    def reportFinished(self, jobIds):
         devnull = open(os.devnull, 'w')
         for jobid in jobIds:
             proc = subprocess.Popen(['squeue', '--job', jobid], stdout=subprocess.PIPE, stderr=devnull)
@@ -42,7 +42,7 @@ class JobManager:
                 for structure in structList[i]:
                     structureDir = atomDir + '/' + structure
                     if os.path.isdir(structureDir):
-                        if self.FinishCheck(structureDir) and self.convergeCheck(structureDir, self.getNSW()):#bch was 400
+                        if self.finishCheck(structureDir) and self.convergeCheck(structureDir, self.getNSW()):#bch was 400
                             total += 1
                             converged += 1
                         else:
@@ -54,7 +54,7 @@ class JobManager:
             subprocess.call(['echo','\t%d structures converged.' % converged])
             subprocess.call(['echo','\t%d structures did not converge.' % notConverged])
                             
-    def FinishCheck(self, folder):
+    def finishCheck(self, folder):
         # From Dr. Hess
         """ Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR.  The input
             parameter, folder, is the directory containing OUTCAR, not the OUTCAR file itself. """
@@ -109,7 +109,7 @@ class JobManager:
                     if os.path.isdir(structDir):
                         normalDir = structDir + '/normal'
                         if os.path.isdir(normalDir):                                          
-                            if self.FinishCheck(normalDir) and self.convergeCheck(normalDir, self.getNSW()):
+                            if self.finishCheck(normalDir) and self.convergeCheck(normalDir, self.getNSW()):
                                 total += 1
                                 converged += 1
                             else:
@@ -133,7 +133,7 @@ class JobManager:
                     if os.path.isdir(structDir):
                         dosDir = structDir + '/DOS'
                         if os.path.isdir(dosDir):     
-                            if self.FinishCheck(dosDir) and self.convergeCheck(dosDir, self.getNSW()):  #bch nsw vs 2
+                            if self.finishCheck(dosDir) and self.convergeCheck(dosDir, self.getNSW()):  #bch nsw vs 2
                                 total += 1
                                 converged += 1
                             else:
@@ -167,9 +167,9 @@ class JobManager:
         event_time = start_time
         while not finished:
             event_time += 60 #bch
-            s.enterabs(event_time, 1, self.reportFinshed, ([self.vaspRunner.getCurrentJobIds()]))
+            s.enterabs(event_time, 1, self.reportFinished, ([self.vaspRunner.getCurrentJobIds()]))
             s.run()
-            finished = self.reportFinshed(self.vaspRunner.getCurrentJobIds())
+            finished = self.reportFinished(self.vaspRunner.getCurrentJobIds())
     
         self.reportLowStats(structList)
     
@@ -184,9 +184,9 @@ class JobManager:
         event_time = start_time
         while not finished:
             event_time += 600
-            s.enterabs(event_time, 1, self.reportFinshed, ([self.vaspRunner.getCurrentJobIds()]))
+            s.enterabs(event_time, 1, self.reportFinished, ([self.vaspRunner.getCurrentJobIds()]))
             s.run()
-            finished = self.reportFinshed(self.vaspRunner.getCurrentJobIds())
+            finished = self.reportFinished(self.vaspRunner.getCurrentJobIds())
     
         self.reportNormalStats(structList)
 
@@ -201,9 +201,9 @@ class JobManager:
         event_time = start_time
         while not finished:
             event_time += 600
-            s.enterabs(event_time, 1, self.reportFinshed, ([self.vaspRunner.getCurrentJobIds()]))
+            s.enterabs(event_time, 1, self.reportFinished, ([self.vaspRunner.getCurrentJobIds()]))
             s.run()
-            finished = self.reportFinshed(self.vaspRunner.getCurrentJobIds())
+            finished = self.reportFinished(self.vaspRunner.getCurrentJobIds())
     
         self.reportDOSStats(structList)
 

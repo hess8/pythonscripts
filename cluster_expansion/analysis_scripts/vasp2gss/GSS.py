@@ -26,11 +26,110 @@ class GSS:
         self.Ncs = []
         self.priorities = []
 
-    def readfile(self,filepath): #bch
-        file1 = open(filepath,'r')
-        lines = file1.readlines()
-        file1.close()
-        return lines
+    def contains(self, struct, alist):
+        for i in xrange(len(alist)):
+            if str(struct) == str(alist[i]):
+                return True
+        return False
+    
+    def getAllGSSStructures(self, iteration, newlyFailed):
+        allStructs = []
+        for n in xrange(len(self.atoms)):
+            atomStructs = [] 
+            structsByEnergy = []
+            gssFile = os.getcwd() + '/' + self.atoms[n] + '/gss/gss_' + str(iteration) + '.out'
+            infile = open(gssFile, 'r')
+            
+            for i,line in enumerate(infile):
+                if i >= 2:
+                    formEnergy = float(line.strip().split()[7])
+                    struct = int(line.strip().split()[0])
+                    conc = float(line.strip().split()[1]) #metal concentration
+                    # Do not include structures that failed VASP calculations.
+                    if not self.contains(struct, newlyFailed[n]):
+                        structsByEnergy.append([formEnergy, struct])
+            infile.close()
+            
+            structsByEnergy.sort()
+            
+            for struct in structsByEnergy:
+                atomStructs.append(str(struct[1]))
+            
+            allStructs.append(atomStructs)
+
+                
+            
+        return allStructs
+    
+    def getGssInfo(self,iteration):  #bch
+        lastDir = os.getcwd()
+        dir = lastDir
+        self.getNcs()
+        Ntot = sum(self.Ncs)        
+        numberCs = len(self.Ncs)
+        print 'Number of concentrations:' ,numberCs       
+        self.priorities = zeros((len(self.atoms),Ntot),dtype = [('struct', 'S10'),('energy', float), ('prior', float)])
+#        e_cutoff = zeros(numberCs,dtype = float)
+        for iatom in range(len(self.atoms)):
+            atomDir = dir + '/' + self.atoms[iatom] + '/gss'
+            gssInfo = zeros((Ntot),dtype = [('struct', 'S10'), ('conc', float), ('energy', float)]) #columns:  struct, concentration, energy
+            lines = self.readfile(atomDir + '/gss_' + str(iteration) + '.out')
+            for i,line in enumerate(lines[2:]):
+                struct = line.strip().split()[0]
+                conc = float(line.strip().split()[2]) #metal concentration
+                formEnergy = float(line.strip().split()[7])                
+                gssInfo[i-2]['struct'] = struct
+                gssInfo[i-2]['conc'] = conc
+                gssInfo[i-2]['energy'] = formEnergy
+            gssInfo = sort(gssInfo, order=['conc','energy']) #sorts low to high
+            emin = amin(gssInfo[:]['energy'])
+            emed = median(gssInfo[:]['energy'])
+            width_percent = 0.01   #weight the bottom % strongly
+            iplace = 0
+            for ic,Nc in enumerate(self.Ncs):
+                imin = iplace #place of lowest energy for this concentration
+                eminc = gssInfo[imin]['energy'] #lowest energy for this concentration
+                width = ceil(width_percent*Nc) + 2*width_percent*Nc*max(0,(emed-eminc)/(emed-emin)) #last term favors the lowest energy structures globally.  Is zero when eminc is at or above the median energy for this atom
+                for n in range(Nc):
+                    istr = iplace+n
+                    self.priorities[iatom,istr]['struct'] = gssInfo[istr]['struct']
+                    en = gssInfo[istr]['energy']
+                    self.priorities[iatom,istr]['energy'] = en
+                    self.priorities[iatom,istr]['prior'] = 100 * exp(-(istr-imin)/width) 
+                iplace += Nc
+            priorfile = open(atomDir+'/priorities.out','w')
+            priorfile.write('structure,priority,concentration,FEnergy\n')
+            for i in range(Ntot):
+                priorfile.write('{:10s}{:10.6f}{:8.4f}{:10.6f}\n'.format( \
+                    self.priorities[iatom,i]['struct'],self.priorities[iatom,i]['prior'], \
+                       gssInfo[i]['conc'],gssInfo[i]['energy']))               
+            priorfile.close()
+            os.chdir(atomDir)
+            os.system('sort -g -r -k 2 priorities.out > priorities_sorted.out') #puts highest priorites at top
+#            print sort(self.priorities[iatom,:], order = ['prior'] )
+        os.chdir(lastDir)
+        return self.priorities                 
+            
+    def getNcs(self): #bch
+        '''Find the number of structures at each concentration''' 
+        lastDir = os.getcwd()
+        dir = os.getcwd() + '/' + self.atoms[0] + '/gss/'
+        os.chdir(dir)
+        os.system('sort -g -k 3 gss_1.out > tempout') #sorts by column 3, metal concentration
+        lines = self.readfile('tempout');os.system('rm tempout')         
+        conc_old = 1.0 #starts with highest concentration first 
+        Nc = 0  
+        for line in lines[2:]:
+            conc = float(line.strip().split()[1])
+            if conc == conc_old:
+                Nc += 1
+            else: 
+                print conc_old,Nc
+                self.Ncs.append(Nc) #for the previous concentration           
+                Nc = 1
+                conc_old = conc
+        self.Ncs.append(1) #for the pure H concentration
+        os.chdir(lastDir) 
     
     def makeGSSDirectories(self):
         for atom in self.atoms:
@@ -108,23 +207,13 @@ class GSS:
                     else:
                         outfile.write(inlines[i])
                 outfile.close()
-    
-    def performGroundStateSearch(self, iteration):
-        lastDir = os.getcwd()
-        for atom in self.atoms:
-            gssDir = os.getcwd() + '/' + atom + '/gss/'
-            if os.path.isdir(gssDir):
-                subprocess.call(['echo','\nPerforming ground state search for ' + atom + '. . .\n'])
-                os.chdir(gssDir)
-                subprocess.call([self.uncleExec, '21'], stdout=self.uncleOut)
-                os.chdir(lastDir)
 
     def makePlots(self, iteration):
         lastDir = os.getcwd()
         for atom in self.atoms:
             gssDir = os.getcwd() + '/' + atom + '/gss/'
             if os.path.isdir(gssDir):
-                subprocess.call(['echo', '\nMaking plot of ground states and VASP binding energy for ' + atom + '. . .\n'])
+                subprocess.call(['echo', '\nMaking plots for ' + atom + '. . .\n'])
                 os.chdir(gssDir)                                   
                 subprocess.call(['mv', '../vaspFE.out', '.'])
                 subprocess.call(['mv', '../vaspBE.out', '.'])
@@ -136,129 +225,21 @@ class GSS:
                 subprocess.call(['mv','gss.pdf','gss_' + str(iteration) + '.pdf'])
         os.chdir(lastDir)
     
-    def contains(self, struct, alist):
-        for i in xrange(len(alist)):
-            if str(struct) == str(alist[i]):
-                return True
-        return False
-    
-    def getAllGSSStructures(self, iteration, failedStructs):
-        allStructs = []
-        for n in xrange(len(self.atoms)):
-            atomStructs = [] 
-            structsByEnergy = []
-            gssFile = os.getcwd() + '/' + self.atoms[n] + '/gss/gss_' + str(iteration) + '.out'
-            infile = open(gssFile, 'r')
-            
-            for i,line in enumerate(infile):
-                if i >= 2:
-                    formEnergy = float(line.strip().split()[7])
-                    struct = int(line.strip().split()[0])
-                    conc = float(line.strip().split()[1]) #metal concentration
-                    # Do not include structures that failed VASP calculations.
-                    if not self.contains(struct, failedStructs[n]):
-                        structsByEnergy.append([formEnergy, struct])
-            infile.close()
-            
-            structsByEnergy.sort()
-            
-            for struct in structsByEnergy:
-                atomStructs.append(str(struct[1]))
-            
-            allStructs.append(atomStructs)
-
-                
-            
-        return allStructs
-    
-    def getGssInfo(self,iteration):  #bch
+    def performGroundStateSearch(self, iteration):
         lastDir = os.getcwd()
-        dir = lastDir
-        self.getNcs()
-        Ntot = sum(self.Ncs)        
-        numberCs = len(self.Ncs)
-        print 'Number of concentrations:' ,numberCs       
-        self.priorities = zeros((len(self.atoms),Ntot),dtype = [('struct', 'S10'),('energy', float), ('prior', float)])
-#        e_cutoff = zeros(numberCs,dtype = float)
-        for iatom in range(len(self.atoms)):
-            atomDir = dir + '/' + self.atoms[iatom] + '/gss'
-            gss_info = zeros((Ntot),dtype = [('struct', 'S10'), ('conc', float), ('energy', float)]) #columns:  struct, concentration, energy
-            lines = self.readfile(atomDir + '/gss_' + str(iteration) + '.out')
-            for i,line in enumerate(lines[2:]):
-                struct = line.strip().split()[0]
-                conc = float(line.strip().split()[2]) #metal concentration
-                formEnergy = float(line.strip().split()[7])                
-                gss_info[i-2]['struct'] = struct
-                gss_info[i-2]['conc'] = conc
-                gss_info[i-2]['energy'] = formEnergy
-            gss_info = sort(gss_info, order=['conc','energy']) #sorts low to high
-            emin = amin(gss_info[:]['energy'])
-            emed = median(gss_info[:]['energy'])
-            width_percent = 0.01   #weight the bottom % strongly
-            iplace = 0
-            for ic,Nc in enumerate(self.Ncs):
-                imin = iplace #place of lowest energy for this concentration
-                eminc = gss_info[imin]['energy'] #lowest energy for this concentration
-                width = ceil(width_percent*Nc) + 2*width_percent*Nc*max(0,(emed-eminc)/(emed-emin)) #last term favors the lowest energy structures globally.  Is zero when eminc is at or above the median energy for this atom
-                for n in range(Nc):
-                    istr = iplace+n
-                    self.priorities[iatom,istr]['struct'] = gss_info[istr]['struct']
-                    en = gss_info[istr]['energy']
-                    self.priorities[iatom,istr]['energy'] = en
-                    self.priorities[iatom,istr]['prior'] = 100 * exp(-(istr-imin)/width) 
-                iplace += Nc
-            priorfile = open(atomDir+'/priorities.out','w')
-            priorfile.write('structure,priority,concentration,FEnergy\n')
-            for i in range(Ntot):
-                priorfile.write('{:10s}{:10.6f}{:8.4f}{:10.6f}\n'.format( \
-                    self.priorities[iatom,i]['struct'],self.priorities[iatom,i]['prior'], \
-                       gss_info[i]['conc'],gss_info[i]['energy']))               
-            priorfile.close()
-            os.chdir(atomDir)
-            os.system('sort -g -r -k 2 priorities.out > priorities_sorted.out') #puts highest priorites at top
-#            print sort(self.priorities[iatom,:], order = ['prior'] )
-        os.chdir(lastDir)
-        return self.priorities                 
-            
-    def getNcs(self): #bch
-        '''Find the number of structures at each concentration''' 
-        lastDir = os.getcwd()
-        dir = os.getcwd() + '/' + self.atoms[0] + '/gss/'
-        os.chdir(dir)
-        os.system('sort -g -k 3 gss_1.out > tempout') #sorts by column 3, metal concentration
-        lines = self.readfile('tempout');os.system('rm tempout')         
-        conc_old = 1.0 #starts with highest concentration first 
-        Nc = 0  
-        for line in lines[2:]:
-            conc = float(line.strip().split()[1])
-            if conc == conc_old:
-                Nc += 1
-            else: 
-                print conc_old,Nc
-                self.Ncs.append(Nc) #for the previous concentration           
-                Nc = 1
-                conc_old = conc
-        self.Ncs.append(1) #for the pure H concentration
-        os.chdir(lastDir)
-        
- 
-#    def buildPriorityNcs(self,Ncmin,Ntot): #bch
-#        '''Ncp in the priority list differs vs concentration. First Ncp=Ncmin, and then Nc is adjusted 
-#         at each concentration so those added are roughly proportional to the total number of states 
-#         at that concentration (Nc), until all the Ncp's sum to Ntot.  Only need to do this in iteration 1.
-#         and for the first atom. Independent of atom type'''  
- 
-#         
-#        gssfile = open('gss.out','r')
-            
-    def getPriorityStructs(self,Ncmin,Ntot):   #bch
-        '''Builds a list of Ntot structures that represent the lowest energy Ncp structures 
-        at each concentration'''  
-         
-         #get number of 
-            
+        for atom in self.atoms:
+            gssDir = os.getcwd() + '/' + atom + '/gss/'
+            if os.path.isdir(gssDir):
+                subprocess.call(['echo','\nPerforming ground state search for ' + atom + '. . .\n'])
+                os.chdir(gssDir)
+                subprocess.call([self.uncleExec, '21'], stdout=self.uncleOut)
+                os.chdir(lastDir)  
 
-
+    def readfile(self,filepath): #bch
+        file1 = open(filepath,'r')
+        lines = file1.readlines()
+        file1.close()
+        return lines
 
 
 

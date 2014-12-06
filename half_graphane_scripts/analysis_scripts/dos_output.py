@@ -28,7 +28,7 @@ import numpy as np
 sys.path.append('/fslhome/bch/pythonscripts/pythonscripts_gr/half_graphane_scripts/analysis_scripts')
 from analysisTools import addToList, checkFolders, writeEnergiesOszicar,  \
     writeElements, nstrip, writeDistances, writeCCDistances, \
-    FinishCheck, writeElSteps, writeElConverge, getElement
+    finishCheck, writeElSteps, writeElConverge, getElement
 
 run = runName
 

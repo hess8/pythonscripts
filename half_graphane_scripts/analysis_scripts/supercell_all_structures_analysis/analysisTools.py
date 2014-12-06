@@ -45,7 +45,7 @@ def nadatoms(strbinary):
 		nad += int(strbinary[i])
 	return nad
 	
-def FinishCheck():
+def finishCheck():
 #        """Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR."""
     proc = subprocess.Popen(['grep', 'Voluntary', 'OUTCAR'],stdout=subprocess.PIPE)
     newstring = proc.communicate()

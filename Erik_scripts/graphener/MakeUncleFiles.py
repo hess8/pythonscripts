@@ -18,7 +18,7 @@ class MakeUncleFiles:
         self.structuresInLengths = zeros(len(self.atoms))
     
         self.structList = []
-        self.failedStructs = []
+        self.newlyFailed = []
         self.pureHenergy = 0.0
         self.pureMenergy = 0.0
         
@@ -52,7 +52,7 @@ class MakeUncleFiles:
         self.atomCounts = []
         
         self.energy = 0.0
-        self.finaldir = '' #bch
+        self.finalDir = '' #bch
     
     def initialize(self):
         self.infile = None
@@ -86,7 +86,7 @@ class MakeUncleFiles:
         
         self.energy = 0.0      
     
-    def FinishCheck(self, folder):
+    def finishCheck(self, folder):
         """ Tests whether Vasp is done by finding "Voluntary" in last line of OUTCAR.  The input
             parameter, folder, is the directory containing OUTCAR, not the OUTCAR file itself. """
             
@@ -129,68 +129,6 @@ class MakeUncleFiles:
         except:
             return 9999        
 
-    def setStructureList(self):
-        """ Initializes the list of structures to add to the structures.in and structures.holdout
-            files by adding only the structures that VASP finished relaxing to the member
-            structList. Sorts the list by concentration. """
-        
-        self.structList = []
-        
-        lastDir = os.getcwd()
-        print os.getcwd() #bch
-        for atom in self.atoms:
-            print atom #bch
-            atomDir = lastDir + '/' + atom
-            os.chdir(atomDir)
-            pureHdir = os.getcwd() + '/1'
-            pureMdir = os.getcwd() + '/3'
-        
-            self.setAtomCounts(pureHdir)
-            self.setEnergy(pureHdir)
-            self.pureHenergy = float(self.energy)
-        
-            self.setAtomCounts(pureMdir)
-            self.setEnergy(pureMdir)
-            self.pureMenergy = float(self.energy)
-        
-            conclist = []
-            atomStructs = []
-            failed = []
-                        
-            dirList = os.listdir(atomDir)
-            for item in dirList:
-                print 'item',item #bch
-                fullPath = os.path.abspath(item)
-                print fullPath
-                if os.path.isdir(fullPath):
-                    if os.path.isdir(fullPath + self.finaldir): #bch finaldir indtead of '/DOS'
-                        print self.FinishCheck(fullPath + self.finaldir) , self.convergeCheck(fullPath + self.finaldir, self.getNSW()) #BCH nsw
-                        if self.FinishCheck(fullPath + self.finaldir) and self.convergeCheck(fullPath + self.finaldir, self.getNSW()): #finaldir
-                            # Check for concentration
-                            self.setAtomCounts(fullPath)
-                        
-                            concentration = 0.0
-                            if self.atomCounts[0] == 0:
-                                concentration = 1.0
-                            else:
-                                concentration = float(float(self.atomCounts[1]) / float(self.atomCounts[0] + self.atomCounts[1]))
-                        
-                            conclist.append([concentration, fullPath])
-                        else:
-                            failed.append(fullPath)
-                    else:
-                        # Don't add the 'gss' or 'fits' directories.
-                        if not fullPath.split('/')[-1] == 'gss' and not fullPath.split('/')[-1] == 'fits':
-                            failed.append(fullPath)
-        
-            self.failedStructs.append(failed)
-            conclist.sort()
-            
-            for i in xrange(len(conclist)):
-                atomStructs.append(conclist[i][1])
-            self.structList.append(atomStructs)
-            
-            os.chdir(lastDir)
     
     def sortStructsByFormEnergy(self, atomInd):
 
@@ -242,10 +180,10 @@ class MakeUncleFiles:
             returnList.append(subList)
         
         failedList = []
-        for i in xrange(len(self.failedStructs)):
+        for i in xrange(len(self.newlyFailed)):
             subList = []
-            for j in xrange(len(self.failedStructs[i])):
-                subList.append(self.failedStructs[i][j].split('/')[-1])
+            for j in xrange(len(self.newlyFailed[i])):
+                subList.append(self.newlyFailed[i][j].split('/')[-1])
             failedList.append(subList)
         
         return returnList, failedList
@@ -364,6 +302,68 @@ class MakeUncleFiles:
         peratom = energy / sum(self.atomCounts)
         
         self.energy = str(peratom)
+    def setStructureList(self):
+        """ Initializes the list of structures to add to the structures.in and structures.holdout
+            files by adding only the structures that VASP finished relaxing to the member
+            structList. Sorts the list by concentration. """
+        
+        self.structList = []
+        
+        lastDir = os.getcwd()
+        print os.getcwd() #bch
+        for atom in self.atoms:
+            print atom #bch
+            atomDir = lastDir + '/' + atom
+            os.chdir(atomDir)
+            pureHdir = os.getcwd() + '/1'
+            pureMdir = os.getcwd() + '/3'
+        
+            self.setAtomCounts(pureHdir)
+            self.setEnergy(pureHdir)
+            self.pureHenergy = float(self.energy)
+        
+            self.setAtomCounts(pureMdir)
+            self.setEnergy(pureMdir)
+            self.pureMenergy = float(self.energy)
+        
+            conclist = []
+            atomStructs = []
+            failed = []
+                        
+            dirList = os.listdir(atomDir)
+            for item in dirList:
+                print 'item',item #bch
+                fullPath = os.path.abspath(item)
+                print fullPath
+                if os.path.isdir(fullPath):
+                    if os.path.isdir(fullPath + self.finalDir): #bch finalDir indtead of '/DOS'
+                        print self.finishCheck(fullPath + self.finalDir) , self.convergeCheck(fullPath + self.finalDir, self.getNSW()) #BCH nsw
+                        if self.finishCheck(fullPath + self.finalDir) and self.convergeCheck(fullPath + self.finalDir, self.getNSW()): #finalDir
+                            # Check for concentration
+                            self.setAtomCounts(fullPath)
+                        
+                            concentration = 0.0
+                            if self.atomCounts[0] == 0:
+                                concentration = 1.0
+                            else:
+                                concentration = float(float(self.atomCounts[1]) / float(self.atomCounts[0] + self.atomCounts[1]))
+                        
+                            conclist.append([concentration, fullPath])
+                        else:
+                            failed.append(fullPath)
+                    else:
+                        # Don't add the 'gss' or 'fits' directories.
+                        if not fullPath.split('/')[-1] == 'gss' and not fullPath.split('/')[-1] == 'fits':
+                            failed.append(fullPath)
+        
+            self.newlyFailed.append(failed)
+            conclist.sort()
+            
+            for i in xrange(len(conclist)):
+                atomStructs.append(conclist[i][1])
+            self.structList.append(atomStructs)
+            
+            os.chdir(lastDir)
 
     def writeHeader(self):
         """ Writes the headers of the structures.in and structures.holdout files. """
@@ -415,7 +415,7 @@ class MakeUncleFiles:
         self.outfile.write("#Energy:\n")
         self.outfile.write(str(self.energy) + "\n") 
     
-    def writePOSCAR(self, poscarDir, atomInd):
+    def writeUnclePOSCAR(self, poscarDir, atomInd):
         """ Calls all the methods needed to write all the needed information about the current
             structure to the structures.in or structures.holdout files.  Puts a maximum of 10%
             of the structures in the structures.holdout file. """
@@ -468,7 +468,7 @@ class MakeUncleFiles:
                 for structure in self.structList[i]:
 #                    if structuresInCount >= 500:    # Write a maximum of 500 structures to the file
 #                        break                       # for any given atom.
-                    whichFile = self.writePOSCAR(structure, i)
+                    whichFile = self.writeUnclePOSCAR(structure, i)
                     if whichFile == 'in':
                         structuresInCount += 1
                     num += 1

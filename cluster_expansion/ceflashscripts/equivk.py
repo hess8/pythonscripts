@@ -229,15 +229,15 @@ enumfile = maindir + 'struct_enum.in.fcc'
 #structfile = '../c1_6.dat'
 #structfile = '../f1.dat'
 structfile = '../f1_6.dat'
-#finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.myk/'
-#finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
-#finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubictest/'
-#finaldir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.fccmesh/'
-finaldir = maindir + 'structs.cubmesh/'
-#finaldir = maindir + 'structs.fccmesh/'
+#finalDir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.myk/'
+#finalDir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubicmesh/'
+#finalDir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.cubictest/'
+#finalDir = '/fslhome/bch/cluster_expansion/alir/enumtest/structs.fccmesh/'
+finalDir = maindir + 'structs.cubmesh/'
+#finalDir = maindir + 'structs.fccmesh/'
 nmax = 45
-print finaldir.split('.')
-if 'cub' in finaldir.split('.')[-1]:
+print finalDir.split('.')
+if 'cub' in finalDir.split('.')[-1]:
     meshtype = 'cub'
     multlist = []
 #    multlist = [2,3,4,5,6,7,8]
@@ -246,16 +246,16 @@ if 'cub' in finaldir.split('.')[-1]:
 #    multlist = [40,42,44] #this is m
 #    multlist = [2]    
 
-elif 'fcc' in finaldir.split('.')[-1]:
+elif 'fcc' in finalDir.split('.')[-1]:
     meshtype = 'fcc'
 #    multlist = [2,3]
 #    multlist = [2,3,4,5]  #5*4^(1/3) =~ 8, for fcc scaling
 #    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24,26,28]  #44/4^(1/3) = 28
     multlist = [2,3,4,5,6,8,10,12]  #44/4^(1/3) = 28
 else:
-    sys.exit('finaldir must contain cub or fcc substring')
+    sys.exit('finalDir must contain cub or fcc substring')
     
-if not os.path.isdir(finaldir): os.system('mkdir %s' % finaldir)
+if not os.path.isdir(finalDir): os.system('mkdir %s' % finalDir)
 vaspinputdir = maindir + 'vaspinput/'  
    
 structchar = getline(0,enumfile).split('.')[-1][0]
@@ -289,8 +289,8 @@ for struct in structs: #these are simply the numbers with no prefix
     for m in multlist:
         dir = structchar + struct + '_%i/' % m
         print;print dir
-        if not os.path.isdir(finaldir+dir): os.system('mkdir %s' % finaldir+dir)              
-        os.chdir(finaldir+dir)
+        if not os.path.isdir(finalDir+dir): os.system('mkdir %s' % finalDir+dir)              
+        os.chdir(finalDir+dir)
         makestr2poscar(struct)
         if m == multlist[0] : #things to do only once per structure
             A = readlatt('POSCAR')
@@ -309,8 +309,8 @@ for struct in structs: #these are simply the numbers with no prefix
             print 'detL*bccsq*trans(inv(L))'; print dL*dot(bccsq,transpose(inv(L)))
             
         scaleposcar(scale) #inserts length scale into appropriate spot.
-        writefile([str(dL)],finaldir+dir+'detL')
-        writefile([lattype],finaldir+dir+'lattype')
+        writefile([str(dL)],finalDir+dir+'detL')
+        writefile([lattype],finalDir+dir+'lattype')
         os.system ('cp %s* %s' % (vaspinputdir,'.'))
         os.system ('rm slurm*')
         n = m*dL; shift = '0.00'       
@@ -327,11 +327,11 @@ for struct in structs: #these are simply the numbers with no prefix
             print 'det M (kpoints in unreduced 1BZ)', det(M)
             
             writekpts_fcc_n(n,shift)
-        writefile([str(abs(det(M)))],finaldir+dir+'detM')
+        writefile([str(abs(det(M)))],finalDir+dir+'detM')
         
-#        writekpts_vasp_M(finaldir+dir,B,M,Bnops,Bsymops) #define K's explicitly!!!
+#        writekpts_vasp_M(finalDir+dir,B,M,Bnops,Bsymops) #define K's explicitly!!!
 
-        writejobfile(finaldir+dir)
+        writejobfile(finalDir+dir)
         if n <= nmax:#(don't submit the biggest jobs
             ''
             

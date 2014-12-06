@@ -43,12 +43,12 @@ def vasp_finish_check_spreadsheet(maindir,run,enerIsolatedAd,nsites):
         if nAd[i] > 0:
             binde_nAd[i] = round(binde[i]/nAd[i],2)
         BEString = 'BE.vs.graphane'
-        if FinishCheck():
+        if finishCheck():
             finish[i] = 'Y'
         else:
             finish[i] ='N'
         steps[i] = getSteps()
-        if FinishCheck() and steps[i] < NSW:
+        if finishCheck() and steps[i] < NSW:
             os.system('date > converged.dat')
         if os.path.exists('CONTCAR') and os.path.getsize('CONTCAR') > 0:       
             [avgdCC[i], avgzC[i], avgdAdC[i], avgzAd[i], min_dxyAdC[i]] = getPositionInfo()

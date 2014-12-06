@@ -26,8 +26,6 @@ from pylab import *
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
 from plotTools import plotxy,vasputil_dosplot
  
-b =  array([(1, 4.0, 'Hello'), (2, 6.0, 'World')],
-      dtype=[('f0', '>i4'), ('f1', '>f4'), ('f2', '|S10')])
-print b[0]['f0']
-b[1][1] = 3.2
-print b
+a = [[]]*100
+
+print a

@@ -13,13 +13,13 @@ class Enumerator:
         finishes its work, the Extractor class will take over and extract pseudo-POSCAR files from 
         the struct_enum.out file that is produced. """
   
-    def __init__(self, atoms, volRange, clusterNums, trainStructNum, uncleOutput):
+    def __init__(self, atoms, volRange, clusterNums, niid, uncleOutput):
         """ CONSTRUCTOR """
         self.atoms = atoms
         self.volRange = volRange
         
         self.clusterNums = clusterNums
-        self.trainStructNum = trainStructNum
+        self.niid = niid
         
         self.uncleExec = os.path.abspath('needed_files/uncle.x')
         self.enumFile = 'enum/struct_enum.out'
@@ -77,7 +77,7 @@ class Enumerator:
         lastDir = os.getcwd()
         os.chdir(lastDir + '/enum')
         
-        subprocess.call([self.uncleExec, '42', str(self.trainStructNum)], stdout=self.uncleOut)
+        subprocess.call([self.uncleExec, '42', str(self.niid)], stdout=self.uncleOut)
         
         os.chdir(lastDir)
     
