@@ -167,8 +167,8 @@ class MakeUncleFiles:
                 fullPath = os.path.abspath(item)
                 if os.path.isdir(fullPath):
 #                if os.path.isdir(self.finalDir): #bch finalDir indtead of '/DOS'
-#                        print self.finishCheck(fullPath + self.finalDir) , self.convergeCheck(fullPath + self.finalDir, self.getNSW()) #BCH nsw
-                    if self.finishCheck(fullPath + self.finalDir) and self.convergeCheck(fullPath + self.finalDir, self.getNSW()): #finalDir
+#                        print finishCheck(fullPath + self.finalDir) , convergeCheck(fullPath + self.finalDir, self.getNSW()) #BCH nsw
+                    if finishCheck(fullPath + self.finalDir) and convergeCheck(fullPath + self.finalDir, self.getNSW()): #finalDir
                         # Check for concentration
                         self.setAtomCounts(fullPath)
                     

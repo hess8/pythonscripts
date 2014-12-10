@@ -42,7 +42,7 @@ class JobManager:
                 for structure in structList[i]:
                     structureDir = atomDir + '/' + structure
                     if os.path.isdir(structureDir):
-                        if self.finishCheck(structureDir) and self.convergeCheck(structureDir, self.getNSW()):#bch was 400
+                        if finishCheck(structureDir) and convergeCheck(structureDir, self.getNSW()):#bch was 400
                             total += 1
                             converged += 1
                         else:
@@ -109,7 +109,7 @@ class JobManager:
                     if os.path.isdir(structDir):
                         normalDir = structDir + '/normal'
                         if os.path.isdir(normalDir):                                          
-                            if self.finishCheck(normalDir) and self.convergeCheck(normalDir, self.getNSW()):
+                            if finishCheck(normalDir) and convergeCheck(normalDir, self.getNSW()):
                                 total += 1
                                 converged += 1
                             else:
@@ -133,7 +133,7 @@ class JobManager:
                     if os.path.isdir(structDir):
                         dosDir = structDir + '/DOS'
                         if os.path.isdir(dosDir):     
-                            if self.finishCheck(dosDir) and self.convergeCheck(dosDir, self.getNSW()):  #bch nsw vs 2
+                            if finishCheck(dosDir) and convergeCheck(dosDir, self.getNSW()):  #bch nsw vs 2
                                 total += 1
                                 converged += 1
                             else:

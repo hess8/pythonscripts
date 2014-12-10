@@ -84,12 +84,12 @@ class MakeUncleFiles:
         proc = subprocess.Popen(['grep','-i','NELM',dir+'/INCAR'],stdout=subprocess.PIPE)
         result =  proc.communicate()[0]
         NELM = int(result.split('=')[1].split()[0])
-        return self.elConvergeCheck(dir,NELM) and self.finishCheck(dir)
+        return self.elConvergeCheck(dir,NELM) and finishCheck(dir)
     
     def energyDropCheck(self,dir):
         '''tests whether the energies have dropped in OSZICAR...rising energies are unphysical 
         and show a numerical convergence problem. The factor like 0.99 allows for very small energy rises only'''
-        lines = self.readfile(dir+'/OSZICAR') 
+        lines = readfile(dir+'/OSZICAR') 
         energies = []
         for line in lines:
             if 'F=' in line:
@@ -121,7 +121,7 @@ class MakeUncleFiles:
             return 9999    
         
     def getEnergy(self,dir): #bch
-        lines = self.readfile(dir+'/OSZICAR')
+        lines = readfile(dir+'/OSZICAR')
         if len(lines[-1].split())>1:
             energy = float(lines[-1].split()[2])  #Free energy
         else: 
@@ -180,7 +180,7 @@ class MakeUncleFiles:
         subprocess.call(['echo', '\nReading hexagonal monolayer energies\n'])
         for i,atom in enumerate(self.atoms):
             dir2 = dir1 + '/hex_monolayer_refs'+'/'+atom
-            if self.finishCheck(dir2) and self.convergeCheck(dir2, self.getNSW(dir2)): #finalDir
+            if finishCheck(dir2) and convergeCheck(dir2, self.getNSW(dir2)): #finalDir
                 print'{} monolayer (per atom): {:8.4f} '.format(atom,self.getEnergy(dir2))
                 file.write('{} monolayer (per atom): {:8.4f} \n'.format(atom,self.getEnergy(dir2)))
                 self.hexE[i] = self.getEnergy(dir2) 
@@ -392,8 +392,8 @@ class MakeUncleFiles:
                 fullPath = os.path.abspath(item)
                 if os.path.isdir(fullPath):
 #                if os.path.isdir(self.finalDir): #bch finalDir indtead of '/DOS'
-#                        print self.finishCheck(fullPath + self.finalDir) , self.convergeCheck(fullPath + self.finalDir, self.getNSW()) #BCH nsw
-                    if self.finishCheck(fullPath + self.finalDir) and self.convergeCheck(fullPath + self.finalDir, self.getNSW(fullPath + self.finalDir)): #finalDir
+#                        print finishCheck(fullPath + self.finalDir) , convergeCheck(fullPath + self.finalDir, self.getNSW()) #BCH nsw
+                    if finishCheck(fullPath + self.finalDir) and convergeCheck(fullPath + self.finalDir, self.getNSW(fullPath + self.finalDir)): #finalDir
                         # Check for concentration
                         self.setAtomCounts(fullPath)
                         concentration = 0.0

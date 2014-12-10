@@ -73,7 +73,7 @@ class GSS:
         for iatom in range(len(self.atoms)):
             atomDir = dir + '/' + self.atoms[iatom] + '/gss'
             gssInfo = zeros((Ntot),dtype = [('struct', 'S10'), ('conc', float), ('energy', float)]) #columns:  struct, concentration, energy
-            lines = self.readfile(atomDir + '/gss_' + str(iteration) + '.out')
+            lines = readfile(atomDir + '/gss_' + str(iteration) + '.out')
             for i,line in enumerate(lines[2:]):
                 struct = line.strip().split()[0]
                 conc = float(line.strip().split()[2]) #metal concentration
@@ -116,7 +116,7 @@ class GSS:
         dir = os.getcwd() + '/' + self.atoms[0] + '/gss/'
         os.chdir(dir)
         os.system('sort -g -k 3 gss_1.out > tempout') #sorts by column 3, metal concentration
-        lines = self.readfile('tempout');os.system('rm tempout')         
+        lines = readfile('tempout');os.system('rm tempout')         
         conc_old = 1.0 #starts with highest concentration first 
         Nc = 0  
         for line in lines[2:]:
@@ -187,7 +187,7 @@ class GSS:
                 outfile.close()
 
                 #Hexagonal formation energy energy bch        
-                data = self.readfile(atomDir+'/vaspHFE.out')
+                data = readfile(atomDir+'/vaspHFE.out')
                 ydata = [float(line.strip().split()[1]) for line in data]
                 ymax = min(amax(ydata),1.0) #don't let yrange get over 1 eV
                 infile = open(self.neededFilesDir + 'HFE_plot.gp','r')

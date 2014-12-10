@@ -44,12 +44,12 @@ class Analyzer:
         # folder must end with a '/'
         outfile = open("results", "w")
         outfile.write("********** INCAR SETTINGS **********\n\n")
-        incarLines = self.readfile(folder + "INCAR")
+        incarLines = readfile(folder + "INCAR")
         for line in incarLines:
             outfile.write(line)
     
         outfile.write("\n********** FINISH CHECK **********\n")
-        finished = self.finishCheck(folder)
+        finished = finishCheck(folder)
         if finished:
             outfile.write("\nFinished\n")
         else:
@@ -68,7 +68,7 @@ class Analyzer:
             match = re.match('(\s*NSW\s*)=\s*([0-9]*)', theLine)
             if match:
                 NSW = int(match.group(2))
-                if self.convergeCheck(folder, NSW):
+                if convergeCheck(folder, NSW):
                     outfile.write("\nConverged in " + str(self.getSteps(folder)) + " steps.\n")
                 else:
                     outfile.write("\nDid not converge.\n")

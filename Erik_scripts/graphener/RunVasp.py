@@ -99,7 +99,7 @@ class RunVasp:
             return 9999       
 
     def hasFinished(self, folder):
-        if self.finishCheck(folder) and self.convergeCheck(folder, 400):
+        if finishCheck(folder) and convergeCheck(folder, 400):
             return True
         else:
             return False
@@ -117,7 +117,7 @@ class RunVasp:
                     structDir = elementDir + '/' + structure
                     if os.path.isdir(structDir):
                         normalDir = structDir + '/normal'
-                        if os.path.isdir(normalDir) and self.finishCheck(normalDir) and self.convergeCheck(normalDir, 400):
+                        if os.path.isdir(normalDir) and finishCheck(normalDir) and convergeCheck(normalDir, 400):
                             os.chdir(structDir)
                             subprocess.call(['mkdir', 'DOS'])
                             subprocess.call(['cp','normal/CONTCAR','normal/DOSCAR','normal/EIGENVAL',
@@ -248,7 +248,7 @@ class RunVasp:
                 os.chdir(elementDir)
                 for structure in structList[i]:
                     structDir = elementDir + '/' + structure
-                    if os.path.isdir(structDir) and self.finishCheck(structDir) and self.convergeCheck(structDir, 400):
+                    if os.path.isdir(structDir) and finishCheck(structDir) and convergeCheck(structDir, 400):
                         os.chdir(structDir)
                         subprocess.call(['mkdir', 'normal'])
                         subprocess.call(['cp','CONTCAR','DOSCAR','EIGENVAL',
@@ -550,7 +550,7 @@ class RunVasp:
                     structures.append(item)
             
             for structure in structures:
-#                if not(self.finishCheck(structure) and self.convergeCheck(structure, 2)): #finalDir
+#                if not(finishCheck(structure) and convergeCheck(structure, 2)): #finalDir
                     #bch put this case here to not run finished jobs
                 os.chdir(structure)
                 self.addStructName(structure) #bch adds structure to name
