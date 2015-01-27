@@ -6,7 +6,7 @@ class PlotGraphene:
     """ This plots either a POSCAR file or an output file from UNCLE.  When calling this class from
         the command line, call it as follows:
         
-            python PlotGraphene.py  /path/to/folder/  filename  [ -p | -u ]  [-z]
+            python plotGraphene.py  /path/to/folder/  filename  [ -p | -u ]  [-z]
         
         The "-p" or "-u" tags tell us whether we are reading a POSCAR from VASP or an output file 
         from UNCLE.  The default tag (if none is supplied) is "-p".  The /path/to/folder/ is the 

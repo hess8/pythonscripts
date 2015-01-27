@@ -1,7 +1,7 @@
 '''
 Created on Jul 30, 2014
 
-@author: eswens13
+
 '''
 
 import sys, os, subprocess

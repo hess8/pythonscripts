@@ -1,7 +1,7 @@
 '''
 Created on Aug 29, 2014
 
-@author: eswens13
+
 '''
 import os, subprocess
 from numpy import amin, amax, sort, zeros, array, floor, exp, ceil, median

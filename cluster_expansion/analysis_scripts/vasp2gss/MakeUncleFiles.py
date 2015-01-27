@@ -1,7 +1,7 @@
 '''
 Created on Aug 29, 2014
 
-@author: eswens13
+
 '''
 from numpy import zeros, mod #bch
 import os, subprocess

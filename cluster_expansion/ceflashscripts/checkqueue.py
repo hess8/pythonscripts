@@ -1,8 +1,7 @@
- #!/usr/bin/python
 
 import sys,os,subprocess,time
 import numpy as np
 from numpy import pi
-import kmeshroutines as km
+from kmeshroutines import checkq
 
-km.checkq('bch') #loops for days
+checkq('bch') #loops for days
