@@ -199,7 +199,7 @@ def writejobfile(path):
 # ==================================================================================
 # ==================================================================================
 ''' 
-Here we read lattice in a 'scale free' manner, i.e. every cubic lattic is 100, 010, 001. 
+Here we read lattice in a 'scale free' manner, i.e. every cubic lattice is 100, 010, 001. 
 The real lattice is A = PL, where P is the parent lattice and L is an integer matrix.  
 We are forming a mesh K in the form B = KM, then scale it for use.   
 
@@ -219,10 +219,12 @@ If the Kmesh is fcc, then...
 
 #maindir = '/fslhome/bch/cluster_expansion/sisi/equivk_accurate/'
 #maindir = '/fslhome/bch/cluster_expansion/alal/cubic_al/equivk_c1-6_accurate/'
-maindir = '/fslhome/bch/cluster_expansion/alal/equivk_f-16.tetra.noBlochl/'
+#maindir = '/fslhome/bch/cluster_expansion/alal/equivk_f-16.tetra.noBlochl/'
 #maindir = '/fslhome/bch/cluster_expansion/cucu/equivk_accurate/'
 #maindir = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6.tetra/'
 #maindir = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6.sigma.02/'
+maindir = '/fslhome/bch/cluster_expansion/structure_noise/l /equivk_accurate/'
+
 #enumfile = maindir + 'struct_enum.in.si'
 #enumfile = maindir + 'struct_enum.in.cub' 
 enumfile = maindir + 'struct_enum.in.fcc' 

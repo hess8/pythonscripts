@@ -49,7 +49,7 @@ def writedirnames(list):
     
 def getEnergy(dir):
     lines = readfile(dir+'/OSZICAR')
-    print lines
+#    print lines
 #            print 'Oszicar last line length',len(lines[-1].split())
 #            print lines[-1].split()
     if len(lines[-1].split())>1:
@@ -62,13 +62,13 @@ def getEnergy(dir):
 def writeEnergiesOszicar(list):           
     enerfile = open('energies','w')
     for i in list:
-        print i
+#        print i
         try:
             energy = getEnergy(i)
         except:
     		energy = '0'
         if energy =="F=": energy = lines[-1].split()[3]
-        print energy
+#        print energy
         enerfile.write(energy + '\n') #energy in last line
     enerfile.close()
 
@@ -108,7 +108,7 @@ def writeNkIBZ(list):
     lastfolder = os.getcwd()
     file = open('NkIBZ','w')
     for i in list:
-        print i
+#        print i
 #        os.chdir(i)
 #        print os.getcwd()
 #        print os.listdir(os.getcwd())
@@ -119,7 +119,7 @@ def writeNkIBZ(list):
             ibzkpt.close()
         except:
             nk = '0'
-        print nk
+#        print nk
         file.write(nk + '\n')  
         os.chdir(lastfolder)
     file.close()
@@ -130,7 +130,7 @@ def writeNk(list):
     lastfolder = os.getcwd()
     file = open('Nk','w')
     for i in list:
-        print i
+#        print i
 #        os.chdir(i)
 #        print os.getcwd()
 #        print os.listdir(os.getcwd())
@@ -141,7 +141,7 @@ def writeNk(list):
             ibzkpt.close()
         except:
             nk = '0'
-        print nk
+#        print nk
         file.write(nk + '\n')  
         os.chdir(lastfolder)
     file.close()
@@ -410,14 +410,14 @@ def cpuTime(folder):
         time =  float(result[0][-10:-3].strip()) #last few characters
     except:
         time = 0
-    print time
+#    print time
     return time
 
 def writeCPUtime(list):    
     '''writes number of steps to output file for each folder'''
     file = open('cputime','w')
     for path in list:
-        print path
+#        print path
         file.write(str(cpuTime(path))+'\n')
     file.close()
     
@@ -465,7 +465,7 @@ def removezeros(arrlist):
     for array in arrlist:
         for i in range(len(array)):
             if isequal(float(array[i]),0.0) and i not in zerolist:
-                print 'removing zeros at location',i
+#                print 'removing zeros at location',i
                 zerolist.append(i)
     for j,array in enumerate(arrlist):
         arrlist2[j] = delete(arrlist[j],zerolist)

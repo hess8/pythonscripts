@@ -89,7 +89,7 @@ for maindir in [path + 'structs.cubmesh/']:
     #    lattype = ''
     ################# summary #################
     outfile = open('vary_n.csv','w')
-    outfile.write('Struct,n_mesh,energy,efermi,Natoms,energy/atom,energy err,fermi err,el converged,el steps,NIBZ,cputime(min\n')
+    outfile.write('Struct_m,n_mesh,energy,efermi,Natoms,energy/atom,energy err,fermi err,el converged,el steps,NIBZ,cputime(min\n')
     
     #os.chdir(mainDir)
     file = open(maindir+'names','r')

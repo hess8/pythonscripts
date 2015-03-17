@@ -1,5 +1,6 @@
 #!/usr/bin/python
 '''    
+Written by Bret Hess, Brigham Young University, 2015
 '''
 import sys,os,subprocess
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/') 

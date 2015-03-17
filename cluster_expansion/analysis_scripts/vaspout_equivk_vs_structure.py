@@ -8,14 +8,25 @@ from numpy import zeros,transpose,array,sum,float64,rint,mean
 from numpy.linalg import norm
 from analysisToolsVasp import writeEnergiesOszicar, writedirnames, nstrip, writeNk, writeNkIBZ, \
   writeElConverge, writeElSteps, writeCPUtime, enerparts, getdata, readfile, writefile, \
-  getms, writefermi, removezeros
+  getms, writefermi, removezeros, isequal
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
 from plotTools import plotxy
 from pylab import *
 from copy import deepcopy
 fprec=float64
 
-
+def displayFailed(arrlist,dirs):
+    '''Useful for plotting, when arrays have zeros from unfinished jobs.  Arrays all have the same length.  If any has a zero as an element, remove that index's element in all arrays'''
+    #make a list of all locations where zeros occur
+    zerolist = []
+    arrlist2 = deepcopy(arrlist)
+    for array in arrlist:
+        for i in range(len(array)):
+            if isequal(float(array[i]),0.0) and i not in zerolist:
+                zerolist.append(i)
+    for i in zerolist:
+#        print dirs[i].split('/')
+        print 'structure {},{} failed'.format(dirs[i].split('/')[-1],i)
 
 def getibest(dirs):
 #    mrange = []
@@ -23,8 +34,11 @@ def getibest(dirs):
     for i,dir in enumerate(dirs):
         if dir[1]=='1' and dir[2]=='_':
             m = int(dir.split('_')[-1])
-            print dir, m
-            if m > mmax:
+#            print dir, m
+#            if m > mmax:
+#                ibest = i
+#                mmax = m
+            if m == 24:
                 ibest = i
                 mmax = m
 #            mrange.append(m)
@@ -44,23 +58,21 @@ def getibest(dirs):
 #path = '/fslhome/bch/cluster_expansion/sisi/nosymequivk/'
 #path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6_encut500/'
 
-path = '/fslhome/bch/cluster_expansion/alal/equivk_f1-6.prec.accurate/'
-#path = '/fslhome/bch/cluster_expansion/cucu/equivk/'
+#path = '/fslhome/bch/cluster_expansion/structure_noise/gaga/equivk_accurate/'
+path = '/fslhome/bch/cluster_expansion/structure_noise/alal/equivk_f1-6.prec.accurate/'
 
 cubdir = path + 'structs.cubmesh/' #for plotting comparison
 
 
 #title_detail =  'Si:Si'
 #title_detail =  'Si:Si,no symmetry,cubic mesh,f1-50,ediff 1e-7 '
-title_detail =  'Al:Al cubic mesh,PREC = High'
+element = path.split('/')[-3][0].upper()+ path.split('/')[-3][1].lower()
+title_detail =  '{}:{} cubic mesh'.format(element,element)
 #title_detail =  'Cu:Cu, cubic mesh,f1-50,ediff 1e-7 '
 
 structselect = ['f1','f3','f4','f5','f6']#,'f7', 'f8','f9','f10']#need to have f1 in here
 
-
 testfile = 'POSCAR'
-
-
 
 for maindir in [path + 'structs.cubmesh/']:
 #for maindir in [path + 'structs.cubtest/']:
@@ -80,7 +92,7 @@ for maindir in [path + 'structs.cubmesh/']:
             if structi+'_' in dir:
                 dirs.append(dir)
                 dirsfull.append(maindir+dir)
-        print dirs
+#        print dirs
         if structi ==  structselect[0]:
             [mmax, ibest] = getibest(dirs)
             print 'energy of structure 1, multiplier %i, index %i used as ebest' % (mmax, ibest)  
@@ -141,14 +153,15 @@ for maindir in [path + 'structs.cubmesh/']:
         if structi ==  structselect[0]: #comparing everything to it for now
             ebest = en_per_atom[ibest]
             efbest = float(efermis[ibest]) 
-            print 'ebest', ebest
-            print 'e-fermi best', efbest
+#            print 'ebest', ebest
+#            print 'e-fermi best', efbest
         err = abs(en_per_atom-ebest)
         ef_err = abs(efermis - efbest)
         ns = [ms[j]*dets[j] for j in range(len(dets))]  
-        
+        displayFailed([ns,ms,en_per_atom,efermis,NkIBZ,NkfullBZ,dets],dirsfull)        
         #plots
         [[ns,ms,en_per_atom,efermis,NkIBZ,NkfullBZ,dets],zerolist] = removezeros([ns,ms,en_per_atom,efermis,NkIBZ,NkfullBZ,dets])#for structures that were not finished and have zero entries
+
         #    ebest = en_per_atom[argmax(ns)]
         #    efbest = efermis[argmax(ns)]
         err = abs(en_per_atom-ebest)+1e-8 #do these again with only the finished runs
