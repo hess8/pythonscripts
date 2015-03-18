@@ -1,5 +1,6 @@
 #!/usr/bin/python
-'''    
+'''
+n is a multiple (m) of the volume factor  
 '''
 
 import sys,os,subprocess
@@ -31,9 +32,6 @@ def getibest(dirs):
                 mmax = m
 #            mrange.append(m)
     return mmax, ibest
-
-def ebest_avg(ns):
-
 
 ################# script #######################
 ################# script #######################v
@@ -263,8 +261,9 @@ ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
 xlabel('n in cubic grid')
 ylabel('Error (eV)') 
-title('Structure noise\nReference energies: avg 4 highest n\'s')
-xlim((0,55))
+title('Structure noise\nReference energies: Struct 1, n=24')
+xlim((0,25))
+
 #ylim((1e-12,1e0))
 for i in range(nplots):    
     ax1.semilogy(nsList[i], errsList[i],label=titles[i],linestyle='None',color=cm.jet(1.*(i+1)/float(nplots)), marker = 'o') # marker = 'o',

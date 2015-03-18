@@ -49,7 +49,7 @@ def writekpts_vasp_M(path,Bv,M,nops,symmops):
     #The rows of M determine how each vector (column) of K is used in the sum.    
     #The 1BZ parallelpiped must go from (0,0,0) to each of the other vertices 
     #the close vertices are at B1,B2,B3.  So each element of each row must be considered.
-    #The far verictecs are at  for these three vectors taken in paris. 
+    #The far vertices are at for these three vectors taken in pairs. 
     #To reach the diagonal point of the parallelpiped, 
     #which means that the sums of the rows must be part of the limits.
     #To reach the three far vertices (not the tip), we have to take the columns of M in pairs:, 
@@ -150,7 +150,7 @@ def writekpts_vasp_M(path,Bv,M,nops,symmops):
     #write POSCAR with irred BZ.  for vmd:  put B vectors in lattice, and kmesh in atomic positions
     scale = 10       
     poscar = open('POSCARkred','w')
-    poscar.write('Cs I kpoints vs B'+'\n') #different sizes from this label
+    poscar.write('Kpoints in BZ'+'\n') #different sizes from this label
     poscar.write('1.0\n')
     for i in [0,1,2]:
         poscar.write('%20.15f %20.15f %20.15f \n' % (scale*Bv[0,i], scale*Bv[1,i], scale*Bv[2,i])) 
@@ -162,13 +162,13 @@ def writekpts_vasp_M(path,Bv,M,nops,symmops):
     poscar.close()
 
     
-    poscar = open('KPOINTS','w')
-    poscar.write('BCH generated via bestmeshiter'+'\n') #different sizes from this label
-    poscar.write('%i\n' % nksymm)
-    poscar.write('Reciprocal lattice units\n')
+    kpoints = open('KPOINTS','w')
+    kpoints.write('BCH generated'+'\n') #different sizes from this label
+    kpoints.write('%i\n' % nksymm)
+    kpoints.write('Reciprocal lattice units\n')
     for i in range(nksymm):
-        poscar.write('%20.15f %20.15f %20.15f      %i\n' % (kptssymm[0,i],kptssymm[1,i],kptssymm[2,i], weights[i]))
-    poscar.close()
+        kpoints.write('%20.15f %20.15f %20.15f      %i\n' % (kptssymm[0,i],kptssymm[1,i],kptssymm[2,i], weights[i]))
+    kpoints.close()
                     
 #    sys.exit('stop')  
 
@@ -242,8 +242,8 @@ print finalDir.split('.')
 if 'cub' in finalDir.split('.')[-1]:
     meshtype = 'cub'
     multlist = []
-#    multlist = [2,3,4,5,6,7,8]
-    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24] #this is m
+#multlist contains the possible m's:
+    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24] 
 #    multlist = [2,3,4,5,6,8,10,12,13,14,16,18,19,20,21,22,23,24,26,28,32,36,38,40,42,44] #this is m
 #    multlist = [40,42,44] #this is m
 #    multlist = [2]    

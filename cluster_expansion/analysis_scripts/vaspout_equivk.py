@@ -1,5 +1,6 @@
 #!/usr/bin/python
-'''    
+'''
+n is a multiple (m) of the volume factor  
 '''
 
 import sys,os,subprocess
