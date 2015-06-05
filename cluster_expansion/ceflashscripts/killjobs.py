@@ -1,7 +1,7 @@
 import os,subprocess,time
 '''Kills jobs in the 'jobrange' '''
 user = 'bch'
-jobrange = [5396185, 5396186]  #must adjust this range of job numbers to kill
+jobrange = [5984624, 5984633]  #must adjust this range of job numbers to kill
 running = subprocess.check_output(['squeue','-o','%.7i %.7P %.15j %.5u %.2t %.10M %.6D %R','-u',user])#'--state=RUNNING'])    
 #print running.split('\n')[1:][0].split()[0]
 deleteIDs = []
@@ -14,7 +14,7 @@ for line in running.split('\n')[1:-1]: #the last and first lines should be ignor
 
 print deleteIDs
 print 'KILL JOBS!'
-print 'Are you OK with deleting the above list of jobs?'
+print 'Are you OK with deleting the above list of {} jobs?'.format(len(deleteIDs))
 ans = 'no'
 while ans != 'delete':
     ans = raw_input("If so, type 'delete' ")
