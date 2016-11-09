@@ -1,7 +1,7 @@
 import os, subprocess, sys, time 
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
-from kmeshroutines import lattice, surfvol, orthdef, isequal,trimSmall
+from kmeshroutines import lattice, surfvol, orthdef, areEqual,trimSmall
 #from kmeshroutines import lattice,surfvol, orthdef
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, matrix, transpose,rint,inner,multiply
@@ -31,9 +31,9 @@ def changewhich(M,B):
     return bestindex
 
 def cost(M,B):
-    if isequal(det(M),0):
+    if areEqual(det(M),0):
         return 100
-#    if isequal(K.det,0):
+#    if areEqual(K.det,0):
 #        return 100
     else:
         K = lattice()

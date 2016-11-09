@@ -7,7 +7,7 @@ import os, subprocess, sys, time
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
 from kmeshroutines import lattice,surfvol, orthdef
 
-from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs
+from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import matrix, transpose,rint,inner,multiply,size,argmin,argmax,nonzero,shape

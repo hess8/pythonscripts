@@ -3,7 +3,7 @@ import os, subprocess, sys, time
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/')
 from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol, \
-    orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs,  \
+    orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,  \
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection, symmetryError,\
     latticeType, packingFraction, mink_reduce, lattvec_u,arenormal,\

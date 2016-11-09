@@ -1,0 +1,897 @@
+0
+[ 0.  0.  0.  0.  0.  0.  0.  0.]
+1
+[ 0.  0.  0.  0.  0.  0.  0.  1.]
+2
+[ 0.  0.  0.  0.  0.  0.  1.  0.]
+3
+[ 0.  0.  0.  0.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct3/relax
+Submitted job for struct3
+4
+[ 0.  0.  0.  0.  0.  1.  0.  0.]
+5
+[ 0.  0.  0.  0.  0.  1.  0.  1.]
+6
+[ 0.  0.  0.  0.  0.  1.  1.  0.]
+7
+[ 0.  0.  0.  0.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct7/relax
+Submitted job for struct7
+8
+[ 0.  0.  0.  0.  1.  0.  0.  0.]
+9
+[ 0.  0.  0.  0.  1.  0.  0.  1.]
+10
+[ 0.  0.  0.  0.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct10/relax
+Submitted job for struct10
+11
+[ 0.  0.  0.  0.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct11/relax
+Submitted job for struct11
+12
+[ 0.  0.  0.  0.  1.  1.  0.  0.]
+13
+[ 0.  0.  0.  0.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct13/relax
+Submitted job for struct13
+14
+[ 0.  0.  0.  0.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct14/relax
+Submitted job for struct14
+15
+[ 0.  0.  0.  0.  1.  1.  1.  1.]
+16
+[ 0.  0.  0.  1.  0.  0.  0.  0.]
+17
+[ 0.  0.  0.  1.  0.  0.  0.  1.]
+18
+[ 0.  0.  0.  1.  0.  0.  1.  0.]
+19
+[ 0.  0.  0.  1.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct19/relax
+Submitted job for struct19
+20
+[ 0.  0.  0.  1.  0.  1.  0.  0.]
+21
+[ 0.  0.  0.  1.  0.  1.  0.  1.]
+22
+[ 0.  0.  0.  1.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct22/relax
+Submitted job for struct22
+23
+[ 0.  0.  0.  1.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct23/relax
+Submitted job for struct23
+24
+[ 0.  0.  0.  1.  1.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct24/relax
+Submitted job for struct24
+25
+[ 0.  0.  0.  1.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct25/relax
+Submitted job for struct25
+26
+[ 0.  0.  0.  1.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct26/relax
+Submitted job for struct26
+27
+[ 0.  0.  0.  1.  1.  0.  1.  1.]
+28
+[ 0.  0.  0.  1.  1.  1.  0.  0.]
+29
+[ 0.  0.  0.  1.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct29/relax
+Submitted job for struct29
+30
+[ 0.  0.  0.  1.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct30/relax
+Submitted job for struct30
+31
+[ 0.  0.  0.  1.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct31/relax
+Submitted job for struct31
+32
+[ 0.  0.  1.  0.  0.  0.  0.  0.]
+33
+[ 0.  0.  1.  0.  0.  0.  0.  1.]
+34
+[ 0.  0.  1.  0.  0.  0.  1.  0.]
+35
+[ 0.  0.  1.  0.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct35/relax
+Submitted job for struct35
+36
+[ 0.  0.  1.  0.  0.  1.  0.  0.]
+37
+[ 0.  0.  1.  0.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct37/relax
+Submitted job for struct37
+38
+[ 0.  0.  1.  0.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct38/relax
+Submitted job for struct38
+39
+[ 0.  0.  1.  0.  0.  1.  1.  1.]
+40
+[ 0.  0.  1.  0.  1.  0.  0.  0.]
+41
+[ 0.  0.  1.  0.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct41/relax
+Submitted job for struct41
+42
+[ 0.  0.  1.  0.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct42/relax
+Submitted job for struct42
+43
+[ 0.  0.  1.  0.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct43/relax
+Submitted job for struct43
+44
+[ 0.  0.  1.  0.  1.  1.  0.  0.]
+45
+[ 0.  0.  1.  0.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct45/relax
+Submitted job for struct45
+46
+[ 0.  0.  1.  0.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct46/relax
+Submitted job for struct46
+47
+[ 0.  0.  1.  0.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct47/relax
+Submitted job for struct47
+48
+[ 0.  0.  1.  1.  0.  0.  0.  0.]
+49
+[ 0.  0.  1.  1.  0.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct49/relax
+Submitted job for struct49
+50
+[ 0.  0.  1.  1.  0.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct50/relax
+Submitted job for struct50
+51
+[ 0.  0.  1.  1.  0.  0.  1.  1.]
+52
+[ 0.  0.  1.  1.  0.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct52/relax
+Submitted job for struct52
+53
+[ 0.  0.  1.  1.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct53/relax
+Submitted job for struct53
+54
+[ 0.  0.  1.  1.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct54/relax
+Submitted job for struct54
+55
+[ 0.  0.  1.  1.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct55/relax
+Submitted job for struct55
+56
+[ 0.  0.  1.  1.  1.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct56/relax
+Submitted job for struct56
+57
+[ 0.  0.  1.  1.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct57/relax
+Submitted job for struct57
+58
+[ 0.  0.  1.  1.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct58/relax
+Submitted job for struct58
+59
+[ 0.  0.  1.  1.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct59/relax
+Submitted job for struct59
+60
+[ 0.  0.  1.  1.  1.  1.  0.  0.]
+61
+[ 0.  0.  1.  1.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct61/relax
+Submitted job for struct61
+62
+[ 0.  0.  1.  1.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct62/relax
+Submitted job for struct62
+63
+[ 0.  0.  1.  1.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct63/relax
+Submitted job for struct63
+64
+[ 0.  1.  0.  0.  0.  0.  0.  0.]
+65
+[ 0.  1.  0.  0.  0.  0.  0.  1.]
+66
+[ 0.  1.  0.  0.  0.  0.  1.  0.]
+67
+[ 0.  1.  0.  0.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct67/relax
+Submitted job for struct67
+68
+[ 0.  1.  0.  0.  0.  1.  0.  0.]
+69
+[ 0.  1.  0.  0.  0.  1.  0.  1.]
+70
+[ 0.  1.  0.  0.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct70/relax
+Submitted job for struct70
+71
+[ 0.  1.  0.  0.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct71/relax
+Submitted job for struct71
+72
+[ 0.  1.  0.  0.  1.  0.  0.  0.]
+73
+[ 0.  1.  0.  0.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct73/relax
+Submitted job for struct73
+74
+[ 0.  1.  0.  0.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct74/relax
+Submitted job for struct74
+75
+[ 0.  1.  0.  0.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct75/relax
+Submitted job for struct75
+76
+[ 0.  1.  0.  0.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct76/relax
+Submitted job for struct76
+77
+[ 0.  1.  0.  0.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct77/relax
+Submitted job for struct77
+78
+[ 0.  1.  0.  0.  1.  1.  1.  0.]
+79
+[ 0.  1.  0.  0.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct79/relax
+Submitted job for struct79
+80
+[ 0.  1.  0.  1.  0.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct80/relax
+Submitted job for struct80
+81
+[ 0.  1.  0.  1.  0.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct81/relax
+Submitted job for struct81
+82
+[ 0.  1.  0.  1.  0.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct82/relax
+Submitted job for struct82
+83
+[ 0.  1.  0.  1.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct83/relax
+Submitted job for struct83
+84
+[ 0.  1.  0.  1.  0.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct84/relax
+Submitted job for struct84
+85
+[ 0.  1.  0.  1.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct85/relax
+Submitted job for struct85
+86
+[ 0.  1.  0.  1.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct86/relax
+Submitted job for struct86
+87
+[ 0.  1.  0.  1.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct87/relax
+Submitted job for struct87
+88
+[ 0.  1.  0.  1.  1.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct88/relax
+Submitted job for struct88
+89
+[ 0.  1.  0.  1.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct89/relax
+Submitted job for struct89
+90
+[ 0.  1.  0.  1.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct90/relax
+Submitted job for struct90
+91
+[ 0.  1.  0.  1.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct91/relax
+Submitted job for struct91
+92
+[ 0.  1.  0.  1.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct92/relax
+Submitted job for struct92
+93
+[ 0.  1.  0.  1.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct93/relax
+Submitted job for struct93
+94
+[ 0.  1.  0.  1.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct94/relax
+Submitted job for struct94
+95
+[ 0.  1.  0.  1.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct95/relax
+Submitted job for struct95
+96
+[ 0.  1.  1.  0.  0.  0.  0.  0.]
+97
+[ 0.  1.  1.  0.  0.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct97/relax
+Submitted job for struct97
+98
+[ 0.  1.  1.  0.  0.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct98/relax
+Submitted job for struct98
+99
+[ 0.  1.  1.  0.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct99/relax
+Submitted job for struct99
+100
+[ 0.  1.  1.  0.  0.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct100/relax
+Submitted job for struct100
+101
+[ 0.  1.  1.  0.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct101/relax
+Submitted job for struct101
+102
+[ 0.  1.  1.  0.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct102/relax
+Submitted job for struct102
+103
+[ 0.  1.  1.  0.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct103/relax
+Submitted job for struct103
+104
+[ 0.  1.  1.  0.  1.  0.  0.  0.]
+105
+[ 0.  1.  1.  0.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct105/relax
+Submitted job for struct105
+106
+[ 0.  1.  1.  0.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct106/relax
+Submitted job for struct106
+107
+[ 0.  1.  1.  0.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct107/relax
+Submitted job for struct107
+108
+[ 0.  1.  1.  0.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct108/relax
+Submitted job for struct108
+109
+[ 0.  1.  1.  0.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct109/relax
+Submitted job for struct109
+110
+[ 0.  1.  1.  0.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct110/relax
+Submitted job for struct110
+111
+[ 0.  1.  1.  0.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct111/relax
+Submitted job for struct111
+112
+[ 0.  1.  1.  1.  0.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct112/relax
+Submitted job for struct112
+113
+[ 0.  1.  1.  1.  0.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct113/relax
+Submitted job for struct113
+114
+[ 0.  1.  1.  1.  0.  0.  1.  0.]
+115
+[ 0.  1.  1.  1.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct115/relax
+Submitted job for struct115
+116
+[ 0.  1.  1.  1.  0.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct116/relax
+Submitted job for struct116
+117
+[ 0.  1.  1.  1.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct117/relax
+Submitted job for struct117
+118
+[ 0.  1.  1.  1.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct118/relax
+Submitted job for struct118
+119
+[ 0.  1.  1.  1.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct119/relax
+Submitted job for struct119
+120
+[ 0.  1.  1.  1.  1.  0.  0.  0.]
+121
+[ 0.  1.  1.  1.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct121/relax
+Submitted job for struct121
+122
+[ 0.  1.  1.  1.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct122/relax
+Submitted job for struct122
+123
+[ 0.  1.  1.  1.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct123/relax
+Submitted job for struct123
+124
+[ 0.  1.  1.  1.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct124/relax
+Submitted job for struct124
+125
+[ 0.  1.  1.  1.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct125/relax
+Submitted job for struct125
+126
+[ 0.  1.  1.  1.  1.  1.  1.  0.]
+127
+[ 0.  1.  1.  1.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct127/relax
+Submitted job for struct127
+128
+[ 1.  0.  0.  0.  0.  0.  0.  0.]
+129
+[ 1.  0.  0.  0.  0.  0.  0.  1.]
+130
+[ 1.  0.  0.  0.  0.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct130/relax
+Submitted job for struct130
+131
+[ 1.  0.  0.  0.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct131/relax
+Submitted job for struct131
+132
+[ 1.  0.  0.  0.  0.  1.  0.  0.]
+133
+[ 1.  0.  0.  0.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct133/relax
+Submitted job for struct133
+134
+[ 1.  0.  0.  0.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct134/relax
+Submitted job for struct134
+135
+[ 1.  0.  0.  0.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct135/relax
+Submitted job for struct135
+136
+[ 1.  0.  0.  0.  1.  0.  0.  0.]
+137
+[ 1.  0.  0.  0.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct137/relax
+Submitted job for struct137
+138
+[ 1.  0.  0.  0.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct138/relax
+Submitted job for struct138
+139
+[ 1.  0.  0.  0.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct139/relax
+Submitted job for struct139
+140
+[ 1.  0.  0.  0.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct140/relax
+Submitted job for struct140
+141
+[ 1.  0.  0.  0.  1.  1.  0.  1.]
+142
+[ 1.  0.  0.  0.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct142/relax
+Submitted job for struct142
+143
+[ 1.  0.  0.  0.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct143/relax
+Submitted job for struct143
+144
+[ 1.  0.  0.  1.  0.  0.  0.  0.]
+145
+[ 1.  0.  0.  1.  0.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct145/relax
+Submitted job for struct145
+146
+[ 1.  0.  0.  1.  0.  0.  1.  0.]
+147
+[ 1.  0.  0.  1.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct147/relax
+Submitted job for struct147
+148
+[ 1.  0.  0.  1.  0.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct148/relax
+Submitted job for struct148
+149
+[ 1.  0.  0.  1.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct149/relax
+Submitted job for struct149
+150
+[ 1.  0.  0.  1.  0.  1.  1.  0.]
+151
+[ 1.  0.  0.  1.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct151/relax
+Submitted job for struct151
+152
+[ 1.  0.  0.  1.  1.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct152/relax
+Submitted job for struct152
+153
+[ 1.  0.  0.  1.  1.  0.  0.  1.]
+154
+[ 1.  0.  0.  1.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct154/relax
+Submitted job for struct154
+155
+[ 1.  0.  0.  1.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct155/relax
+Submitted job for struct155
+156
+[ 1.  0.  0.  1.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct156/relax
+Submitted job for struct156
+157
+[ 1.  0.  0.  1.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct157/relax
+Submitted job for struct157
+158
+[ 1.  0.  0.  1.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct158/relax
+Submitted job for struct158
+159
+[ 1.  0.  0.  1.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct159/relax
+Submitted job for struct159
+160
+[ 1.  0.  1.  0.  0.  0.  0.  0.]
+161
+[ 1.  0.  1.  0.  0.  0.  0.  1.]
+162
+[ 1.  0.  1.  0.  0.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct162/relax
+Submitted job for struct162
+163
+[ 1.  0.  1.  0.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct163/relax
+Submitted job for struct163
+164
+[ 1.  0.  1.  0.  0.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct164/relax
+Submitted job for struct164
+165
+[ 1.  0.  1.  0.  0.  1.  0.  1.]
+166
+[ 1.  0.  1.  0.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct166/relax
+Submitted job for struct166
+167
+[ 1.  0.  1.  0.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct167/relax
+Submitted job for struct167
+168
+[ 1.  0.  1.  0.  1.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct168/relax
+Submitted job for struct168
+169
+[ 1.  0.  1.  0.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct169/relax
+Submitted job for struct169
+170
+[ 1.  0.  1.  0.  1.  0.  1.  0.]
+171
+[ 1.  0.  1.  0.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct171/relax
+Submitted job for struct171
+172
+[ 1.  0.  1.  0.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct172/relax
+Submitted job for struct172
+173
+[ 1.  0.  1.  0.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct173/relax
+Submitted job for struct173
+174
+[ 1.  0.  1.  0.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct174/relax
+Submitted job for struct174
+175
+[ 1.  0.  1.  0.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct175/relax
+Submitted job for struct175
+176
+[ 1.  0.  1.  1.  0.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct176/relax
+Submitted job for struct176
+177
+[ 1.  0.  1.  1.  0.  0.  0.  1.]
+178
+[ 1.  0.  1.  1.  0.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct178/relax
+Submitted job for struct178
+179
+[ 1.  0.  1.  1.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct179/relax
+Submitted job for struct179
+180
+[ 1.  0.  1.  1.  0.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct180/relax
+Submitted job for struct180
+181
+[ 1.  0.  1.  1.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct181/relax
+Submitted job for struct181
+182
+[ 1.  0.  1.  1.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct182/relax
+Submitted job for struct182
+183
+[ 1.  0.  1.  1.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct183/relax
+Submitted job for struct183
+184
+[ 1.  0.  1.  1.  1.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct184/relax
+Submitted job for struct184
+185
+[ 1.  0.  1.  1.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct185/relax
+Submitted job for struct185
+186
+[ 1.  0.  1.  1.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct186/relax
+Submitted job for struct186
+187
+[ 1.  0.  1.  1.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct187/relax
+Submitted job for struct187
+188
+[ 1.  0.  1.  1.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct188/relax
+Submitted job for struct188
+189
+[ 1.  0.  1.  1.  1.  1.  0.  1.]
+190
+[ 1.  0.  1.  1.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct190/relax
+Submitted job for struct190
+191
+[ 1.  0.  1.  1.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct191/relax
+Submitted job for struct191
+192
+[ 1.  1.  0.  0.  0.  0.  0.  0.]
+193
+[ 1.  1.  0.  0.  0.  0.  0.  1.]
+194
+[ 1.  1.  0.  0.  0.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct194/relax
+Submitted job for struct194
+195
+[ 1.  1.  0.  0.  0.  0.  1.  1.]
+196
+[ 1.  1.  0.  0.  0.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct196/relax
+Submitted job for struct196
+197
+[ 1.  1.  0.  0.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct197/relax
+Submitted job for struct197
+198
+[ 1.  1.  0.  0.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct198/relax
+Submitted job for struct198
+199
+[ 1.  1.  0.  0.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct199/relax
+Submitted job for struct199
+200
+[ 1.  1.  0.  0.  1.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct200/relax
+Submitted job for struct200
+201
+[ 1.  1.  0.  0.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct201/relax
+Submitted job for struct201
+202
+[ 1.  1.  0.  0.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct202/relax
+Submitted job for struct202
+203
+[ 1.  1.  0.  0.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct203/relax
+Submitted job for struct203
+204
+[ 1.  1.  0.  0.  1.  1.  0.  0.]
+205
+[ 1.  1.  0.  0.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct205/relax
+Submitted job for struct205
+206
+[ 1.  1.  0.  0.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct206/relax
+Submitted job for struct206
+207
+[ 1.  1.  0.  0.  1.  1.  1.  1.]
+208
+[ 1.  1.  0.  1.  0.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct208/relax
+Submitted job for struct208
+209
+[ 1.  1.  0.  1.  0.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct209/relax
+Submitted job for struct209
+210
+[ 1.  1.  0.  1.  0.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct210/relax
+Submitted job for struct210
+211
+[ 1.  1.  0.  1.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct211/relax
+Submitted job for struct211
+212
+[ 1.  1.  0.  1.  0.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct212/relax
+Submitted job for struct212
+213
+[ 1.  1.  0.  1.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct213/relax
+Submitted job for struct213
+214
+[ 1.  1.  0.  1.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct214/relax
+Submitted job for struct214
+215
+[ 1.  1.  0.  1.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct215/relax
+Submitted job for struct215
+216
+[ 1.  1.  0.  1.  1.  0.  0.  0.]
+217
+[ 1.  1.  0.  1.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct217/relax
+Submitted job for struct217
+218
+[ 1.  1.  0.  1.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct218/relax
+Submitted job for struct218
+219
+[ 1.  1.  0.  1.  1.  0.  1.  1.]
+220
+[ 1.  1.  0.  1.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct220/relax
+Submitted job for struct220
+221
+[ 1.  1.  0.  1.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct221/relax
+Submitted job for struct221
+222
+[ 1.  1.  0.  1.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct222/relax
+Submitted job for struct222
+223
+[ 1.  1.  0.  1.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct223/relax
+Submitted job for struct223
+224
+[ 1.  1.  1.  0.  0.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct224/relax
+Submitted job for struct224
+225
+[ 1.  1.  1.  0.  0.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct225/relax
+Submitted job for struct225
+226
+[ 1.  1.  1.  0.  0.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct226/relax
+Submitted job for struct226
+227
+[ 1.  1.  1.  0.  0.  0.  1.  1.]
+228
+[ 1.  1.  1.  0.  0.  1.  0.  0.]
+229
+[ 1.  1.  1.  0.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct229/relax
+Submitted job for struct229
+230
+[ 1.  1.  1.  0.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct230/relax
+Submitted job for struct230
+231
+[ 1.  1.  1.  0.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct231/relax
+Submitted job for struct231
+232
+[ 1.  1.  1.  0.  1.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct232/relax
+Submitted job for struct232
+233
+[ 1.  1.  1.  0.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct233/relax
+Submitted job for struct233
+234
+[ 1.  1.  1.  0.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct234/relax
+Submitted job for struct234
+235
+[ 1.  1.  1.  0.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct235/relax
+Submitted job for struct235
+236
+[ 1.  1.  1.  0.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct236/relax
+Submitted job for struct236
+237
+[ 1.  1.  1.  0.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct237/relax
+Submitted job for struct237
+238
+[ 1.  1.  1.  0.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct238/relax
+Submitted job for struct238
+239
+[ 1.  1.  1.  0.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct239/relax
+Submitted job for struct239
+240
+[ 1.  1.  1.  1.  0.  0.  0.  0.]
+241
+[ 1.  1.  1.  1.  0.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct241/relax
+Submitted job for struct241
+242
+[ 1.  1.  1.  1.  0.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct242/relax
+Submitted job for struct242
+243
+[ 1.  1.  1.  1.  0.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct243/relax
+Submitted job for struct243
+244
+[ 1.  1.  1.  1.  0.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct244/relax
+Submitted job for struct244
+245
+[ 1.  1.  1.  1.  0.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct245/relax
+Submitted job for struct245
+246
+[ 1.  1.  1.  1.  0.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct246/relax
+Submitted job for struct246
+247
+[ 1.  1.  1.  1.  0.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct247/relax
+Submitted job for struct247
+248
+[ 1.  1.  1.  1.  1.  0.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct248/relax
+Submitted job for struct248
+249
+[ 1.  1.  1.  1.  1.  0.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct249/relax
+Submitted job for struct249
+250
+[ 1.  1.  1.  1.  1.  0.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct250/relax
+Submitted job for struct250
+251
+[ 1.  1.  1.  1.  1.  0.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct251/relax
+Submitted job for struct251
+252
+[ 1.  1.  1.  1.  1.  1.  0.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct252/relax
+Submitted job for struct252
+253
+[ 1.  1.  1.  1.  1.  1.  0.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct253/relax
+Submitted job for struct253
+254
+[ 1.  1.  1.  1.  1.  1.  1.  0.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct254/relax
+Submitted job for struct254
+255
+[ 1.  1.  1.  1.  1.  1.  1.  1.]
+/panfs/pan.fsl.byu.edu/scr/usr/81/bch/hexagonal/2x2adatoms/struct255/relax
+Submitted job for struct255
+done

@@ -1,0 +1,193 @@
+
+Initializing...
+
+Finding Directories to do dos on
+
+Searching all Directories in /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/
+
+Checking to see which folders contain dos
+
+
+The following folders are in checkedList:
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Co/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Cr/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Fe/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Hf/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Ir/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Mn/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Mo/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Nb_pv/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Ni/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Os/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Pd/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Pt/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Re/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Rh/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Ru/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Ta/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Tc/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Ti/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_V/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_W/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+checkedList contains : /bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Zr/ISIF_4/IBRION_2/ISPIN_2/dos/
+
+elements /panfs/pan.fsl.byu.edu/scr/usr/81/bch/transmet.half_graphane/half_graphane/dos
+energies /panfs/pan.fsl.byu.edu/scr/usr/81/bch/transmet.half_graphane/half_graphane/dos
+distances /panfs/pan.fsl.byu.edu/scr/usr/81/bch/transmet.half_graphane/half_graphane/dos
+CCdist /panfs/pan.fsl.byu.edu/scr/usr/81/bch/transmet.half_graphane/half_graphane/dos
+ElConverge /panfs/pan.fsl.byu.edu/scr/usr/81/bch/transmet.half_graphane/half_graphane/dos
+writeElSteps /panfs/pan.fsl.byu.edu/scr/usr/81/bch/transmet.half_graphane/half_graphane/dos
+Plotting DOS
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Co/ISIF_4/IBRION_2/ISPIN_2/dos/
+Fail:/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Co/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Cr/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Fe/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Hf/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Ir/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Mn/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Mo/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Nb_pv/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Ni/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Os/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Pd/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Pt/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Re/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Rh/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Ru/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Ta/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Tc/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Ti/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_V/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_W/ISIF_4/IBRION_2/ISPIN_2/dos/
+/bluehome/bch/vasprun/graphene.structures/transmet.half_graphane/half_graphane/dos/adatom_Zr/ISIF_4/IBRION_2/ISPIN_2/dos/
+Collating plots
+dos
+['Co', 'Cr', 'Fe', 'Hf', 'Ir', 'Mn', 'Mo', 'Nb_pv', 'Ni', 'Os', 'Pd', 'Pt', 'Re', 'Rh', 'Ru', 'Ta', 'Tc', 'Ti', 'V', 'W', 'Zr']
+Done with summary
+Co 111.904552573 -1.9741117 -1.115 -2.6358
+Cr -29.124184 -5.4842814 -1.115 -2.6358
+Fe -28.387576 -3.4564095 -1.115 -2.6358
+Hf -28.536894 -3.4727199 -1.115 -2.6358
+Ir -29.344627 -1.6282419 -1.115 -2.6358
+Mn -28.911545 -5.1573975 -1.115 -2.6358
+Mo -30.646449 -4.5875787 -1.115 -2.6358
+Nb_pv -29.456322 -3.15975 -1.115 -2.6358
+Ni -25.972699 -0.60799179 -1.115 -2.6358
+Os -31.2318 -2.911416 -1.115 -2.6358
+Pd -25.646043 -1.476413 -1.115 -2.6358
+Pt -26.742489 -0.60562948 -1.115 -2.6358
+Re -32.443488 -4.6061069 -1.115 -2.6358
+Rh -27.805825 -1.6428341 -1.115 -2.6358
+Ru -29.302429 -2.5305022 -1.115 -2.6358
+Ta -31.007371 -3.664375 -1.115 -2.6358
+Tc -30.402256 -3.4428579 -1.115 -2.6358
+Ti -27.223076 -2.4497942 -1.115 -2.6358
+V -28.544056 -3.5621525 -1.115 -2.6358
+W -32.426149 -4.5365181 -1.115 -2.6358
+Zr -27.312969 -2.1419252 -1.115 -2.6358
+0 Co*,138.393664273,0.111904552573E+03*,-.19741117E+01*,done,100*,100,6419.3*,-117.249274873,-.53447223E+01*,N*,9999
+
+1 Cr,0.8750974,-.29124184E+02,-.54842814E+01,done,2.03992000627,0.457948098,-1.7,4.399841,-.24724343E+02,Y,29
+
+2 Fe,-0.4161665,-.28387576E+02,-.34564095E+01,done,1.99230000161,0.448042944,-2.1,3.722925,-.24664651E+02,Y,24
+
+3 Hf,-0.5491741,-.28536894E+02,-.34727199E+01,done,2.27732001601,0.432890356,5.5,3.845592,-.24691302E+02,Y,24
+
+4 Ir,-3.2013851,-.29344627E+02,-.16282419E+01,done,2.0840200006,0.462160788,1.8,4.722196,-.24622431E+02,Y,22
+
+5 Mn,0.7608525,-.28911545E+02,-.51573975E+01,done,2.0093500004,0.461466058,-2.6,4.001455,-.24910090E+02,Y,31
+
+6 Mo,-1.5438703,-.30646449E+02,-.45875787E+01,done,2.18025000037,0.453357331,1.2,4.566584,-.26079865E+02,Y,25
+
+7 Nb_pv,-1.781572,-.29456322E+02,-.31597500E+01,done,2.22399000036,0.441621595,3.5,4.160855,-.25295467E+02,Y,24
+
+8 Ni,-0.84970721,-.25972699E+02,-.60799179E+00,done,1.94175000093,0.440383108,-1.7,3.944563,-.22028136E+02,Y,25
+
+9 Os,-3.805384,-.31231800E+02,-.29114160E+01,done,2.11534000059,0.467712641,1.3,4.913716,-.26318084E+02,Y,23
+
+10 Pd,0.34537,-.25646043E+02,-.14764130E+01,done,2.07599000154,0.435960944,1.9,3.98287,-.21663173E+02,Y,23
+
+11 Pt,-1.62185952,-.26742489E+02,-.60562948E+00,done,2.07719000087,0.448037832,2.8,4.125703,-.22616786E+02,Y,21
+
+12 Re,-3.3223811,-.32443488E+02,-.46061069E+01,done,2.15223000084,0.467571235,1.4,5.073761,-.27369727E+02,Y,23
+
+13 Rh,-1.6479909,-.27805825E+02,-.16428341E+01,done,2.06384000039,0.447904952,0.8,4.568538,-.23237287E+02,Y,22
+
+14 Ru,-2.2569268,-.29302429E+02,-.25305022E+01,done,2.1005400006,0.456604752,0.3,4.716805,-.24585624E+02,Y,22
+
+15 Ta,-2.827996,-.31007371E+02,-.36643750E+01,done,2.2244400011,0.45286353,3.6,4.316678,-.26690693E+02,Y,24
+
+16 Tc,-2.4443981,-.30402256E+02,-.34428579E+01,done,2.14753000058,0.458938958,0.4,4.809955,-.25592301E+02,Y,23
+
+17 Ti,-0.2582818,-.27223076E+02,-.24497942E+01,done,2.13201001839,0.4376391,2.6,3.836594,-.23386482E+02,Y,25
+
+18 V,-0.4669035,-.28544056E+02,-.35621525E+01,done,2.07686000022,0.452695536,-0.4,4.060992,-.24483064E+02,Y,30
+
+19 W,-3.3746309,-.32426149E+02,-.45365181E+01,done,2.18080000021,0.461498853,2.5,4.79892,-.27627229E+02,Y,22
+
+20 Zr,-0.6560438,-.27312969E+02,-.21419252E+01,done,2.32809026462,0.412598487,4.2,3.446092,-.23866877E+02,Y,26
+
+0 [0.0, 0]
+Ti
+1 [0.0, 1]
+V
+2 [0.0, 2]
+Cr
+3 [0.0, 3]
+Mn
+4 [0.0, 4]
+Fe
+5 [0.0, 5]
+Co
+6 [0.0, 6]
+Ni
+7 [1.0, 0]
+Zr
+8 [1.0, 1]
+Nb_pv
+9 [1.0, 2]
+Mo
+10 [1.0, 3]
+Tc
+11 [1.0, 4]
+Ru
+12 [1.0, 5]
+Rh
+13 [1.0, 6]
+Pd
+14 [2.0, 0]
+Hf
+15 [2.0, 1]
+Ta
+16 [2.0, 2]
+W
+17 [2.0, 3]
+Re
+18 [2.0, 4]
+Os
+19 [2.0, 5]
+Ir
+20 [2.0, 6]
+Pt
+bindenergy_half_gr
+Done with analysis

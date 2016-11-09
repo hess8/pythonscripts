@@ -1,0 +1,1279 @@
+('NSW=100\n', None)
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct2/relax/
+10
+CONTCAR not found
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct0/relax/
+0
+[[  4.38915777e+00  -2.53544071e+00   3.97373513e-03]
+ [  4.38915777e+00   2.53544071e+00   3.97373513e-03]
+ [  2.60095250e-02   0.00000000e+00   1.41397421e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct1/relax/
+1
+[[  4.38948343e+00  -2.53372272e+00   5.12670261e-03]
+ [  4.38948343e+00   2.53372272e+00   5.12670261e-03]
+ [  2.92158244e-02   0.00000000e+00   1.41482903e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct3/relax/
+11
+[[  4.42175846  -2.55627671   0.02204571]
+ [  4.42175846   2.55627671   0.02204571]
+ [  0.09435958   0.          13.92153791]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct4/relax/
+100
+[[  4.38953415e+00  -2.53423892e+00   4.65717245e-03]
+ [  4.38953415e+00   2.53423892e+00   4.65717245e-03]
+ [  2.77034241e-02   0.00000000e+00   1.41452403e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct5/relax/
+101
+[[  4.34606877e+00  -2.54037650e+00   9.29852422e-03]
+ [  4.31920219e+00   2.49379465e+00   4.93515294e-03]
+ [  3.27398432e-02  -1.16355483e-02   1.44291138e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct6/relax/
+110
+[[  4.39473275e+00  -2.53901055e+00   6.36493819e-03]
+ [  4.39298279e+00   2.53596264e+00  -5.81592504e-04]
+ [  1.88181791e-02  -2.65984598e-02   1.41132559e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct7/relax/
+111
+[[  4.41150162e+00  -2.57297972e+00   2.56711212e-02]
+ [  4.38898505e+00   2.53390502e+00   1.52418244e-04]
+ [  5.38490482e-02  -7.10566296e-02   1.40054481e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct8/relax/
+1000
+[[  4.38961273e+00  -2.53450924e+00  -3.76931788e-03]
+ [  4.38961273e+00   2.53450924e+00  -3.76931788e-03]
+ [  9.80128807e-04   0.00000000e+00   1.41434482e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct9/relax/
+1001
+[[  4.39429699e+00  -2.53848401e+00   4.66536811e-03]
+ [  4.39250863e+00   2.53537312e+00  -3.23668918e-03]
+ [  1.18316107e-02  -2.94956037e-02   1.41178213e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct10/relax/
+1010
+[[  4.37079184e+00  -2.56272475e+00  -1.82746447e-02]
+ [  4.33651204e+00   2.50338182e+00  -5.44707459e-03]
+ [ -3.05792178e-02   3.73932764e-02   1.42693041e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct11/relax/
+1011
+[[  4.41399151  -2.57645195   0.03327386]
+ [  4.39040637   2.53579501   0.03757133]
+ [  0.12646109   0.01723595  13.98508984]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct12/relax/
+1100
+[[  4.39155933  -2.53796482   0.01426029]
+ [  4.39155933   2.53796482   0.01426029]
+ [  0.06839594   0.          14.11815338]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct13/relax/
+1101
+[[  4.41082082e+00  -2.57225118e+00   2.43962685e-02]
+ [  4.38862237e+00   2.53374738e+00  -3.80015216e-04]
+ [  5.01484282e-02  -6.89223566e-02   1.40094905e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct14/relax/
+1110
+[[  4.41218552e+00  -2.57350828e+00   4.75701117e-03]
+ [  4.38947589e+00   2.53438683e+00   3.35026649e-03]
+ [  2.50296485e-02   1.31140922e-03   1.40003233e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct15/relax/
+1111
+[[  4.31634845e+00  -2.54177218e+00   1.28511482e-02]
+ [  4.27400927e+00   2.46854091e+00   2.14289769e-02]
+ [  6.06980561e-02   3.48182485e-02   1.46251256e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct16/relax/
+10000
+[[  4.38913525e+00  -2.53443896e+00   5.47862286e-03]
+ [  4.38913525e+00   2.53443896e+00   5.47862286e-03]
+ [  3.03480866e-02   0.00000000e+00   1.41454178e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct17/relax/
+10001
+[[  4.31925036e+00  -2.49389340e+00   4.75177123e-03]
+ [  4.34612383e+00   2.54048892e+00   9.35152714e-03]
+ [  3.25256003e-02   1.23125606e-02   1.44283371e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct18/relax/
+10010
+[[  4.39304250e+00  -2.53531861e+00   3.13257651e-04]
+ [  4.39515908e+00   2.53899487e+00   6.55673805e-03]
+ [  2.06936553e-02   2.45639278e-02   1.41143085e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct19/relax/
+10011
+[[  4.38436421e+00  -2.53109575e+00  -2.46328749e-03]
+ [  4.40483934e+00   2.56657198e+00   7.81005938e-03]
+ [  1.94244042e-02   2.76527229e-02   1.40482906e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct20/relax/
+10100
+[[  4.37356399e+00  -2.49299388e+00   4.00696784e-03]
+ [  4.37356399e+00   2.49299388e+00   4.00696784e-03]
+ [  2.38609385e-02   0.00000000e+00   1.44317626e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct21/relax/
+10101
+[[  4.38343586  -2.53138005   0.01877452]
+ [  4.38343586   2.53138005   0.01877452]
+ [  0.07222903   0.          14.18119669]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct22/relax/
+10110
+[[  4.42678123e+00  -2.53188042e+00  -6.93364268e-03]
+ [  4.42678123e+00   2.53188042e+00  -6.93364268e-03]
+ [ -1.04354837e-02   0.00000000e+00   1.40392747e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct23/relax/
+10111
+[[  4.40949498  -2.5450868   -0.02865786]
+ [  4.40949498   2.5450868   -0.02865786]
+ [ -0.07858561   0.          14.02167133]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct24/relax/
+11000
+[[  4.41571631e+00  -2.55116907e+00   1.04509833e-02]
+ [  4.41571631e+00   2.55116907e+00   1.04509833e-02]
+ [  4.81259423e-02   0.00000000e+00   1.39681391e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct25/relax/
+11001
+[[  4.38852328  -2.53171862  -0.02299927]
+ [  4.40717163   2.56431544  -0.0156277 ]
+ [ -0.05713118   0.02055591  14.04259974]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct26/relax/
+11010
+[[  4.40547823e+00  -2.56370575e+00  -2.92317128e-03]
+ [  4.38842966e+00   2.53376698e+00   2.15406387e-02]
+ [  4.08671128e-02   7.29415112e-02   1.40416152e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct27/relax/
+11011
+[[  4.34701744  -2.53070802   0.03377994]
+ [  4.34701744   2.53070802   0.03377994]
+ [  0.12387086   0.          14.30445173]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct28/relax/
+11100
+[[  4.37228491e+00  -2.49342694e+00  -2.87846098e-03]
+ [  4.37228491e+00   2.49342694e+00  -2.87846098e-03]
+ [  4.87671707e-03   0.00000000e+00   1.44334522e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct29/relax/
+11101
+[[  4.38925752e+00  -2.52402839e+00   4.88971147e-02]
+ [  4.39214130e+00   2.52921100e+00   5.00396518e-02]
+ [  1.74795136e-01   2.76775738e-03   1.41860763e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct30/relax/
+11110
+[[  4.40971393e+00  -2.54742356e+00   1.51479656e-02]
+ [  4.38774497e+00   2.50974123e+00   1.87895771e-02]
+ [  6.36274854e-02   1.06042223e-02   1.41477350e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct31/relax/
+11111
+[[  4.23449419e+00  -2.46599023e+00   9.57451542e-03]
+ [  4.17413285e+00   2.35358225e+00  -2.19229486e-02]
+ [  1.26975742e-02  -1.11379335e-01   1.55343962e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct32/relax/
+100000
+[[  4.38925149e+00  -2.53448416e+00  -3.81231416e-03]
+ [  4.38925149e+00   2.53448416e+00  -3.81231416e-03]
+ [  8.39577588e-04   0.00000000e+00   1.41447523e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct33/relax/
+100001
+[[  4.39206101e+00  -2.53583421e+00   5.63615140e-04]
+ [  4.39358323e+00   2.53848388e+00   6.47700110e-03]
+ [  2.05509572e-02   2.36332433e-02   1.41184005e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct34/relax/
+100010
+[[  4.31931761e+00  -2.49295469e+00   7.72096782e-03]
+ [  4.34607006e+00   2.53925650e+00   1.95242648e-03]
+ [  2.49881343e-02  -1.74617189e-02   1.44345197e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct35/relax/
+100011
+[[  4.39160553  -2.53636285   0.01821862]
+ [  4.41405596   2.57519126   0.04134444]
+ [  0.10720056   0.05916578  13.98490695]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct36/relax/
+100100
+[[  4.38691960e+00  -2.53347193e+00   1.11039078e-02]
+ [  4.38691960e+00   2.53347193e+00   1.11039078e-02]
+ [  4.91981084e-02   0.00000000e+00   1.41580507e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct37/relax/
+100101
+[[  4.40686805  -2.56428876  -0.01707859]
+ [  4.38823579   2.53169956  -0.02433536]
+ [ -0.06161342  -0.01993861  14.04370721]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct38/relax/
+100110
+[[  4.38803771e+00  -2.53378932e+00   2.45050817e-02]
+ [  4.40518709e+00   2.56355402e+00  -2.13584631e-03]
+ [  4.76282703e-02  -7.95275225e-02   1.40431630e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct39/relax/
+100111
+[[  4.34699005  -2.53076761   0.03229214]
+ [  4.34699005   2.53076761   0.03229214]
+ [  0.11841744   0.          14.30412216]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct40/relax/
+101000
+[[  4.37270645e+00  -2.49309680e+00   4.76810467e-03]
+ [  4.37270645e+00   2.49309680e+00   4.76810467e-03]
+ [  2.59538436e-02   0.00000000e+00   1.44340034e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct41/relax/
+101001
+[[  4.42625315e+00  -2.53060709e+00  -4.85403413e-03]
+ [  4.42625315e+00   2.53060709e+00  -4.85403413e-03]
+ [  1.65646726e-03   0.00000000e+00   1.40479965e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct42/relax/
+101010
+[[  4.41210153  -2.54559029   0.01542709]
+ [  4.41210153   2.54559029   0.01542709]
+ [  0.06114412   0.          14.0103195 ]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct43/relax/
+101011
+[[  4.41069041  -2.54531881   0.02875488]
+ [  4.41069041   2.54531881   0.02875488]
+ [  0.10532893   0.          14.01676946]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct44/relax/
+101100
+[[  4.37393701e+00  -2.49297756e+00   3.69033940e-03]
+ [  4.37393701e+00   2.49297756e+00   3.69033940e-03]
+ [  2.59419140e-02   0.00000000e+00   1.44306263e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct45/relax/
+101101
+[[  4.41635568e+00  -2.54879539e+00   6.62841734e-03]
+ [  4.39344934e+00   2.51004760e+00  -1.42191950e-02]
+ [  7.49564488e-04  -5.78802726e-02   1.41232251e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct46/relax/
+101110
+[[  4.40491806e+00  -2.53974554e+00   9.34438030e-03]
+ [  4.40617042e+00   2.54201537e+00   1.52086960e-02]
+ [  5.33490025e-02   1.50169890e-02   1.40571336e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct47/relax/
+101111
+[[  4.2488217   -2.41803615  -0.08739896]
+ [  4.27889139   2.46692996  -0.08585855]
+ [ -0.26306529   0.02764157  15.11508392]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct48/relax/
+110000
+[[  4.39138814  -2.53783168   0.01441757]
+ [  4.39138814   2.53783168   0.01441757]
+ [  0.06882765   0.          14.11944832]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct49/relax/
+110001
+[[  4.38932548e+00  -2.53369363e+00  -5.63922440e-03]
+ [  4.41172595e+00   2.57256503e+00   5.12871421e-03]
+ [  1.00344774e-02   2.98675847e-02   1.40058150e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct50/relax/
+110010
+[[  4.38899183e+00  -2.53417986e+00  -1.43402122e-03]
+ [  4.41191659e+00   2.57386263e+00   1.65808380e-02]
+ [  3.59067450e-02   4.51254162e-02   1.40013211e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct51/relax/
+110011
+[[  4.27431487e+00  -2.46886262e+00   1.88884348e-02]
+ [  4.31598047e+00   2.54095557e+00   1.26841569e-02]
+ [  5.60692243e-02  -2.78096075e-02   1.46265818e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct52/relax/
+110100
+[[  4.40840863e+00  -2.50417939e+00   2.19174346e-03]
+ [  4.40840863e+00   2.50417939e+00   2.19174346e-03]
+ [  2.13145088e-02   0.00000000e+00   1.42537277e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct53/relax/
+110101
+[[  4.36777272e+00  -2.51332389e+00  -6.71213901e-03]
+ [  4.37016189e+00   2.51830502e+00   2.23990370e-03]
+ [  1.22399034e-02   2.40782429e-02   1.43159192e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct54/relax/
+110110
+[[  4.38824716e+00  -2.51016172e+00   1.89756821e-02]
+ [  4.40952108e+00   2.54684232e+00   1.49880688e-02]
+ [  6.92726607e-02  -1.25736234e-02   1.41476965e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct55/relax/
+110111
+[[  4.22539165  -2.36406784   0.02503135]
+ [  4.29670555   2.49807268  -0.06939773]
+ [ -0.05782859  -0.27922023  15.19931779]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct56/relax/
+111000
+[[  4.40914869e+00  -2.50400080e+00   2.93840863e-03]
+ [  4.40914869e+00   2.50400080e+00   2.93840863e-03]
+ [  2.37964065e-02   0.00000000e+00   1.42523569e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct57/relax/
+111001
+[[  4.39327387e+00  -2.50999493e+00  -1.34771507e-02]
+ [  4.41579834e+00   2.54858728e+00   6.73421691e-03]
+ [  1.33709680e-03   5.65166104e-02   1.41251092e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct58/relax/
+111010
+[[  4.40463251e+00  -2.54122146e+00   1.20542564e-02]
+ [  4.40351217e+00   2.53916421e+00   4.97959124e-03]
+ [  4.12440524e-02  -1.84174019e-02   1.40655773e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct59/relax/
+111011
+[[  4.10100025e+00  -2.45779068e+00  -4.86171839e-02]
+ [  4.09885973e+00   2.46135570e+00   2.81978652e-03]
+ [ -4.41835662e-02   1.37672547e-01   1.56058012e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct60/relax/
+111100
+[[  4.35784914  -2.4573266    0.03337422]
+ [  4.35784914   2.4573266    0.03337422]
+ [  0.13128567   0.          14.69501585]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct61/relax/
+111101
+[[  4.41433516e+00  -2.53147724e+00   1.69311282e-03]
+ [  4.41433516e+00   2.53147724e+00   1.69311282e-03]
+ [  2.63434043e-02   0.00000000e+00   1.40810939e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct62/relax/
+111110
+[[  4.41094643e+00  -2.52831339e+00  -4.45131046e-03]
+ [  4.41094643e+00   2.52831339e+00  -4.45131046e-03]
+ [  5.36448323e-03   0.00000000e+00   1.41095304e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct63/relax/
+111111
+[[  4.39758758e+00  -2.54580555e+00  -4.30148609e-03]
+ [  4.39758758e+00   2.54580555e+00  -4.30148609e-03]
+ [ -1.38047545e-02   0.00000000e+00   1.40551702e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct64/relax/
+1000000
+[[  4.38913903e+00  -2.53442849e+00   5.23275919e-03]
+ [  4.38913903e+00   2.53442849e+00   5.23275919e-03]
+ [  2.95570802e-02   0.00000000e+00   1.41454614e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct65/relax/
+1000001
+[[  4.37322591e+00  -2.49295688e+00   2.36462365e-03]
+ [  4.37322591e+00   2.49295688e+00   2.36462365e-03]
+ [  1.82950174e-02   0.00000000e+00   1.44330805e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct66/relax/
+1000010
+[[  4.38811947e+00  -2.53328451e+00   1.01691949e-02]
+ [  4.38811947e+00   2.53328451e+00   1.01691949e-02]
+ [  4.62004719e-02   0.00000000e+00   1.41552091e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct67/relax/
+1000011
+[[  4.40219717e+00  -2.50095019e+00  -3.98747831e-03]
+ [  4.40219717e+00   2.50095019e+00  -3.98747831e-03]
+ [  1.54003419e-03   0.00000000e+00   1.42922577e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct68/relax/
+1000100
+[[  4.31910122e+00  -2.49362875e+00   4.77440099e-03]
+ [  4.34609718e+00   2.54043399e+00   9.21416589e-03]
+ [  3.23272997e-02   1.18553351e-02   1.44295481e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct69/relax/
+1000101
+[[  4.38319346  -2.53154873   0.01889814]
+ [  4.38319346   2.53154873   0.01889814]
+ [  0.07261712   0.          14.18103973]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct70/relax/
+1000110
+[[  4.38865953e+00  -2.53133875e+00  -2.18548044e-02]
+ [  4.40748164e+00   2.56429406e+00  -1.74941296e-02]
+ [ -5.85814985e-02   1.28257539e-02   1.40429891e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct71/relax/
+1000111
+[[  4.38538524e+00  -2.52585319e+00   3.22427480e-02]
+ [  4.38734335e+00   2.52919964e+00  -3.07626099e-03]
+ [  6.18481654e-02  -9.90109307e-02   1.41939263e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct72/relax/
+1001000
+[[  4.39285195e+00  -2.53595923e+00   5.36406346e-04]
+ [  4.39438502e+00   2.53862366e+00   6.42839069e-03]
+ [  2.08104450e-02   2.34642517e-02   1.41151047e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct73/relax/
+1001001
+[[  4.43617739e+00  -2.53595821e+00   2.20405847e-03]
+ [  4.43617739e+00   2.53595821e+00   2.20405847e-03]
+ [  1.87368811e-02   0.00000000e+00   1.39870043e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct74/relax/
+1001010
+[[  4.40552370e+00  -2.56364844e+00  -7.36900931e-04]
+ [  4.38817527e+00   2.53361487e+00   2.42924694e-02]
+ [  4.94151685e-02   7.47156159e-02   1.40425920e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct75/relax/
+1001011
+[[  4.40920141e+00  -2.54675931e+00   1.49365682e-02]
+ [  4.38754545e+00   2.50951378e+00   1.77795913e-02]
+ [  6.84516834e-02   1.04245352e-02   1.41513760e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct76/relax/
+1001100
+[[  4.38489129e+00  -2.53070224e+00   5.92813082e-04]
+ [  4.40516248e+00   2.56586127e+00   2.05417555e-02]
+ [  4.50121624e-02   5.45886404e-02   1.40502243e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct77/relax/
+1001101
+[[  4.41022063  -2.54514747  -0.02956858]
+ [  4.41022063   2.54514747  -0.02956858]
+ [ -0.08162844   0.          14.0190667 ]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct78/relax/
+1001110
+[[  4.34714189  -2.53069879   0.0334981 ]
+ [  4.34714189   2.53069879   0.0334981 ]
+ [  0.12266421   0.          14.30407708]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct79/relax/
+1001111
+[[  4.24807266e+00  -2.41290010e+00   7.27707064e-03]
+ [  4.27384518e+00   2.46043835e+00   1.12997777e-02]
+ [  4.41687957e-03   2.10385008e-02   1.51560164e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct80/relax/
+1010000
+[[  4.36537161e+00  -2.55894483e+00   1.19196368e-02]
+ [  4.33213256e+00   2.50132111e+00   4.87254669e-03]
+ [  3.72193683e-02  -1.94757066e-02   1.43017542e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct81/relax/
+1010001
+[[  4.41193553  -2.54611134   0.03736697]
+ [  4.41193553   2.54611134   0.03736697]
+ [  0.13292535   0.          14.00889144]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct82/relax/
+1010010
+[[  4.40050653e+00  -2.55664356e+00  -9.93304270e-03]
+ [  4.38548509e+00   2.53029562e+00  -1.44704111e-02]
+ [ -3.34711992e-02  -1.21753855e-02   1.40829984e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct83/relax/
+1010011
+[[  4.391801    -2.52850772   0.03996375]
+ [  4.39034863   2.52577239   0.0471496 ]
+ [  0.15497153   0.01941893  14.18153478]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct84/relax/
+1010100
+[[  4.41145632  -2.54633019   0.03543516]
+ [  4.41145632   2.54633019   0.03543516]
+ [  0.12676514   0.          14.00910145]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct85/relax/
+1010101
+[[  4.50253323  -2.59549399   0.04454007]
+ [  4.50253323   2.59549399   0.04454007]
+ [  0.15694432   0.          13.46630769]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct86/relax/
+1010110
+[[  4.40302588e+00  -2.54123907e+00  -8.79741545e-03]
+ [  4.40302588e+00   2.54123907e+00  -8.79741545e-03]
+ [ -1.79994027e-02   0.00000000e+00   1.40630579e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct87/relax/
+1010111
+[[  4.50365924  -2.59669202   0.04752428]
+ [  4.50365924   2.59669202   0.04752428]
+ [  0.16714618   0.          13.45694183]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct88/relax/
+1011000
+[[  4.40640666e+00  -2.56348773e+00  -1.65635560e-02]
+ [  4.38763508e+00   2.53062833e+00  -2.13677695e-02]
+ [ -5.55252542e-02  -1.32195381e-02   1.40505016e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct89/relax/
+1011001
+[[  4.40212735e+00  -2.54076660e+00  -8.52420114e-03]
+ [  4.40212735e+00   2.54076660e+00  -8.52420114e-03]
+ [ -1.71120968e-02   0.00000000e+00   1.40685411e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct90/relax/
+1011010
+[[  4.31401375e+00  -2.55515531e+00  -1.47151424e-02]
+ [  4.25920941e+00   2.45977879e+00  -2.85040183e-03]
+ [ -3.15444168e-02   4.88124013e-02   1.46414516e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct91/relax/
+1011011
+[[  4.38801721  -2.54356527   0.05615784]
+ [  4.37129265   2.51460609   0.0617244 ]
+ [  0.19866229   0.02436672  14.20886304]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct92/relax/
+1011100
+[[  4.35720253e+00  -2.50890716e+00  -1.87181032e-02]
+ [  4.35876689e+00   2.51295961e+00  -7.18707384e-03]
+ [ -2.28370542e-02   2.68677192e-02   1.43799872e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct93/relax/
+1011101
+[[  4.50353858  -2.59656447   0.04636629]
+ [  4.50353858   2.59656447   0.04636629]
+ [  0.16359477   0.          13.45788379]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct94/relax/
+1011110
+[[  4.38806007  -2.54385582   0.05667452]
+ [  4.37114549   2.51457562   0.06114482]
+ [  0.19911261   0.02059759  14.20830105]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct95/relax/
+1011111
+[[  4.4980548   -2.69690694  -0.05126339]
+ [  4.40251358   2.53110093   0.0498406 ]
+ [  0.01717732   0.27119885  13.53623088]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct96/relax/
+1100000
+[[  4.39458659e+00  -2.53820129e+00   6.94898385e-03]
+ [  4.39280638e+00   2.53511173e+00   1.33895677e-03]
+ [  2.28392469e-02  -2.28902487e-02   1.41183906e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct97/relax/
+1100001
+[[  4.43619802e+00  -2.53596594e+00  -8.26120606e-04]
+ [  4.43619802e+00   2.53596594e+00  -8.26120606e-04]
+ [  8.85840206e-03   0.00000000e+00   1.39868857e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct98/relax/
+1100010
+[[  4.38804814e+00  -2.53374573e+00   2.60379994e-02]
+ [  4.40513527e+00   2.56334256e+00   1.22080932e-04]
+ [  5.41136623e-02  -7.75239501e-02   1.40439489e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct99/relax/
+1100011
+[[  4.38780705e+00  -2.51005416e+00   1.81193369e-02]
+ [  4.40944837e+00   2.54739548e+00   1.47032386e-02]
+ [  6.76634444e-02  -1.08446927e-02   1.41472658e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct100/relax/
+1100100
+[[  4.38908178e+00  -2.53209668e+00  -2.15058395e-02]
+ [  4.40742333e+00   2.56417556e+00  -8.68840968e-03]
+ [ -4.32793142e-02   3.53141325e-02   1.40406010e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct101/relax/
+1100101
+[[  4.40176242e+00  -2.54058399e+00  -6.62866516e-03]
+ [  4.40176242e+00   2.54058399e+00  -6.62866516e-03]
+ [ -1.11193424e-02   0.00000000e+00   1.40707024e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct102/relax/
+1100110
+[[  4.26051733e+00  -2.45922625e+00   2.79590341e-02]
+ [  4.31492396e+00   2.55410744e+00  -5.45939673e-03]
+ [  3.78626563e-02  -1.13172371e-01   1.46429969e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct103/relax/
+1100111
+[[  4.3711668   -2.51496577   0.06255545]
+ [  4.38791084   2.54406534   0.0579284 ]
+ [  0.20375093  -0.02207233  14.20694856]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct104/relax/
+1101000
+[[  4.39628054e+00  -2.51841123e+00  -8.34839133e-03]
+ [  4.39628054e+00   2.51841123e+00  -8.34839133e-03]
+ [ -9.18668702e-03   0.00000000e+00   1.42122848e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct105/relax/
+1101001
+[[  4.38462576  -2.47018015   0.03440643]
+ [  4.38462576   2.47018015   0.03440643]
+ [  0.13286362   0.          14.52932448]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct106/relax/
+1101010
+[[  4.40347207  -2.54177776   0.02250553]
+ [  4.40347207   2.54177776   0.02250553]
+ [  0.08440345   0.          14.05904818]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct107/relax/
+1101011
+[[  4.40654177  -2.50571403   0.06570042]
+ [  4.40654177   2.50571403   0.06570042]
+ [  0.23041863   0.          14.25445781]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct108/relax/
+1101100
+[[  4.39220316e+00  -2.51025251e+00   2.38944852e-03]
+ [  4.41441628e+00   2.54834131e+00   6.82778413e-03]
+ [  2.77768591e-02   1.13628100e-02   1.41288174e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct109/relax/
+1101101
+[[  4.39649838  -2.502913     0.03847601]
+ [  4.39649838   2.502913     0.03847601]
+ [  0.14233681   0.          14.30080795]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct110/relax/
+1101110
+[[  4.36446702e+00  -2.52344623e+00  -2.46644354e-02]
+ [  4.37863285e+00   2.54908833e+00  -9.30736185e-03]
+ [ -4.98404201e-02   3.27804298e-02   1.41924541e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct111/relax/
+1101111
+[[  4.04399016  -2.47095475  -0.36730406]
+ [  4.04089651   2.49059851  -0.2016237 ]
+ [ -0.95554077   0.51468801  15.77521264]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct112/relax/
+1110000
+[[  4.41116066e+00  -2.57205377e+00   3.94717629e-03]
+ [  4.38925553e+00   2.53402940e+00  -7.62488398e-03]
+ [  5.13521808e-03  -3.11024796e-02   1.40073016e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct113/relax/
+1110001
+[[  4.41031406  -2.54488213  -0.02765629]
+ [  4.41031406   2.54488213  -0.02765629]
+ [ -0.07532914   0.          14.02015644]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct114/relax/
+1110010
+[[  4.34663651  -2.53070813   0.03413709]
+ [  4.34663651   2.53070813   0.03413709]
+ [  0.12427472   0.          14.30571813]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct115/relax/
+1110011
+[[  4.18109396  -2.32106635  -0.02409741]
+ [  4.26171256   2.46062463   0.0662626 ]
+ [  0.07122783   0.29627606  15.60100716]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct116/relax/
+1110100
+[[  4.37022242  -2.51849745   0.02730214]
+ [  4.36715592   2.51248663   0.01859909]
+ [  0.08847866  -0.02335373  14.31913627]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct117/relax/
+1110101
+[[  4.50331093  -2.5970844    0.04688829]
+ [  4.50331093   2.5970844    0.04688829]
+ [  0.16517475   0.          13.4559055 ]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct118/relax/
+1110110
+[[  4.37062905  -2.51375337   0.07800073]
+ [  4.38888383   2.54496363   0.04107275]
+ [  0.20022943  -0.11226574  14.20787876]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct119/relax/
+1110111
+[[  4.40323565e+00  -2.52778967e+00   4.95610365e-02]
+ [  4.50122020e+00   2.69738497e+00  -6.38140291e-02]
+ [ -1.92264723e-03  -3.03262070e-01   1.35392102e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct120/relax/
+1111000
+[[  4.38232571e+00  -2.52929598e+00   1.33882299e-02]
+ [  4.36700172e+00   2.50305536e+00  -1.95626815e-03]
+ [  3.14290899e-02  -4.16325107e-02   1.42954832e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct121/relax/
+1111001
+[[  4.3949246   -2.5040077    0.03638441]
+ [  4.3949246    2.5040077    0.03638441]
+ [  0.13533116   0.          14.29954951]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct122/relax/
+1111010
+[[  4.25487327e+00  -2.43418564e+00   1.04484444e-02]
+ [  4.27328293e+00   2.46817292e+00  -7.46665766e-03]
+ [  1.34374809e-02  -5.30703931e-02   1.50552311e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct123/relax/
+1111011
+[[  4.21362852  -2.50223629  -0.033307  ]
+ [  4.19226032   2.45063871  -0.23481492]
+ [ -0.47283638  -0.67556389  15.16118185]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct124/relax/
+1111100
+[[  4.41115399e+00  -2.52946018e+00   9.33881793e-04]
+ [  4.41115399e+00   2.52946018e+00   9.33881793e-04]
+ [  2.42044016e-02   0.00000000e+00   1.41024805e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct125/relax/
+1111101
+[[  4.58035964  -2.54200118   0.05502613]
+ [  4.58035964   2.54200118   0.05502613]
+ [  0.19521848   0.          13.51684855]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct126/relax/
+1111110
+[[  4.39122134  -2.53264082   0.02221285]
+ [  4.39122134   2.53264082   0.02221285]
+ [  0.08220453   0.          14.14911411]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct127/relax/
+1111111
+[[  4.49046577  -2.59414103   0.01363006]
+ [  4.49046577   2.59414103   0.01363006]
+ [  0.05854754   0.          13.50815877]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct128/relax/
+10000000
+[[  4.38974008e+00  -2.53417101e+00  -3.66356966e-03]
+ [  4.38974008e+00   2.53417101e+00  -3.66356966e-03]
+ [  1.31209218e-03   0.00000000e+00   1.41449253e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct129/relax/
+10000001
+[[  4.38701714e+00  -2.53351452e+00   1.11950721e-02]
+ [  4.38701714e+00   2.53351452e+00   1.11950721e-02]
+ [  4.94921822e-02   0.00000000e+00   1.41574997e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct130/relax/
+10000010
+[[  4.39837075e+00  -2.50137018e+00   7.26769605e-03]
+ [  4.39837075e+00   2.50137018e+00   7.26769605e-03]
+ [  3.45275077e-02   0.00000000e+00   1.43023481e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct131/relax/
+10000011
+[[  4.40657658e+00  -2.50304736e+00   6.51913365e-03]
+ [  4.40657658e+00   2.50304736e+00   6.51913365e-03]
+ [  3.55352414e-02   0.00000000e+00   1.42661448e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct132/relax/
+10000100
+[[  4.39326957e+00  -2.53570228e+00  -1.19402130e-04]
+ [  4.39482193e+00   2.53840056e+00   5.95050141e-03]
+ [  1.86805488e-02   2.41531020e-02   1.41150650e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct133/relax/
+10000101
+[[  4.40112068e+00  -2.55674964e+00  -1.00212751e-02]
+ [  4.38654392e+00   2.53120625e+00  -1.78821173e-02]
+ [ -3.90872591e-02  -2.16132904e-02   1.40775502e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct134/relax/
+10000110
+[[  4.42649864e+00  -2.53086520e+00  -4.95428408e-03]
+ [  4.42649864e+00   2.53086520e+00  -4.95428408e-03]
+ [  1.31176153e-03   0.00000000e+00   1.40457851e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct135/relax/
+10000111
+[[  4.41591366e+00  -2.54877180e+00   4.48426122e-03]
+ [  4.39328680e+00   2.50988485e+00  -1.45058597e-02]
+ [ -3.72890546e-03  -5.26449687e-02   1.41246763e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct136/relax/
+10001000
+[[  4.32017554e+00  -2.49396168e+00  -2.15368917e-03]
+ [  4.34663281e+00   2.53974778e+00  -6.67660234e-03]
+ [ -5.86861096e-03  -1.37449828e-02   1.44278187e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct137/relax/
+10001001
+[[  4.38797802e+00  -2.53406754e+00   2.29182814e-02]
+ [  4.40473069e+00   2.56310887e+00  -2.02146923e-03]
+ [  4.54077145e-02  -7.48932752e-02   1.40443771e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct138/relax/
+10001010
+[[  4.41185778  -2.54527495   0.01419241]
+ [  4.41185778   2.54527495   0.01419241]
+ [  0.05745036   0.          14.01280042]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct139/relax/
+10001011
+[[  4.35675864e+00  -2.51370405e+00  -6.99983533e-03]
+ [  4.36416375e+00   2.52668978e+00  -4.28399417e-02]
+ [ -6.71188351e-02  -1.00151494e-01   1.43199879e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct140/relax/
+10001100
+[[  4.38978692e+00  -2.53499675e+00   1.39270426e-02]
+ [  4.41273837e+00   2.57470201e+00   2.83417628e-02]
+ [  7.92767692e-02   3.50952636e-02   1.39944701e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct141/relax/
+10001101
+[[  4.34945183  -2.53037935   0.03243412]
+ [  4.34945183   2.53037935   0.03243412]
+ [  0.11944803   0.          14.29823107]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct142/relax/
+10001110
+[[  4.41019036  -2.54476569   0.02675972]
+ [  4.41019036   2.54476569   0.02675972]
+ [  0.09887814   0.          14.02131878]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct143/relax/
+10001111
+[[  4.25152728  -2.41956364  -0.04429555]
+ [  4.28109017   2.46654069  -0.10666862]
+ [ -0.23513816  -0.16938533  15.10378194]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct144/relax/
+10010000
+[[  4.39657120e+00  -2.53921864e+00   6.96961007e-03]
+ [  4.39448604e+00   2.53559414e+00   1.17141202e-03]
+ [  2.24113759e-02  -2.33463621e-02   1.41083364e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct145/relax/
+10010001
+[[  4.38517407e+00  -2.53093966e+00  -1.96408726e-03]
+ [  4.40048159e+00   2.55785895e+00  -9.84133519e-03]
+ [ -1.29781797e-02  -2.22216467e-02   1.40783437e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct146/relax/
+10010010
+[[  4.39642592e+00  -2.51841651e+00  -8.08799350e-03]
+ [  4.39642592e+00   2.51841651e+00  -8.08799350e-03]
+ [ -8.41420514e-03   0.00000000e+00   1.42117831e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct147/relax/
+10010011
+[[  4.39119548e+00  -2.50909918e+00   2.73191954e-03]
+ [  4.41420410e+00   2.54844245e+00   1.28563318e-02]
+ [  3.73347897e-02   2.79346292e-02   1.41338160e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct148/relax/
+10010100
+[[  4.42743570e+00  -2.53184764e+00  -6.02222660e-03]
+ [  4.42743570e+00   2.53184764e+00  -6.02222660e-03]
+ [ -7.41820038e-03   0.00000000e+00   1.40373749e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct149/relax/
+10010101
+[[  4.40311988e+00  -2.54121382e+00  -8.27042816e-03]
+ [  4.40311988e+00   2.54121382e+00  -8.27042816e-03]
+ [ -1.63335920e-02   0.00000000e+00   1.40628921e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct150/relax/
+10010110
+[[  4.36107874  -2.4662439    0.01992328]
+ [  4.36107874   2.4662439    0.01992328]
+ [  0.08350224   0.          14.6304198 ]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct151/relax/
+10010111
+[[  4.3959132   -2.50329528   0.03737377]
+ [  4.3959132    2.50329528   0.03737377]
+ [  0.138764     0.          14.30046162]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct152/relax/
+10011000
+[[  4.3880149   -2.53535285   0.01957524]
+ [  4.40476451   2.56447618   0.01448552]
+ [  0.06757352  -0.0176896   14.0367639 ]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct153/relax/
+10011001
+[[  4.25977246e+00  -2.45727886e+00  -2.20799720e-02]
+ [  4.30683990e+00   2.53865299e+00  -9.18641586e-03]
+ [ -5.61263950e-02   2.40951881e-02   1.47081010e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct154/relax/
+10011010
+[[  4.40288956  -2.54147999   0.0198415 ]
+ [  4.40288956   2.54147999   0.0198415 ]
+ [  0.07579548   0.          14.06246577]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct155/relax/
+10011011
+[[  4.21765042  -2.36367267   0.05360777]
+ [  4.26345794   2.4439862    0.22068904]
+ [  0.47660589   0.46452812  15.46916511]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct156/relax/
+10011100
+[[  4.38754868e+00  -2.51012564e+00   1.66313787e-02]
+ [  4.40881579e+00   2.54657005e+00   1.42980712e-02]
+ [  6.48543534e-02  -8.44702896e-03   1.41507698e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct157/relax/
+10011101
+[[  4.36640979  -2.51869372   0.09875606]
+ [  4.38409343   2.54923643   0.08457011]
+ [  0.30297738  -0.0486584   14.19958322]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct158/relax/
+10011110
+[[  4.2186042   -2.46881349   0.08814469]
+ [  4.22015123   2.46797466  -0.02898215]
+ [  0.10997944  -0.33299982  15.11686428]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct159/relax/
+10011111
+[[  4.18275931e+00  -2.45424667e+00  -1.78268814e-01]
+ [  4.20029243e+00   2.49674511e+00   4.09958426e-03]
+ [ -3.07013066e-01   5.63980515e-01   1.51924768e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct160/relax/
+10100000
+[[  4.34670833e+00  -2.53956765e+00  -5.88090667e-03]
+ [  4.32056719e+00   2.49432119e+00  -1.72604385e-03]
+ [ -3.79796739e-03   1.26949465e-02   1.44265130e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct161/relax/
+10100001
+[[  4.37439606e+00  -2.53773692e+00  -6.53364947e-04]
+ [  4.36428969e+00   2.51986581e+00   6.06937392e-03]
+ [  1.87188146e-02   2.31518789e-02   1.42412346e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct162/relax/
+10100010
+[[  4.41152744  -2.54515234   0.01448326]
+ [  4.41152744   2.54515234   0.01448326]
+ [  0.05834077   0.          14.01453153]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct163/relax/
+10100011
+[[  4.40341518e+00  -2.54051404e+00   1.02455838e-02]
+ [  4.40157493e+00   2.53721844e+00   3.78011105e-03]
+ [  3.65423136e-02  -1.67364148e-02   1.40779439e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct164/relax/
+10100100
+[[  4.40504063e+00  -2.56359891e+00  -2.75364540e-03]
+ [  4.38772918e+00   2.53358719e+00   2.34492407e-02]
+ [  4.45829046e-02   7.84260821e-02   1.40442970e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct165/relax/
+10100101
+[[  4.30291210e+00  -2.53756239e+00  -6.61220548e-03]
+ [  4.25812081e+00   2.45956119e+00  -1.96524159e-03]
+ [ -1.62173493e-02   2.75965025e-02   1.47138338e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct166/relax/
+10100110
+[[  4.40342716  -2.54192886   0.02145437]
+ [  4.40342716   2.54192886   0.02145437]
+ [  0.08095248   0.          14.05831892]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct167/relax/
+10100111
+[[  4.37809911e+00  -2.54892759e+00  -9.19598326e-03]
+ [  4.36354803e+00   2.52307633e+00  -2.49177912e-02]
+ [ -4.97589764e-02  -3.49594995e-02   1.41963115e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct168/relax/
+10101000
+[[  4.41202243  -2.54517869   0.0147499 ]
+ [  4.41202243   2.54517869   0.0147499 ]
+ [  0.05916777   0.          14.01282042]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct169/relax/
+10101001
+[[  4.4032653   -2.54159678   0.02068306]
+ [  4.4032653    2.54159678   0.02068306]
+ [  0.07854358   0.          14.06064708]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct170/relax/
+10101010
+[[  4.45785997  -2.58330241   0.01435793]
+ [  4.45785997   2.58330241   0.01435793]
+ [  0.06250809   0.          13.66407206]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct171/relax/
+10101011
+[[  4.49900322  -2.59993494  -0.0309423 ]
+ [  4.49900322   2.59993494  -0.0309423 ]
+ [ -0.07553704   0.          13.45282219]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct172/relax/
+10101100
+[[  4.36329157e+00  -2.52649927e+00  -4.29108729e-02]
+ [  4.35729715e+00   2.51595757e+00  -8.35717153e-03]
+ [ -6.70790659e-02   9.43065925e-02   1.43146117e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct173/relax/
+10101101
+[[  4.37839669e+00  -2.54804966e+00  -9.32397201e-03]
+ [  4.36451928e+00   2.52350015e+00  -2.35373075e-02]
+ [ -4.80220716e-02  -3.09901559e-02   1.41954755e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct174/relax/
+10101110
+[[  4.49655056  -2.59852793  -0.03309447]
+ [  4.49655056   2.59852793  -0.03309447]
+ [ -0.0820843    0.          13.46753237]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct175/relax/
+10101111
+[[  4.48979002  -2.69847896  -0.11837744]
+ [  4.3994405    2.54093974  -0.04839225]
+ [ -0.240354     0.18639352  13.52514644]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct176/relax/
+10110000
+[[  4.41161104e+00  -2.57375172e+00   1.13231600e-02]
+ [  4.38897075e+00   2.53465082e+00   2.55742197e-03]
+ [  3.36382194e-02  -1.94230859e-02   1.40007123e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct177/relax/
+10110001
+[[  4.34686559  -2.53079961   0.03387494]
+ [  4.34686559   2.53079961   0.03387494]
+ [  0.12373283   0.          14.30443542]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct178/relax/
+10110010
+[[  4.40947249  -2.54452509   0.02462563]
+ [  4.40947249   2.54452509   0.02462563]
+ [  0.09210027   0.          14.02484172]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct179/relax/
+10110011
+[[  4.11627792  -2.42249069  -0.10941537]
+ [  4.12411421   2.43700764  -0.04660478]
+ [ -0.28324588   0.2463739   15.72656278]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct180/relax/
+10110100
+[[  4.40931355e+00  -2.54752347e+00   1.68469052e-02]
+ [  4.38727840e+00   2.50969908e+00   1.54018803e-02]
+ [  6.75059875e-02  -1.03030961e-03   1.41489637e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct181/relax/
+10110101
+[[  4.38740077  -2.54458724   0.02171574]
+ [  4.36994249   2.51442743   0.05784621]
+ [  0.13577286   0.10930158  14.20901686]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct182/relax/
+10110110
+[[  4.4009121   -2.50566395   0.0662663 ]
+ [  4.4009121    2.50566395   0.0662663 ]
+ [  0.23158697   0.          14.2730246 ]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct183/relax/
+10110111
+[[  4.05375818  -2.47799572  -0.13297808]
+ [  4.05942565   2.47256979  -0.35837337]
+ [ -0.8939805   -0.67663062  15.75564786]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct184/relax/
+10111000
+[[  4.40404662e+00  -2.53948415e+00   4.97484102e-03]
+ [  4.40501560e+00   2.54126670e+00   1.32041859e-02]
+ [  4.30762644e-02   2.15834428e-02   1.40631197e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct185/relax/
+10111001
+[[  4.36408653e+00  -2.52339265e+00  -2.24148312e-02]
+ [  4.37792215e+00   2.54797962e+00  -9.78977097e-03]
+ [ -4.74126780e-02   2.65930896e-02   1.41974190e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct186/relax/
+10111010
+[[  4.49909041  -2.60113935  -0.02814169]
+ [  4.49909041   2.60113935  -0.02814169]
+ [ -0.06738005   0.          13.44623476]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct187/relax/
+10111011
+[[  4.39981354  -2.54053453  -0.04779201]
+ [  4.49081085   2.69908842  -0.11901332]
+ [ -0.23980078  -0.18878117  13.52261959]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct188/relax/
+10111100
+[[  4.41132011e+00  -2.52846549e+00  -6.58342876e-03]
+ [  4.41132011e+00   2.52846549e+00  -6.58342876e-03]
+ [ -1.72268471e-03   0.00000000e+00   1.41074945e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct189/relax/
+10111101
+[[  4.39084316  -2.53216526   0.01973801]
+ [  4.39084316   2.53216526   0.01973801]
+ [  0.07423876   0.          14.15290809]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct190/relax/
+10111110
+[[  4.58627025  -2.54456897   0.10973612]
+ [  4.58627025   2.54456897   0.10973612]
+ [  0.35768164   0.          13.49202436]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct191/relax/
+10111111
+[[  4.49265323e+00  -2.59229759e+00   4.65996152e-04]
+ [  4.49265323e+00   2.59229759e+00   4.65996152e-04]
+ [  1.88571134e-02   0.00000000e+00   1.35110072e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct192/relax/
+11000000
+[[  4.39138917  -2.53820943   0.01445685]
+ [  4.39138917   2.53820943   0.01445685]
+ [  0.06899116   0.          14.11734482]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct193/relax/
+11000001
+[[  4.37296080e+00  -2.49355235e+00  -2.43464493e-03]
+ [  4.37296080e+00   2.49355235e+00  -2.43464493e-03]
+ [  6.13722491e-03   0.00000000e+00   1.44304954e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct194/relax/
+11000010
+[[  4.39983759e+00  -2.50046098e+00   6.47683171e-03]
+ [  4.39983759e+00   2.50046098e+00   6.47683171e-03]
+ [  3.52702278e-02   0.00000000e+00   1.43027736e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct195/relax/
+11000011
+[[  4.35286078  -2.45625679   0.03020767]
+ [  4.35286078   2.45625679   0.03020767]
+ [  0.12060035   0.          14.7180938 ]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct196/relax/
+11000100
+[[  4.38997480e+00  -2.53409031e+00  -1.00171220e-03]
+ [  4.41238441e+00   2.57294220e+00   1.40972186e-02]
+ [  3.20603094e-02   4.14168172e-02   1.40017192e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct197/relax/
+11000101
+[[  4.38811633  -2.5273232    0.02504753]
+ [  4.38655162   2.52458797   0.03207436]
+ [  0.10708758   0.01913133  14.19943914]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct198/relax/
+11000110
+[[  4.39361502e+00  -2.50941954e+00  -2.99182273e-03]
+ [  4.41676904e+00   2.54917981e+00   8.25646990e-03]
+ [  2.12723986e-02   3.05255491e-02   1.41228297e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct199/relax/
+11000111
+[[  4.41101222e+00  -2.52963046e+00   6.42198336e-04]
+ [  4.41101222e+00   2.52963046e+00   6.42198336e-04]
+ [  2.34141296e-02   0.00000000e+00   1.41019827e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct200/relax/
+11001000
+[[  4.3906431   -2.53552888   0.01454375]
+ [  4.41317927   2.57447953   0.03189519]
+ [  0.08599036   0.04316852  13.99166998]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct201/relax/
+11001001
+[[  4.38736371e+00  -2.50981893e+00   1.76004654e-02]
+ [  4.40943988e+00   2.54779029e+00   1.37182743e-02]
+ [  6.61881501e-02  -1.33767369e-02   1.41475419e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct202/relax/
+11001010
+[[  4.40456953e+00  -2.54124879e+00   1.21187729e-02]
+ [  4.40346710e+00   2.53922913e+00   4.91035188e-03]
+ [  4.12314299e-02  -1.87464971e-02   1.40654953e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct203/relax/
+11001011
+[[  4.41066870e+00  -2.52844808e+00  -4.16907938e-03]
+ [  4.41066870e+00   2.52844808e+00  -4.16907938e-03]
+ [  6.48546952e-03   0.00000000e+00   1.41096665e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct204/relax/
+11001100
+[[  4.27320397e+00  -2.46815044e+00   1.82938681e-02]
+ [  4.31594391e+00   2.54209366e+00   1.09164500e-02]
+ [  5.19130466e-02  -3.12791954e-02   1.46273278e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct205/relax/
+11001101
+[[  4.10949231  -2.35327642   0.16527265]
+ [  4.1875284    2.49174789   0.17301484]
+ [  0.63820861   0.06704049  15.68759854]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct206/relax/
+11001110
+[[  4.24640385  -2.46098016  -0.03645205]
+ [  4.24552383   2.46473749  -0.04467148]
+ [ -0.11645667  -0.04645829  15.04852442]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct207/relax/
+11001111
+[[  4.38766076e+00  -2.53675249e+00  -5.04022219e-04]
+ [  4.38766076e+00   2.53675249e+00  -5.04022219e-04]
+ [ -1.69852796e-03   0.00000000e+00   1.41372287e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct208/relax/
+11010000
+[[  4.41115003e+00  -2.57165883e+00   3.48922566e-03]
+ [  4.38928276e+00   2.53372367e+00  -7.14047060e-03]
+ [  5.03831091e-03  -2.86419055e-02   1.40091858e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct209/relax/
+11010001
+[[  4.38971758e+00  -2.52397348e+00   5.38299537e-02]
+ [  4.39260870e+00   2.52945097e+00   5.00556555e-02]
+ [  1.83397920e-01  -9.88380609e-03   1.41842663e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct210/relax/
+11010010
+[[  4.40926755e+00  -2.54440654e+00   1.30783641e-02]
+ [  4.38998614e+00   2.51129751e+00   8.11578842e-05]
+ [  3.41268217e-02  -3.66026634e-02   1.41487670e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct211/relax/
+11010011
+[[  4.41541831e+00  -2.53175924e+00   2.51307369e-03]
+ [  4.41541831e+00   2.53175924e+00   2.51307369e-03]
+ [  2.89840024e-02   0.00000000e+00   1.40760781e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct212/relax/
+11010100
+[[  4.40988934  -2.54466495  -0.02404754]
+ [  4.40988934   2.54466495  -0.02404754]
+ [ -0.06402808   0.          14.02258012]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct213/relax/
+11010101
+[[  4.50379504  -2.59651533   0.0464113 ]
+ [  4.50379504   2.59651533   0.0464113 ]
+ [  0.16370662   0.          13.45737494]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct214/relax/
+11010110
+[[  4.40709664  -2.50559837   0.04116248]
+ [  4.40709664   2.50559837   0.04116248]
+ [  0.15195861   0.          14.2513051 ]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct215/relax/
+11010111
+[[  4.5804871   -2.54160544   0.0545051 ]
+ [  4.5804871    2.54160544   0.0545051 ]
+ [  0.19346182   0.          13.51853355]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct216/relax/
+11011000
+[[  4.346676    -2.5308499    0.03503543]
+ [  4.346676     2.5308499    0.03503543]
+ [  0.12741303   0.          14.30483781]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct217/relax/
+11011001
+[[  4.22254196e+00  -2.36416668e+00  -1.49153772e-02]
+ [  4.26588062e+00   2.42757815e+00   2.20288813e-01]
+ [  3.56277504e-01   6.74194555e-01   1.55169158e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct218/relax/
+11011010
+[[  4.25010606e+00  -2.44018335e+00  -4.30042344e-02]
+ [  4.26437177e+00   2.46190031e+00  -5.27283005e-03]
+ [ -9.07943054e-02   1.45001668e-01   1.50815848e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct219/relax/
+11011011
+[[  4.39092556  -2.53223613   0.02002289]
+ [  4.39092556   2.53223613   0.02002289]
+ [  0.07514949   0.          14.15225538]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct220/relax/
+11011100
+[[  4.18580215  -2.35435549  -0.055281  ]
+ [  4.24692191   2.46562067  -0.22646986]
+ [ -0.46036757  -0.49129464  15.52041067]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct221/relax/
+11011101
+[[  4.40342510e+00  -2.53004409e+00   4.82948564e-02]
+ [  4.50104338e+00   2.69898764e+00  -6.71623948e-02]
+ [ -8.78538068e-03  -3.07955055e-01   1.35293980e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct222/relax/
+11011110
+[[  4.18361626e+00  -2.49271073e+00  -7.39317958e-03]
+ [  4.16999411e+00   2.45987127e+00  -2.39973564e-01]
+ [ -3.79100196e-01  -8.21015519e-01   1.52635971e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct223/relax/
+11011111
+[[  4.48994588e+00  -2.59378194e+00   1.33343728e-02]
+ [  4.48994588e+00   2.59378194e+00   1.33343728e-02]
+ [  5.75763992e-02   0.00000000e+00   1.35115864e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct224/relax/
+11100000
+[[  4.411153    -2.57415343   0.02062585]
+ [  4.38884492   2.53578199   0.03431522]
+ [  0.10045502   0.04331679  13.99809143]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct225/relax/
+11100001
+[[  4.40862808e+00  -2.54620651e+00   1.19539188e-02]
+ [  4.38758105e+00   2.50983120e+00   1.40560735e-02]
+ [  5.46394185e-02   7.53597952e-03   1.41527910e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct226/relax/
+11100010
+[[  4.40348570e+00  -2.53901526e+00   4.98991219e-03]
+ [  4.40465151e+00   2.54115551e+00   1.34559732e-02]
+ [  4.34639754e-02   2.22627856e-02   1.40662070e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct227/relax/
+11100011
+[[  4.39403910e+00  -2.52241915e+00  -1.05647735e-03]
+ [  4.39403910e+00   2.52241915e+00  -1.05647735e-03]
+ [  1.61210524e-02   0.00000000e+00   1.41969197e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct228/relax/
+11100100
+[[  4.34969366  -2.52980794   0.03554864]
+ [  4.34969366   2.52980794   0.03554864]
+ [  0.12900854   0.          14.30082898]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct229/relax/
+11100101
+[[  4.38892604  -2.54538464   0.02487992]
+ [  4.36998441   2.51286723   0.06498249]
+ [  0.15309075   0.12223566  14.20917368]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct230/relax/
+11100110
+[[  4.36424137e+00  -2.52328449e+00  -2.42176353e-02]
+ [  4.37813856e+00   2.54814325e+00  -9.68345328e-03]
+ [ -5.02240600e-02   3.18101197e-02   1.41967078e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct231/relax/
+11100111
+[[  4.40110915  -2.54210005   0.02089086]
+ [  4.40110915   2.54210005   0.02089086]
+ [  0.07874122   0.          14.06475522]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct232/relax/
+11101000
+[[  4.40943194  -2.5445797    0.02364034]
+ [  4.40943194   2.5445797    0.02364034]
+ [  0.08896699   0.          14.02463235]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct233/relax/
+11101001
+[[  4.4063755   -2.50508774   0.073785  ]
+ [  4.4063755    2.50508774   0.073785  ]
+ [  0.25627251   0.          14.25941437]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct234/relax/
+11101010
+[[  4.49943829  -2.60140912  -0.03757754]
+ [  4.49943829   2.60140912  -0.03757754]
+ [ -0.09599219   0.          13.44418116]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct235/relax/
+11101011
+[[  4.58852838  -2.5440273    0.11229801]
+ [  4.58852838   2.5440273    0.11229801]
+ [  0.365412     0.          13.48864295]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct236/relax/
+11101100
+[[  4.27845415  -2.46634882  -0.141561  ]
+ [  4.24890997   2.41690741  -0.06164228]
+ [ -0.3248358    0.21735816  15.12686857]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct237/relax/
+11101101
+[[  4.20545093  -2.50747926  -0.0904681 ]
+ [  4.18803514   2.4493727   -0.25005049]
+ [ -0.64639028  -0.57193729  15.17342541]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct238/relax/
+11101110
+[[  4.39914843  -2.54133766  -0.0508833 ]
+ [  4.49008597   2.69982876  -0.12008686]
+ [ -0.24606196  -0.18330218  13.52083547]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct239/relax/
+11101111
+[[  4.49241064e+00  -2.59215045e+00   8.78957731e-04]
+ [  4.49241064e+00   2.59215045e+00   8.78957731e-04]
+ [  2.00495871e-02   0.00000000e+00   1.35125057e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct240/relax/
+11110000
+[[  4.31677105e+00  -2.54284790e+00   1.07302478e-02]
+ [  4.27396541e+00   2.46877967e+00   1.57950570e-02]
+ [  4.73751520e-02   2.44415303e-02   1.46205367e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct241/relax/
+11110001
+[[  4.24589766e+00  -2.46641744e+00  -8.62208570e-02]
+ [  4.18231157e+00   2.34668993e+00  -9.87666857e-03]
+ [ -1.38429695e-01   2.17126628e-01   1.55236852e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct242/relax/
+11110010
+[[  4.04971311  -2.47227893   0.06210137]
+ [  4.04019873   2.44745132  -0.03756171]
+ [  0.09213294  -0.2958998   15.82067308]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct243/relax/
+11110011
+[[  4.39715926e+00  -2.54598535e+00  -4.74916845e-03]
+ [  4.39715926e+00   2.54598535e+00  -4.74916845e-03]
+ [ -1.52310999e-02   0.00000000e+00   1.40555494e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct244/relax/
+11110100
+[[  4.24734948e+00  -2.46498496e+00  -6.78838031e-02]
+ [  4.18225319e+00   2.35101827e+00  -1.25121247e-02]
+ [ -1.23971423e-01   1.47943206e-01   1.55095998e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct245/relax/
+11110101
+[[  4.49489384  -2.69630417  -0.03926071]
+ [  4.40082396   2.53311122   0.04072775]
+ [  0.02072559   0.21633644  13.53789468]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct246/relax/
+11110110
+[[  4.17849574  -2.45296228  -0.24538747]
+ [  4.19927952   2.50267329  -0.08874873]
+ [ -0.59382715   0.51329229  15.20076784]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct247/relax/
+11110111
+[[  4.48957617  -2.59345693   0.01547837]
+ [  4.48957617   2.59345693   0.01547837]
+ [  0.06464568   0.          13.51444431]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct248/relax/
+11111000
+[[  4.25203413  -2.41913921  -0.04274844]
+ [  4.28243089   2.46556638  -0.11564741]
+ [ -0.24315201  -0.19352832  15.10591512]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct249/relax/
+11111001
+[[  4.16432964  -2.47293489  -0.23097305]
+ [  4.16176927   2.47969886   0.04164938]
+ [ -0.32923771   0.85331448  15.31807907]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct250/relax/
+11111010
+[[  4.49119318  -2.69958868  -0.11848099]
+ [  4.39987688   2.54034128  -0.04683321]
+ [ -0.23801377   0.19022287  13.52114385]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct251/relax/
+11111011
+[[  4.49268529e+00  -2.59205912e+00   8.30607237e-04]
+ [  4.49268529e+00   2.59205912e+00   8.30607237e-04]
+ [  1.99723027e-02   0.00000000e+00   1.35121555e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct252/relax/
+11111100
+[[  4.39761584e+00  -2.54574447e+00  -4.76275781e-03]
+ [  4.39761584e+00   2.54574447e+00  -4.76275781e-03]
+ [ -1.52528923e-02   0.00000000e+00   1.40554201e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct253/relax/
+11111101
+[[  4.49051208  -2.59428367   0.01353157]
+ [  4.49051208   2.59428367   0.01353157]
+ [  0.05859173   0.          13.50727562]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct254/relax/
+11111110
+[[  4.49228027e+00  -2.59219924e+00   5.16446591e-04]
+ [  4.49228027e+00   2.59219924e+00   5.16446591e-04]
+ [  1.89862937e-02   0.00000000e+00   1.35126417e+01]]
+/fslhome/bch/cluster_expansion/hexagonal/2x2adatoms/struct255/relax/
+11111111
+[[  4.65038814  -2.56264269   0.05415874]
+ [  4.65038814   2.56264269   0.05415874]
+ [  0.18492301   0.          13.20592989]]

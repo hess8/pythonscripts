@@ -23,7 +23,7 @@ def latticeType(nops):
 def unique_anorms(latt):
     '''Returns whether each vector in turn has a unique length among the three, '''
     a0 = norm(latt[:,0]); a1 = norm(latt[:,1]); a2 = norm(latt[:,2])
-    return [not isequal(a0,a1) and  not isequal(a0,a2), not isequal(a1,a0) and not isequal(a1,a2), not isequal(a2,a0) and not isequal(a2,a1)] 
+    return [not areEqual(a0,a1) and  not areEqual(a0,a2), not areEqual(a1,a0) and not areEqual(a1,a2), not areEqual(a2,a0) and not areEqual(a2,a1)] 
 
 def searchsphere(aVecs):
    '''Decide how many lattice points to look in each direction to get all the
@@ -116,7 +116,7 @@ def lattvec_u(A,u):
 #                    r = i*latt[:,0] + j*latt[:,1] + k*latt[:,2]
 #                    d  = norm(r)
 #                    ur = r/norm(r)
-#                    if 0.00 < d < dmin and isequal(dot(transpose(ur),u),1):                    
+#                    if 0.00 < d < dmin and areEqual(dot(transpose(ur),u),1):                    
 #                        dmin = d
 #                        lattvec = r             
     return lattvec
@@ -176,9 +176,9 @@ def packingFraction(latt):
     return round(vsphere/vol,4)
 
 def isinteger(x):
-    return isequal(abs(rint(x)-x), 0)
+    return areEqual(abs(rint(x)-x), 0)
 
-def isequal(x,y):
+def areEqual(x,y):
     eps = 5.0e-5
     return abs(x-y)<eps
 
@@ -196,7 +196,7 @@ def arenormal(v1,v2):
         return False
 
 def isindependent(vec1,vec2):  
-    return not isequal(abs(cosvecs(vec1,vec2)),1)
+    return not areEqual(abs(cosvecs(vec1,vec2)),1)
 
 def trimSmall(list_mat):
     low_values_indices = abs(list_mat) < 1.0e-3
@@ -746,18 +746,18 @@ def symmetryError(latt,parentlatt):
 def nonDegen(vals):
      '''Tests whether a vector has one unique element.  If so, returns the index'''
      distinct = []
-     if isreal(vals[0]) and not isequal(vals[0],vals[1]) and not isequal(vals[0],vals[2]):
+     if isreal(vals[0]) and not areEqual(vals[0],vals[1]) and not areEqual(vals[0],vals[2]):
          distinct.append(0)
-     if isreal(vals[1]) and not isequal(vals[1],vals[0]) and not isequal(vals[1],vals[2]):
+     if isreal(vals[1]) and not areEqual(vals[1],vals[0]) and not areEqual(vals[1],vals[2]):
          distinct.append(1)
-     if isreal(vals[2]) and not isequal(vals[2],vals[0]) and not isequal(vals[2],vals[1]):
+     if isreal(vals[2]) and not areEqual(vals[2],vals[0]) and not areEqual(vals[2],vals[1]):
          distinct.append(2)
      return distinct    
 
 def matchDirection(vec,list):
     '''if vec parallel or antiparallel to any vector in the list, don't include it'''
     for vec2 in list:
-        if isequal(abs(cosvecs(vec,vec2)),1.0):
+        if areEqual(abs(cosvecs(vec,vec2)),1.0):
             return True
     return False
    
@@ -907,7 +907,7 @@ def points_in_ppiped(M,A):
     npts = npts+1 #from starting at -1    
 #    print 'Points tested',ntry     
 #    print 'Points in superlattice cell:',npts
-    if not isequal(npts,rint(detM)): 
+    if not areEqual(npts,rint(detM)): 
         sys.exit('Stop. Number of lattice points in the supperlattice cell is not equal to det(M)')
     return [S,latpts]
 

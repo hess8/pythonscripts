@@ -2,7 +2,7 @@ import os, subprocess, sys, time
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
 from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol, \
-    orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs,  \
+    orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,  \
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection
     
@@ -176,7 +176,7 @@ def bestmeshEigen(Blatt,Nmesh):
             MT[:,2] = vecs[2]
             print 'MT'; print MT
             print 'det MT', det(MT)
-            if not isequal(det(MT),0):
+            if not areEqual(det(MT),0):
                 Q2 = MT2mesh(MT,B)
                 if checksymmetry(Q2,B):
                     Nscale =1*.8; Ncost = Nscale * abs((B.det/det(Q2))-B.Nmesh)/B.Nmesh 

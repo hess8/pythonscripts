@@ -9,7 +9,7 @@ from numpy import zeros,transpose,array,sum,float64,rint,mean
 from numpy.linalg import norm
 from analysisToolsVasp import writeEnergiesOszicar, writedirnames, nstrip, writeNk, writeNkIBZ, \
   writeElConverge, writeElSteps, writeCPUtime, enerparts, getdata, readfile, writefile, \
-  getms, writefermi, removezeros, isequal
+  getms, writefermi, removezeros, areEqual
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
 from plotTools import plotxy
 from pylab import *
@@ -23,7 +23,7 @@ def displayFailed(arrlist,dirs):
     arrlist2 = deepcopy(arrlist)
     for array in arrlist:
         for i in range(len(array)):
-            if isequal(float(array[i]),0.0) and i not in zerolist:
+            if areEqual(float(array[i]),0.0) and i not in zerolist:
                 zerolist.append(i)
     for i in zerolist:
 #        print dirs[i].split('/')

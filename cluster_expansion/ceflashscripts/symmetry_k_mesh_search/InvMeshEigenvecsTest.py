@@ -1,7 +1,7 @@
 import os, subprocess, sys, time 
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
-from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs
+from kmeshroutines import lattice_vecs, lattice, surfvol, orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs
 from LowSymMeshMinimize import searchmin #,searchminRandomStart
 
 from numpy import array, arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
@@ -187,18 +187,18 @@ def checksymmetry(latt,parentlatt):
 def nonDegen(vals):
      '''Tests whether a vector has one unique element.  If so, returns the index'''
      distinct = []
-     if isreal(vals[0]) and not isequal(vals[0],vals[1]) and not isequal(vals[0],vals[2]):
+     if isreal(vals[0]) and not areEqual(vals[0],vals[1]) and not areEqual(vals[0],vals[2]):
          distinct.append(0)
-     if isreal(vals[1]) and not isequal(vals[1],vals[0]) and not isequal(vals[1],vals[2]):
+     if isreal(vals[1]) and not areEqual(vals[1],vals[0]) and not areEqual(vals[1],vals[2]):
          distinct.append(1)
-     if isreal(vals[2]) and not isequal(vals[2],vals[0]) and not isequal(vals[2],vals[1]):
+     if isreal(vals[2]) and not areEqual(vals[2],vals[0]) and not areEqual(vals[2],vals[1]):
          distinct.append(2)
      return distinct    
 
 def matchDirection(vec,list):
     '''if vec parallel or antiparallel to any vector in the list, don't include it'''
     for vec2 in list:
-        if isequal(abs(cosvecs(vec,vec2)),1.0):
+        if areEqual(abs(cosvecs(vec,vec2)),1.0):
             return True
     return False
      

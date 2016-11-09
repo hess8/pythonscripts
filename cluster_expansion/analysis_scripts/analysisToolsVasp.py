@@ -3,9 +3,9 @@ from numpy import zeros, delete
 from copy import deepcopy
 
 def isinteger(x):
-    return isequal(abs(rint(x)-x), 0)
+    return areEqual(abs(rint(x)-x), 0)
 
-def isequal(x,y):
+def areEqual(x,y):
     eps = 5.0e-5
     return abs(x-y)<eps
 
@@ -464,7 +464,7 @@ def removezeros(arrlist):
     arrlist2 = deepcopy(arrlist)
     for array in arrlist:
         for i in range(len(array)):
-            if isequal(float(array[i]),0.0) and i not in zerolist:
+            if areEqual(float(array[i]),0.0) and i not in zerolist:
 #                print 'removing zeros at location',i
                 zerolist.append(i)
     for j,array in enumerate(arrlist):

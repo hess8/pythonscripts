@@ -3,7 +3,7 @@ import os, subprocess, sys, time
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
 from kmeshroutines import svmesh, svmesh1freedir, lattice_vecs, lattice, surfvol, \
-    orthdef, icy, isinteger, isequal, isreal, isindependent, trimSmall, cosvecs,  \
+    orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,  \
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection, symmetryError,\
     latticeType, packingFraction, mink_reduce, lattvec_u,arenormal,\
@@ -101,7 +101,7 @@ def writekpts_vasp_M(path,B,M,K):
     npts = npts+1 #from starting at -1    
     print 'Grid points tested',ntry     
     print 'Points in 1BZ',npts
-    if not isequal(npts,rint(det(M))): 
+    if not areEqual(npts,rint(det(M))): 
         print det(M)
         sys.exit('Stop. Number of grid points in the 1BZ is not equal to det(M)')
     #Apply symmetry operations and see which are identical to others.  All in Cartesian coords
@@ -114,18 +114,18 @@ def writekpts_vasp_M(path,B,M,K):
     
     for i in range(1,npts):
         kB = trimSmall(dot(inv(Bv),transpose(kpts[:,i])))
-#        if isequal(kB[0],0.5) or  isequal(kB[1],0.5) or isequal(kB[2],0.5)  :
+#        if areEqual(kB[0],0.5) or  areEqual(kB[1],0.5) or areEqual(kB[2],0.5)  :
 #            print'Boundary point', kB
         #rotate
         found = False
         for iop in range(B.nops):
             krot = dot(B.symops[:,:,iop],kpts[:,i])
             kB2 = trimSmall(dot(inv(Bv),transpose(krot)))
-#            if isequal(kB[0],0.5) or  isequal(kB[1],0.5) or isequal(kB[2],0.5)  :
+#            if areEqual(kB[0],0.5) or  areEqual(kB[1],0.5) or areEqual(kB[2],0.5)  :
 #                print kB2            
             #test whether it matches any we have saved. 
             for iksymm in range(nksymm):      
-                if  isequal(krot[0],kptssymm[0,iksymm]) and isequal(krot[1],kptssymm[1,iksymm]) and isequal(krot[2],kptssymm[2,iksymm]) :
+                if  areEqual(krot[0],kptssymm[0,iksymm]) and areEqual(krot[1],kptssymm[1,iksymm]) and areEqual(krot[2],kptssymm[2,iksymm]) :
 #                    print 'Found equivalent point'
                     weights[iksymm] += 1
                     found = True # It better be equivalent to only one saved point
