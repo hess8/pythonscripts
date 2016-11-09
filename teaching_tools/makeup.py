@@ -61,3 +61,11 @@ print '\n\nNew max:', amax(data2['newscore'])
 print 'New min:', amin(data2['newscore'])
 print 'New average', mean(data2['newscore'])
 print 'New median', median(data2['newscore'])
+
+#Write to file
+file = open('newscore.csv','w')
+file.write('Last Name,First Name,Netid,score\n')
+for i in range(len(data2)):
+    file.write('{},{},{}\n'.format(data2[i]['name'],data2[i]['netid'],data2[i]['newscore']))
+file.close()
+print "Done"
