@@ -23,7 +23,9 @@ def bestmeshEigen(Blatt,Nmesh):
     
     Define S = T(InvK), and the real lattice A = T(InvB). So S = A T(M) is a superlattice on the real lattice.
            
-    Minimization scheme'''
+    Minimization scheme
+    
+    Nothing calls this routine'''
     
     ##############################################################
     ########################## Script ############################

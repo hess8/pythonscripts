@@ -2,7 +2,8 @@ from numpy import zeros,amax,amin,mean,median,tanh,nonzero, where
 from copy import deepcopy
 '''From TC, import exam.csv.  NetID should be in column B and score in E
 From LS import makeup.csv.  NetID should be in column A and score in B and percentage in C.  
-If you don't download percentage too it will make B a string instead of a number (adds quotes) '''
+If you don't download percentage too it will make B a string instead of a number (adds quotes)
+ '''
 
 def readfile(filepath):
     file1 = open(filepath,'r')
@@ -18,8 +19,10 @@ def writefile(lines,filepath): #need to have \n's inserted already
 
 exlines = readfile('exam.csv')
 mlines = readfile('makeup.csv')
-wtanh = 20.0
-ptsAdd = 16
+#wtanh = 30
+#ptsAdd = 18
+ptsAdd = float(sys.argv[1])
+wtanh = float(sys.argv[2])
 
 maxlen = max([len(exlines),len(mlines)])
 
@@ -49,18 +52,26 @@ data2 = data[data["exscore"]!=0.0]
 
 minscore = amin(data2['exscore'])
 maxscore = amax(data2['exscore'])
-print 'Old max:', maxscore
-print 'Old min:', minscore
-print 'Old average', mean(data2['exscore'])
-print 'Old median', median(data2['exscore'])
-
 for i,line in enumerate(data2['exscore']):
     oldscore = data2[i]['exscore']
     mscore = data2[i]['mscore']
     print 'name, ex, m',data[i]['name'] , data2[i]['exscore'],data2[i]['mscore']
-    temp = oldscore*100/maxscore
-    data2[i]['newscore'] = temp + max([0.5,mscore/100.0]) * ptsAdd *(tanh((100.0-temp)/wtanh))
-                                      
+    if oldscore == maxscore and maxscore  > 99.9:
+        data2[i]['newscore'] = oldscore + (100-oldscore)*max([0.5,mscore/100.0])
+    else:
+	temp = oldscore*100/maxscore 
+    	data2[i]['newscore'] = temp + max([0.5,mscore/100.0]) * ptsAdd *(tanh((100.0-temp)/wtanh))
+    if data2[i]['newscore'] >90:
+	print data2[i]['newscore']
+  #Problem with this method:  the high scores, not == 100, will always get 100 pts.  The one below makes it so they have to do the makeup to get full credit.
+    #data2[i]['newscore'] = min(100,oldscore + max([0.5,mscore/100.0]) * ptsAdd *(tanh((100.0-oldscore)/wtanh)))
+print 'Old max:', maxscore
+print 'Old min:', minscore
+print 'Old average', mean(data2['exscore'])
+print 'Old median', median(data2['exscore'])   
+
+
+                                   
 print '\n\nNew max:', amax(data2['newscore'])
 print 'New min:', amin(data2['newscore'])
 print 'New average', mean(data2['newscore'])
