@@ -82,13 +82,15 @@ class meshConstruct():
     def subRandom(self,nCoarse,B):
         self.pos = zeros((nCoarse,3))
         self.subrand = rand(3)
+        print 'srand',self.subrand
 #         ns = svmeshNoCheck(nCoarseB)
         afact = sqrt(2)
         bfact = sqrt(3)
         cfact = sqrt(5)
         for ipos in range(nCoarse):
             self.subrand = mod(self.subrand + array([afact,bfact,cfact]), array([1,1,1]))
-            self.pos[ipos,:] = dot(B,self.subrand)
+            print 'srand',self.subrand
+            self.pos[ipos,:] = dot(transpose(B),self.subrand)
     
     def plot2dPts(self,ax0,ax1):
         fig = figure()
