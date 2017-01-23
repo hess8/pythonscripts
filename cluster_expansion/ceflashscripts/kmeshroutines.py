@@ -443,11 +443,28 @@ def svmesh1freedir(N,vecs):
     n0 = rint(N**(1/3.0) * (2*(u + w)/v)**(2/3.0))
     n1 = rint(sqrt(N/n0))
     return [n0,n1] 
+
+def svmeshNoCheck(N,vecs):
+    '''N: points desired, when all three directions are free of constraints on its magnitude vs other directions.  
+    Vecs the lattice vectors as numpy array (reciprocal here)
+    output:  n0, n1, n2, the number of divisions along each RLV for the mesh.'''
+#    print 'vecs in svmesh', vecs
+    u = norm(cross(vecs[:,0],vecs[:,1]))
+    v = norm(cross(vecs[:,1],vecs[:,2]))
+    w = norm(cross(vecs[:,2],vecs[:,0]))
+    n0 = N**(1/3.0) * w**(1/3.0) * u**(1/3.0) / v**(2/3.0)
+    n1 = N**(1/3.0) * u**(1/3.0) * v**(1/3.0) / w**(2/3.0)
+    n2 = N**(1/3.0) * v**(1/3.0) * w**(1/3.0) / u**(2/3.0)
+    ns = array([n0,n1,n2],dtype = int)
+    return ns
+
    
 def svmesh(N,vecs):
     '''N: points desired, when all three directions are free of constraints on its magnitude vs other directions.  
     Vecs the lattice vectors as numpy array (reciprocal here)
-    output:  n0, n1, n2, the number of divisions along each RLV for the mesh'''
+    output:  n0, n1, n2, the number of divisions along each RLV for the mesh.
+    Checks for multiplication by integers or irrational numbers relations between the n's, 
+    which we want to preserve for symmetry'''
 #    print 'vecs in svmesh', vecs
     u = norm(cross(vecs[:,0],vecs[:,1]))
     v = norm(cross(vecs[:,1],vecs[:,2]))
