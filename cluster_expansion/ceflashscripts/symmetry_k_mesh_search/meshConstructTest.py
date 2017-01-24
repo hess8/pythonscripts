@@ -39,17 +39,21 @@ maindir = '/fslhome/bch/cluster_expansion/meshConstruct/AlAl'
 meshc = meshConstruct.meshConstruct() #instance
 
 testfile = 'POSCAR'
-Nkppra = 10000#*10  
+# Nkppra = 10000#*10  
+Nkppra = 10000#*10 
 #reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
-file1 = open('meshsummary.csv','a')
+if os.path.exists('meshsummary.csv'):
+    file1 = open('meshsummary.csv','a')
+else: 
+    file1 = open('meshsummary.csv','w')
 file1.write('Structure,Lattice,amax/amin,pfB,pf_orth,pf_orth2fcc,pf_maxpf, pf_pf2fcc, pfmax, meshtype' + ',' \
              + 'Improvement,fcc compatibility,Nmesh,TargetNmesh,Nmesh/Target,cbest' + '\n')
 #for i,dir in enumerate(dirs):    
 
 for dir in dirs:
-    path = maindir+'/'+dir+'/'
+    path = maindir+'/'+dir
     print 'os.listdir(path)',os.listdir(path)
     if testfile in os.listdir(path):        
         print 

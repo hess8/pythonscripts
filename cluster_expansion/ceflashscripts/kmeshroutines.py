@@ -274,7 +274,7 @@ def abcalbega_latt(lvecs):
 def readposcar(filename, path): 
     ''' Format is explicit lattice vectors, not a,b,c,alpha, beta, gamma. 
     Saves vectors as columns, not rows which POSCAR uses'''
-    file1 = open(path+filename,'r')
+    file1 = open(path+'/'+filename,'r')
     poscar = file1.readlines()
     poscar = nstrip(poscar)
 #    print poscar
@@ -694,8 +694,8 @@ def getGroup(latt):
     epsIN = c_double(eps)
     getLatticePointGroup(byref(lattIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
     nops = NopsOUT.value
-    symopsB = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
-    return [symopsB,nops]
+    symops = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
+    return [symops,nops]
 
 def intsymops(A):
     '''finds integer symmetry operations in the basis of the vectors of lattice A, 
@@ -957,3 +957,35 @@ def poscar2super(path1,path2,M):
 #    print 'Inverse of S';print inv(S)
     create_poscar('POSCAR',descriptor+' Superlattice ', scale, S, detM*natoms, postype, pos2, path2)      
       
+    def intoVoronoi(position, cell, inverse=None):
+        """ From pylada_light: 
+        Folds vector into first Brillouin zone of the input cell
+    
+            Returns the periodic image with the smallest possible norm.
+    
+            :param position:
+                Vector/position to fold back into the cell
+            :param cell:
+                The cell matrix defining the periodicity
+            :param invcell:
+                Optional. The *inverse* of the cell defining the periodicity. It is
+                computed if not given on input.
+        """
+        from numpy import dot, floor
+        from numpy.linalg import inv, norm
+        if inverse is None:
+            inverse = inv(cell)
+        center = dot(inverse, position)
+        center -= floor(center)
+    
+        result = center
+        n = norm(center)
+        for i in range(-1, 2, 1):
+            for j in range(-1, 2, 1):
+                for k in range(-1, 2, 1):
+                    translated = [i, j, k] + center
+                    n2 = norm(dot(cell, translated))
+                    if n2 < n:
+                        n = n2
+                        result = translated
+        return dot(cell, result)

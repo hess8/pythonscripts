@@ -5,7 +5,7 @@ There is no lattice
 0.1 Choose a 
 1. nCoarse sub-random points in the BZ cell parallelpiped.  
     We don't need to work in Voronoi cell version because we are running in 3x3x3 supercell of the BZ
-    https://en.wikipedia.org/wiki/Low-discrepancy_sequence#Additive_recurrence for subrandom 
+    https://en.wikipedia.org/wiki/Low-discrepancy_sequence#Additive_recurrence for subRandSym 
 2. Define cutoff as rc = (nCoarse/Vcell)^1/3
 3. Make all copies due to translation and symmetry operations
 4. In neighboring cells (3x3x3 construction of plpd), keep only those that 
@@ -58,90 +58,193 @@ from kmeshroutines import svmesh,  svmeshNoCheck,svmesh1freedir, lattice_vecs, l
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection
 
 def timestamp():
-    ts = time.time()
-    return datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+    return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 
 class meshConstruct(): 
     '''Makes superperiodic structures and cuts'''
-    from comMethods import readfile,writefile,trimSmall,areEqual
+    from comMethods import readfile,writefile,trimSmall,areEqual,directFromCart,cartFromDirect
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
 
     def __init__(self):
         '''init'''
          
-
     def relaxMeshSym(self,B,targetNmesh,path):
         #1. nCoarse random points in the cell parallelpiped.  
 #         nCoarseMax = 200
+        self.B = B
+        [self.symops,self.nops] = getGroup(self.B)
         self.nCoarse = targetNmesh
-        vol = det(B)
+        self.path = path
+        print 'Number of desired points:', targetNmesh
+        print 'Symmetry operations:', self.nops
+        vol = abs(det(B))
+        ravg = (vol/targetNmesh)**(1/3.0)
         self.edgeFactor = 1.5
-        rc = self.edgeFactor*(targetNmesh/vol)^(1/3.0) #cutoff for forces, neighbors in other cells. 
-        self.initPoints(B) 
-        [self.symops,self.nops] = getGroup(B)
-        print 'Number of symmetry operations:', self.nops
-        self.transPoints
-        self.symPoints()
-               
+        self.rmin = 0.8*ravg #
+        self.rmax = self.edgeFactor*ravg #cutoff for forces, neighbors in other cells. 
+        print 'Cutoff rc:', self.rmax
+        self.initPoints() 
+        self.transPoints()
+        self.relax()
+        
+        sys.exit('stop')     
         return meshvecs, Nmesh, lattype, pfB, pf, status
-    
-    def transPoints():
+       
+    def relax(self):
+        '''Conjugate gradient relaxation of the potential energy'''
+        
+    def energy(self):
+        '''restrict the energy sum to the pairs that contain independent points'''
+        ener = 0.0
+        p = 4
+        for ipos in self.ind:
+            for jpos in range(self.nCoarse):
+                if ipos != jpos:
+                    r = norm(self.points[ipos]['pos']-self.points[jpos]['pos'])
+                    ener += 1/r**p    
+
+    def transPoints(self):
         '''Make copies of points in 3x3x3 supercell, but keep only those that 
         are within rc of edges'''
 #         self.posAllCells = zeros((1,1,1,self.nCoarse,3)) #first three digits will be a,b,c multiples to get the 27 cells:  -1, 0, 1
-        self.nextLabel = 0
-        self.points = zeros((len(self.nCoarse*27),dtype = [('label', 'int8'),('dep', 's1'),('sponsor', 'int8'),('pos', '3float'),('cell', '3int')])
-        aEdge = rc/norm(B[:,0]); bEdge = rc/norm(B[:,1]); cEdge = rc/norm(B[:,2])
+#         self.points = zeros((len(self.nCoarse*27),dtype = [('label', 'int8'),('dep', 's1'),('sponsor', 'int8'),('pos', '3float'),('cell', '3int')])
+        self.points = zeros(self.nCoarse*27,dtype = [('label', 'int8'),('dep', 'S1'),('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('cell', '3int')])
+#         self.labels = [] # list of active points labels 
+
+        aEdge = self.rmax/norm(self.B[:,0]); bEdge = self.rmax/norm(self.B[:,1]); cEdge = self.rmax/norm(self.B[:,2])
 #         bigDirCell = array([-1-])
+        
+#         self.points[:self.nCoarse] = self.cellPoints[:self.nCoarse]
         ipoint = 0
-        for i in range(-1,2):
-            for j in range(-1,2):
-                for k in range(-1,2):
+        for i in [0,-1,1]:
+            for j in [0,-1,1]:
+                for k in [0,-1,1]:
                     for ipos in range(self.nCoarse):
-                        dpos = self.directPos[ipos]
-                        pos = self.pos[ipos]
+                        dpos = self.cellPoints[ipos]['dpos']
+                        pos = self.cellPoints[ipos]['pos']
+                        #move to parallepiped cell
+                        for m in range(3): 
+                            if dpos[m] < 0:
+                                dpos[m] += 1.0
+                        pos = self.cartFromDirect(self.B,dpos)                        
                         newDirPos = dpos + array([i,j,k])
-                        if  (-1-aEdge < dpos[0] < 1 + aEdge) and (-1-bEdge < dpos[2] < 1 + bEdge) and (-1-cEdge < dpos[2] < 1 + cEdge):
-                            newPos = pos + i*B[:,0] + j*B[:,1] + k*B[:,2]
-                            self.points[ipoint]['label'] = self.nextLabel
-                            self.points[ipoint]['dep'] = 'U' #unknown
-                            self.points[ipoint]['sponsor'] = -1 #not assigned
+                        if  (-1-aEdge < newDirPos[0] < 1 + aEdge) and (-1-bEdge < newDirPos[2] < 1 + bEdge) and (-1-cEdge < newDirPos[2] < 1 + cEdge):
+                            newPos = pos + i*self.B[:,0] + j*self.B[:,1] + k*self.B[:,2]
+#                             self.points[ipoint]['label'] = ipoint
+                            self.labels.append(ipoint)
+                            if i != 0 or k !=0 or j!=0: #then this point is dependent by translation
+                                self.points[ipoint]['dep'] = 'T'
+                                self.points[ipoint]['sponsor'] = ipos #not assigned
+                                self.dep.append(ipoint)                        
                             self.points[ipoint]['cell'] = [i,j,k]
                             self.points[ipoint]['pos'] = newPos
+                            self.points[ipoint]['dpos'] = newDirPos
                             ipoint += 1
-        self.nextLabel = ipoint     
+        self.npoints = ipoint-1
+        self.plotPos(self.points,'pos')
+        self.plotPos(self.points,'dpos')
+        return   
     
-    def initPoints(self,B):
-        self.subRandom(B)  
-        self.plotPos()      
-        sys.exit('stop')
-            
-    def subRandom(self,B):
-        self.pos = zeros((self.nCoarse,3))
+    def initPoints(self):
+        self.subRandSym()  
+#         self.combineNear() #caution, this does not preserve symmetry
+#         self.plotPos(self.cellPoints)  
+        
+    def combineNear(self): 
+        '''Doesn't preserve symmetry, so not using it yet'''
+        self.cellPoints2 = zeros(self.nCoarse+self.nops,dtype = [('label', 'int8'),('dep', 'S1'),('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('cell', '3int')])
+#         combine = []
+        for jpos in range(self.nCoarse):
+            for kpos in range(jpos+1,self.nCoarse):
+                r = norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos']) < self.rmin
+                if 0.0 < norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos']) < self.rmin:
+                    print jpos,kpos
+                    print 'r', norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos'])
+                    if kpos in self.labels: self.labels.remove(kpos)
+                    if kpos in self.ind: self.ind.remove(kpos)
+                    if kpos in self.dep: self.dep.remove(kpos)
+                    self.cellPoints[jpos]['pos'] = (self.cellPoints[jpos]['pos'] + self.cellPoints[kpos]['pos'])/2.0     
+        ipos = 0
+        for label in self.labels:
+            self.cellPoints2[ipos] = self.cellPoints[label]
+            ipos += 1
+        self.nCoarse = ipos
+        self.cellPoints[label] = self.cellPoints2[ipos]
+        print 'Points generated:',self.nCoarse
+        return
+                      
+    def subRandSym(self):
+        self.labels = [] # list of active points labels
+        self.cellPoints = zeros(self.nCoarse+self.nops,dtype = [('label', 'int8'),('dep', 'S1'),('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('cell', '3int')])
         self.directPos = zeros((self.nCoarse,3))
         self.subrand = rand(3)
         afact = sqrt(2)
         bfact = sqrt(3)
         cfact = sqrt(5)
-        for ipos in range(self.nCoarse):
+        self.ind = []
+        self.dep = []
+        ipos = -1
+        while ipos < self.nCoarse:
+            ipos += 1
             self.subrand = mod(self.subrand + array([afact,bfact,cfact]), array([1,1,1]))
-            self.directPos[ipos,:] = self.subrand
-#             print 'srand',self.subrand
-            self.pos[ipos,:] = dot(transpose(B),self.subrand)
+            temp = self.subrand
+            for i in range(3): #center about origin.  
+                if temp[i] > 0.5:
+                    temp[i] -= 1.0
+            pos = dot(transpose(self.B),temp)  
+            self.cellPoints[ipos]['dep'] = 'I' #unknown
+            self.cellPoints[ipos]['sponsor'] = ipos                              
+            self.cellPoints[ipos]['pos'] = pos 
+            self.cellPoints[ipos]['dpos'] = temp
+            self.labels.append(ipos)
+            self.ind.append(ipos)
+            iInd = ipos
+            #now all symmetry operations will keep the point in the BZ 
+            sympoints = [str(pos[0])[:5]+str(pos[1])[:5]+str(pos[2])[:5]]
+            for op in range(self.nops):
+                newpos = dot(self.symops[:,:,op],pos)
+                posStr = str(newpos[0])[:5]+str(newpos[1])[:5]+str(newpos[2])[:5]
+                if posStr not in sympoints:
+                    sympoints.append(posStr)
+                    ipos += 1
+                    self.labels.append(ipos)
+                    self.dep.append(ipos)
+                    self.cellPoints[ipos]['dep'] = 'S'
+                    self.cellPoints[ipos]['sponsor'] = iInd                              
+                    temp = self.directFromCart(self.B,newpos)
+                    for i in range(3): #center about origin.  
+                        if temp[i] > 0.5:
+                            temp[i] -= 1.0
+                        elif temp[i] < -0.5:
+                            temp[i] += 1.0 
+                    self.cellPoints[ipos]['dpos'] = temp 
+                    newpos = self.cartFromDirect(self.B,newpos)
+                    self.cellPoints[ipos]['pos'] = newpos    
+        self.nCoarse = ipos  
+#         self.plotPos(self.cellPoints,'pos')
+#         self.plotPos(self.cellPoints,'dpos')                           
+        return
     
-    def plotPos(self):
-        self.plot2dPts(timestamp,'x','y') 
-        self.plot2dPts(timestamp,'x','z')  
+#     def tooNear(pos,ipos):
+#         for testpos in self.points[:ipoint]['pos']:
+#             if norm(pos-testpos) < self.rmin:
+#                 return False
+#         return True
+    
+    def plotPos(self,arr,field):
+        self.plot2dPts(arr,field,timestamp(),'x','y') 
+        self.plot2dPts(arr,field,timestamp(),'x','z')  
         
-    def plot2dPts(self,tag,ax0,ax1):
+    def plot2dPts(self,arr,field,tag,ax0,ax1):
         fig = figure()
         i0 = ('x','y','z').index(ax0)
         i1 = ('x','y','z').index(ax1)
-        scatter(self.pos[:,i0],self.pos[:,i1])
+        scatter(arr[:self.nCoarse][field][:,i0],arr[:self.nCoarse][field][:,i1])
         xlabel('{}'.format(ax0))
         ylabel('{}'.format(ax1))
-        name = '{} {}-{}'.format(tag,ax0,ax1)
+        name = '{}_{}_{}-{}'.format(tag,field,ax0,ax1)
         title(name)
-        fig.savefig(name+'.pdf');
+        fig.savefig(self.path+'/'+ name+'.pdf');
+        os.system('cp {} {}'.format(self.path+'/'+ name+'.pdf',self.path+ '/latest{}-{}'.format(ax0,ax1)+'.pdf' ))
         show()

@@ -4,7 +4,6 @@ import numpy as np
 from numpy import pi
 #sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/')
 
-#from kmeshroutines import checkq
 
 
 def checkq(user):
