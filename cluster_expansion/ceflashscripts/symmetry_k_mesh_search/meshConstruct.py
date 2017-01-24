@@ -55,7 +55,7 @@ sys.path.append('/fslhome/bch/graphener/graphener')
 from kmeshroutines import svmesh,  svmeshNoCheck,svmesh1freedir, lattice_vecs, lattice, surfvol, \
     orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,  \
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
-    getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection
+    getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell
 
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
@@ -121,16 +121,13 @@ class meshConstruct():
             for j in [0,-1,1]:
                 for k in [0,-1,1]:
                     for ipos in range(self.nCoarse):
-                        dpos = self.cellPoints[ipos]['dpos']
-                        pos = self.cellPoints[ipos]['pos']
+                        dpos = self.cellPoints[ipos]['dpos'] #dpos will always be the direct coordinates in the original cell
                         #move to parallepiped cell
-                        for m in range(3): 
-                            if dpos[m] < 0:
-                                dpos[m] += 1.0
-                        pos = self.cartFromDirect(self.B,dpos)                        
+                        pos = dot(transpose(self.B),dpos)
+                        self.cellPoints[ipos]['pos']  = pos #was voronoi position before                
                         newDirPos = dpos + array([i,j,k])
                         if  (-1-aEdge < newDirPos[0] < 1 + aEdge) and (-1-bEdge < newDirPos[2] < 1 + bEdge) and (-1-cEdge < newDirPos[2] < 1 + cEdge):
-                            newPos = pos + i*self.B[:,0] + j*self.B[:,1] + k*self.B[:,2]
+                            newPos = dot(transpose(self.B),newDirPos)
 #                             self.points[ipoint]['label'] = ipoint
                             self.labels.append(ipoint)
                             if i != 0 or k !=0 or j!=0: #then this point is dependent by translation
@@ -151,32 +148,32 @@ class meshConstruct():
 #         self.combineNear() #caution, this does not preserve symmetry
 #         self.plotPos(self.cellPoints)  
         
-    def combineNear(self): 
-        '''Doesn't preserve symmetry, so not using it yet'''
-        self.cellPoints2 = zeros(self.nCoarse+self.nops,dtype = [('label', 'int8'),('dep', 'S1'),('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('cell', '3int')])
-#         combine = []
-        for jpos in range(self.nCoarse):
-            for kpos in range(jpos+1,self.nCoarse):
-                r = norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos']) < self.rmin
-                if 0.0 < norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos']) < self.rmin:
-                    print jpos,kpos
-                    print 'r', norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos'])
-                    if kpos in self.labels: self.labels.remove(kpos)
-                    if kpos in self.ind: self.ind.remove(kpos)
-                    if kpos in self.dep: self.dep.remove(kpos)
-                    self.cellPoints[jpos]['pos'] = (self.cellPoints[jpos]['pos'] + self.cellPoints[kpos]['pos'])/2.0     
-        ipos = 0
-        for label in self.labels:
-            self.cellPoints2[ipos] = self.cellPoints[label]
-            ipos += 1
-        self.nCoarse = ipos
-        self.cellPoints[label] = self.cellPoints2[ipos]
-        print 'Points generated:',self.nCoarse
-        return
+#     def combineNear(self): 
+#         '''Doesn't preserve symmetry, so not using it yet'''
+#         self.cellPoints2 = zeros(self.nCoarse+self.nops,dtype = [('label', 'int8'),('dep', 'S1'),('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('cell', '3int')])
+# #         combine = []
+#         for jpos in range(self.nCoarse):
+#             for kpos in range(jpos+1,self.nCoarse):
+#                 r = norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos']) < self.rmin
+#                 if 0.0 < norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos']) < self.rmin:
+#                     print jpos,kpos
+#                     print 'r', norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos'])
+#                     if kpos in self.labels: self.labels.remove(kpos)
+#                     if kpos in self.ind: self.ind.remove(kpos)
+#                     if kpos in self.dep: self.dep.remove(kpos)
+#                     self.cellPoints[jpos]['pos'] = (self.cellPoints[jpos]['pos'] + self.cellPoints[kpos]['pos'])/2.0     
+#         ipos = 0
+#         for label in self.labels:
+#             self.cellPoints2[ipos] = self.cellPoints[label]
+#             ipos += 1
+#         self.nCoarse = ipos
+#         self.cellPoints[label] = self.cellPoints2[ipos]
+#         print 'Points generated:',self.nCoarse
+#         return
                       
     def subRandSym(self):
         self.labels = [] # list of active points labels
-        self.cellPoints = zeros(self.nCoarse+self.nops,dtype = [('label', 'int8'),('dep', 'S1'),('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('cell', '3int')])
+        self.cellPoints = zeros(self.nCoarse+self.nops,dtype = [('label', 'int8'),('dep', 'S1'),('sponsor', 'int8'),('pos', '3float'),('vpos', '3float'),('dpos', '3float'),('cell', '3int')])
         self.directPos = zeros((self.nCoarse,3))
         self.subrand = rand(3)
         afact = sqrt(2)
@@ -185,18 +182,19 @@ class meshConstruct():
         self.ind = []
         self.dep = []
         ipos = -1
+#         for i in range(self.nops):
+#             print i
+#             print self.symops[:,:,i]
         while ipos < self.nCoarse:
             ipos += 1
             self.subrand = mod(self.subrand + array([afact,bfact,cfact]), array([1,1,1]))
             temp = self.subrand
-            for i in range(3): #center about origin.  
-                if temp[i] > 0.5:
-                    temp[i] -= 1.0
-            pos = dot(transpose(self.B),temp)  
+            pos = dot(transpose(self.B),temp)
+            pos = intoVoronoi(pos,self.B)#now in Voronoi cell
             self.cellPoints[ipos]['dep'] = 'I' #unknown
             self.cellPoints[ipos]['sponsor'] = ipos                              
             self.cellPoints[ipos]['pos'] = pos 
-            self.cellPoints[ipos]['dpos'] = temp
+            self.cellPoints[ipos]['dpos'] = temp #dpos will always be the direct coordinates in the original cell
             self.labels.append(ipos)
             self.ind.append(ipos)
             iInd = ipos
@@ -204,26 +202,24 @@ class meshConstruct():
             sympoints = [str(pos[0])[:5]+str(pos[1])[:5]+str(pos[2])[:5]]
             for op in range(self.nops):
                 newpos = dot(self.symops[:,:,op],pos)
-                posStr = str(newpos[0])[:5]+str(newpos[1])[:5]+str(newpos[2])[:5]
+                posStr = str(newpos[0])[:7]+str(newpos[1])[:7]+str(newpos[2])[:7]
                 if posStr not in sympoints:
                     sympoints.append(posStr)
                     ipos += 1
                     self.labels.append(ipos)
                     self.dep.append(ipos)
                     self.cellPoints[ipos]['dep'] = 'S'
-                    self.cellPoints[ipos]['sponsor'] = iInd                              
-                    temp = self.directFromCart(self.B,newpos)
-                    for i in range(3): #center about origin.  
-                        if temp[i] > 0.5:
-                            temp[i] -= 1.0
-                        elif temp[i] < -0.5:
-                            temp[i] += 1.0 
-                    self.cellPoints[ipos]['dpos'] = temp 
-                    newpos = self.cartFromDirect(self.B,newpos)
+                    self.cellPoints[ipos]['sponsor'] = iInd 
+#                     newpos=intoVoronoi(newpos,self.B)                                
+                    self.cellPoints[ipos]['dpos'] = self.directFromCart(self.B,intoCell(newpos,self.B)) 
+                    checkpos = intoVoronoi(newpos,self.B)
+                    if norm(checkpos-newpos)> 1e-6:
+                        print 'New Voronoi cell pos for',newpos,checkpos                   
                     self.cellPoints[ipos]['pos'] = newpos    
         self.nCoarse = ipos  
-#         self.plotPos(self.cellPoints,'pos')
-#         self.plotPos(self.cellPoints,'dpos')                           
+        self.plotPos(self.cellPoints,'pos')
+#         self.plotPos(self.cellPoints,'dpos')
+        print 'Points in unit cell:',self.nCoarse                           
         return
     
 #     def tooNear(pos,ipos):

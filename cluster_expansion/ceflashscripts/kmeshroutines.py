@@ -15,6 +15,9 @@ utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
 getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
 
+
+
+
 def latticeType(nops):
     type = {2:'Triclinic', 4:'Monoclinic', 8:'Orthorhombic', 
             16:'Tetragonal', 12:'Trigonal', 24:'Hexagonal', 48:'Cubic'}
@@ -957,35 +960,59 @@ def poscar2super(path1,path2,M):
 #    print 'Inverse of S';print inv(S)
     create_poscar('POSCAR',descriptor+' Superlattice ', scale, S, detM*natoms, postype, pos2, path2)      
       
-    def intoVoronoi(position, cell, inverse=None):
-        """ From pylada_light: 
-        Folds vector into first Brillouin zone of the input cell
+def intoVoronoi(position, cell, inverse=None):
+    """ From pylada_light: 
+    Folds vector into first Brillouin zone of the input cell
+
+        Returns the periodic image with the smallest possible norm.
+
+        :param position:
+            Vector/position to fold back into the cell
+        :param cell:
+            The cell matrix defining the periodicity
+        :param invcell:
+            Optional. The *inverse* of the cell defining the periodicity. It is
+            computed if not given on input.
+    """
+    from numpy import dot, floor
+    from numpy.linalg import inv, norm
+    if inverse is None:
+        inverse = inv(cell)
+    center = dot(inverse, position)
+    center -= floor(center)
+
+    result = center
+    n = norm(center)
+    for i in range(-1, 2, 1):
+        for j in range(-1, 2, 1):
+            for k in range(-1, 2, 1):
+                translated = [i, j, k] + center
+                n2 = norm(dot(cell, translated))
+                if n2 < n:
+                    n = n2
+                    result = translated
+    return dot(cell, result)
+
+def intoCell(pos, cell, inverse=None):
     
-            Returns the periodic image with the smallest possible norm.
+    ''' Puts the point into the original unit cell, which has direct components 
+    between 0 and 1'''
+    dpos = directFromCart(cell,pos)
+    dpos = mod(dpos,1)
+    return cartFromDirect(cell,dpos)
+
+    result = dot(inverse, position)
+    return dot(cell, result - floor(result + 1e-12))
+
+def directFromCart(Lvs,cartvec):
+    '''Assumes lattice vectors are in rows in LVs.
+    Then D = inv(transpose(LV)) * C'''
+#     newvec = self.correctz(newvec)
+    return dot(inv(transpose(Lvs)), transpose(cartvec))
     
-            :param position:
-                Vector/position to fold back into the cell
-            :param cell:
-                The cell matrix defining the periodicity
-            :param invcell:
-                Optional. The *inverse* of the cell defining the periodicity. It is
-                computed if not given on input.
-        """
-        from numpy import dot, floor
-        from numpy.linalg import inv, norm
-        if inverse is None:
-            inverse = inv(cell)
-        center = dot(inverse, position)
-        center -= floor(center)
-    
-        result = center
-        n = norm(center)
-        for i in range(-1, 2, 1):
-            for j in range(-1, 2, 1):
-                for k in range(-1, 2, 1):
-                    translated = [i, j, k] + center
-                    n2 = norm(dot(cell, translated))
-                    if n2 < n:
-                        n = n2
-                        result = translated
-        return dot(cell, result)
+def cartFromDirect(Lvs,dirvec): 
+    '''Assumes lattice vectors are in rows in LVs.
+    Then C = transpose(LV) * D, because Cx = L1xD1 + L2xD2 + L3xD3, etc, 
+    which is top row of transpose(LV) dot D, or the first matrix multiplication 
+    operation'''
+    return dot(transpose(Lvs), transpose(dirvec))
