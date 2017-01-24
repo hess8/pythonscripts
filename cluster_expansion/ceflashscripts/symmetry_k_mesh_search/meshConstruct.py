@@ -107,15 +107,8 @@ class meshConstruct():
     def transPoints(self):
         '''Make copies of points in 3x3x3 supercell, but keep only those that 
         are within rc of edges'''
-#         self.posAllCells = zeros((1,1,1,self.nCoarse,3)) #first three digits will be a,b,c multiples to get the 27 cells:  -1, 0, 1
-#         self.points = zeros((len(self.nCoarse*27),dtype = [('label', 'int8'),('dep', 's1'),('sponsor', 'int8'),('pos', '3float'),('cell', '3int')])
         self.points = zeros(self.nCoarse*27,dtype = [('label', 'int8'),('dep', 'S1'),('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('cell', '3int')])
-#         self.labels = [] # list of active points labels 
-
         aEdge = self.rmax/norm(self.B[:,0]); bEdge = self.rmax/norm(self.B[:,1]); cEdge = self.rmax/norm(self.B[:,2])
-#         bigDirCell = array([-1-])
-        
-#         self.points[:self.nCoarse] = self.cellPoints[:self.nCoarse]
         ipoint = 0
         for i in [0,-1,1]:
             for j in [0,-1,1]:
@@ -126,7 +119,7 @@ class meshConstruct():
                         pos = dot(transpose(self.B),dpos)
                         self.cellPoints[ipos]['pos']  = pos #was voronoi position before                
                         newDirPos = dpos + array([i,j,k])
-                        if  (-1-aEdge < newDirPos[0] < 1 + aEdge) and (-1-bEdge < newDirPos[2] < 1 + bEdge) and (-1-cEdge < newDirPos[2] < 1 + cEdge):
+                        if  (-aEdge < newDirPos[0] < 1 + aEdge) and (-bEdge < newDirPos[1] < 1 + bEdge) and (-cEdge < newDirPos[2] < 1 + cEdge):
                             newPos = dot(transpose(self.B),newDirPos)
 #                             self.points[ipoint]['label'] = ipoint
                             self.labels.append(ipoint)
@@ -139,14 +132,13 @@ class meshConstruct():
                             self.points[ipoint]['dpos'] = newDirPos
                             ipoint += 1
         self.npoints = ipoint-1
-        self.plotPos(self.points,'pos')
-        self.plotPos(self.points,'dpos')
+        self.plotPos(self.points,self.npoints,'pos')
+        self.plotPos(self.points,self.npoints,'dpos')
         return   
     
     def initPoints(self):
         self.subRandSym()  
-#         self.combineNear() #caution, this does not preserve symmetry
-#         self.plotPos(self.cellPoints)  
+
         
 #     def combineNear(self): 
 #         '''Doesn't preserve symmetry, so not using it yet'''
@@ -217,8 +209,8 @@ class meshConstruct():
                         print 'New Voronoi cell pos for',newpos,checkpos                   
                     self.cellPoints[ipos]['pos'] = newpos    
         self.nCoarse = ipos  
-        self.plotPos(self.cellPoints,'pos')
-#         self.plotPos(self.cellPoints,'dpos')
+#         self.plotPos(self.cellPoints,self.ncoarse,'pos')
+#         self.plotPos(self.cellPoints,self.ncoarse,'dpos')
         print 'Points in unit cell:',self.nCoarse                           
         return
     
@@ -228,15 +220,15 @@ class meshConstruct():
 #                 return False
 #         return True
     
-    def plotPos(self,arr,field):
-        self.plot2dPts(arr,field,timestamp(),'x','y') 
-        self.plot2dPts(arr,field,timestamp(),'x','z')  
+    def plotPos(self,arr,npoints,field):
+        self.plot2dPts(arr,npoints,field,timestamp(),'x','y') 
+        self.plot2dPts(arr,npoints,field,timestamp(),'x','z')  
         
-    def plot2dPts(self,arr,field,tag,ax0,ax1):
+    def plot2dPts(self,arr,npoints,field,tag,ax0,ax1):
         fig = figure()
         i0 = ('x','y','z').index(ax0)
         i1 = ('x','y','z').index(ax1)
-        scatter(arr[:self.nCoarse][field][:,i0],arr[:self.nCoarse][field][:,i1])
+        scatter(arr[:npoints][field][:,i0],arr[:npoints][field][:,i1])
         xlabel('{}'.format(ax0))
         ylabel('{}'.format(ax1))
         name = '{}_{}_{}-{}'.format(tag,field,ax0,ax1)
