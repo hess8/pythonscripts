@@ -42,6 +42,7 @@ All matrices store vectors as COULUMNS
 import os, subprocess,sys,re,time
 from numpy import mod,dot, transpose, rint,floor,ceil,zeros,array,sqrt,average,std,amax,amin,int32,sort,count_nonzero,\
     delete,mean,square,argmax,argmin,insert
+from scipy.optimize import fmin_cg
 from numpy.linalg import inv, norm, det
 from numpy.random import rand
 from copy import copy,deepcopy
@@ -52,6 +53,9 @@ import matplotlib.image as mpimg
 import datetime
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/aflowscripts/')
 sys.path.append('/fslhome/bch/graphener/graphener')
+sys.path.append('/fslhome/bch/pymanopt')
+
+
 from kmeshroutines import svmesh,  svmeshNoCheck,svmesh1freedir, lattice_vecs, lattice, surfvol, \
     orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,  \
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
@@ -91,18 +95,64 @@ class meshConstruct():
         sys.exit('stop')     
         return meshvecs, Nmesh, lattype, pfB, pf, status
        
-    def relax(self):
-        '''Conjugate gradient relaxation of the potential energy'''
-        
-    def energy(self):
+#     def relax(self):
+#         '''Conjugate gradient relaxation of the potential energy.
+#         fmin_cg(f, x0, options...)
+#         f : callable, f(x, *args) Objective function to be minimized. Here x must be a 1-D array of the variables that are to be changed in the search for a minimum, and args are the other (fixed) parameters of f.
+# 
+#         x0 : ndarray A user-supplied initial estimate of xopt, the optimal value of x. It must be a 1-D array of values.
+# 
+#         The energy must be a function of 1-D inputs, so it will be '''
+#         coords = array([self.points[i]['pos'] for i in self.ind]).flatten()
+#         initialGuess = [i+ 0.5*self.rmin*rand() for i in coords]  #just add noise to initial positions
+#         out = fmin_cg(self.energy,initialGuess)
+#         print out
+#         
+# #         for i in range(27):
+# #             print i ,coords[i]
+# #         vectors = coords.reshape((self.npoints,3))
+# #         for i in range(9):
+# #             print i ,vectors[i,:]        
+#         return
+#         
+#     def energy(self,coords):
+#         '''restrict the energy sum to the pairs that contain independent points'''
+#         vectors = coords.reshape((len(self.ind),3))
+#         ener = 0.0
+#         p = 4.0
+#         scale = 1
+#         for ipos in range(len(self.ind)):
+#             for jpos in range(self.npoints):
+#                 r = norm(vectors[ipos]-self.points[jpos]['pos'])
+#                 if r > 1e-4*self.rmin:
+#                     ener += scale*(1/r)**p
+#                 else:
+#                     os.system('stop.  Two points have the same position')
+#         print 'energy:',ener
+#         #now update all the dependent positions
+#       #  ! Note:  need to update the positions at each step!  Do we have to get inside
+#         return ener
+         
+      
+    def energy(self,coords):
         '''restrict the energy sum to the pairs that contain independent points'''
+        vectors = coords.reshape((len(self.ind),3))
         ener = 0.0
-        p = 4
-        for ipos in self.ind:
-            for jpos in range(self.nCoarse):
-                if ipos != jpos:
-                    r = norm(self.points[ipos]['pos']-self.points[jpos]['pos'])
-                    ener += 1/r**p    
+        p = 4.0
+        scale = 1
+        for ipos in range(len(self.ind)):
+            for jpos in range(self.npoints):
+                r = norm(vectors[ipos]-self.points[jpos]['pos'])
+                if r > 1e-4*self.rmin:
+                    ener += scale*(1/r)**p
+                else:
+                    os.system('stop.  Two points have the same position')
+        print 'energy:',ener
+        #now update all the dependent positions
+      #  ! Note:  need to update the positions at each step!  Do we have to get inside
+        return ener
+
+
 
     def transPoints(self):
         '''Make copies of points in 3x3x3 supercell, but keep only those that 
@@ -132,8 +182,8 @@ class meshConstruct():
                             self.points[ipoint]['dpos'] = newDirPos
                             ipoint += 1
         self.npoints = ipoint-1
-        self.plotPos(self.points,self.npoints,'pos')
-        self.plotPos(self.points,self.npoints,'dpos')
+#         self.plotPos(self.points,self.npoints,'pos')
+#         self.plotPos(self.points,self.npoints,'dpos')
         return   
     
     def initPoints(self):
@@ -191,10 +241,11 @@ class meshConstruct():
             self.ind.append(ipos)
             iInd = ipos
             #now all symmetry operations will keep the point in the BZ 
-            sympoints = [str(pos[0])[:5]+str(pos[1])[:5]+str(pos[2])[:5]]
+            strLen = 7
+            sympoints = [str(pos[0])[:strLen]+str(pos[1])[:strLen]+str(pos[2])[:strLen]]
             for op in range(self.nops):
                 newpos = dot(self.symops[:,:,op],pos)
-                posStr = str(newpos[0])[:7]+str(newpos[1])[:7]+str(newpos[2])[:7]
+                posStr = str(newpos[0])[:strLen]+str(newpos[1])[:strLen]+str(newpos[2])[:strLen]
                 if posStr not in sympoints:
                     sympoints.append(posStr)
                     ipos += 1
@@ -204,9 +255,9 @@ class meshConstruct():
                     self.cellPoints[ipos]['sponsor'] = iInd 
 #                     newpos=intoVoronoi(newpos,self.B)                                
                     self.cellPoints[ipos]['dpos'] = self.directFromCart(self.B,intoCell(newpos,self.B)) 
-                    checkpos = intoVoronoi(newpos,self.B)
-                    if norm(checkpos-newpos)> 1e-6:
-                        print 'New Voronoi cell pos for',newpos,checkpos                   
+#                     checkpos = intoVoronoi(newpos,self.B)
+#                     if norm(checkpos-newpos)> 1e-6:
+#                         print 'New Voronoi cell pos for',newpos,checkpos                   
                     self.cellPoints[ipos]['pos'] = newpos    
         self.nCoarse = ipos  
 #         self.plotPos(self.cellPoints,self.ncoarse,'pos')
