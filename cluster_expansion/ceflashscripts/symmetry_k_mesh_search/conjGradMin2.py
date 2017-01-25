@@ -1,12 +1,15 @@
 import warnings
 import sys
-import numpy
+# import numpy
 from scipy._lib.six import callable
 from numpy import (atleast_1d, eye, mgrid, argmin, zeros, shape, squeeze,
-                   vectorize, asarray, sqrt, Inf, asfarray, isinf)
-import numpy as np
+                   vectorize, asarray, sqrt, Inf, asfarray, isinf, intc,
+                   amax, amin, dot)
+from numpy.linalg import det, inv, eig
+from numpy.linalg import norm as npnorm
 from scipy._lib._util import getargspec_no_self as _getargspec
-from scipy.optimize import line_search
+
+from dcsrch import dcsrch
 
 _status_message = {'success': 'Optimization terminated successfully.',
                    'maxfev': 'Maximum number of function evaluations has '
@@ -15,7 +18,7 @@ _status_message = {'success': 'Optimization terminated successfully.',
                               'exceeded.',
                    'pr_loss': 'Desired error not necessarily achieved due '
                               'to precision loss.'}
-# _epsilon = sqrt(numpy.finfo(float).eps)
+# _epsilon = sqrt(finfo(float).eps)
 # _epsilon = rc
 
 def fmin_cg(self, x0, epsilon, fprime=None, args=(), gtol=1e-5, norm=Inf,
@@ -73,7 +76,7 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
 
     # Sets the initial step guess to dx ~ 1
     old_fval = self.energy(xk)
-    old_old_fval = old_fval + np.linalg.norm(gfk) / 2
+    old_old_fval = old_fval + npnorm(gfk) / 2
 
     if retall:
         allvecs = [xk]
@@ -81,16 +84,16 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
     pk = -gfk
     gnorm = vecnorm(gfk, ord=norm)
     while (gnorm > gtol) and (k < maxiter):
-        deltak = numpy.dot(gfk, gfk)
+        deltak = dot(gfk, gfk)
 
-        try:
-            alpha_k, fc, gc, old_fval, old_old_fval, gfkp1 = \
-                     line_search(f, myfprime, xk, pk, gfk, old_fval,
+#         try:
+        alpha_k, fc, gc, old_fval, old_old_fval, gfkp1 = \
+                     self.line_search_wolfe1(xk, pk, gfk, old_fval,
                                           old_old_fval, c2=0.4, amin=1e-100, amax=1e100)
-        except _LineSearchError:
-            # Line search failed to find a better solution.
-            warnflag = 2
-            break
+#         except _LineSearchError:
+#             # Line search failed to find a better solution.
+#             warnflag = 2
+#             break
 
         xk = xk + alpha_k * pk
         if retall:
@@ -98,7 +101,7 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
         if gfkp1 is None:
             gfkp1 = myfprime(xk)
         yk = gfkp1 - gfk
-        beta_k = max(0, numpy.dot(yk, gfkp1) / deltak)
+        beta_k = max(0, dot(yk, gfkp1) / deltak)
         pk = -gfkp1 + beta_k * pk
         gfk = gfkp1
         gnorm = vecnorm(gfk, ord=norm)
@@ -147,8 +150,8 @@ def approx_fprime(self, xk, epsilon):
     See ``approx_fprime``.  An optional initial function value arg is added.
     """
     f0 = self.energy(xk)
-    grad = numpy.zeros((len(xk),), float)
-    ei = numpy.zeros((len(xk),), float)
+    grad = zeros((len(xk),), float)
+    ei = zeros((len(xk),), float)
     for k in range(len(xk)):
         ei[k] = 1.0
         d = epsilon * ei #d is changing each time
@@ -211,37 +214,146 @@ class OptimizeResult(dict):
     def __dir__(self):
         return list(self.keys())
 
-def _line_search_wolfe12(f, fprime, xk, pk, gfk, old_fval, old_old_fval,
-                         **kwargs):
-    """
-    Same as line_search_wolfe1, but fall back to line_search_wolfe2 if
-    suitable step length is not found, and raise an exception if a
-    suitable step length is not found.
-    Raises
-    ------
-    _LineSearchError
-        If no suitable step size is found
-    """
-    ret = line_search_wolfe1(f, fprime, xk, pk, gfk,
-                             old_fval, old_old_fval,
-                             **kwargs)
-
-    if ret[0] is None:
-        # line search failed: try different one.
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', LineSearchWarning)
-            ret = line_search_wolfe2(f, fprime, xk, pk, gfk,
-                                     old_fval, old_old_fval)
-
-    if ret[0] is None:
-        raise _LineSearchError()
-
-    return ret
 
 def vecnorm(x, ord=2):
     if ord == Inf:
-        return numpy.amax(numpy.abs(x))
+        return amax(abs(x))
     elif ord == -Inf:
-        return numpy.amin(numpy.abs(x))
+        return amin(abs(x))
     else:
-        return numpy.sum(numpy.abs(x)**ord, axis=0)**(1.0 / ord)
+        return sum(abs(x)**ord, axis=0)**(1.0 / ord)
+    
+def phi(self,s):
+    fc[0] += 1
+    return f(xk + s*pk)
+
+def derphi(self,s):
+    gval[0] = self.approx_fprime(xk + s*pk)
+    if gradient:
+        gc[0] += 1
+    else:
+        fc[0] += len(xk) + 1
+    return dot(gval[0], pk)
+    
+def line_search_wolfe1(self,xk, pk, gfk,
+                       old_fval=None, old_old_fval=None,
+                       args=(), c1=1e-4, c2=0.9, amax=50, amin=1e-8,
+                       xtol=1e-14):
+    """
+    As `scalar_search_wolfe1` but do a line search to direction `pk`
+    Parameters
+    ----------
+    f : callable
+        Function `f(x)`
+    fprime : callable
+        Gradient of `f`
+    xk : array_like
+        Current point
+    pk : array_like
+        Search direction
+    gfk : array_like, optional
+        Gradient of `f` at point `xk`
+    old_fval : float, optional
+        Value of `f` at point `xk`
+    old_old_fval : float, optional
+        Value of `f` at point preceding `xk`
+    The rest of the parameters are the same as for `scalar_search_wolfe1`.
+    Returns
+    -------
+    stp, f_count, g_count, fval, old_fval
+        As in `line_search_wolfe1`
+    gval : array
+        Gradient of `f` at the final point
+    """
+
+#     if isinstance(fprime, tuple):
+#         eps = fprime[1]
+#         fprime = fprime[0]
+#         newargs = (f, eps) + args
+#         gradient = False
+#     else:
+#     newargs = args
+    gradient = True
+    gval = [gfk]
+    gc = [0]
+    fc = [0]
+    derphi0 = dot(gfk, pk)
+    stp, fval, old_fval = self.scalar_search_wolfe1(
+            phi, derphi, old_fval, old_old_fval, derphi0,
+            c1=c1, c2=c2, amax=amax, amin=amin, xtol=xtol)
+
+return stp, fc[0], gc[0], fval, old_fval, gval[0]
+
+
+def scalar_search_wolfe1(self, phi0=None, old_phi0=None, derphi0=None,
+                         c1=1e-4, c2=0.9,
+                         amax=50, amin=1e-8, xtol=1e-14):
+    """
+    Scalar function search for alpha that satisfies strong Wolfe conditions
+    alpha > 0 is assumed to be a descent direction.
+    Parameters
+    ----------
+    phi : callable phi(alpha)
+        Function at point `alpha`
+    derphi : callable dphi(alpha)
+        Derivative `d phi(alpha)/ds`. Returns a scalar.
+    phi0 : float, optional
+        Value of `f` at 0
+    old_phi0 : float, optional
+        Value of `f` at the previous point
+    derphi0 : float, optional
+        Value `derphi` at 0
+    amax : float, optional
+        Maximum step size
+    c1, c2 : float, optional
+        Wolfe parameters
+    Returns
+    -------
+    alpha : float
+        Step size, or None if no suitable step was found
+    phi : float
+        Value of `phi` at the new point `alpha`
+    phi0 : float
+        Value of `phi` at `alpha=0`
+    Notes
+    -----
+    Uses routine DCSRCH from MINPACK.
+    """
+
+    if phi0 is None:
+        phi0 = self.phi(0.)
+    if derphi0 is None:
+        derphi0 = self.derphi(0.)
+
+    if old_phi0 is not None and derphi0 != 0:
+        alpha1 = min(1.0, 1.01*2*(phi0 - old_phi0)/derphi0)
+        if alpha1 < 0:
+            alpha1 = 1.0
+    else:
+        alpha1 = 1.0
+
+    phi1 = phi0
+    derphi1 = derphi0
+    isave = zeros((2,), intc)
+    dsave = zeros((13,), float)
+    task = b'START'
+
+    maxiter = 30
+    for i in xrange(maxiter):
+        stp, phi1, derphi1, task = dcsrch(alpha1, phi1, derphi1,
+                                                   c1, c2, xtol, task,
+                                                   amin, amax, isave, dsave)
+        if task[:2] == b'FG':
+            alpha1 = stp
+            phi1 = self.phi(stp)
+            derphi1 = self.derphi(stp)
+        else:
+            break
+    else:
+        # maxiter reached, the line search did not converge
+        stp = None
+
+    if task[:5] == b'ERROR' or task[:4] == b'WARN':
+        stp = None  # failed
+
+    return stp, phi1, phi0
