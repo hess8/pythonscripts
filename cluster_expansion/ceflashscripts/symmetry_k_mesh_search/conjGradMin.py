@@ -960,7 +960,7 @@ def _minimize_bfgs(fun, x0, args=(), jac=None, callback=None,
     return result
 
 
-def fmin_cg_bch(f, x0, fprime=None, args=(), gtol=1e-5, norm=Inf, epsilon=_epsilon,
+def fmin_cg(f, x0, fprime=None, args=(), gtol=1e-5, norm=Inf, epsilon=_epsilon,
             maxiter=None, full_output=0, disp=1, retall=0, callback=None):
     """
     Minimize a function using a nonlinear conjugate gradient algorithm.
