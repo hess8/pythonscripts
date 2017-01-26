@@ -84,12 +84,14 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
     self.pk = -gfk
     gnorm = vecnorm(gfk, ord=norm)
     while (gnorm > gtol) and (k < maxiter):
+        print 'k',k
         deltak = dot(gfk, gfk)
 
 #         try:
         alpha_k, fc, gc, old_fval, old_old_fval, gfkp1 = \
-                     self.line_search_wolfe1(xk, gfk, old_fval,
+                     self.line_search_wolfe1(xk, epsilon, gfk, old_fval,
                                           old_old_fval, c2=0.4, amin=1e-100, amax=1e100)
+        sys.exit('stop')
         xk = xk + alpha_k * self.pk
         if retall:
             allvecs.append(xk)
@@ -163,18 +165,19 @@ def vecnorm(x, ord=2):
     else:
         return sum(abs(x)**ord, axis=0)**(1.0 / ord)
     
-def phi(self,s):
+def phi(self,xk,s):
     self.fc[0] += 1
-    return self.energy(xk + s*self.pk)
+    ener = self.energy(xk + s*self.pk)
+    return ener
 
-def derphi(self,s):
-    self.gval[0] = self.approx_fprime(xk + s*self.pk)
+def derphi(self,xk,epsilon,s):
+    self.gval[0] = self.approx_fprime(xk + s*self.pk,epsilon)
     self.gc[0] += 1
 #     else:
 #         fc[0] += len(xk) + 1
     return dot(self.gval[0],self.pk)
     
-def line_search_wolfe1(self,xk, gfk, old_fval, old_old_fval,
+def line_search_wolfe1(self,xk, epsilon,gfk, old_fval, old_old_fval,
                        c1=1e-4, c2=0.9, amax=50, amin=1e-8,
                        xtol=1e-14):
     """
@@ -215,12 +218,12 @@ def line_search_wolfe1(self,xk, gfk, old_fval, old_old_fval,
     self.gc = [0]
     self.fc = [0]
     derphi0 = dot(gfk, self.pk)
-    stp, fval, old_fval = self.scalar_search_wolfe1(old_fval, old_old_fval, derphi0)
+    stp, fval, old_fval = self.scalar_search_wolfe1(xk,epsilon,old_fval, old_old_fval, derphi0)
     return stp, self.fc[0], self.gc[0], fval, old_fval, self.gval[0]
 
 
 
-def scalar_search_wolfe1(self, phi0, old_phi0, derphi0,
+def scalar_search_wolfe1(self, xk,epsilon,phi0, old_phi0, derphi0,
                          c1=1e-4, c2=0.9,
                          amax=50, amin=1e-8, xtol=1e-14):
     """
@@ -276,9 +279,9 @@ def scalar_search_wolfe1(self, phi0, old_phi0, derphi0,
 #return stp, task, isave, dsave
         
         if task[:2] == 'FG':
-            alpha1 = stp
-            phi1 = self.phi(stp)
-            derphi1 = self.derphi(stp)
+#             alpha1 = stp
+            phi1 = self.phi(xk,stp)
+            derphi1 = self.derphi(xk,epsilon,stp)
         else:
             break
     else:
