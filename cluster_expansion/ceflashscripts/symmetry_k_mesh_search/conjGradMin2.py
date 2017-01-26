@@ -91,12 +91,10 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
         alpha_k, fc, gc, old_fval, old_old_fval, gfkp1 = \
                      self.line_search_wolfe1(xk, epsilon, gfk, old_fval,
                                           old_old_fval, c2=0.4, amin=1e-100, amax=1e100)
-        sys.exit('stop')
+#         sys.exit('stop')
         xk = xk + alpha_k * self.pk
         if retall:
             allvecs.append(xk)
-        if gfkp1 is None:
-            gfkp1 = myfprime(xk)
         yk = gfkp1 - gfk
         beta_k = max(0, dot(yk, gfkp1) / deltak)
         self.pk = -gfkp1 + beta_k * self.pk

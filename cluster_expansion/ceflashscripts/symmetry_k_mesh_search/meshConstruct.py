@@ -155,6 +155,7 @@ class meshConstruct():
         >>> res1 = optimize.fmin_cg(f, x0, fprime=gradf, args=args)
  
         The energy must be a function of 1-D inputs, so it will be '''
+        self.oldindVecs = [self.points[i]['pos'] for i in self.ind]
         self.indComps = array([self.points[i]['pos'] for i in self.ind]).flatten()
         initialGuess = [i+ 0.5*self.rmin*rand() for i in self.indComps]  #just add noise to initial positions
         self.count = 0
@@ -191,9 +192,11 @@ class meshConstruct():
  
     def energy(self,indComps):
         '''restrict the energy sum to the pairs that contain independent points'''
+        print 'oldindvecs',self.oldindVecs
         indVecs = indComps.reshape((len(self.ind),3))
+        self.oldindVecs = indVecs
         #update all positions by symmetry and translation
-        self.oldPoints = self.points
+        self.oldPoints = deepcopy(self.points)
         self.updatePoints(indVecs)
 #         self.plotPos(self.points,self.npoints,'pos')
 #         for i in range(20):
@@ -202,7 +205,8 @@ class meshConstruct():
 #             print
         for i in range(self.npoints):
             move = norm(self.points[i]['pos']-self.oldPoints[i]['pos'])
-            if move>0:
+#             print i,move*1e6
+            if move > 0.0:
                 print i,move
         ener = 0.0
         p = 4.0
