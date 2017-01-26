@@ -129,7 +129,7 @@ class meshConstruct():
         self.initPoints() 
         self.transPoints()
         self.relax()
-        
+        self.plotPos(self.points,self.npoints,'pos')
         sys.exit('stop')     
         return meshvecs, Nmesh, lattype, pfB, pf, status
        
@@ -174,7 +174,11 @@ class meshConstruct():
         for ipoint in range(self.npoints):
             if ipoint in self.ind:
                 place = self.ind.index(ipoint)
-                self.points[ipoint]['pos'] = indVecs[place,:]
+                dpos = self.directFromCart(indVecs[place,:])
+                dpos = self.intoCell(dpos)
+                self.points[ipoint]['pos'] = self.cartFromDirect(dpos)
+                self.points[ipoint]['dpos']
+                
             else:
                 dep = self.points[ipoint]['dep']
                 sponsor = self.points[ipoint]['sponsor']
@@ -192,39 +196,38 @@ class meshConstruct():
  
     def energy(self,indComps):
         '''restrict the energy sum to the pairs that contain independent points'''
-        print 'oldindvecs',self.oldindVecs
+#         print 'oldindvecs',self.oldindVecs
         indVecs = indComps.reshape((len(self.ind),3))
         self.oldindVecs = indVecs
         #update all positions by symmetry and translation
         self.oldPoints = deepcopy(self.points)
         self.updatePoints(indVecs)
-#         self.plotPos(self.points,self.npoints,'pos')
-#         for i in range(20):
-#             print 'old',self.oldPoints[i]['pos']
-#             print 'new',self.points[i]['pos']
-#             print
-        for i in range(self.npoints):
-            move = norm(self.points[i]['pos']-self.oldPoints[i]['pos'])
-#             print i,move*1e6
-            if move > 0.0:
-                print i,move
+        
+
+#         for i in range(self.npoints):
+#             move = norm(self.points[i]['pos']-self.oldPoints[i]['pos'])
+#             if move > 0.0:
+#                 print i,move
         ener = 0.0
-        p = 4.0
+        p = 2.0
         scale = 1
         for ipos in range(len(self.ind)):
             for jpos in range(self.npoints):
                 r = norm(indVecs[ipos]-self.points[jpos]['pos'])
                 if r > 1e-4*self.rmin:
-                    ener += scale*(1/r)**p
-#                 
-        print 'energy:',self.count, ener
-        if self.count == 19:
-            self.plotPos(self.points,self.npoints,'pos')
+                    ener += (self.ravg/r)**p
+        
+        ener = scale*ener/self.nCoarse       
+#         print 'energy:',self.count, ener
+#         if self.count == 19:
+#             self.plotPos(self.points,self.npoints,'pos')
              
         self.count += 1
         #now update all the dependent positions
       #  ! Note:  need to update the positions at each step!  Do we have to get inside
+#         return ener#         
         return ener
+
 
     def transPoints(self):
         '''Make copies of points in 3x3x3 supercell, but keep only those that 

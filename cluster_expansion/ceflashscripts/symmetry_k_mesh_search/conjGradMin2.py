@@ -32,16 +32,16 @@ def fmin_cg(self, x0, epsilon, fprime=None, args=(), gtol=1e-5, norm=Inf,
 
     res = self.minimize_cg(x0, epsilon, args, callback=callback, **opts)
 
-    if full_output:
-        retlist = res['x'], res['fun'], res['nfev'], res['njev'], res['status']
-        if retall:
-            retlist += (res['allvecs'], )
-        return retlist
-    else:
-        if retall:
-            return res['x'], res['allvecs']
-        else:
-            return res['x']
+#     if full_output:
+#         retlist = res['x'], res['fun'], res['nfev'], res['njev'], res['status']
+#         if retall:
+#             retlist += (res['allvecs'], )
+#         return retlist
+#     else:
+#         if retall:
+#             return res['x'], res['allvecs']
+#         else:
+#             return res['x']
         
 def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
                  gtol=1e-5, norm=Inf, maxiter=None,
@@ -84,7 +84,7 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
     self.pk = -gfk
     gnorm = vecnorm(gfk, ord=norm)
     while (gnorm > gtol) and (k < maxiter):
-        print 'k',k
+        print 'k,gnorm, energy',k,gnorm,old_fval
         deltak = dot(gfk, gfk)
 
 #         try:
@@ -129,16 +129,17 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
             print(msg)
             print("         Current function value: %f" % fval)
             print("         Iterations: %d" % k)
-            print("         Function evaluations: %d" % func_calls[0])
-            print("         Gradient evaluations: %d" % grad_calls[0])
+#             print("         Function evaluations: %d" % func_calls[0])
+#             print("         Gradient evaluations: %d" % grad_calls[0])
+    
 
-    result = OptimizeResult(fun=fval, jac=gfk, nfev=func_calls[0],
-                            njev=grad_calls[0], status=warnflag,
-                            success=(warnflag == 0), message=msg, x=xk,
-                            nit=k)
-    if retall:
-        result['allvecs'] = allvecs
-    return result
+#     result = OptimizeResult(fun=fval, jac=gfk, nfev=func_calls[0],
+#                             njev=grad_calls[0], status=warnflag,
+#                             success=(warnflag == 0), message=msg, x=xk,
+#                             nit=k)
+#     if retall:
+#         result['allvecs'] = allvecs
+#     return result
 
 def approx_fprime(self, xk, epsilon):
     """
