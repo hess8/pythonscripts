@@ -70,36 +70,35 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
         maxiter = len(x0) * 200
 #     func_calls, f = wrap_function(f, args)
 #     grad_calls, myfprime = approx_fprime, (f, epsilon))
-#     gfk = self.approx_fprime(x0,epsilon)
+#     grad = self.approx_fprime(x0,epsilon)
     k = 0
     xk = x0
 
     # Sets the initial step guess to dx ~ 1
-    old_fval,gfk = self.enerGrad(xk)
-    old_old_fval = old_fval + npnorm(gfk) / 2
+    old_fval,grad = self.enerGrad(xk)
+    old_old_fval = old_fval + npnorm(grad) / 2
 
     if retall:
         allvecs = [xk]
     warnflag = 0
-    self.pk = -gfk
-    gnorm = vecnorm(gfk, ord=norm)
-    while (gnorm > gtol) and (k < maxiter) and (abs(old_fval - old_old_fval)>0.01):
+    self.pk = -grad
+    gnorm = vecnorm(grad, ord=norm)
+    while (gnorm > gtol) and (k < maxiter):# and (abs(old_fval - old_old_fval)>0.01):
         print 'k,gnorm, energy',k,gnorm,old_fval
-        deltak = dot(gfk, gfk)
+        deltak = dot(grad, grad)
 
-#         try:
-        alpha_k, fc, gc, old_fval, old_old_fval, gfkp1 = \
-                     self.line_search_wolfe1(xk, epsilon, gfk, old_fval,
+        stp_k, old_fval, old_old_fval, gradp1 = \
+                     self.line_search_wolfe1(xk, epsilon, grad, old_fval,
                                           old_old_fval, c2=0.4, amin=1e-100, amax=1e100)
-#         sys.exit('stop')
-        xk = xk + alpha_k * self.pk
+        print 'step',stp_k
+        xk = xk + stp_k * self.pk
         if retall:
             allvecs.append(xk)
-        yk = gfkp1 - gfk
-        beta_k = max(0, dot(yk, gfkp1) / deltak)
-        self.pk = -gfkp1 + beta_k * self.pk
-        gfk = gfkp1
-        gnorm = vecnorm(gfk, ord=norm)
+        yk = gradp1 - grad
+        beta_k = max(0, dot(yk, gradp1) / deltak)
+        self.pk = -gradp1 + beta_k * self.pk
+        grad = gradp1
+        gnorm = vecnorm(grad, ord=norm)
         if callback is not None:
             callback(xk)
         k += 1
@@ -133,7 +132,7 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
 #             print("         Gradient evaluations: %d" % grad_calls[0])
     
 
-#     result = OptimizeResult(fun=fval, jac=gfk, nfev=func_calls[0],
+#     result = OptimizeResult(fun=fval, jac=grad, nfev=func_calls[0],
 #                             njev=grad_calls[0], status=warnflag,
 #                             success=(warnflag == 0), message=msg, x=xk,
 #                             nit=k)
@@ -164,22 +163,15 @@ def vecnorm(x, ord=2):
     else:
         return sum(abs(x)**ord, axis=0)**(1.0 / ord)
     
-def f(self,xk,s):
-    self.fc[0] += 1
-    ener = self.enerGrad(xk + s*self.pk)
-    return ener
 
-def derf(self,xk,epsilon,s):
-    self.gval[0] = self.approx_fprime(xk + s*self.pk,epsilon)
-    self.gc[0] += 1
-#     else:
-#         fc[0] += len(xk) + 1
-    return dot(self.gval[0],self.pk)
     
-def line_search_wolfe1(self,xk, epsilon,gfk, old_fval, old_old_fval,
+def line_search_wolfe1(self,xk, epsilon, grad, old_fval, old_old_fval,
                        c1=1e-4, c2=0.9, amax=50, amin=1e-8,
                        xtol=1e-14):
     """
+    See https://github.com/scipy/scipy/blob/v0.13.0/scipy/optimize/linesearch.py#L187
+    ***Modified***
+
     As `scalar_search_wolfe1` but do a line search to direction `pk`
     Parameters
     ----------
@@ -191,7 +183,7 @@ def line_search_wolfe1(self,xk, epsilon,gfk, old_fval, old_old_fval,
         Current point
     pk : array_like
         Search direction
-    gfk : array_like, optional
+    grad : array_like, optional
         Gradient of `f` at point `xk`
     old_fval : float, optional
         Value of `f` at point `xk`
@@ -213,27 +205,28 @@ def line_search_wolfe1(self,xk, epsilon,gfk, old_fval, old_old_fval,
 #         gradient = False
 #     else:
 #     newargs = args
-    self.gval = [gfk]
-    self.gc = [0]
-    self.fc = [0]
-    derf0 = dot(gfk, self.pk)
-    stp, fval, old_fval = self.scalar_search_wolfe1(xk,epsilon,old_fval, old_old_fval, derf0)
-    return stp, self.fc[0], self.gc[0], fval, old_fval, self.gval[0]
+    derf0 = dot(grad, self.pk)
+    stp, fval, old_fval, grad  = self.scalar_search_wolfe1(xk,epsilon,old_fval, 
+                                                    old_old_fval, derf0, grad)
+    return stp, fval, old_fval, grad
 
 
 
-def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0,
+def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0, grad,
                          c1=1e-4, c2=0.9,
                          amax=50, amin=1e-8, xtol=1e-14):
     """
-    Scalar function search for alpha that satisfies strong Wolfe conditions
-    alpha > 0 is assumed to be a descent direction.
+    See https://github.com/scipy/scipy/blob/v0.13.0/scipy/optimize/linesearch.py#L187
+    ***Modified***
+    
+    Scalar function search for stp that satisfies strong Wolfe conditions
+    stp > 0 is assumed to be a descent direction.
     Parameters
     ----------
-    f : callable f(alpha)
-        Function at point `alpha`
-    derf : callable df(alpha)
-        Derivative `d f(alpha)/ds`. Returns a scalar.
+    f : callable f(stp)
+        Function at point `stp`
+    derf : callable df(stp)
+        Derivative `d f(stp)/ds`. Returns a scalar.
     f0 : float, optional
         Value of `f` at 0
     old_f0 : float, optional
@@ -246,21 +239,21 @@ def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0,
         Wolfe parameters
     Returns
     -------
-    alpha : float
+    stp : float
         Step size, or None if no suitable step was found
     f : float
-        Value of `f` at the new point `alpha`
+        Value of `f` at the new point `stp`
     f0 : float
-        Value of `f` at `alpha=0`
+        Value of `f` at `stp=0`
     Notes
     -----
     Uses routine DCSRCH from MINPACK.
     """       
 
 
-    alpha1 = min(1.0, 1.01*2*(f0 - old_f0)/derf0)
-    if alpha1 < 0:
-        alpha1 = 1.0
+    stp1 = min(1.0, 1.01*2*(f0 - old_f0)/derf0)
+    if stp1 < 0:
+        stp1 = 1.0
     f1 = f0
     derf1 = derf0
 #     isave = zeros((2,), intc)
@@ -271,26 +264,40 @@ def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0,
 
     maxiter = 30
     for i in xrange(maxiter):
-        stp, task, f1, derf1, isave, dsave  = dcsrch(alpha1, f1, derf1,
+        stp, task, f1, derf1, isave, dsave  = dcsrch(stp1, f1, derf1,
                                                    c1, c2, xtol, task,
                                                    amin, amax, isave, dsave)
 #def dcsrch(stp, f, g, ftol, gtol, xtol, task, stpmin, stpmax, isave, dsave):
 #return stp, task, isave, dsave
         
         if task[:2] == 'FG':
-#             alpha1 = stp
-            f1 = self.f(xk,stp)
-            derf1 = self.derf(xk,epsilon,stp)
+#             stp1 = stp
+            f1, grad = self.enerGrad(xk + stp*self.pk)
+            derf1 = dot(grad,self.pk)
+#             def f(self,xk,s):
+#     self.fc[0] += 1
+#     ener = self.enerGrad(xk + s*self.pk)
+#     return ener
+# 
+# def derf(self,xk,epsilon,s):
+#     self.gval[0] = self.approx_fprime(xk + s*self.pk,epsilon)
+#     self.gc[0] += 1
+# #     else:
+# #         fc[0] += len(xk) + 1
+#     return dot(self.gval[0],self.pk)
+#             
+            
+            
         else:
             break
-    else:
+    else: #no break was found
         # maxiter reached, the line search did not converge
         stp = None
 
     if task[:5] == 'ERROR' or task[:4] == 'WARN':
         stp = None  # failed
 
-    return stp, f1, f0
+    return stp, f1, f0, grad
 
 
 class OptimizeResult(dict):

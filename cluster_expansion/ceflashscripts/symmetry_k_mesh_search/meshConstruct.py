@@ -72,8 +72,7 @@ class meshConstruct():
     from comMethods import readfile,writefile,trimSmall,areEqual,directFromCart,cartFromDirect
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
-    from conjGradMin2 import (fmin_cg,minimize_cg,approx_fprime,line_search_wolfe1,scalar_search_wolfe1,
-                              phi,derphi)
+    from conjGradMin2 import (fmin_cg,minimize_cg,line_search_wolfe1,scalar_search_wolfe1)
 
     def __init__(self):
         '''init'''
@@ -177,10 +176,12 @@ class meshConstruct():
 #         scale = 1
         for ipos in range(self.nInd):
             force = zeros(3)
+#             rs = zeros(self.npoints,dtype = [('label', 'int8'),('r', 'float'),('rij', '3float')])
+                      
             nearest = -1
             rnearest = 100.0
             for jpos in range(self.npoints):
-                rij = self.points[jpos]['pos'] -  self.points[ipos]['pos']
+                rij = self.points[jpos]['pos'] - self.points[ipos]['pos']
                 r = norm([rij])
                 if r > 1e-4*self.rmin:
                     if r<rnearest:
@@ -189,13 +190,21 @@ class meshConstruct():
                     epair = (self.ravg/r)**self.power
                     ener += epair
                     force += -self.power*epair/r * rij/r
+#                     rs[jpos]['r'] = r
+#                     rs[jpos]['rij'] = rij
+              
+                    
             self.points[ipos]['force'] = trimSmall(force)
-            print ipos, 'pos', self.points[ipos]['pos']
-            print 'force', self.points[ipos]['force']
-            print 'nearest',nearest,rnearest, self.points[nearest]['pos']
-            print
+#             rs =sort(rs, order='r') 
+#             print ipos, rs[:]['r'] 
+#             print rs[:]['rij']
+#             print ipos, 'pos', self.points[ipos]['pos']
+#             print 'nerst',self.points[nearest]['pos'],nearest,rnearest 
+#             print 'vectr', trimSmall(self.points[nearest]['pos'] - self.points[ipos]['pos'])
+#             print 'force', self.points[ipos]['force']    
+#             print
         ener = ener/self.nInd
-        grad = points[:self.nInd]['force'].flatten  
+        grad = -self.points[:self.nInd]['force'].flatten()/self.nInd 
         print 'energy:',self.count, ener
 #         if self.count == 19:
 #             self.plotPos(self.points,self.npoints,'pos')
@@ -204,7 +213,6 @@ class meshConstruct():
       #  ! Note:  need to update the positions at each step!  Do we have to get inside
 #         return ener#         
         return ener, grad
-
 
     def transPoints(self):
         '''Make copies of points in 3x3x3 supercell, but keep only those that 
@@ -317,7 +325,7 @@ class meshConstruct():
 #                         print 'New Voronoi cell pos for',newpos,checkpos                   
                     self.cellPoints[ipos]['pos'] = newpos    
         self.nCoarse = ipos
-        self.nInd = len(self.Ind) 
+        self.nInd = len(self.ind) 
 #         self.plotPos(self.cellPoints,self.ncoarse,'pos')
 #         self.plotPos(self.cellPoints,self.ncoarse,'dpos')
         print 'Points in unit cell:',self.nCoarse   

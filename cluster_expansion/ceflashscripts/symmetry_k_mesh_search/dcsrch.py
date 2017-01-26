@@ -374,15 +374,6 @@ def dcstep(stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax):
        stpmax is a double precision variable.
          On entry stpmax is an upper bound for the step.
          On exit stpmax is unchanged.
-     MINPACK-1 Project. June 1983
-     Argonne National Laboratory.
-     Jorge J. More' and David J. Thuente.
-     MINPACK-2 Project. November 1993.
-     Argonne National Laboratory and University of Minnesota.
-     Brett M. Averick and Jorge J. More'.
-     Converted to Python and extended, July 2013
-     Imperial College London
-     Simon W. Funke
     """
 
     from math import sqrt
@@ -393,9 +384,29 @@ def dcstep(stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax):
     #     If the cubic step is closer to stx than the quadratic step, the
     #     cubic step is taken, otherwise the average of the cubic and
     #     quadratic steps is taken.
+
+    print 'stx, fx, sty, fy,stp, fp at start of dcstep'
+    print stx, fx, sty, fy,stp, fp
     if fp > fx:
-        if stp==stx:
+        if stp==stx: #stp,stx: these should not be the same if their f()s are different
             print 'stp,stx',stp,stx
+# '''       On entry stx is the best step obtained so far and is an
+#             endpoint of the interval that contains the minimizer.
+#          On exit stx is the updated best step.'''
+# '''         On entry sty is the second endpoint of the interval that
+#             contains the minimizer.
+#          On exit sty is the updated endpoint of the interval that
+#             contains the minimizer.'''
+# '''       
+#          On entry stp is the current step. If brackt is set to True
+#            : on input stp must be between stx and sty.
+#          On exit stp is a new trial step.'''
+#'      # The variables stx, fx, gx contain the values of the step,
+        # function, and derivative at the best step.
+        # The variables sty, fy, gy contain the value of the step,
+        # function, and derivative at sty.
+        # The variables stp, f, g contain the values of the step,
+        # function, and derivative at stp.  
         theta = 3.0*(fx-fp)/(stp-stx) + dx + dp
         s = max(abs(theta), abs(dx), abs(dp))
         gamma = s*sqrt((theta/s)**2-(dx/s)*(dp/s))
