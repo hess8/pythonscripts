@@ -394,6 +394,8 @@ def dcstep(stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax):
     #     cubic step is taken, otherwise the average of the cubic and
     #     quadratic steps is taken.
     if fp > fx:
+        if stp==stx:
+            print 'stp,stx',stp,stx
         theta = 3.0*(fx-fp)/(stp-stx) + dx + dp
         s = max(abs(theta), abs(dx), abs(dp))
         gamma = s*sqrt((theta/s)**2-(dx/s)*(dp/s))

@@ -995,7 +995,7 @@ def intoVoronoi(position, cell, inverse=None):
 
 def intoCell(pos, cell, inverse=None):
     
-    ''' Puts the point into the original unit cell, which has direct components 
+    ''' Puts the *cartesian* point into the original unit cell, which has direct components 
     between 0 and 1'''
     dpos = directFromCart(cell,pos)
     dpos = mod(dpos,1)

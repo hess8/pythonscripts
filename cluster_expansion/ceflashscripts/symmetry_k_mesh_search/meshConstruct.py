@@ -66,39 +66,6 @@ from kmeshroutines import svmesh,  svmeshNoCheck,svmesh1freedir, lattice_vecs, l
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 
-# def energy(indComps,parent):
-#     '''restrict the energy sum to the pairs that contain independent points'''
-#     indVecs = parent.indComps.reshape((len(parent.ind),3))
-#     #update all positions by symmetry and translation
-#     parent.oldPoints = parent.points
-#     parent.updatePoints(indVecs)
-# #         parent.plotPos(parent.points,parent.npoints,'pos')
-# #         for i in range(20):
-# #             print 'old',parent.oldPoints[i]['pos']
-# #             print 'new',parent.points[i]['pos']
-# #             print
-#     for i in range(parent.npoints):
-#         move = norm(parent.points[i]['pos']-parent.oldPoints[i]['pos'])
-#         if move>0:
-#             print i,move
-#     ener = 0.0
-#     p = 4.0
-#     scale = 1
-#     for ipos in range(len(parent.ind)):
-#         for jpos in range(parent.npoints):
-#             r = norm(indVecs[ipos]-parent.points[jpos]['pos'])
-#             if r > 1e-4*parent.rmin:
-#                 ener += scale*(1/r)**p
-# #                 
-#     print 'energy:',parent.count, ener
-# #     if parent.count == 19:
-# #         parent.plotPos(parent.points,parent.npoints,'pos')
-#         
-#     parent.count += 1
-#     #now update all the dependent positions
-#   #  ! Note:  need to update the positions at each step!  Do we have to get inside
-#     return ener
-
 
 class meshConstruct(): 
     '''Makes superperiodic structures and cuts'''
@@ -174,11 +141,7 @@ class meshConstruct():
         for ipoint in range(self.npoints):
             if ipoint in self.ind:
                 place = self.ind.index(ipoint)
-                dpos = self.directFromCart(indVecs[place,:])
-                dpos = self.intoCell(dpos)
-                self.points[ipoint]['pos'] = self.cartFromDirect(dpos)
-                self.points[ipoint]['dpos']
-                
+                self.points[ipoint]['pos'] = intoCell(indVecs[place,:],self.B)               
             else:
                 dep = self.points[ipoint]['dep']
                 sponsor = self.points[ipoint]['sponsor']
@@ -192,16 +155,17 @@ class meshConstruct():
                 else: #translation
                     ms = array([int(i) for i in dep.split(',')])
                     svec = self.points[sponsor]['pos']
-                    self.points[ipoint]['pos'] = svec + dot(self.B,ms)
+                    self.points[ipoint]['pos'] = svec + dot(self.B,ms)       
  
-    def energy(self,indComps):
+    def enerGrad(self,indComps):
         '''restrict the energy sum to the pairs that contain independent points'''
 #         print 'oldindvecs',self.oldindVecs
-        indVecs = indComps.reshape((len(self.ind),3))
+        indVecs = indComps.reshape((self.nInd,3))
         self.oldindVecs = indVecs
         #update all positions by symmetry and translation
         self.oldPoints = deepcopy(self.points)
         self.updatePoints(indVecs)
+        #indVecs now cannot be used for current points because they might be out of cell.
         
 
 #         for i in range(self.npoints):
@@ -209,30 +173,44 @@ class meshConstruct():
 #             if move > 0.0:
 #                 print i,move
         ener = 0.0
-        p = 2.0
-        scale = 1
-        for ipos in range(len(self.ind)):
+        self.power = 2.0
+#         scale = 1
+        for ipos in range(self.nInd):
+            force = zeros(3)
+            nearest = -1
+            rnearest = 100.0
             for jpos in range(self.npoints):
-                r = norm(indVecs[ipos]-self.points[jpos]['pos'])
+                rij = self.points[jpos]['pos'] -  self.points[ipos]['pos']
+                r = norm([rij])
                 if r > 1e-4*self.rmin:
-                    ener += (self.ravg/r)**p
-        
-        ener = scale*ener/self.nCoarse       
-#         print 'energy:',self.count, ener
+                    if r<rnearest:
+                        nearest = jpos
+                        rnearest = r
+                    epair = (self.ravg/r)**self.power
+                    ener += epair
+                    force += -self.power*epair/r * rij/r
+            self.points[ipos]['force'] = trimSmall(force)
+            print ipos, 'pos', self.points[ipos]['pos']
+            print 'force', self.points[ipos]['force']
+            print 'nearest',nearest,rnearest, self.points[nearest]['pos']
+            print
+        ener = ener/self.nInd
+        grad = points[:self.nInd]['force'].flatten  
+        print 'energy:',self.count, ener
 #         if self.count == 19:
 #             self.plotPos(self.points,self.npoints,'pos')
-             
         self.count += 1
         #now update all the dependent positions
       #  ! Note:  need to update the positions at each step!  Do we have to get inside
 #         return ener#         
-        return ener
+        return ener, grad
 
 
     def transPoints(self):
         '''Make copies of points in 3x3x3 supercell, but keep only those that 
         are within rc of edges'''
-        self.points = zeros(self.nCoarse*27,dtype = [('label', 'int8'),('dep', 'S8'),('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('cell', '3int')])
+        self.points = zeros(self.nCoarse*27,dtype = [('label', 'int8'),('dep', 'S8'),('sponsor', 'int8'),('pos', '3float'),
+                                                     ('dpos', '3float'),('force', '3float')])
         aEdge = self.rmax/norm(self.B[:,0]); bEdge = self.rmax/norm(self.B[:,1]); cEdge = self.rmax/norm(self.B[:,2])
         ipoint = 0
         for i in [0,-1,1]:
@@ -255,7 +233,6 @@ class meshConstruct():
                                 self.points[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
                                 self.points[ipoint]['sponsor'] = ipos #The sponsor may itself be dependent.  
                                 self.dep.append(ipoint)                        
-                            self.points[ipoint]['cell'] = [i,j,k]
                             self.points[ipoint]['pos'] = newPos
                             self.points[ipoint]['dpos'] = newDirPos
                             ipoint += 1
@@ -293,8 +270,9 @@ class meshConstruct():
                       
     def subRandSym(self):
         self.labels = [] # list of active points labels
-        self.cellPoints = zeros(self.nCoarse+self.nops,dtype = [('label', 'int8'),('dep', 'S8'),\
-            ('sponsor', 'int8'),('pos', '3float'),('vpos', '3float'),('dpos', '3float'),('cell', '3int')])
+        self.cellPoints = zeros(self.nCoarse+self.nops,dtype = [('label', 'int8'),('dep', 'S8'),
+            ('sponsor', 'int8'),('pos', '3float'),('vpos', '3float'),('dpos', '3float'),
+            ('force', '3float')])
         self.directPos = zeros((self.nCoarse,3))
         self.subrand = rand(3)
         afact = sqrt(2)
@@ -338,10 +316,12 @@ class meshConstruct():
 #                     if norm(checkpos-newpos)> 1e-6:
 #                         print 'New Voronoi cell pos for',newpos,checkpos                   
                     self.cellPoints[ipos]['pos'] = newpos    
-        self.nCoarse = ipos  
+        self.nCoarse = ipos
+        self.nInd = len(self.Ind) 
 #         self.plotPos(self.cellPoints,self.ncoarse,'pos')
 #         self.plotPos(self.cellPoints,self.ncoarse,'dpos')
-        print 'Points in unit cell:',self.nCoarse                           
+        print 'Points in unit cell:',self.nCoarse   
+        print 'Independent points:',self.nInd                         
         return
     
 #     def tooNear(pos,ipos):
