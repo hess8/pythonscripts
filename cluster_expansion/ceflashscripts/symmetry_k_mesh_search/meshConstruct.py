@@ -105,7 +105,8 @@ class meshConstruct():
     from comMethods import readfile,writefile,trimSmall,areEqual,directFromCart,cartFromDirect
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
-    from conjGradMin2 import fmin_cg,minimize_cg,approx_fprime
+    from conjGradMin2 import (fmin_cg,minimize_cg,approx_fprime,line_search_wolfe1,scalar_search_wolfe1,
+                              phi,derphi)
 
     def __init__(self):
         '''init'''

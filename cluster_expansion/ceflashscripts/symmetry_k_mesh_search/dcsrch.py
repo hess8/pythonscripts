@@ -135,7 +135,7 @@ def dcsrch(stp, f, g, ftol, gtol, xtol, task, stpmin, stpmax, isave, dsave):
 
         # Exit if there are errors on input.
         if "Error" in task:
-            return stp, task, isave, dsave
+            return stp, task, f, g, isave, dsave
 
         # Initialize local variables.
         brackt = False
@@ -180,7 +180,7 @@ def dcsrch(stp, f, g, ftol, gtol, xtol, task, stpmin, stpmax, isave, dsave):
         dsave[12] = width
         dsave[13] = width1
 
-        return stp, task, isave, dsave
+        return stp, task, f, g, isave, dsave
 
     else:
         # Restore local variables.
@@ -238,7 +238,7 @@ def dcsrch(stp, f, g, ftol, gtol, xtol, task, stpmin, stpmax, isave, dsave):
         dsave[11] = stmax
         dsave[12] = width
         dsave[13] = width1
-        return stp, task, isave, dsave
+        return stp, task, f, g, isave, dsave
 
     # A modified function is used to predict the step during the
     # first stage if a lower function value has been obtained but
@@ -308,7 +308,7 @@ def dcsrch(stp, f, g, ftol, gtol, xtol, task, stpmin, stpmax, isave, dsave):
     dsave[11] = stmax
     dsave[12] = width
     dsave[13] = width1
-return stp, task, isave, dsave
+    return stp, task, f, g, isave, dsave
 
 
 def dcstep(stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax):
@@ -525,4 +525,4 @@ def dcstep(stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax):
     # Compute the new step.
     stp = stpf
 
-return stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax
+    return stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax

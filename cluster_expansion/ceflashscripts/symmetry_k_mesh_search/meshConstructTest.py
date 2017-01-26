@@ -54,7 +54,6 @@ file1.write('Structure,Lattice,amax/amin,pfB,pf_orth,pf_orth2fcc,pf_maxpf, pf_pf
 
 for dir in dirs:
     path = maindir+'/'+dir
-    print 'os.listdir(path)',os.listdir(path)
     if testfile in os.listdir(path):        
         print 
         print dir + '=========================================================='
