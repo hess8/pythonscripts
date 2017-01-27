@@ -85,16 +85,14 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
     gnorm = vecnorm(grad, ord=norm)
     methodMin = 'steepest'
     while (gnorm > gtol) and (k < maxiter):# and (abs(old_fval - old_old_fval)>0.01):
-        print 'k,gnorm, energy',k,gnorm,old_fval
-        deltak = dot(grad, grad)
-        stp_k, old_fval, old_old_fval, gradp1 = \
-                     self.line_search_wolfe1(xk, epsilon, grad, old_fval,
-                                          old_old_fval, c2=0.4, amin=1e-100, amax=1e100)
-        print 'step',stp_k
-        stp_k = 0.01
-        print 'force step to be', stp_k
-         
+#         print 'k,gnorm, energy',k,gnorm,old_fval
         if methodMin == 'conjGrad':       
+            deltak = dot(grad, grad)
+            stp_k, old_fval, old_old_fval, gradp1 = \
+                         self.line_search_wolfe1(xk, epsilon, grad, old_fval,
+                                              old_old_fval, c2=0.4, amin=1e-100, amax=1e100)
+            print 'step',stp_k
+
             xk = xk + stp_k * self.pk
             if retall:
                 allvecs.append(xk)
@@ -103,9 +101,15 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
             self.pk = -gradp1 + beta_k * self.pk
             grad = gradp1
         elif methodMin == 'steepest':
+            stp_k = 0.02
+#             print 'force step to be', stp_k
             xk = xk + stp_k * self.pk
             fnew,grad = self.enerGrad(xk)
-            print 'new energy', fnew  
+            self.plotPos(self.points,self.npoints,'pos','{}_'.format(str(k)))
+            print 'xk  ',xk
+            print 'grad', grad  
+            print
+            self.pk = -grad         
         gnorm = vecnorm(grad, ord=norm)
         if callback is not None:
             callback(xk)

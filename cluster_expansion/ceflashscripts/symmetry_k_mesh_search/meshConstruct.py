@@ -149,10 +149,11 @@ class meshConstruct():
 #                 print 'test',ipoint
 #                 print 'dep' , dep
 #                 print 'spons',sponsor
+#                 print
                 if dep == 'I':
                     sys.exit('Stop. Point {} is labeled as independent, but is not in self.ind'.format(ipoint))
                 elif ',' not in dep: # symmetry dependent
-                    self.points[ipoint]['pos'] = dot(self.symops[:,:,int(dep)],self.points[sponsor]['pos'])
+                    self.points[ipoint]['pos'] = intoCell(dot(self.symops[:,:,int(dep)],self.points[sponsor]['pos']),self.B)
                 else: #translation
                     ms = array([int(i) for i in dep.split(',')])
                     svec = self.points[sponsor]['pos']
@@ -167,12 +168,15 @@ class meshConstruct():
         self.oldPoints = deepcopy(self.points)
         self.updatePoints(indVecs)
         #indVecs now cannot be used for current points because they might be out of cell.
+        print 'movement'
+        for i in range(self.npoints):
+#             print 'old',i,self.oldPoints[i]['pos']
+#             print 'new',i,self.points[i]['pos']
+#             print
+            move = norm(self.points[i]['pos']-self.oldPoints[i]['pos'])
+            if move > 0.0:
+                print i,move
         
-
-#         for i in range(self.npoints):
-#             move = norm(self.points[i]['pos']-self.oldPoints[i]['pos'])
-#             if move > 0.0:
-#                 print i,move
         ener = 0.0
         self.power = 2.0
 #         scale = 1
@@ -212,6 +216,7 @@ class meshConstruct():
         ener = ener/self.nInd
         grad = -self.points[:self.nInd]['force'].flatten()/self.nInd 
         print 'energy:',self.count, ener
+        print
 #         if self.count == 19:
 #             self.plotPos(self.points,self.npoints,'pos')
         self.count += 1
@@ -221,7 +226,8 @@ class meshConstruct():
         return ener, grad
 
     def transPoints(self):
-        '''Make copies of points in 3x3x3 supercell, but keep only those that 
+        '''These points are in the parallelpiped ORIGINAL cell.
+        Make copies of points in 3x3x3 supercell, but keep only those that 
         are within rc of edges'''
         self.points = zeros(self.nCoarse*27,dtype = [('label', 'int8'),('dep', 'S8'),('sponsor', 'int8'),('pos', '3float'),
                                                      ('dpos', '3float'),('force', '3float')])
@@ -238,6 +244,8 @@ class meshConstruct():
                         newDirPos = dpos + array([i,j,k])
                         if  (-aEdge < newDirPos[0] < 1 + aEdge) and (-bEdge < newDirPos[1] < 1 + bEdge) and (-cEdge < newDirPos[2] < 1 + cEdge):
                             newPos = dot(self.B,newDirPos)
+#                             print 'ipoint,ipos',ipoint,ipos, newPos
+#                             print '\tdpos',dpos
 #                             self.points[ipoint]['label'] = ipoint
                             self.labels.append(ipoint)
                             if i == 0 and j == 0 and k == 0: #original cell
@@ -283,6 +291,7 @@ class meshConstruct():
 #         return
                       
     def subRandSym(self):
+        '''These points are in the VORONOI cell'''
         self.labels = [] # list of active points labels
         self.cellPoints = zeros(self.nCoarse+self.nops,dtype = [('label', 'int8'),('dep', 'S8'),
             ('sponsor', 'int8'),('pos', '3float'),('vpos', '3float'),('dpos', '3float'),
@@ -295,9 +304,6 @@ class meshConstruct():
         self.ind = []
         self.dep = []
         ipos = -1
-#         for i in range(self.nops):
-#             print i
-#             print self.symops[:,:,i]
         while ipos < self.nCoarse:
             ipos += 1
             self.subrand = mod(self.subrand + array([afact,bfact,cfact]), array([1,1,1]))
@@ -307,7 +313,7 @@ class meshConstruct():
             self.cellPoints[ipos]['dep'] = 'I' #independent
             self.cellPoints[ipos]['sponsor'] = ipos                              
             self.cellPoints[ipos]['pos'] = pos 
-            self.cellPoints[ipos]['dpos'] = temp #dpos will always be the direct coordinates in the original cell
+            self.cellPoints[ipos]['dpos'] = temp #dpos will always be the direct coordinates in the ORIGINAL cell
             self.labels.append(ipos)
             self.ind.append(ipos)
             iInd = ipos
@@ -329,7 +335,9 @@ class meshConstruct():
 #                     checkpos = intoVoronoi(newpos,self.B)
 #                     if norm(checkpos-newpos)> 1e-6:
 #                         print 'New Voronoi cell pos for',newpos,checkpos                   
-                    self.cellPoints[ipos]['pos'] = newpos    
+                    self.cellPoints[ipos]['pos'] = newpos  
+#                     print 'ipos',ipos, newpos 
+#                     print '\tdpos',self.cellPoints[ipos]['dpos'] 
         self.nCoarse = ipos
         self.nInd = len(self.ind) 
 #         self.plotPos(self.cellPoints,self.ncoarse,'pos')
@@ -344,12 +352,12 @@ class meshConstruct():
 #                 return False
 #         return True
     
-    def plotPos(self,arr,npoints,field):
-        self.plot2dPts(arr,npoints,field,timestamp(),'x','y') 
-        self.plot2dPts(arr,npoints,field,timestamp(),'x','z')  
+    def plotPos(self,arr,npoints,field,tag = timestamp()):
+        self.plot2dPts(arr,npoints,field,tag,'x','y') 
+        self.plot2dPts(arr,npoints,field,tag,'x','z')  
         
     def plot2dPts(self,arr,npoints,field,tag,ax0,ax1):
-#         fig = figure()
+        fig = figure()
         i0 = ('x','y','z').index(ax0)
         i1 = ('x','y','z').index(ax1)
         scatter(arr[:npoints][field][:,i0],arr[:npoints][field][:,i1])
@@ -357,7 +365,7 @@ class meshConstruct():
         ylabel('{}'.format(ax1))
         name = '{}_{}_{}-{}'.format(tag,field,ax0,ax1)
         title(name)
-        savefig(self.path+'/'+ name+'.pdf');
+        fig.savefig(self.path+'/'+ name+'.pdf');
         os.system('cp {} {}'.format(self.path+'/'+ name+'.pdf',self.path+ '/latest{}-{}'.format(ax0,ax1)+'.pdf' ))
-#         show()
+        close()
 
