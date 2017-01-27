@@ -537,5 +537,8 @@ def dcstep(stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax):
 
     # Compute the new step.
     stp = stpf
+    
+#     if abs(stp) < 1e-2:
+#         print 'step',stp
 
     return stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax

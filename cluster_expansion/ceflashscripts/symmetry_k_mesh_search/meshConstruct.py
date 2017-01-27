@@ -101,6 +101,7 @@ class meshConstruct():
        
     def relax(self):
         '''Conjugate gradient relaxation of the potential energy.
+        See www.idi.ntnu.no/~elster/tdt24/tdt24-f09/cg.pdf 
         fmin_cg(f, x0, options...)
         f : callable, f(x, *args) Objective function to be minimized. Here x must be a 1-D array of the variables that are to be changed in the search for a minimum, and args are the other (fixed) parameters of f.
         x0 : ndarray A user-supplied initial estimate of xopt, the optimal value of x. It must be a 1-D array of values.
@@ -123,7 +124,8 @@ class meshConstruct():
         The energy must be a function of 1-D inputs, so it will be '''
         self.oldindVecs = [self.points[i]['pos'] for i in self.ind]
         self.indComps = array([self.points[i]['pos'] for i in self.ind]).flatten()
-        initialGuess = [i+ 0.5*self.rmin*rand() for i in self.indComps]  #just add noise to initial positions
+#         initialGuess = [i+ 0.5*self.rmin*rand() for i in self.indComps]  #just add noise to initial positions
+        initialGuess = self.indComps
         self.count = 0
         
         epsilon = self.ravg/100
@@ -187,9 +189,13 @@ class meshConstruct():
                     if r<rnearest:
                         nearest = jpos
                         rnearest = r
+#                    
+#                     epair = r**2 #attractive springs...dumb because those farthest away influence most
+#                     force += rij #attractive springs)
+                    
                     epair = (self.ravg/r)**self.power
-                    ener += epair
                     force += -self.power*epair/r * rij/r
+                    ener += epair
 #                     rs[jpos]['r'] = r
 #                     rs[jpos]['rij'] = rij
               

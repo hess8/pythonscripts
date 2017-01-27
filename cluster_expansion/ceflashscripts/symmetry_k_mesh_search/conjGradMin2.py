@@ -83,21 +83,29 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
     warnflag = 0
     self.pk = -grad
     gnorm = vecnorm(grad, ord=norm)
+    methodMin = 'steepest'
     while (gnorm > gtol) and (k < maxiter):# and (abs(old_fval - old_old_fval)>0.01):
         print 'k,gnorm, energy',k,gnorm,old_fval
         deltak = dot(grad, grad)
-
         stp_k, old_fval, old_old_fval, gradp1 = \
                      self.line_search_wolfe1(xk, epsilon, grad, old_fval,
                                           old_old_fval, c2=0.4, amin=1e-100, amax=1e100)
         print 'step',stp_k
-        xk = xk + stp_k * self.pk
-        if retall:
-            allvecs.append(xk)
-        yk = gradp1 - grad
-        beta_k = max(0, dot(yk, gradp1) / deltak)
-        self.pk = -gradp1 + beta_k * self.pk
-        grad = gradp1
+        stp_k = 0.01
+        print 'force step to be', stp_k
+         
+        if methodMin == 'conjGrad':       
+            xk = xk + stp_k * self.pk
+            if retall:
+                allvecs.append(xk)
+            yk = gradp1 - grad
+            beta_k = max(0, dot(yk, gradp1) / deltak)
+            self.pk = -gradp1 + beta_k * self.pk
+            grad = gradp1
+        elif methodMin == 'steepest':
+            xk = xk + stp_k * self.pk
+            fnew,grad = self.enerGrad(xk)
+            print 'new energy', fnew  
         gnorm = vecnorm(grad, ord=norm)
         if callback is not None:
             callback(xk)
@@ -269,6 +277,13 @@ def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0, grad,
                                                    amin, amax, isave, dsave)
 #def dcsrch(stp, f, g, ftol, gtol, xtol, task, stpmin, stpmax, isave, dsave):
 #return stp, task, isave, dsave
+#         stpA = stp
+#         maxMove = self.rmax/10
+#         move = npnorm(stp*self.pk)
+#         if move > maxMove:
+#             stp  = stp*maxMove/move
+#             print'step too large',stpA, 'now',stp
+#             print
         
         if task[:2] == 'FG':
 #             stp1 = stp
