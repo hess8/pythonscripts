@@ -71,10 +71,12 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
 #     func_calls, f = wrap_function(f, args)
 #     grad_calls, myfprime = approx_fprime, (f, epsilon))
 #     grad = self.approx_fprime(x0,epsilon)
-    k = 0
+    k = 1
     xk = x0
+    print 'Initial positions\n', x0
 
     # Sets the initial step guess to dx ~ 1
+    print 'Initial energy'
     old_fval,grad = self.enerGrad(xk)
     old_old_fval = old_fval + npnorm(grad) / 2
 
@@ -101,14 +103,15 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
             self.pk = -gradp1 + beta_k * self.pk
             grad = gradp1
         elif methodMin == 'steepest':
-            stp_k = 0.02
+            stp_k = 0.0001
 #             print 'force step to be', stp_k
             xk = xk + stp_k * self.pk
+            print 'xk  ',k, xk
             fnew,grad = self.enerGrad(xk)
             self.plotPos(self.points,self.npoints,'pos','{}_'.format(str(k)))
-            print 'xk  ',xk
+
             print 'grad', grad  
-            print
+#             print
             self.pk = -grad         
         gnorm = vecnorm(grad, ord=norm)
         if callback is not None:
