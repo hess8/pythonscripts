@@ -99,12 +99,17 @@ class meshConstruct():
         print 'Typical spacing:', self.ravg
         self.initPoints() 
         self.transPoints()
+        self.movetoVoronoi()
         self.delauPoints()
         self.fillTets()
         self.relax()
         self.plotPoints(self.points,self.npoints,'pos')
         sys.exit('stop')     
         return meshvecs, Nmesh, lattype, pfB, pf, status
+
+    def movetoVoronoi(self):
+        for i in self.npoints:
+            self.points['pos'] = self.toVoronoi(self.points['pos'])
     
     def volTet(self,vertPoints): 
         return dot((vertPoints[0]-vertPoints[3]),cross((vertPoints[1]-vertPoints[3]),(vertPoints[2]-vertPoints[3])))/6.0
@@ -125,72 +130,101 @@ class meshConstruct():
                 self.tets[itet]['vol'] = abs(self.volTet([self.points[iv]['pos'] for iv in tet]))
         self.tets.sort(order='vol');self.tets = reverseStructured(self.tets)
 
+    def addPntTet(self,itet,ipoint):
+        tet = self.tets[itet]['tet'] 
+        vp = array([self.points[iv]['pos'] for iv in tet])
+        vd = array([self.points[iv]['dpos'] for iv in tet])
+        newPoint = zeros(1,dtype = [('label', 'int8'),('dep', 'S8'),('inCell', 'bool'),
+            ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
+        newPoint[0]['label'] = ipoint
+        pos = sum(vp)/4.0 #center of mass
+        newPoint[0]['pos'] = pos
+#         print 'newpos',newPoint[0]['pos']
+        dpos = sum(vd)/4.0 
+        newPoint[0]['dpos'] = dpos
+        newPoint[0]['dep'] = 'tet'.format(tet[0],tet[1],tet[2],tet[3]) 
+        if min(dpos.flatten()) >= 0 and max(dpos.flatten()) < 1.0:
+            newPoint[0]['inCell'] = True
+            inCell = True
+            self.nCellPoints += 1
+        else:
+            newPoint[0]['inCell'] = False
+            inCell = False
+        self.points = concatenate((self.points,newPoint),axis = 0)
+        self.sympoints = [str(pos[0])[:self.strLen]+str(pos[1])[:self.strLen]+str(pos[2])[:self.strLen]]
+        return pos,inCell 
+
+    def addPntSym(self,pos0,op,isponsor,ipoint):
+        '''In Voronoi cell'''
+        newpos = dot(self.symops[:,:,op],pos)  
+        posStr = str(newpos[0])[:self.strLen]+str(newpos[1])[:self.strLen]+str(newpos[2])[:self.strLen]
+        sympoints = [str(pos[0])[:self.strLen]+str(pos[1])[:self.strLen]+str(pos[2])[:self.strLen]]
+        if posStr not in self.sympoints:
+            newPoint = zeros(1,dtype = [('label', 'int8'),('dep', 'S8'),('inCell', 'bool'),
+                ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
+            sypoints.append(sympoints)
+            newPoint[0]['pos'] = newpos
+            dposnew = self.directFromCart(newpos)
+            newPoint[0]['dpos'] = dposnew
+            newPoint[0]['dep'] = op
+            newPoint[0]['sponsor'] = isponsor
+            newPoint[0]['inCell'] = True
+            if min(dposnew.flatten()) >= 0 and max(dposnew.flatten()) < 1.0:
+                newPoint[0]['inCell'] = True
+                self.nCellPoints += 1
+                self.ind.append(ipoint)
+            else:
+                newPoint[0]['inCell'] = False
+            self.points = concatenate((self.points,newPoint),axis = 0)
+            return True
+        else:
+            return False
+
+#     def addTets(self,itet):
+#         newTets = zeros(4,dtype = [('tet', '4int'),('vol', 'float'),('anyInCell', 'bool')])
+#         for i in range(4):
+#             newTets[0]['tet'] = [ipoint,tet[0],tet[1],tet[2]]
+#             newTets[1]['tet'] = [ipoint,tet[0],tet[1],tet[3]]
+#             newTets[2]['tet'] = [ipoint,tet[1],tet[2],tet[3]]
+#             newTets[3]['tet'] = [ipoint,tet[2],tet[3],tet[1]]
+#             newTets[0]['anyInCell'] = (True in [inCell,self.points[0]['inCell'],self.points[1]['inCell'],self.points[2]['inCell']])
+#             newTets[0]['anyInCell'] = (True in [inCell,self.points[0]['inCell'],self.points[1]['inCell'],self.points[3]['inCell']])
+#             newTets[0]['anyInCell'] = (True in [inCell,self.points[1]['inCell'],self.points[2]['inCell'],self.points[3]['inCell']])
+#             newTets[0]['anyInCell'] = (True in [inCell,self.points[2]['inCell'],self.points[3]['inCell'],self.points[1]['inCell']])
+#         self.tets = concatenate((self.tets,newTets),axis = 0)
+#         self.ntets += 4 #total number (next index of tet to add)
+    
     def fillTets(self):
         '''Add points to the largest tet, which creates 4 new ones, until the 
-        the desired number of points is obtained, and we finish the tets 
-        that share the same volume.  If precision in the volume is good enough, this will 
-        make the new points have the desired symmetry'''
-#         newTets = zeros(4*self.ntets,dtype = [('tet', '4int'),('vol', 'float'),('anyInCell', 'bool')])
-#         newPoints = zeros(self.ntets,dtype = [('label', 'int8'),('dep', 'S8'),('inCell', 'bool'),('sponsor', 'int8'),('pos', '3float'),
-#                                                      ('dpos', '3float'),('force', '3float')])
+        the desired number of points is obtained.  We add a point to the largest
+        tetrahedron, then replicate it symmetrically, then resort tets by volume 
+        (the Delaunay routine doesn't seem to make a triangulation that preserves
+        symmetry.'''
+
         ipoint = self.npoints-1
         ivol = 0 #may be used to space plotting
         inewpt = 0
-        while (self.nCellPoints < self.nTarget):
-            itet = 0 #index of old tet we are working on
-            firstVol = self.tets[0]['vol']
-            nextVol = firstVol
-            while (self.tets[itet]['vol'] > firstVol/4.0): #this needs to exit when we need to resort by volume
-                sameVol = True
-                nptsVol = 0 
-                while sameVol: #this must not be interrupted except by sameVol    
-                    oldVol = nextVol
-                    print 'vol', ivol, nextVol
-                    oldt = self.tets[itet]['tet'] 
-                    vp = array([self.points[iv]['pos'] for iv in oldt])
-                    vd = array([self.points[iv]['dpos'] for iv in oldt])
-                    newPoint = zeros(1,dtype = [('label', 'int8'),('dep', 'S8'),('inCell', 'bool'),
-                        ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
-                    newPoint[0]['label'] = ipoint
-                    newPoint[0]['pos'] = sum(vp)/4.0 #center of mass
-                    print 'newpos',newPoint[0]['pos'] 
-                    newPoint[0]['dpos'] = sum(vd)/4.0
-                    newPoint[0]['dep'] = '{}_{}_{}_{}'.format(oldt[0],oldt[1],oldt[2],oldt[3]) 
-                    if min(vd.flatten()) >= 0 and max(vd.flatten()) < 1.0:
-                        newPoint[0]['inCell'] = True
-                        inCell = True
-                        self.nCellPoints += 1
-                    else:
-                        newPoint[0]['inCell'] = False
-                        inCell = False
-                    self.points = concatenate((self.points,newPoint),axis = 0)
-                    ipoint += 1; inewpt += 1; nptsVol += 1
-#                     print 'plotting new point {}'.format(inewpt)
-#                     self.plotPoints(self.points,'pos','{}'.format(inewpt),1,self.tets[itet:itet+1]) 
-                    newTets = zeros(4,dtype = [('tet', '4int'),('vol', 'float'),('anyInCell', 'bool')])
-                    for i in range(4):
-                        newTets[0]['tet'] = [ipoint,oldt[0],oldt[1],oldt[2]]
-                        newTets[1]['tet'] = [ipoint,oldt[0],oldt[1],oldt[3]]
-                        newTets[2]['tet'] = [ipoint,oldt[1],oldt[2],oldt[3]]
-                        newTets[3]['tet'] = [ipoint,oldt[2],oldt[3],oldt[1]]
-                        newTets[0]['anyInCell'] = (True in [inCell,self.points[0]['inCell'],self.points[1]['inCell'],self.points[2]['inCell']])
-                        newTets[0]['anyInCell'] = (True in [inCell,self.points[0]['inCell'],self.points[1]['inCell'],self.points[3]['inCell']])
-                        newTets[0]['anyInCell'] = (True in [inCell,self.points[1]['inCell'],self.points[2]['inCell'],self.points[3]['inCell']])
-                        newTets[0]['anyInCell'] = (True in [inCell,self.points[2]['inCell'],self.points[3]['inCell'],self.points[1]['inCell']])
-                    self.tets = concatenate((self.tets,newTets),axis = 0)
-                    self.ntets += 4 #total number (next index of tet to add)
+        if self.nops > 1:
+            while (self.nCellPoints < self.nTarget): #add nops points at a time
+                if self.nops > 1:
+                tet = self.tets['tets'][0] #largest volume tet
+                pos = self.addPntTet(itet,ipoint)
+                ipoint += 1
+                
+                for op in range(self.nops): #symmetry dependents
+                    self.addPntSym(pos0,op)
+    #                     print 'plotting new point {}'.format(inewpt)
+    #                     self.plotPoints(self.points,'pos','{}'.format(inewpt),1,self.tets[itet:itet+1]) 
                     itet += 1  
-                    #next tetrahedron:
-                    nextVol = self.tets[itet]['vol']
-                    if abs(nextVol - oldVol)/oldVol > 1e-6:
-                        sameVol = False
-                        ivol += 1
-                print'plotting {} points'.format(ipoint)
-                self.plotPoints(self.points,'pos','v{}'.format(ivol),nptsVol,self.tets[itet-nptsVol:itet])
-            #resort according to volume (new tets are now old), and then check if we need more points: 
-            print 'sorting tets by volume', self.ntets
-            self.tets.sort(order='vol');self.tets = reverseStructured(self.tets)
-        self.npoints = self.ipoint + 1                
+    
+                    print'plotting {} points'.format(ipoint)
+                    self.plotPoints(self.points,'pos','v{}'.format(ivol),nptsVol,self.tets[itet-nptsVol:itet])
+                #resort according to volume (new tets are now old), and then check if we need more points: 
+                print 'sorting tets by volume', self.ntets
+                self.tets.sort(order='vol');self.tets = reverseStructured(self.tets)
+            self.npoints = self.ipoint + 1 
+        else:
+                           
                     
        # plotPoints(self,arr,field = 'pos',tag = timestamp(),highlight = 0)
 #        self.plotPntsTets(self.points,self.tets)
@@ -350,7 +384,7 @@ class meshConstruct():
 #                             print 'ipoint,ipos',ipoint,ipos, newPos
 #                             print '\tdpos',dpos
 #                             self.points[ipoint]['label'] = ipoint
-                            self.labels.append(ipoint)
+#                             self.labels.append(ipoint)
                             if i == 0 and j == 0 and k == 0: #original cell
                                 self.points[ipoint]['dep'] = self.cellPoints[ipoint]['dep'] 
                                 self.points[ipoint]['sponsor'] = self.cellPoints[ipoint]['sponsor']
@@ -358,7 +392,6 @@ class meshConstruct():
                             else: #then this point is dependent by translation
                                 self.points[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
                                 self.points[ipoint]['sponsor'] = ipos #The sponsor may itself be dependent.  
-                                self.dep.append(ipoint)
                                 self.points[ipoint]['inCell'] = False                        
                             self.points[ipoint]['pos'] = newPos
                             self.points[ipoint]['dpos'] = newDirPos
@@ -400,7 +433,7 @@ class meshConstruct():
                       
     def subRandSym(self):
         '''These points are in the VORONOI cell'''
-        self.labels = [] # list of active points labels
+#         self.labels = [] # list of active points labels
         self.cellPoints = zeros(self.nTarget+self.nops,dtype = [('label', 'int8'),('dep', 'S8'),
             ('sponsor', 'int8'),('pos', '3float'),('vpos', '3float'),('dpos', '3float'),
             ('force', '3float')])
@@ -410,7 +443,6 @@ class meshConstruct():
         bfact = sqrt(3)
         cfact = sqrt(5)
         self.ind = []
-        self.dep = []
         ipos = -1
         edgeFactor = 10
         aEdge = self.rmax/norm(self.B[:,0])/edgeFactor; bEdge = self.rmax/norm(self.B[:,1])/edgeFactor; cEdge = self.rmax/norm(self.B[:,2])/edgeFactor        
@@ -432,16 +464,15 @@ class meshConstruct():
             self.cellPoints[ipos]['sponsor'] = ipos                              
             self.cellPoints[ipos]['pos'] = pos 
             self.cellPoints[ipos]['dpos'] = dpos #dpos will always be the direct coordinates in the ORIGINAL cell
-            self.labels.append(ipos)
+#             self.labels.append(ipos)
             self.ind.append(ipos)
             iInd = ipos
-
             #now all symmetry operations will keep the point in the BZ 
-            strLen = 5
-            sympoints = [str(pos[0])[:strLen]+str(pos[1])[:strLen]+str(pos[2])[:strLen]]
+            self.strLen = 5
+            sympoints = [str(pos[0])[:self.strLen]+str(pos[1])[:self.strLen]+str(pos[2])[:self.strLen]]
             for op in range(self.nops):
                 newpos = dot(self.symops[:,:,op],pos)
-                posStr = str(newpos[0])[:strLen]+str(newpos[1])[:strLen]+str(newpos[2])[:strLen]
+                posStr = str(newpos[0])[:self.strLen]+str(newpos[1])[:self.strLen]+str(newpos[2])[:self.strLen]
                 if posStr not in sympoints:
                     dposnew = self.directFromCart(self.B,intoCell(newpos,self.B)) 
                     if self.tooClose(newpos,dposnew,ipos,edges):
@@ -451,8 +482,8 @@ class meshConstruct():
                         break
                     sympoints.append(posStr)
                     ipos += 1
-                    self.labels.append(ipos)
-                    self.dep.append(ipos)
+#                     self.labels.append(ipos)
+#                     self.dep.append(ipos)
                     self.cellPoints[ipos]['dep'] = '{}'.format(str(op))
                     self.cellPoints[ipos]['sponsor'] = iInd 
 #                     newpos=intoVoronoi(newpos,self.B)                                
