@@ -116,11 +116,11 @@ class meshConstruct():
     
     def delauPoints(self):
 #         print 'len self.points', len(self.points[:self.npoints]['pos']) 
-        tri = delaunay(self.points[:self.npoints]['pos'])
+        tri = delaunay(self.points['pos'])
         self.ntets = tri.nsimplex
         self.tets = zeros(self.ntets, dtype = [('tet', '4int'),('vol', 'float'),('anyInCell', 'bool')])
-        self.tets[:]['tet'] = tri.simplices #vertex labels
-        self.tets[:]['anyInCell'] = False
+        self.tets['tet'] = tri.simplices #vertex labels
+        self.tets['anyInCell'] = False
         for itet, tet in enumerate(self.tets[:]['tet']):
             for ivert in range(4): #find those with at least one vertex in the cell
                 if self.points[tet[ivert]]['inCell']:
@@ -200,36 +200,32 @@ class meshConstruct():
         tetrahedron, then replicate it symmetrically, then resort tets by volume 
         (the Delaunay routine doesn't seem to make a triangulation that preserves
         symmetry.'''
-
         ipoint = self.npoints-1
         ivol = 0 #may be used to space plotting
         inewpt = 0
         if self.nops > 1:
-            while (self.nCellPoints < self.nTarget): #add nops points at a time
-                if self.nops > 1:
+            while (self.nCellPoints < self.nTarget): #add nops points at a time1:
                 tet = self.tets['tets'][0] #largest volume tet
-                pos = self.addPntTet(itet,ipoint)
+                pos0 = self.addPntTet(itet,ipoint)
                 ipoint += 1
-                
                 for op in range(self.nops): #symmetry dependents
-                    self.addPntSym(pos0,op)
-    #                     print 'plotting new point {}'.format(inewpt)
-    #                     self.plotPoints(self.points,'pos','{}'.format(inewpt),1,self.tets[itet:itet+1]) 
-                    itet += 1  
-    
-                    print'plotting {} points'.format(ipoint)
-                    self.plotPoints(self.points,'pos','v{}'.format(ivol),nptsVol,self.tets[itet-nptsVol:itet])
+                    if self.addPntSym(pos0,op,ipoint):
+                        ipoint += 1
+                self.npoints = self.ipoint + 1 
+                print'plotting {} points'.format(self.npoints)
+                self.plotPoints(self.points,'pos',str(ipoint+1),self.tets[0:1])
                 #resort according to volume (new tets are now old), and then check if we need more points: 
-                print 'sorting tets by volume', self.ntets
-                self.tets.sort(order='vol');self.tets = reverseStructured(self.tets)
-            self.npoints = self.ipoint + 1 
-        else:
-                           
-                    
-       # plotPoints(self,arr,field = 'pos',tag = timestamp(),highlight = 0)
-#        self.plotPntsTets(self.points,self.tets)
-
-
+                self.delauPoints() #find all tets and sort    
+        else: # no symmetries
+            while (self.nCellPoints < self.nTarget):
+                itet = 0
+                firstVol = self.tet[itet]['vol'] 
+                while self.tet[itet]['vol'] > firstVol/4.0:
+                    self.addPntTet(itet, ipoint)
+                    ipoint += 1
+                self.delauPoints() #find all tets and sort   
+                print'plotting {} points'.format(self.npoints)
+                self.plotPoints(self.points,'pos',str(ipoint+1))                    
 
     def relax(self):
         '''Conjugate gradient relaxation of the potential energy.
