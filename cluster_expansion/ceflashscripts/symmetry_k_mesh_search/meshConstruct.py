@@ -61,10 +61,11 @@ sys.path.append('/fslhome/bch/graphener/graphener')
 
 # from conjGradMin.optimize import fmin_cg
 
-from kmeshroutines import svmesh,  svmeshNoCheck,svmesh1freedir, lattice_vecs, lattice, surfvol, \
-    orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,  \
-    load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double, \
-    getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell
+from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, lattice, surfvol,
+    orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,
+    load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double,
+    getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell,
+    reverseStructured)
 
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
@@ -121,10 +122,9 @@ class meshConstruct():
                     self.tets[itet]['anyInCell'] = True
                     break
             if self.tets[itet]['anyInCell']:
-                self.tets[itet]['vol'] = self.volTet([self.points[iv]['pos'] for iv in tet])
-        self.tets.sort(order='vol')
-        self.tets = deepcopy(self.tets[::-1])
-    
+                self.tets[itet]['vol'] = abs(self.volTet([self.points[iv]['pos'] for iv in tet]))
+        self.tets.sort(order='vol');self.tets = reverseStructured(self.tets)
+
     def fillTets(self):
         '''Add points to the largest tet, which creates 4 new ones, until the 
         the desired number of points is obtained, and we finish the tets 
@@ -133,7 +133,9 @@ class meshConstruct():
 #         newTets = zeros(4*self.ntets,dtype = [('tet', '4int'),('vol', 'float'),('anyInCell', 'bool')])
 #         newPoints = zeros(self.ntets,dtype = [('label', 'int8'),('dep', 'S8'),('inCell', 'bool'),('sponsor', 'int8'),('pos', '3float'),
 #                                                      ('dpos', '3float'),('force', '3float')])
+        ipoint = self.npoints-1
         ivol = 0 #may be used to space plotting
+        inewpt = 0
         while (self.nCellPoints < self.nTarget):
             itet = 0 #index of old tet we are working on
             firstVol = self.tets[0]['vol']
@@ -141,16 +143,17 @@ class meshConstruct():
             while (self.tets[itet]['vol'] > firstVol/4.0): #this needs to exit when we need to resort by volume
                 sameVol = True
                 nptsVol = 0 
-                while sameVol: #this must not be interrupted except but sameVol    
+                while sameVol: #this must not be interrupted except by sameVol    
                     oldVol = nextVol
-                    print 'vol', nextVol
+                    print 'vol', ivol, nextVol
                     oldt = self.tets[itet]['tet'] 
                     vp = array([self.points[iv]['pos'] for iv in oldt])
                     vd = array([self.points[iv]['dpos'] for iv in oldt])
                     newPoint = zeros(1,dtype = [('label', 'int8'),('dep', 'S8'),('inCell', 'bool'),
                         ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
-                    newPoint[0]['label'] = self.npoints
+                    newPoint[0]['label'] = ipoint
                     newPoint[0]['pos'] = sum(vp)/4.0 #center of mass
+                    print 'newpos',newPoint[0]['pos'] 
                     newPoint[0]['dpos'] = sum(vd)/4.0
                     newPoint[0]['dep'] = '{}_{}_{}_{}'.format(oldt[0],oldt[1],oldt[2],oldt[3]) 
                     if min(vd.flatten()) >= 0 and max(vd.flatten()) < 1.0:
@@ -160,19 +163,21 @@ class meshConstruct():
                     else:
                         newPoint[0]['inCell'] = False
                         inCell = False
-                    concatenate((self.points,newPoint),0)
-                    self.npoints += 1; 
+                    self.points = concatenate((self.points,newPoint),axis = 0)
+                    ipoint += 1; inewpt += 1; nptsVol += 1
+#                     print 'plotting new point {}'.format(inewpt)
+#                     self.plotPoints(self.points,'pos','{}'.format(inewpt),1,self.tets[itet:itet+1]) 
                     newTets = zeros(4,dtype = [('tet', '4int'),('vol', 'float'),('anyInCell', 'bool')])
                     for i in range(4):
-                        newTets[0]['tet'] = [self.npoints,oldt[0],oldt[1],oldt[2]]
-                        newTets[1]['tet'] = [self.npoints,oldt[0],oldt[1],oldt[3]]
-                        newTets[2]['tet'] = [self.npoints,oldt[1],oldt[2],oldt[3]]
-                        newTets[3]['tet'] = [self.npoints,oldt[2],oldt[3],oldt[1]]
+                        newTets[0]['tet'] = [ipoint,oldt[0],oldt[1],oldt[2]]
+                        newTets[1]['tet'] = [ipoint,oldt[0],oldt[1],oldt[3]]
+                        newTets[2]['tet'] = [ipoint,oldt[1],oldt[2],oldt[3]]
+                        newTets[3]['tet'] = [ipoint,oldt[2],oldt[3],oldt[1]]
                         newTets[0]['anyInCell'] = (True in [inCell,self.points[0]['inCell'],self.points[1]['inCell'],self.points[2]['inCell']])
                         newTets[0]['anyInCell'] = (True in [inCell,self.points[0]['inCell'],self.points[1]['inCell'],self.points[3]['inCell']])
                         newTets[0]['anyInCell'] = (True in [inCell,self.points[1]['inCell'],self.points[2]['inCell'],self.points[3]['inCell']])
                         newTets[0]['anyInCell'] = (True in [inCell,self.points[2]['inCell'],self.points[3]['inCell'],self.points[1]['inCell']])
-                    concatenate((self.tets,newTets),0)
+                    self.tets = concatenate((self.tets,newTets),axis = 0)
                     self.ntets += 4 #total number (next index of tet to add)
                     itet += 1  
                     #next tetrahedron:
@@ -180,13 +185,12 @@ class meshConstruct():
                     if abs(nextVol - oldVol)/oldVol > 1e-6:
                         sameVol = False
                         ivol += 1
-                    else:
-                        nptsVol += 1
-                self.plotPoints(self.points,'pos',ivol,nptsVol)
+                print'plotting {} points'.format(ipoint)
+                self.plotPoints(self.points,'pos','v{}'.format(ivol),nptsVol,self.tets[itet-nptsVol:itet])
             #resort according to volume (new tets are now old), and then check if we need more points: 
-            self.tets.sort(order='vol')
-            self.tets = deepcopy(self.tets[::-1])
-                        
+            print 'sorting tets by volume', self.ntets
+            self.tets.sort(order='vol');self.tets = reverseStructured(self.tets)
+        self.npoints = self.ipoint + 1                
                     
        # plotPoints(self,arr,field = 'pos',tag = timestamp(),highlight = 0)
 #        self.plotPntsTets(self.points,self.tets)
@@ -482,29 +486,34 @@ class meshConstruct():
                 return True
         return False
     
-    def plotPoints(self,arr,field = 'pos',tag = timestamp(),highlight = 0):
-        self.plot2dPts(arr,field,tag,'x','y',highlight) 
-        self.plot2dPts(arr,field,tag,'x','z',highlight)  
+    def plotPoints(self,pts,field = 'pos',tag = timestamp(),highlight = 0,tets = []):
+        self.plot2dPts(pts,field,tag,'x','y',highlight,tets) 
+        self.plot2dPts(pts,field,tag,'x','z',highlight,tets)  
         
-    def plot2dPts(self,arr,field,tag,ax0,ax1,highlight):
+    def plot2dPts(self,pts,field,tag,ax0,ax1,highlight,tets):
         fig = figure()
         i0 = ('x','y','z').index(ax0)
         i1 = ('x','y','z').index(ax1)
-        scatter(arr[:][field][:,i0],arr[:][field][:,i1])
+        scatter(pts[:][field][:,i0],pts[:][field][:,i1])
         if highlight > 0:
-            scatter(arr[-highlight:][field][:,i0],arr[-highlight:][field][:,i1],color = 'g')
+            scatter(pts[-highlight:][field][:,i0],pts[-highlight:][field][:,i1],color = 'g')
         ind0 = []
         ind1 = []
         for i in self.ind:
-            ind0.append(arr[i][field][i0])
-            ind1.append(arr[i][field][i1])            
-        scatter(ind0,ind1,color = 'r')
-    
-#     def plotPntsTets(self):
-        
-        
-
-                    
+            ind0.append(pts[i][field][i0])
+            ind1.append(pts[i][field][i1])            
+        scatter(ind0,ind1,color = 'r') 
+        if len(tets)>0: 
+            pairs = []
+            for itet, tet in enumerate(tets[:]['tet']):
+                pairs.append([pts[tet[0]][field],pts[tet[1]][field]])
+                pairs.append([pts[tet[0]][field],pts[tet[2]][field]])
+                pairs.append([pts[tet[0]][field],pts[tet[3]][field]])
+                pairs.append([pts[tet[1]][field],pts[tet[2]][field]])
+                pairs.append([pts[tet[1]][field],pts[tet[3]][field]])
+                pairs.append([pts[tet[2]][field],pts[tet[3]][field]])
+            for pair in pairs:
+                plot([pair[0][i0],pair[1][i0]],[pair[0][i1],pair[1][i1]],'k-') #draw line for tet edge
         xlabel('{}'.format(ax0))
         ylabel('{}'.format(ax1))
         name = '{}_{}_{}-{}'.format(tag,field,ax0,ax1)

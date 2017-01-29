@@ -1,5 +1,6 @@
 '''Convention here is COLUMNS of matrices as vectors'''
 ################# functions #######################
+import time, os, subprocess, sys
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round,ceil
 from numpy import zeros,nonzero,float64, sort, argsort, mod, amin, amax
@@ -9,15 +10,18 @@ from numpy.linalg import norm, det, inv, eig
 from numpy import int as np_int
 from random import random, randrange
 from ctypes import byref, cdll, c_double, c_int
-import time, os, subprocess, sys
+from copy import copy, deepcopy
 
 utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so') 
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
 getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
 
-
-
-
+def reverseStructured(arr):
+    temp = deepcopy(arr)
+    for i in range(len(temp)):
+        temp[i] = arr[-1-i]
+    return temp
+    
 def latticeType(nops):
     type = {2:'Triclinic', 4:'Monoclinic', 8:'Orthorhombic', 
             16:'Tetragonal', 12:'Trigonal', 24:'Hexagonal', 48:'Cubic'}
