@@ -79,7 +79,7 @@ class meshConstruct():
     from conjGradMin2 import (fmin_cg,minimize_cg,line_search_wolfe1,scalar_search_wolfe1)
 
     def __init__(self):
-        '''init'''
+        self.strLen = 5
          
     def relaxMeshSym(self,B,targetNmesh,path):
         #1. nCoarse random points in the cell parallelpiped.  
@@ -98,6 +98,7 @@ class meshConstruct():
         self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
         print 'Typical spacing:', self.ravg
         self.initPoints() 
+        self.initTets()
         self.transPoints()
 #         self.movetoVoronoi()
         self.delauPoints()
@@ -155,10 +156,14 @@ class meshConstruct():
         self.sympoints = [str(pos[0])[:self.strLen]+str(pos[1])[:self.strLen]+str(pos[2])[:self.strLen]]
         return pos,inCell 
 
-    def addPntsSym(self,pos,op,isponsor,inCell,ipoint):
+    def addPntsSym(self,pos,isponsor,ipoint,inCell):
         '''Add points by point-symmetry.  Check that each is far enough away 
         from previous ones.  If too close, choose the point midway, make this the
-        the independent point, and run through all the sym operators again.'''
+        the independent point, and run through all the sym operators again.
+        
+        If the sponsor point is in the cell, we will move symmetry partners into cell.
+        If not, we will not map them.  
+        '''
 
         newPoints = zeros(self.nops -1,dtype = [('dep', 'S8'),('inCell', 'bool'),
                 ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
@@ -168,58 +173,52 @@ class meshConstruct():
             posList = [pos]
             ipos = 0
             for op in range(self.nops): 
-                newpos = intoCell(dot(self.symops[:,:,op],pos),self.B)
-                posList.append[newpos]
+                if inCell:
+                    newpos = intoCell(dot(self.symops[:,:,op],pos),self.B)
+                else: 
+                    newpos = dot(self.symops[:,:,op],pos)
+                posList.append(newpos)
                 [tooClose,closePos] = self.tooCloseList(posList,self.ravg/3.0)
                 if not tooClose:
+                    posStr = str(newpos[0])[:self.strLen]+str(newpos[1])[:self.strLen]+str(newpos[2])[:self.strLen]
                     if posStr not in self.sympoints:
-                        posStr = str(newpos[0])[:self.strLen]+str(newpos[1])[:self.strLen]+str(newpos[2])[:self.strLen]
-                        sympoints.append(posStr)
-                        newPoint[ipos]['pos'] = newpos
+                        self.sympoints.append(posStr)
+                        newPoints[ipos]['pos'] = newpos
                         dposnew = self.directFromCart(self.B,newpos)
-                        newPoint[ipos]['dpos'] = dposnew
-                        newPoint[ipos]['dep'] = op
-                        newPoint[ipos]['sponsor'] = isponsor
-                        newPoint[ipos]['inCell'] = True   
+                        newPoints[ipos]['dpos'] = dposnew
+                        newPoints[ipos]['dep'] = op
+                        newPoints[ipos]['sponsor'] = isponsor
+                        newPoints[ipos]['inCell'] = True   
                         ipos += 1                          
                 else:
                     #combine points, write over the last independent point, and start over on ops
                     pos = (newpos + closePos)/2.0
-                    if ipoint -1 in self.indIn: 
-                        self.indIn.remove(ipoint-1)
-                    else: 
-                        self.indOut.remove(ipoint-1)
+#                     if ipoint -1 in self.indIn: 
+#                         self.indIn.remove(ipoint-1)
+#                     else: 
+#                         self.indOut.remove(ipoint-1)
                     self.points[ipoint-1]['pos'] = pos
                     dpos = self.directFromCart(self.B,pos)
                     self.points[ipoint-1]['dpos'] = dpos
+                    self.points[ipoint-1]['inCell'] = inCell
+                    self.sympoints = [str(pos[0])[:self.strLen]+str(pos[1])[:self.strLen]+str(pos[2])[:self.strLen]]
+
                     #keep dep the same: tet it came from...but this means that point may not be inside tet.
-                    if min(dpos.flatten()) >= 0 and max(dpos.flatten()) < 1.0:
-                        newPoint[0]['inCell'] = True
-                        inCell = True
-                        self.nCellPoints += 1
-                        self.indIn.append(ipoint)
-                    else:
-                        newPoint[0]['inCell'] = False
-                        inCell = False
-                        self.indOut.append(ipoint)
-                    break                    
+#                     if min(dpos.flatten()) >= 0 and max(dpos.flatten()) < 1.0:
+#                         newPoints[0]['inCell'] = True
+#                         inCell = True
+#                         self.nCellPoints += 1
+#                         self.indIn.append(ipoint)
+#                     else:
+#                         newPoints[0]['inCell'] = False
+#                         inCell = False
+#                         self.indOut.append(ipoint)
+#                     break                    
                 doneSym = True
-                
+        self.points = concatenate((self.points,newPoints[:ipos]),axis = 0)
+        return ipos
+            
 
-        
-        
-
-            if min(dposnew.flatten()) >= 0 and max(dposnew.flatten()) < 1.0:
-                newPoint[0]['inCell'] = True
-                self.nCellPoints += 1
-                self.indIn.append(ipoint)
-            else:
-                newPoint[0]['inCell'] = False
-                self.indOut.append(ipoint)
-            self.points = concatenate((self.points,newPoint),axis = 0)
-            return True
-        else:
-            return False
 
 #     def addTets(self,itet):
 #         newTets = zeros(4,dtype = [('tet', '4int'),('vol', 'float'),('anyInCell', 'bool')])
@@ -236,7 +235,7 @@ class meshConstruct():
 #         self.ntets += 4 #total number (next index of tet to add)
     
     def fillTets(self):
-        '''Add points to the largest tet, which creates 4 new ones, until the 
+        '''Add points to the largest tets, until the 
         the desired number of points is obtained.  We add a point to the largest
         tetrahedron, then replicate it symmetrically, then resort tets by volume 
         (the Delaunay routine doesn't seem to make a triangulation that preserves
@@ -249,11 +248,11 @@ class meshConstruct():
                 [pos0,inCell] = self.addPntTet(0,ipoint)
                 ipoint += 1
                 isponsor = ipoint
-                nNew = self.addPntsSym(pos0,op,isponsor,ipoint,inCell)
-                ipoint += nNew:        
+                nNew = self.addPntsSym(pos0,isponsor,ipoint,inCell)
+                ipoint += nNew       
                 self.npoints = ipoint + 1 
                 print'plotting {} points'.format(self.npoints)
-                self.plotPoints(self.points,'pos',str(ipoint+1),self.tets[0:1])
+                self.plotPoints(self.points,'pos',str(ipoint+1),nNew,self.tets[0:1])
                 #resort according to volume (new tets are now old), and then check if we need more points: 
                 self.delauPoints() #find all tets and sort    
         else: # no symmetries
@@ -265,7 +264,56 @@ class meshConstruct():
                     ipoint += 1
                 self.delauPoints() #find all tets and sort   
                 print'plotting {} points'.format(self.npoints)
-                self.plotPoints(self.points,'pos',str(ipoint+1))                    
+                self.plotPoints(self.points,'pos',str(ipoint+1))   
+
+    def initTets(self):
+        '''Add points to the largest tets then replicate them symmetrically, then resort tets by volume
+        If any points are too close upon the symmetry operations, we combine them.  
+        '''
+        self.delauPoints()
+        ipoint = 8 #have the 8 vertices of the cell to start with
+        self.nCellPoints = 0
+        self.indIn = []
+        self.indOut = []
+        if self.nops > 1:
+            while (ipoint < 8+8): #add nops points at a time1:
+                tet = self.tets[0]['tet'] #largest volume tet
+                [pos0,inCell] = self.addPntTet(0,ipoint)
+                ipoint += 1
+                isponsor = ipoint
+                nNew = self.addPntsSym(pos0,isponsor,ipoint,inCell)
+                ipoint += nNew   
+#                 print'plotting {} points'.format(ipoint+1)
+#                 self.plotPoints(self.points,'pos',str(ipoint+1),self.tets[0:1])
+                #resort according to volume (new tets are now old), and then check if we need more points: 
+                self.delauPoints() #find all tets and sort    
+        else: # no symmetries
+            while (ipoint < 8+8):
+                itet = 0
+                firstVol = self.tet[0]['vol'] 
+                while self.tet[itet]['vol'] > firstVol/4.0:
+                    self.addPntTet(itet, ipoint)
+                    ipoint += 1
+                self.delauPoints() #find all tets and sort   
+                print'plotting {} points'.format(self.npoints)
+                self.plotPoints(self.points,'pos',str(ipoint+1)) 
+        
+#         self.cellPoints = self.points[8:]  #  remove the original 8 tets, which were on the boundary of the cell.               
+#         self.ncellPoints = len(self.cellPoints)
+#         self.indIn = [i-8 for i in self.indIn]
+        
+        self.cellPoints = self.points          
+        self.nCellPoints = len(self.cellPoints)
+           
+        
+        self.nIndIn = len(self.indIn)
+
+        print'plotting {} points'.format(self.nCellPoints)
+        self.plotPoints(self.cellPoints,'pos',str(self.nCellPoints),self.tets[0:1])
+
+        
+        
+#         self.nCellPoints = ipoint + 1 - 8         
 
     def relax(self):
         '''Conjugate gradient relaxation of the potential energy.
@@ -331,7 +379,7 @@ class meshConstruct():
     def enerGrad(self,indComps):
         '''restrict the energy sum to the pairs that contain independent points'''
 #         print 'oldindvecs',self.oldindVecs
-        indVecs = indComps.reshape((self.nInd,3))
+        indVecs = indComps.reshape((self.nIndIn,3))
         self.oldindVecs = indVecs
         #update all positions by symmetry and translation
         self.oldPoints = deepcopy(self.points)
@@ -349,7 +397,7 @@ class meshConstruct():
         ener = 0.0
         self.power = 2.0
 #         scale = 1
-        for ipos in range(self.nInd):
+        for ipos in range(self.nIndIn):
             force = zeros(3)
             rs = zeros(self.npoints,dtype = [('r', 'float'),('rij', '3float'),('force', '3float')])
                       
@@ -386,8 +434,8 @@ class meshConstruct():
                 print 'nerst',self.points[nearest]['pos'],nearest,rnearest 
                 print 'vectr', trimSmall(self.points[nearest]['pos'] - self.points[ipos]['pos'])
                 print 'force', ipos, self.points[ipos]['force']    
-        ener = ener/self.nInd
-        grad = -self.points[:self.nInd]['force'].flatten()/self.nInd 
+        ener = ener/self.nIndIn
+        grad = -self.points[:self.nIndIn]['force'].flatten()/self.nIndIn 
         print 'energy:',self.count, ener
         print
 #         if self.count == 19:
@@ -441,7 +489,17 @@ class meshConstruct():
         return   
     
     def initPoints(self):
-        self.subRandSym()  
+        #self.subRandSym()
+        #use B cell vertices as the first 8 points
+        self.points = zeros(8,dtype = [('dep', 'S8'),('inCell', 'bool'),
+            ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
+        for i,mult in enumerate([[0,0,0], [0,0,1],[0,1,0],[1,0,0],[0,1,1],[1,0,1],[1,1,0],[1,1,1]]):
+            dpos = array(mult)
+            self.points[i]['dpos'] = dpos
+            self.points[i]['pos'] = dot(self.B,dpos)
+            self.points[i]['inCell'] = True
+            #will remove these 8 points later, so don't worry about the rest of the info
+                    
 
         
 #     def combineNear(self): 
@@ -471,7 +529,7 @@ class meshConstruct():
         '''These points are in the VORONOI cell'''
 #         self.labels = [] # list of active points labels
         self.cellPoints = zeros(self.nTarget+self.nops,dtype = [('dep', 'S8'),
-            ('sponsor', 'int8'),('pos', '3float'),('vpos', '3float'),('dpos', '3float'),
+            ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),
             ('force', '3float')])
         self.directPos = zeros((self.nTarget,3))
         self.subrand = rand(3)
@@ -479,6 +537,7 @@ class meshConstruct():
         bfact = sqrt(3)
         cfact = sqrt(5)
         self.indIn = []
+        self.indOut = []
         ipos = -1
         edgeFactor = 10
         aEdge = self.rmax/norm(self.B[:,0])/edgeFactor; bEdge = self.rmax/norm(self.B[:,1])/edgeFactor; cEdge = self.rmax/norm(self.B[:,2])/edgeFactor        
@@ -504,7 +563,6 @@ class meshConstruct():
             self.indIn.append(ipos)
             iInd = ipos
             #now all symmetry operations will keep the point in the BZ 
-            self.strLen = 5
             sympoints = [str(pos[0])[:self.strLen]+str(pos[1])[:self.strLen]+str(pos[2])[:self.strLen]]
             for op in range(self.nops):
                 newpos = dot(self.symops[:,:,op],pos)
@@ -533,22 +591,23 @@ class meshConstruct():
 #                 if ipos == itemp: #some point is too close...try another independent point
 #                     break                
         self.nCellPoints = ipos + 1
-        self.cellPoints = delete(self.cellPoints,s_[self.nCellPoints:],0)
+        self.cellPoints = delete(self.cellPoints,s_[self.nCellPoints:],0) #removing unused rows
         if len(self.cellPoints) != self.nCellPoints: sys.exit('Stop.  Error in numbering cellPoints')
-        self.nInd = len(self.indIn) 
+        self.nIndIn = len(self.indIn) 
         self.plotPoints(self.cellPoints,'pos','voronoi')
 #         self.plotPoints(self.cellPoints,'dpos')
         print 'Points in unit cell:',self.nCellPoints   
-        print 'Independent points:',self.nInd                         
+        print 'Independent points:',self.nIndIn                         
         return
 
     def tooCloseList(self,posList,tol):
         '''Checks the last pos vs the others'''
         for partner in posList[:len(posList)-1]:
-            if norm(posList[-1]-partner) < tol:
-                print 'Too close to another:',norm(pos-testpos)
-                return True
-        return False
+            r = norm(posList[-1]-partner)
+            if 1e-6 < r < tol:
+                print 'Too close to another:',r
+                return True, partner
+        return False,[] 
     
     def tooCloseInit(self,pos,dpos,ipos,edges):
         for i in range(3):
