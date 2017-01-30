@@ -998,15 +998,14 @@ def intoVoronoi(position, cell, inverse=None):
     return dot(cell, result)
 
 def intoCell(pos, cell, inverse=None):
-    
     ''' Puts the *cartesian* point into the original unit cell, which has direct components 
     between 0 and 1'''
     dpos = directFromCart(cell,pos)
     dpos = mod(dpos,1)
     return cartFromDirect(cell,dpos)
 
-    result = dot(inverse, position)
-    return dot(cell, result - floor(result + 1e-12))
+#     result = dot(inverse, position)
+#     return dot(cell, result - floor(result + 1e-12))
 
 def directFromCart(Lvs,cartvec):
     '''Assumes lattice vectors are in rows in LVs.
