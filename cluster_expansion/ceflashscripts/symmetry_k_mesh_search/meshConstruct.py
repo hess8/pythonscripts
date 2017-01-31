@@ -65,7 +65,7 @@ from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, la
     orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double,
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell,
-    reverseStructured)
+    reverseStructured,isInVoronoi)
 
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
@@ -99,8 +99,8 @@ class meshConstruct():
         print 'Typical spacing:', self.ravg
         self.initPoints() 
         self.initTets()
-        self.transPoints()
-#         self.movetoVoronoi()
+        self.movetoVoronoi()
+        self.addBorders()
         self.delauPoints()
         self.fillTets()
         self.relax()
@@ -174,7 +174,7 @@ class meshConstruct():
             ipos = 0
             for op in range(self.nops): 
                 if inCell:
-                    newpos = intoCell(dot(self.symops[:,:,op],pos),self.B)
+                    newpos = dot(self.symops[:,:,op],pos),self.B
                 else: 
                     newpos = dot(self.symops[:,:,op],pos)
                 posList.append(newpos)
@@ -281,7 +281,7 @@ class meshConstruct():
                 [pos0,inCell] = self.addPntTet(0,ipoint)
                 ipoint += 1
                 isponsor = ipoint
-                nNew = self.addPntsSym(pos0,isponsor,ipoint,inCell)
+                nNew = intoCell(self.addPntsSym(pos0,isponsor,ipoint,inCell)) #We are working in original parallelpiped
                 ipoint += nNew   
 #                 print'plotting {} points'.format(ipoint+1)
 #                 self.plotPoints(self.points,'pos',str(ipoint+1),self.tets[0:1])
@@ -294,26 +294,221 @@ class meshConstruct():
                 while self.tet[itet]['vol'] > firstVol/4.0:
                     self.addPntTet(itet, ipoint)
                     ipoint += 1
-                self.delauPoints() #find all tets and sort   
-                print'plotting {} points'.format(self.npoints)
-                self.plotPoints(self.points,'pos',str(ipoint+1)) 
+                self.delauPoints() #find all tets and sort    
         
 #         self.cellPoints = self.points[8:]  #  remove the original 8 tets, which were on the boundary of the cell.               
 #         self.ncellPoints = len(self.cellPoints)
 #         self.indIn = [i-8 for i in self.indIn]
         
-        self.cellPoints = self.points          
-        self.nCellPoints = len(self.cellPoints)
-           
-        
+#         self.cellPoints = self.points          
+        self.nCellPoints = len(self.points)
+        self.npoints = self.nCellPoints
         self.nIndIn = len(self.indIn)
-
         print'plotting {} points'.format(self.nCellPoints)
-        self.plotPoints(self.cellPoints,'pos',str(self.nCellPoints),self.tets[0:1])
+        self.plotPoints(self.points,'pos',str(self.nCellPoints))
+#         self.nCellPoints = ipoint + 1 - 8         
+
+    def initPoints(self):
+        #self.subRandSym()
+        #use B cell vertices as the first 8 points
+        self.points = zeros(8,dtype = [('dep', 'S8'),('inCell', 'bool'),
+            ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
+        for i,mult in enumerate([[0,0,0], [0,0,1],[0,1,0],[1,0,0],[0,1,1],[1,0,1],[1,1,0],[1,1,1]]):
+            dpos = array(mult)
+            self.points[i]['dpos'] = dpos
+            self.points[i]['pos'] = dot(self.B,dpos)
+            self.points[i]['inCell'] = True
+            #will remove these 8 points later, so don't worry about the rest of the info
+
+
+    def addBorders(self):
+        '''Add bordering points by translation symmetry to the Voronoi cell,
+        keeping only those within an edge distance from the borders.
+        We make a translational copy of the VC by the 27-1 translational vectors R
+        nearest the center.  u_R is a unit vector in the direction of R.
+        A new points has position r.  if dot(r,u_R)> R/2, 
+        then it's outside the VC.  So we can use the conditon  dot(r,u_R) <  R/2 + edge
+        to choose those that are in the border region.            
+         '''
+        ipoint = self.npoints
+        for i in [0,-1,1]:
+            for j in [0,-1,1]:
+                for k in [0,-1,1]:
+                    for ipos in range(self.nCellPoints):
+                        if not (i==0 and j==0 and k ==0):
+                           transVec = dot(self.B,array([i,j,k]))
+                           normTV = norm(transVec)
+                           unitVec = transVec/normTV
+                           newPos = self.npoints[ipos]['pos'] + transVec
+                           if dot(newPos,unitVec) <= normTV/2.0 + self.rmax: #rmax gives the border thickness   
+                                self.points[ipoint]['dep'] = '{},{},{}'.format(i,j,k) # this point is dependent by translation
+                                self.points[ipoint]['sponsor'] = ipos #The sponsor may itself be dependent.  
+                                self.points[ipoint]['inCell'] = False                        
+                                self.points[ipoint]['pos'] = newPos
+#                                 self.points[ipoint]['dpos'] = newDirPos
+                                ipoint += 1
+        self.npoints = ipoint
+        self.points = delete(self.points,s_[self.npoints:],0)
+        if len(self.points) != self.npoints: sys.exit('Stop.  Error in numbering points in expanded cell')
+        print 'All points: {}'.format(self.npoints)
+        self.plotPoints(self.points,'pos','expanded')
+        return   
+                    
 
         
+#     def combineNear(self): 
+#         '''Doesn't preserve symmetry, so not using it yet'''
+#         self.cellPoints2 = zeros(self.nCellPoints+self.nops,dtype = [('dep', 'S8'),('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('cell', '3int')])
+# #         combine = []
+#         for jpos in range(self.nCellPoints):
+#             for kpos in range(jpos+1,self.nCellPoints):
+#                 r = norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos']) < self.rmin
+#                 if 0.0 < norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos']) < self.rmin:
+#                     print jpos,kpos
+#                     print 'r', norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos'])
+#                     if kpos in self.labels: self.labels.remove(kpos)
+#                     if kpos in self.indIn: self.indIn.remove(kpos)
+#                     if kpos in self.dep: self.dep.remove(kpos)
+#                     self.cellPoints[jpos]['pos'] = (self.cellPoints[jpos]['pos'] + self.cellPoints[kpos]['pos'])/2.0     
+#         ipos = 0
+#         for label in self.labels:
+#             self.cellPoints2[ipos] = self.cellPoints[label]
+#             ipos += 1
+#         self.nCellPoints = ipos
+#         self.cellPoints[label] = self.cellPoints2[ipos]
+#         print 'Points generated:',self.nCellPoints
+#         return
+                      
+    def subRandSym(self):
+        '''These points are in the VORONOI cell'''
+#         self.labels = [] # list of active points labels
+        self.cellPoints = zeros(self.nTarget+self.nops,dtype = [('dep', 'S8'),
+            ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),
+            ('force', '3float')])
+        self.directPos = zeros((self.nTarget,3))
+        self.subrand = rand(3)
+        afact = sqrt(2)
+        bfact = sqrt(3)
+        cfact = sqrt(5)
+        self.indIn = []
+        self.indOut = []
+        ipos = -1
+        edgeFactor = 10
+        aEdge = self.rmax/norm(self.B[:,0])/edgeFactor; bEdge = self.rmax/norm(self.B[:,1])/edgeFactor; cEdge = self.rmax/norm(self.B[:,2])/edgeFactor        
+        edges = [aEdge,bEdge,cEdge]
+#         while ipos < self.nTarget: #do it once for now.
+        while ipos < 0:
+            itemp = ipos
+            ipos += 1
+            self.subrand = mod(self.subrand + array([afact,bfact,cfact]), array([1,1,1]))
+            dpos = self.subrand
+            pos = dot(self.B,dpos)
+            pos = intoVoronoi(pos,self.B)#now in Voronoi cell
+            print 'ind point', ipos,pos
+            if ipos > 0 and self.tooCloseInit(pos,dpos,ipos,edges):
+                print 'Independent point {} was too close. Trying again'.format(ipos)
+                ipos = itemp
+                continue #back to while
+            self.cellPoints[ipos]['dep'] = 'I' #independent
+            self.cellPoints[ipos]['sponsor'] = ipos                              
+            self.cellPoints[ipos]['pos'] = pos 
+            self.cellPoints[ipos]['dpos'] = dpos #dpos will always be the direct coordinates in the ORIGINAL cell
+#             self.labels.append(ipos)
+            self.indIn.append(ipos)
+            iInd = ipos
+            #now all symmetry operations will keep the point in the BZ 
+            sympoints = [str(pos[0])[:self.strLen]+str(pos[1])[:self.strLen]+str(pos[2])[:self.strLen]]
+            for op in range(self.nops):
+                newpos = dot(self.symops[:,:,op],pos)
+                posStr = str(newpos[0])[:self.strLen]+str(newpos[1])[:self.strLen]+str(newpos[2])[:self.strLen]
+                if posStr not in sympoints:
+                    dposnew = self.directFromCart(self.B,newpos) 
+                    if self.tooCloseInit(newpos,dposnew,ipos,edges):
+                        print 'Dependent point {} was too close. Trying again'.format(ipos)
+                        ipos = itemp
+                        self.indIn.remove(iInd)
+                        break
+                    sympoints.append(posStr)
+                    ipos += 1
+#                     self.labels.append(ipos)
+#                     self.dep.append(ipos)
+                    self.cellPoints[ipos]['dep'] = '{}'.format(str(op))
+                    self.cellPoints[ipos]['sponsor'] = iInd 
+#                     newpos=intoVoronoi(newpos,self.B)                                
+                    self.cellPoints[ipos]['dpos'] = dposnew
+#                     checkpos = intoVoronoi(newpos,self.B)
+#                     if norm(checkpos-newpos)> 1e-6:
+#                         print 'New Voronoi cell pos for',newpos,checkpos                   
+                    self.cellPoints[ipos]['pos'] = newpos  
+#                     print 'ipos',ipos, newpos 
+#                     print '\tdpos',self.cellPoints[ipos]['dpos'] 
+#                 if ipos == itemp: #some point is too close...try another independent point
+#                     break                
+        self.nCellPoints = ipos + 1
+        self.cellPoints = delete(self.cellPoints,s_[self.nCellPoints:],0) #removing unused rows
+        if len(self.cellPoints) != self.nCellPoints: sys.exit('Stop.  Error in numbering cellPoints')
+        self.nIndIn = len(self.indIn) 
+        self.plotPoints(self.cellPoints,'pos','voronoi')
+#         self.plotPoints(self.cellPoints,'dpos')
+        print 'Points in unit cell:',self.nCellPoints   
+        print 'Independent points:',self.nIndIn                         
+        return
+
+    def tooCloseList(self,posList,tol):
+        '''Checks the last pos vs the others'''
+        for partner in posList[:len(posList)-1]:
+            r = norm(posList[-1]-partner)
+            if 1e-6 < r < tol:
+                print 'Too close to another:',r
+                return True, partner
+        return False,[] 
+    
+    def tooCloseInit(self,pos,dpos,ipos,edges):
+        for i in range(3):
+            if abs(dpos[i]-0.5)> 0.5-edges[i]:
+                print 'Too close to cell boundary'
+                return True
+        for testpos in self.cellPoints[:ipos]['pos']:
+            if norm(pos-testpos) < self.ravg/5:
+                print 'Too close to another:',norm(pos-testpos), testpos
+                return True
+        return False
+    
+    def plotPoints(self,pts,field = 'pos',tag = timestamp(),highlight = 0,tets = []):
+        self.plot2dPts(pts,field,tag,'x','y',highlight,tets) 
+        self.plot2dPts(pts,field,tag,'x','z',highlight,tets)  
         
-#         self.nCellPoints = ipoint + 1 - 8         
+    def plot2dPts(self,pts,field,tag,ax0,ax1,highlight,tets):
+        fig = figure()
+        i0 = ('x','y','z').index(ax0)
+        i1 = ('x','y','z').index(ax1)
+        scatter(pts[:][field][:,i0],pts[:][field][:,i1])
+        if highlight > 0:
+            scatter(pts[-highlight:][field][:,i0],pts[-highlight:][field][:,i1],color = 'g')
+        ind0 = []
+        ind1 = []
+        for i in self.indIn:
+            ind0.append(pts[i][field][i0])
+            ind1.append(pts[i][field][i1])            
+        scatter(ind0,ind1,color = 'r') 
+        if len(tets)>0: 
+            pairs = []
+            for itet, tet in enumerate(tets[:]['tet']):
+                pairs.append([pts[tet[0]][field],pts[tet[1]][field]])
+                pairs.append([pts[tet[0]][field],pts[tet[2]][field]])
+                pairs.append([pts[tet[0]][field],pts[tet[3]][field]])
+                pairs.append([pts[tet[1]][field],pts[tet[2]][field]])
+                pairs.append([pts[tet[1]][field],pts[tet[3]][field]])
+                pairs.append([pts[tet[2]][field],pts[tet[3]][field]])
+            for pair in pairs:
+                plot([pair[0][i0],pair[1][i0]],[pair[0][i1],pair[1][i1]],'k-') #draw line for tet edge
+        xlabel('{}'.format(ax0))
+        ylabel('{}'.format(ax1))
+        name = '{}_{}_{}-{}'.format(tag,field,ax0,ax1)
+        title(name)
+        fig.savefig(self.path+'/'+ name+'.pdf');
+        os.system('cp {} {}'.format(self.path+'/'+ name+'.pdf',self.path+ '/latest{}-{}'.format(ax0,ax1)+'.pdf' ))
+        close()
 
     def relax(self):
         '''Conjugate gradient relaxation of the potential energy.
@@ -445,214 +640,3 @@ class meshConstruct():
       #  ! Note:  need to update the positions at each step!  Do we have to get inside
 #         return ener#         
         return ener, grad
-
-    def transPoints(self):
-        '''These points are in the parallelpiped ORIGINAL cell.
-        Make copies of points in 3x3x3 supercell, but keep only those that 
-        are within rc of edges'''
-        self.points = zeros(self.nCellPoints*27,dtype = [('dep', 'S8'),('inCell', 'bool'),('sponsor', 'int8'),('pos', '3float'),
-                                                     ('dpos', '3float'),('force', '3float')])
-        aEdge = self.rmax/norm(self.B[:,0]); bEdge = self.rmax/norm(self.B[:,1]); cEdge = self.rmax/norm(self.B[:,2])
-        ipoint = 0
-        for i in [0,-1,1]:
-            for j in [0,-1,1]:
-                for k in [0,-1,1]:
-                    for ipos in range(self.nCellPoints):
-                        dpos = self.cellPoints[ipos]['dpos'] #dpos will always be the direct coordinates in the original cell
-                        #move to parallepiped cell
-                        pos = dot(self.B,dpos)
-                        self.cellPoints[ipos]['pos']  = pos #was voronoi position before                
-                        newDirPos = dpos + array([i,j,k])
-                        if  (-aEdge < newDirPos[0] < 1 + aEdge) and (-bEdge < newDirPos[1] < 1 + bEdge) and (-cEdge < newDirPos[2] < 1 + cEdge):
-                            newPos = dot(self.B,newDirPos)
-#                             print 'ipoint,ipos',ipoint,ipos, newPos
-#                             print '\tdpos',dpos
-#                             self.points[ipoint]['label'] = ipoint
-#                             self.labels.append(ipoint)
-                            if i == 0 and j == 0 and k == 0: #original cell
-                                self.points[ipoint]['dep'] = self.cellPoints[ipoint]['dep'] 
-                                self.points[ipoint]['sponsor'] = self.cellPoints[ipoint]['sponsor']
-                                self.points[ipoint]['inCell'] = True
-                            else: #then this point is dependent by translation
-                                self.points[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
-                                self.points[ipoint]['sponsor'] = ipos #The sponsor may itself be dependent.  
-                                self.points[ipoint]['inCell'] = False                        
-                            self.points[ipoint]['pos'] = newPos
-                            self.points[ipoint]['dpos'] = newDirPos
-                            ipoint += 1
-        self.npoints = ipoint
-        self.points = delete(self.points,s_[self.npoints:],0)
-        if len(self.points) != self.npoints: sys.exit('Stop.  Error in numbering points in expanded cell')
-        print 'All points: {}'.format(self.npoints)
-        self.plotPoints(self.points,'pos','expanded')
-#         self.plotPoints(self.points,'dpos')
-        return   
-    
-    def initPoints(self):
-        #self.subRandSym()
-        #use B cell vertices as the first 8 points
-        self.points = zeros(8,dtype = [('dep', 'S8'),('inCell', 'bool'),
-            ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
-        for i,mult in enumerate([[0,0,0], [0,0,1],[0,1,0],[1,0,0],[0,1,1],[1,0,1],[1,1,0],[1,1,1]]):
-            dpos = array(mult)
-            self.points[i]['dpos'] = dpos
-            self.points[i]['pos'] = dot(self.B,dpos)
-            self.points[i]['inCell'] = True
-            #will remove these 8 points later, so don't worry about the rest of the info
-                    
-
-        
-#     def combineNear(self): 
-#         '''Doesn't preserve symmetry, so not using it yet'''
-#         self.cellPoints2 = zeros(self.nCellPoints+self.nops,dtype = [('dep', 'S8'),('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('cell', '3int')])
-# #         combine = []
-#         for jpos in range(self.nCellPoints):
-#             for kpos in range(jpos+1,self.nCellPoints):
-#                 r = norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos']) < self.rmin
-#                 if 0.0 < norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos']) < self.rmin:
-#                     print jpos,kpos
-#                     print 'r', norm(self.cellPoints[jpos]['pos'] - self.cellPoints[kpos]['pos'])
-#                     if kpos in self.labels: self.labels.remove(kpos)
-#                     if kpos in self.indIn: self.indIn.remove(kpos)
-#                     if kpos in self.dep: self.dep.remove(kpos)
-#                     self.cellPoints[jpos]['pos'] = (self.cellPoints[jpos]['pos'] + self.cellPoints[kpos]['pos'])/2.0     
-#         ipos = 0
-#         for label in self.labels:
-#             self.cellPoints2[ipos] = self.cellPoints[label]
-#             ipos += 1
-#         self.nCellPoints = ipos
-#         self.cellPoints[label] = self.cellPoints2[ipos]
-#         print 'Points generated:',self.nCellPoints
-#         return
-                      
-    def subRandSym(self):
-        '''These points are in the VORONOI cell'''
-#         self.labels = [] # list of active points labels
-        self.cellPoints = zeros(self.nTarget+self.nops,dtype = [('dep', 'S8'),
-            ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),
-            ('force', '3float')])
-        self.directPos = zeros((self.nTarget,3))
-        self.subrand = rand(3)
-        afact = sqrt(2)
-        bfact = sqrt(3)
-        cfact = sqrt(5)
-        self.indIn = []
-        self.indOut = []
-        ipos = -1
-        edgeFactor = 10
-        aEdge = self.rmax/norm(self.B[:,0])/edgeFactor; bEdge = self.rmax/norm(self.B[:,1])/edgeFactor; cEdge = self.rmax/norm(self.B[:,2])/edgeFactor        
-        edges = [aEdge,bEdge,cEdge]
-#         while ipos < self.nTarget: #do it once for now.
-        while ipos < 0:
-            itemp = ipos
-            ipos += 1
-            self.subrand = mod(self.subrand + array([afact,bfact,cfact]), array([1,1,1]))
-            dpos = self.subrand
-            pos = dot(self.B,dpos)
-            pos = intoVoronoi(pos,self.B)#now in Voronoi cell
-            print 'ind point', ipos,pos
-            if ipos > 0 and self.tooCloseInit(pos,dpos,ipos,edges):
-                print 'Independent point {} was too close. Trying again'.format(ipos)
-                ipos = itemp
-                continue #back to while
-            self.cellPoints[ipos]['dep'] = 'I' #independent
-            self.cellPoints[ipos]['sponsor'] = ipos                              
-            self.cellPoints[ipos]['pos'] = pos 
-            self.cellPoints[ipos]['dpos'] = dpos #dpos will always be the direct coordinates in the ORIGINAL cell
-#             self.labels.append(ipos)
-            self.indIn.append(ipos)
-            iInd = ipos
-            #now all symmetry operations will keep the point in the BZ 
-            sympoints = [str(pos[0])[:self.strLen]+str(pos[1])[:self.strLen]+str(pos[2])[:self.strLen]]
-            for op in range(self.nops):
-                newpos = dot(self.symops[:,:,op],pos)
-                posStr = str(newpos[0])[:self.strLen]+str(newpos[1])[:self.strLen]+str(newpos[2])[:self.strLen]
-                if posStr not in sympoints:
-                    dposnew = self.directFromCart(self.B,intoCell(newpos,self.B)) 
-                    if self.tooCloseInit(newpos,dposnew,ipos,edges):
-                        print 'Dependent point {} was too close. Trying again'.format(ipos)
-                        ipos = itemp
-                        self.indIn.remove(iInd)
-                        break
-                    sympoints.append(posStr)
-                    ipos += 1
-#                     self.labels.append(ipos)
-#                     self.dep.append(ipos)
-                    self.cellPoints[ipos]['dep'] = '{}'.format(str(op))
-                    self.cellPoints[ipos]['sponsor'] = iInd 
-#                     newpos=intoVoronoi(newpos,self.B)                                
-                    self.cellPoints[ipos]['dpos'] = dposnew
-#                     checkpos = intoVoronoi(newpos,self.B)
-#                     if norm(checkpos-newpos)> 1e-6:
-#                         print 'New Voronoi cell pos for',newpos,checkpos                   
-                    self.cellPoints[ipos]['pos'] = newpos  
-#                     print 'ipos',ipos, newpos 
-#                     print '\tdpos',self.cellPoints[ipos]['dpos'] 
-#                 if ipos == itemp: #some point is too close...try another independent point
-#                     break                
-        self.nCellPoints = ipos + 1
-        self.cellPoints = delete(self.cellPoints,s_[self.nCellPoints:],0) #removing unused rows
-        if len(self.cellPoints) != self.nCellPoints: sys.exit('Stop.  Error in numbering cellPoints')
-        self.nIndIn = len(self.indIn) 
-        self.plotPoints(self.cellPoints,'pos','voronoi')
-#         self.plotPoints(self.cellPoints,'dpos')
-        print 'Points in unit cell:',self.nCellPoints   
-        print 'Independent points:',self.nIndIn                         
-        return
-
-    def tooCloseList(self,posList,tol):
-        '''Checks the last pos vs the others'''
-        for partner in posList[:len(posList)-1]:
-            r = norm(posList[-1]-partner)
-            if 1e-6 < r < tol:
-                print 'Too close to another:',r
-                return True, partner
-        return False,[] 
-    
-    def tooCloseInit(self,pos,dpos,ipos,edges):
-        for i in range(3):
-            if abs(dpos[i]-0.5)> 0.5-edges[i]:
-                print 'Too close to cell boundary'
-                return True
-        for testpos in self.cellPoints[:ipos]['pos']:
-            if norm(pos-testpos) < self.ravg/5:
-                print 'Too close to another:',norm(pos-testpos), testpos
-                return True
-        return False
-    
-    def plotPoints(self,pts,field = 'pos',tag = timestamp(),highlight = 0,tets = []):
-        self.plot2dPts(pts,field,tag,'x','y',highlight,tets) 
-        self.plot2dPts(pts,field,tag,'x','z',highlight,tets)  
-        
-    def plot2dPts(self,pts,field,tag,ax0,ax1,highlight,tets):
-        fig = figure()
-        i0 = ('x','y','z').index(ax0)
-        i1 = ('x','y','z').index(ax1)
-        scatter(pts[:][field][:,i0],pts[:][field][:,i1])
-        if highlight > 0:
-            scatter(pts[-highlight:][field][:,i0],pts[-highlight:][field][:,i1],color = 'g')
-        ind0 = []
-        ind1 = []
-        for i in self.indIn:
-            ind0.append(pts[i][field][i0])
-            ind1.append(pts[i][field][i1])            
-        scatter(ind0,ind1,color = 'r') 
-        if len(tets)>0: 
-            pairs = []
-            for itet, tet in enumerate(tets[:]['tet']):
-                pairs.append([pts[tet[0]][field],pts[tet[1]][field]])
-                pairs.append([pts[tet[0]][field],pts[tet[2]][field]])
-                pairs.append([pts[tet[0]][field],pts[tet[3]][field]])
-                pairs.append([pts[tet[1]][field],pts[tet[2]][field]])
-                pairs.append([pts[tet[1]][field],pts[tet[3]][field]])
-                pairs.append([pts[tet[2]][field],pts[tet[3]][field]])
-            for pair in pairs:
-                plot([pair[0][i0],pair[1][i0]],[pair[0][i1],pair[1][i1]],'k-') #draw line for tet edge
-        xlabel('{}'.format(ax0))
-        ylabel('{}'.format(ax1))
-        name = '{}_{}_{}-{}'.format(tag,field,ax0,ax1)
-        title(name)
-        fig.savefig(self.path+'/'+ name+'.pdf');
-        os.system('cp {} {}'.format(self.path+'/'+ name+'.pdf',self.path+ '/latest{}-{}'.format(ax0,ax1)+'.pdf' ))
-        close()
-

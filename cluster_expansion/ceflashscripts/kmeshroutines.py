@@ -964,6 +964,10 @@ def poscar2super(path1,path2,M):
 #    print 'Inverse of S';print inv(S)
     create_poscar('POSCAR',descriptor+' Superlattice ', scale, S, detM*natoms, postype, pos2, path2)      
       
+def isInVoronoi(position, cell,to):
+    newpos = intoVoronoi(position, cell)
+    return norm(newpos - position) < tol
+
 def intoVoronoi(position, cell, inverse=None):
     """ From pylada_light: 
     Folds vector into first Brillouin zone of the input cell
