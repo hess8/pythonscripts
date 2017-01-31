@@ -1,0 +1,8 @@
+module purge
+module load compiler_intel/13.0.1
+module load mpi/openmpi_1.6.3_intel-13.0.1
+export F90=ifort
+export DEBUG=true
+export UNCLE_MKL=true
+make clean
+make

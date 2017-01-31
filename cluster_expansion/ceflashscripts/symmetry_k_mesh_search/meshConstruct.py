@@ -23,7 +23,7 @@ a distance rForce.  Use a power law: Fi = k*Sum(r_vec_i,j/ rij^p
 8.  Move the ind. points in a vector proportional to the force
 9.  Copy all the ind. points by trans and pt symmetry again. 
 10. repeat from 7 until the force on each point is less than minForce
-11. Copy all the ind. points by trans and pt symmetry again. 
+11. Copy all the ind. points by trans and pt symmetry again. r
 ________
 Fine tetrahedral mesh
 ________
@@ -44,7 +44,7 @@ from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate)
 # from scipy.optimize import fmin_cg
-from scipy.spatial import Delaunay as delaunay
+from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi
 from numpy.linalg import inv, norm, det
 from numpy.random import rand
 from copy import copy,deepcopy
@@ -80,7 +80,9 @@ class meshConstruct():
 
     def __init__(self):
         self.strLen = 5
-         
+        self.indIn = []
+        self.indOut = []
+                 
     def relaxMeshSym(self,B,targetNmesh,path):
         #1. nCoarse random points in the cell parallelpiped.  
 #         nCoarseMax = 200
@@ -93,7 +95,7 @@ class meshConstruct():
         print 'Symmetry operations:', self.nops
         vol = abs(det(B))
         self.ravg = (vol/targetNmesh)**(1/3.0)
-        self.edgeFactor = 1.5
+        self.edgeFactor = 3.0
         self.rmin = 0.8*self.ravg #
         self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
         print 'Typical spacing:', self.ravg
@@ -156,7 +158,7 @@ class meshConstruct():
         self.sympoints = [str(pos[0])[:self.strLen]+str(pos[1])[:self.strLen]+str(pos[2])[:self.strLen]]
         return pos,inCell 
 
-    def addPntsSym(self,pos,isponsor,ipoint,inCell):
+    def addPntsSym(self,pos,isponsor,ipoint,type = None):
         '''Add points by point-symmetry.  Check that each is far enough away 
         from previous ones.  If too close, choose the point midway, make this the
         the independent point, and run through all the sym operators again.
@@ -164,7 +166,6 @@ class meshConstruct():
         If the sponsor point is in the cell, we will move symmetry partners into cell.
         If not, we will not map them.  
         '''
-
         newPoints = zeros(self.nops -1,dtype = [('dep', 'S8'),('inCell', 'bool'),
                 ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
         doneSym = False
@@ -173,10 +174,11 @@ class meshConstruct():
             posList = [pos]
             ipos = 0
             for op in range(self.nops): 
-                if inCell:
-                    newpos = dot(self.symops[:,:,op],pos),self.B
-                else: 
-                    newpos = dot(self.symops[:,:,op],pos)
+                newpos = dot(self.symops[:,:,op],pos) #using voronoi cell. Sym ops don't take them out of cell. 
+#                 if type == 'init':
+#                     newpos = intoCell(dot(self.symops[:,:,op],pos),self.B)
+#                 else: 
+#                     newpos = dot(self.symops[:,:,op],pos)
                 posList.append(newpos)
                 [tooClose,closePos] = self.tooCloseList(posList,self.ravg/3.0)
                 if not tooClose:
@@ -184,14 +186,17 @@ class meshConstruct():
                     if posStr not in self.sympoints:
                         self.sympoints.append(posStr)
                         newPoints[ipos]['pos'] = newpos
-                        dposnew = self.directFromCart(self.B,newpos)
+                        dposnew = self.directFromCart(self.B,newpos)    
                         newPoints[ipos]['dpos'] = dposnew
                         newPoints[ipos]['dep'] = op
                         newPoints[ipos]['sponsor'] = isponsor
-                        newPoints[ipos]['inCell'] = True   
+                        df = dposnew.flatten()
+                        inCell = (min(df) >= 0 and max(df) < 1 )
+                        newPoints[ipos]['inCell'] = inCell
                         ipos += 1                          
                 else:
                     #combine points, write over the last independent point, and start over on ops
+                    print 'combine',newpos , closePos
                     pos = (newpos + closePos)/2.0
 #                     if ipoint -1 in self.indIn: 
 #                         self.indIn.remove(ipoint-1)
@@ -202,19 +207,11 @@ class meshConstruct():
                     self.points[ipoint-1]['dpos'] = dpos
                     self.points[ipoint-1]['inCell'] = inCell
                     self.sympoints = [str(pos[0])[:self.strLen]+str(pos[1])[:self.strLen]+str(pos[2])[:self.strLen]]
-
+                    break                    
                     #keep dep the same: tet it came from...but this means that point may not be inside tet.
-#                     if min(dpos.flatten()) >= 0 and max(dpos.flatten()) < 1.0:
-#                         newPoints[0]['inCell'] = True
-#                         inCell = True
-#                         self.nCellPoints += 1
-#                         self.indIn.append(ipoint)
-#                     else:
-#                         newPoints[0]['inCell'] = False
-#                         inCell = False
-#                         self.indOut.append(ipoint)
-#                     break                    
-                doneSym = True
+            doneSym = True
+            for i in range(ipos):
+                if newPoints[i]['inCell']: self.nCellPoints += 1                     
         self.points = concatenate((self.points,newPoints[:ipos]),axis = 0)
         return ipos
             
@@ -267,31 +264,30 @@ class meshConstruct():
                 self.plotPoints(self.points,'pos',str(ipoint+1))   
 
     def initTets(self):
-        '''Add points to the largest tets then replicate them symmetrically, then resort tets by volume
+        '''Add points to the largest tets then replicate them symmetrically, 
+        then resort tets by volume
         If any points are too close upon the symmetry operations, we combine them.  
         '''
         self.delauPoints()
-        ipoint = 8 #have the 8 vertices of the cell to start with
-        self.nCellPoints = 0
-        self.indIn = []
-        self.indOut = []
+        ipoint = self.npoints
+        self.nCellPoints = 0 #don't count the VC vertices as points
         if self.nops > 1:
             while (ipoint < 8+8): #add nops points at a time1:
                 tet = self.tets[0]['tet'] #largest volume tet
                 [pos0,inCell] = self.addPntTet(0,ipoint)
                 ipoint += 1
                 isponsor = ipoint
-                nNew = intoCell(self.addPntsSym(pos0,isponsor,ipoint,inCell)) #We are working in original parallelpiped
+                nNew = self.addPntsSym(pos0,isponsor,ipoint,'init') #We are working in original parallelpiped
                 ipoint += nNew   
-#                 print'plotting {} points'.format(ipoint+1)
-#                 self.plotPoints(self.points,'pos',str(ipoint+1),self.tets[0:1])
+#                 print'plotting {} points'.format(ipoint)
+#                 self.plotPoints(self.points,'pos',str(ipoint),self.tets[0:1])
                 #resort according to volume (new tets are now old), and then check if we need more points: 
                 self.delauPoints() #find all tets and sort    
         else: # no symmetries
             while (ipoint < 8+8):
                 itet = 0
-                firstVol = self.tet[0]['vol'] 
-                while self.tet[itet]['vol'] > firstVol/4.0:
+                firstVol = self.tets[0]['vol'] 
+                while self.tets[itet]['vol'] > firstVol/4.0:
                     self.addPntTet(itet, ipoint)
                     ipoint += 1
                 self.delauPoints() #find all tets and sort    
@@ -305,21 +301,48 @@ class meshConstruct():
         self.npoints = self.nCellPoints
         self.nIndIn = len(self.indIn)
         print'plotting {} points'.format(self.nCellPoints)
-        self.plotPoints(self.points,'pos',str(self.nCellPoints))
-#         self.nCellPoints = ipoint + 1 - 8         
+        self.plotPoints(self.points,'pos',str(self.nCellPoints),0,self.tets[:])
+#         self.nCellPoints = ipoint + 1 - 8
+        return       
 
     def initPoints(self):
         #self.subRandSym()
-        #use B cell vertices as the first 8 points
-        self.points = zeros(8,dtype = [('dep', 'S8'),('inCell', 'bool'),
+#         #use B cell vertices as the first 8 points
+#         self.points = zeros(8,dtype = [('dep', 'S8'),('inCell', 'bool'),
+#             ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
+#         delta = 1e-6
+#         a = 1-delta
+#         z = 0+delta
+#         for i,mult in enumerate([[z,z,z], [z,z,a],[z,a,z],[a,z,z],[z,a,a],[a,z,a],[a,a,z],[a,a,a]]):
+#             dpos = array(mult)
+#             self.points[i]['dpos'] = dpos
+#             self.points[i]['pos'] = dot(self.B,dpos)
+#             self.points[i]['inCell'] = True
+#             #will remove these 8 points later, so don't worry about the rest of the info
+        
+        #make a voronoi cell at the origin.  Use its vertices as the initial points
+        Lvecs = []
+        for i in [0,-1,1]:
+            for j in [0,-1,1]:
+                for k in [0,-1,1]:
+                    Lvecs.append(dot(self.B,array([i,j,k])))
+        vorPoints = sci_voronoi(array(Lvecs)).vertices
+        nvp = len(vorPoints)
+        print 'number of vornoi vertices', nvp    
+        self.points = zeros(nvp+1,dtype = [('dep', 'S8'),('inCell', 'bool'),
             ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
-        for i,mult in enumerate([[0,0,0], [0,0,1],[0,1,0],[1,0,0],[0,1,1],[1,0,1],[1,1,0],[1,1,1]]):
-            dpos = array(mult)
-            self.points[i]['dpos'] = dpos
-            self.points[i]['pos'] = dot(self.B,dpos)
+        
+        self.points[0]['pos'] = array([0.0,0.0,0.0])
+        ipos = 1
+        for i in range(nvp):
+            self.points[i]['pos'] = vorPoints[i]
             self.points[i]['inCell'] = True
-            #will remove these 8 points later, so don't worry about the rest of the info
+            ipos += 1
+        self.npoints = len(self.points)
+        print'plotting {} points'.format(self.npoints)
+        self.plotPoints(self.points,'pos',str(self.npoints))
 
+        return
 
     def addBorders(self):
         '''Add bordering points by translation symmetry to the Voronoi cell,
@@ -339,18 +362,21 @@ class meshConstruct():
                            transVec = dot(self.B,array([i,j,k]))
                            normTV = norm(transVec)
                            unitVec = transVec/normTV
-                           newPos = self.npoints[ipos]['pos'] + transVec
+                           newPos = self.points[ipos]['pos'] + transVec
                            if dot(newPos,unitVec) <= normTV/2.0 + self.rmax: #rmax gives the border thickness   
-                                self.points[ipoint]['dep'] = '{},{},{}'.format(i,j,k) # this point is dependent by translation
-                                self.points[ipoint]['sponsor'] = ipos #The sponsor may itself be dependent.  
-                                self.points[ipoint]['inCell'] = False                        
-                                self.points[ipoint]['pos'] = newPos
-#                                 self.points[ipoint]['dpos'] = newDirPos
-                                ipoint += 1
+                               newPoint = zeros(1,dtype = [('dep', 'S8'),('inCell', 'bool'),
+                                    ('sponsor', 'int8'),('pos', '3float'),('dpos', '3float'),('force', '3float')])
+                               newPoint['dep'] = '{},{},{}'.format(i,j,k) # this point is dependent by translation
+                               newPoint['sponsor'] = ipos #The sponsor may itself be dependent.  
+                               newPoint['inCell'] = False                        
+                               newPoint['pos'] = newPos
+#                                self.points[ipoint]['dpos'] = newDirPos
+                               self.points = concatenate((self.points,newPoint),axis = 0)
+                               ipoint += 1
         self.npoints = ipoint
         self.points = delete(self.points,s_[self.npoints:],0)
         if len(self.points) != self.npoints: sys.exit('Stop.  Error in numbering points in expanded cell')
-        print 'All points: {}'.format(self.npoints)
+        print 'Init points plus border: {}'.format(self.npoints)
         self.plotPoints(self.points,'pos','expanded')
         return   
                     
@@ -501,7 +527,7 @@ class meshConstruct():
                 pairs.append([pts[tet[1]][field],pts[tet[3]][field]])
                 pairs.append([pts[tet[2]][field],pts[tet[3]][field]])
             for pair in pairs:
-                plot([pair[0][i0],pair[1][i0]],[pair[0][i1],pair[1][i1]],'k-') #draw line for tet edge
+                plot([pair[0][i0],pair[1][i0]],[pair[0][i1],pair[1][i1]]) #draw line for tet edge
         xlabel('{}'.format(ax0))
         ylabel('{}'.format(ax1))
         name = '{}_{}_{}-{}'.format(tag,field,ax0,ax1)
