@@ -502,7 +502,7 @@ class meshConstruct():
     
     def plotPoints(self,pts,field = 'pos',tag = timestamp(),highlight = 0,tets = []):
         self.plot2dPts(pts,field,tag,'x','y',highlight,tets) 
-        self.plot2dPts(pts,field,tag,'x','z',highlight,tets)  
+        self.plot2dPts(pts,field,tag,'x','z',highlight,tets)
         
     def plot2dPts(self,pts,field,tag,ax0,ax1,highlight,tets):
         fig = figure()
