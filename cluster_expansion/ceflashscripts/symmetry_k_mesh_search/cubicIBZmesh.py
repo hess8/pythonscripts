@@ -16,11 +16,11 @@ from matplotlib.pyplot import (subplots,savefig,imshow,close,plot,title,xlabel,
 import matplotlib.image as mpimg
 import datetime
 from _ast import operator
-# sys.path.append('/bluehome2/bch/pythonscripts/hesslib/')
-# sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/')
-# sys.path.append('/fslhome/bch/graphener/graphener')
-os.listdir('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/')
-sys.path.append('/home/hessb/research/pythonscriptsRep/pythonscripts/cluster_expansion/ceflashscripts/')
+sys.path.append('/bluehome2/bch/pythonscripts/hesslib/')
+sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/')
+sys.path.append('/fslhome/bch/graphener/graphener')
+# os.listdir('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/')
+# sys.path.append('/home/hessb/research/pythonscriptsRep/pythonscripts/cluster_expansion/ceflashscripts/')
 
 
 # from conjGradMin.optimize import fmin_cg
@@ -77,7 +77,9 @@ def plothist(vols):
 def volTet2(vertPoints): 
         return abs(dot((vertPoints[0]-vertPoints[3]),cross((vertPoints[1]-vertPoints[3]),(vertPoints[2]-vertPoints[3])))/6.0)
  
-mainDir = '/home/hessb/Downloads/temp'
+# mainDir = '/home/hessb/Downloads/temp'
+mainDir = '/fslhome/bch/trash'
+
 os.chdir(mainDir)
 
 mesh_info = MeshInfo()
@@ -105,7 +107,7 @@ mesh_info.set_facets([
     [6,2,3,7],
     [6,7,4,5]])
 
-opts = Options("VO9pa0.0004") # Overriding 'pq' with no options or flags
+opts = Options("VO9pa0.04") # Overriding 'pq'  
 
 mesh = build(mesh_info,options=opts)
 # mesh = build(mesh_info,max_volume = 0.1)

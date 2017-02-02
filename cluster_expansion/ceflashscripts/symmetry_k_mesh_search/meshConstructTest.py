@@ -4,14 +4,15 @@
 import sys,os,subprocess
 from numpy import zeros,transpose,array,sum,float64,rint
 from numpy.linalg import norm
+sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 #import kmeshroutines as km
 from kmeshroutines import nstrip, readposcar,create_poscar
 #from bestmeshIterJan22 import bestmeshIter
-from bestmeshIter import bestmeshIter
-from bestmeshIter_vary_pf import bestmeshIter_vary_pf
-from bestmeshIter_vary_N import bestmeshIter_vary_N
+# from bestmeshIter import bestmeshIter
+# from bestmeshIter_vary_pf import bestmeshIter_vary_pf
+# from bestmeshIter_vary_N import bestmeshIter_vary_N
 fprec=float64
-import meshConstruct
+import meshConstruct3
 
 ################# script #######################
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test101x/'
@@ -36,7 +37,7 @@ maindir = '/fslhome/bch/cluster_expansion/meshConstruct/AlAl'
 #maindir = '/fslhome/bch/cluster_expansion/sisi/test10^3/'
 #maindir = '/fslhome/bch/cluster_expansion/sisi/test10^4/'
 
-meshc = meshConstruct.meshConstruct() #instance
+meshc = meshConstruct3.meshConstruct() #instance
 
 testfile = 'POSCAR'
 # Nkppra = 10000#*10  

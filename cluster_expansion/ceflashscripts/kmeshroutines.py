@@ -12,8 +12,8 @@ from random import random, randrange
 from ctypes import byref, cdll, c_double, c_int
 from copy import copy, deepcopy
 
-# utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
-utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
+utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
+# utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
 getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
 
@@ -684,8 +684,8 @@ def mink_reduce(a,eps):
        A Minkowski-reduced (via a "greedy algorithm basis) """
 #        utilslib =  cdll.LoadLibrary('/Users/hart/codes/celib/trunk/libutils.so')
 #    utilslib =  cdll.LoadLibrary('/fslhome/bch/cluster_expansion/theuncle/celib/trunk/libutils.so')
-#     utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
-    utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
+    utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
+#     utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
 
     ared =((c_double * 3) *3)()
 #    mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_ 
