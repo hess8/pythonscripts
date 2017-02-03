@@ -98,8 +98,13 @@ def threePlaneIntersect(rRows):
         invOK = True
     except:
         invOK = False
+        return None
     if invOK:
-        return trimSmall(dot(invrRows,rSq))  
+        point = trimSmall(dot(invrRows,rSq))  
+        if norm(point) < 100:
+            return point
+        else:
+            return None
     
 class meshConstruct(): 
     '''Makes superperiodic structures and cuts'''
@@ -128,21 +133,42 @@ class meshConstruct():
         return 0,len(arr)       
         
     def checkInside(self,grp):
-        eps = 1e-6
         newPlanes = False
         newboundaries = self.boundaries
         for ig  in range(len(grp)):
             gvec = self.braggVecs[grp[ig]]['vec']
-            inside = zeros(len(self.boundaries),dtype = bool)
-            for iplane in range(len(self.boundaries)):
-                pvec = self.braggVecs[iplane]['vec']
-                if dot(gvec,pvec) < dot(pvec,pvec)- eps: #point is inside this plane
-                    inside[iplane] = True
-            if all(inside): 
+            if self.isInside(gvec):
                 newboundaries.append(grp[ig])
                 newPlanes = True         
         self.boundaries = newboundaries
         return newPlanes
+    
+    def isInside(self,vec):
+        eps = 1e-6
+        inside = zeros(len(self.boundaries),dtype = bool)
+        for iplane in range(len(self.boundaries)):
+            pvec = self.braggVecs[iplane]['vec']
+            if dot(vec,pvec) < dot(pvec,pvec)- eps: #point is inside this plane
+                inside[iplane] = True
+        return all(inside)
+
+    def isOutside(self,vec):
+        eps = 1e-6
+        print 'intersection',vec
+#         outside = zeros(len(self.boundaries),dtype = bool)
+        for iplane in range(len(self.boundaries)):
+            pvec = self.braggVecs[iplane]['vec']            
+            if dot(vec,pvec) - dot(pvec,pvec) > eps: #point is outside this plane
+                print '\tboundary', iplane, pvec, self.braggVecs[iplane]['mag']
+                print '\tboundary component', dot(vec,pvec), dot(pvec,pvec)
+                print
+
+                return True
+            else:
+                print 'On boundary check',dot(vec,pvec) - dot(pvec,pvec)
+        print
+        return False
+           
         
     def test1(self):
 #         r0 = array([1,0,0])
@@ -156,12 +182,28 @@ class meshConstruct():
         checkNext = True
         gstart,ng = self.magGroup(self.braggVecs,1) # group of smallest bragg plane vectors
         self.boundaries = range(0,ng)
+        print 'Smallest bragg vectors  boundaries', self.boundaries
         while checkNext:
             igroup += 1
             gstart,ng = self.magGroup(self.braggVecs,igroup)
             nextGroup = range(gstart,gstart+ng)
             checkNext = self.checkInside(nextGroup)
-            print 'new boundaries', self.boundaries
+        print 'new boundaries', self.boundaries
+        self.getInterscPoints()
+        for i in self.boundaries:
+            print i, self.braggVecs[i]['mag'], self.braggVecs[i]['vec']
+        print 'intersections'
+        for i in range(self.nIntersc):
+            print i, self.interscPoints[i]['mag'], self.interscPoints[i]['vec']
+        self.getFacetsPoints()
+        print 'facet points'
+        for i in range(len(self.facetsPoints)):
+            print i, self.facetsPoints[i]['mag'], self.facetsPoints[i]['vec']
+    
+        #Each plane forms a quadrilateral or hexagonal facet in its interection with other planes
+#        Find vertices from intersection of three planes
+        
+        
             
 #             startSmall, nSmall = self.magGroup(self.braggVecs,igroup) #smallest group
 #             smallBraggs = range(nSmall)
@@ -178,23 +220,27 @@ class meshConstruct():
 #             for bvec in self.braggVecs[:nNearest]['vec']:
 #                 if  < 
 #             
-#         self.getInterscPoints()
-            
+#         self.getInterscPoints()        
         
-            
-    
-            
-            
-        
+    def getFacetsPoints(self):
+        OKpoints = []
+        for i in range(len(self.interscPoints)):
+            print i,
+            if not self.isOutside(self.interscPoints[i]['vec']):
+                OKpoints.append(i)
+        self.facetsPoints = zeros(len(OKpoints),dtype = [('vec', '3float'),('mag', 'float')])
+        for iOK,ipoint in enumerate(OKpoints):
+            vec = self.braggVecs[ipoint]['vec']
+            self.facetsPoints[iOK]['vec'] = vec
+            self.facetsPoints[ipoint]['mag'] = norm(vec)
+        self.facetsPoints.sort(order = 'mag')    
 
     def getInterscPoints(self):
-        self.getBraggVecs()
-        combs = list(combinations(range(26),3))
+        combs = list(combinations(range(len(self.boundaries)),3))
         unique = []
         uniqStrs = []
-
         for c in combs:
-            points = 0.5*array([self.braggVecs[c[0]]['vec'],
+            points = array([self.braggVecs[c[0]]['vec'],
                             self.braggVecs[c[1]]['vec'],self.braggVecs[c[2]]['vec']])
             interscP = threePlaneIntersect(points)
             if not interscP is None:
@@ -209,9 +255,7 @@ class meshConstruct():
             self.interscPoints[ipoint]['vec'] = vec
             self.interscPoints[ipoint]['mag'] = norm(vec)
 #             print vec
-        self.interscPoints.sort(order = 'mag')
-        for i in range(self.nIntersc):
-            print self.interscPoints[i]['mag'], self.interscPoints[i]['vec']        
+        self.interscPoints.sort(order = 'mag')    
         
                  
     def getBraggVecs(self):
@@ -223,7 +267,7 @@ class meshConstruct():
             for j in range(-2,3):
                 for k in range(-2,3):
                     if not (i==0 and j==0 and k==0):
-                        vec = dot(self.B,array([i,j,k]))
+                        vec = trimSmall(0.5*dot(self.B,array([i,j,k])))
                         self.braggVecs[ipoint]['vec'] = vec
                         self.braggVecs[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
                         self.braggVecs[ipoint]['mag'] = norm(vec)
