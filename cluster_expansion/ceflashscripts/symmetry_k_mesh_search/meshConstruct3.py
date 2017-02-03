@@ -127,33 +127,52 @@ class meshConstruct():
                     return newMags[ngroups-2],newMags[ngroups-1]-newMags[ngroups-2]
         return 0,len(arr)       
         
+    def checkInside(self,grp):
+        eps = 1e-6
+        newPlanes = False
+        newboundaries = self.boundaries
+        for ig  in range(len(grp)):
+            gvec = self.braggVecs[grp[ig]]['vec']
+            inside = zeros(len(self.boundaries),dtype = bool)
+            for iplane in range(len(self.boundaries)):
+                pvec = self.braggVecs[iplane]['vec']
+                if dot(gvec,pvec) < dot(pvec,pvec)- eps: #point is inside this plane
+                    inside[iplane] = True
+            if all(inside): 
+                newboundaries.append(grp[ig])
+                newPlanes = True         
+        self.boundaries = newboundaries
+        return newPlanes
+        
     def test1(self):
 #         r0 = array([1,0,0])
 #         r1 = array([0,1,0])
 #         r2 = array([0,2,1])
 #         print '3pi'
 #         print threePlaneIntersect([r0,r1,r2])
-        eps = 1e-6
+        
         self.getBraggVecs()
-        startSmall, nSmall = self.magGroup(self.braggVecs,1) #smallest group
-        smallBraggs = range(nSmall)
-        print 'smallBraggs',nSmall, smallBraggs
-        #find any bragg vectors inside the volume bounded by the 
-        #bragg planes closest to the origin.
-        boundaries = range(nSmall)
-        for ib  in range(nSmall,len(self.braggVecs)):
-#             if ib == 7:
-#                 ''
-            bvec = self.braggVecs[ib]['vec']
-            inside = zeros(nSmall,dtype = bool)
-            for js in range(nSmall):
-                svec = self.braggVecs[js]['vec']
-                if dot(bvec,svec) < dot(svec,svec)- eps: #point is inside this plane
-                    inside[js] = True
-            if all(inside):
-                boundaries.append(ib)
-        print len(boundaries),'boundaries',boundaries
-                    
+        igroup = 1
+        checkNext = True
+        gstart,ng = self.magGroup(self.braggVecs,1) # group of smallest bragg plane vectors
+        self.boundaries = range(0,ng)
+        while checkNext:
+            igroup += 1
+            gstart,ng = self.magGroup(self.braggVecs,igroup)
+            nextGroup = range(gstart,gstart+ng)
+            checkNext = self.checkInside(nextGroup)
+            print 'new boundaries', self.boundaries
+            
+#             startSmall, nSmall = self.magGroup(self.braggVecs,igroup) #smallest group
+#             smallBraggs = range(nSmall)
+#             print 'smallBraggs',nSmall, smallBraggs
+#             #find any bragg vectors inside the volume bounded by the 
+#             #bragg planes closest to the origin.
+#             boundaries = range(nSmall)
+# 
+#                     boundaries.append(ib)
+#         print len(boundaries),'boundaries',boundaries
+#                     
         
 #         for ivec in self.interscPoints[nNearest:]['vec']:
 #             for bvec in self.braggVecs[:nNearest]['vec']:
