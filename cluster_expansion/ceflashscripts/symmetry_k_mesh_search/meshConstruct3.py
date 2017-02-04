@@ -54,7 +54,7 @@ All matrices store vectors as COULUMNS
 # '''
 import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
-                   average,std,amax,amin,int32,sort,count_nonzero,
+                   average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi
@@ -62,12 +62,13 @@ from numpy.linalg import inv, norm, det
 from numpy.random import rand
 from copy import copy,deepcopy
 from sched import scheduler
-from itertools import chain, combinations
+from itertools import chain, combinations, permutations
 from matplotlib.pyplot import (subplots,savefig,imshow,close,plot,title,xlabel,
                                ylabel,figure,show,scatter,triplot)
 import matplotlib.image as mpimg
 import datetime
 from _ast import operator
+from pip._vendor.html5lib.constants import rcdataElements
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 sys.path.append('/fslhome/bch/graphener/graphener')
 
@@ -121,11 +122,11 @@ class meshConstruct():
     def magGroup(self,arr, igroup):
         '''returns the ith group, numbered from 1, (starting index and length of group) of vectors in a structured array, 
         which must be sorted by magnitude (in either direction), in field 'mag' '''
-        eps = 1e-6
+
         newMags = [0] # shows indices of new group starts
         ngroups = 1
         for i in range(1,len(arr)):
-            if abs(arr[i]['mag']-arr[i-1]['mag']) > eps:
+            if abs(arr[i]['mag']-arr[i-1]['mag']) > self.eps:
                 newMags.append(i)
                 ngroups += 1
                 if ngroups > igroup:
@@ -144,39 +145,34 @@ class meshConstruct():
         return newPlanes
     
     def isInside(self,vec):
-        eps = 1e-6
         inside = zeros(len(self.boundaries),dtype = bool)
         for iplane in range(len(self.boundaries)):
             pvec = self.braggVecs[iplane]['vec']
-            if dot(vec,pvec) < dot(pvec,pvec)- eps: #point is inside this plane
+            if dot(vec,pvec) < dot(pvec,pvec)- self.eps: #point is inside this plane
                 inside[iplane] = True
         return all(inside)
 
     def isOutside(self,vec):
-        eps = 1e-6
         print 'intersection',vec
 #         outside = zeros(len(self.boundaries),dtype = bool)
         for iplane in range(len(self.boundaries)):
             pvec = self.braggVecs[iplane]['vec']            
-            if dot(vec,pvec) - dot(pvec,pvec) > eps: #point is outside this plane
+            if dot(vec,pvec) - dot(pvec,pvec) > self.eps: #point is outside this plane
                 print '\tboundary', iplane, pvec, self.braggVecs[iplane]['mag']
                 print '\tboundary component', dot(vec,pvec), dot(pvec,pvec)
                 print
 
                 return True
             else:
-                print 'On boundary check',dot(vec,pvec) - dot(pvec,pvec)
+                print 'On boundary check',iplane,dot(vec,pvec) - dot(pvec,pvec),pvec
         print
         return False
            
+    def onPlane(self,vec,planevec):
+        return abs(dot(vec,planevec) - dot(planevec,planevec)) < self.eps #point is inside this plane
         
-    def test1(self):
-#         r0 = array([1,0,0])
-#         r1 = array([0,1,0])
-#         r2 = array([0,2,1])
-#         print '3pi'
-#         print threePlaneIntersect([r0,r1,r2])
-        
+    def getVorCell(self):
+        '''Boundaries and vertices of Voronoi cell'''
         self.getBraggVecs()
         igroup = 1
         checkNext = True
@@ -192,6 +188,10 @@ class meshConstruct():
         self.getInterscPoints()
         for i in self.boundaries:
             print i, self.braggVecs[i]['mag'], self.braggVecs[i]['vec']
+        #write plane equations:
+        for i in self.boundaries:
+            vec = self.braggVecs[self.boundaries[i]]['vec']
+            print '{}x+{}y+{}z<={}&&'.format(vec[0],vec[1],vec[2],dot(vec,vec)) #write plane equations for mathematica
         print 'intersections'
         for i in range(self.nIntersc):
             print i, self.interscPoints[i]['mag'], self.interscPoints[i]['vec']
@@ -199,28 +199,50 @@ class meshConstruct():
         print 'facet points'
         for i in range(len(self.facetsPoints)):
             print i, self.facetsPoints[i]['mag'], self.facetsPoints[i]['vec']
-    
-        #Each plane forms a quadrilateral or hexagonal facet in its interection with other planes
-#        Find vertices from intersection of three planes
-        
-        
+        #arrange facets in each plane according to their angular order in the plane
+        self.facets = [[]]*len(self.boundaries)
+        for ip in self.boundaries:
+            facetvecs = []
+            facetlabels = []
+            angles = []
+            pvec = self.braggVecs[self.boundaries[ip]]['vec']
+            for i, fvec in  enumerate(self.facetsPoints['vec']):
+                if self.onPlane(fvec,pvec):
+                    facetlabels.append(i)
+                    facetvecs.append(fvec)          
+            # get the angle that each vector is, in a plane of the facet
+            rcenter = sum(facetvecs)
+            xunitv =  (facetvecs[0] - rcenter)/norm(facetvecs[0] - rcenter)
+            yunitv = cross(xunitv, rcenter)/norm(cross(xunitv, rcenter))         
+            for i, vec in enumerate(facetvecs):
+                vx = dot(vec,xunitv); vy = dot(vec,yunitv)
+                angles.append(arctan2(vy,vx))
+            self.facets[ip] = [label for (angle,label) in sorted(zip(angles,facetlabels))]
+            print ip, 'facets', self.facets[ip]
+#             [x for (y,x) in sorted(zip(Y,X))]
+
+
             
-#             startSmall, nSmall = self.magGroup(self.braggVecs,igroup) #smallest group
-#             smallBraggs = range(nSmall)
-#             print 'smallBraggs',nSmall, smallBraggs
-#             #find any bragg vectors inside the volume bounded by the 
-#             #bragg planes closest to the origin.
-#             boundaries = range(nSmall)
-# 
-#                     boundaries.append(ib)
-#         print len(boundaries),'boundaries',boundaries
-#                     
-        
-#         for ivec in self.interscPoints[nNearest:]['vec']:
-#             for bvec in self.braggVecs[:nNearest]['vec']:
-#                 if  < 
-#             
-#         self.getInterscPoints()        
+            
+            
+
+            
+                
+#             for c in combs:
+#                 rab = facetpoints[c[0]]-facetpoints[c[1]]
+#                 rcd = facetpoints[c[3]]-facetpoints[c[2]]
+#                 print 'c',c
+#                 print 'rab',rab
+#                 print 'rcd',rcd
+#                 print dot(rab,transpose(rcd))
+#                 print 
+#                 if dot(rab,transpose(rcd))+1< self.eps:
+#                     for ifp in range(4):
+#                         self.facets[ip,ifp,:] = facetpoints(c[ifp])
+#                     break #this order is a face
+#             else:
+#                 sys.exit('stop.  Could not find a correct facet order')
+#         return
         
     def getFacetsPoints(self):
         OKpoints = []
@@ -230,10 +252,10 @@ class meshConstruct():
                 OKpoints.append(i)
         self.facetsPoints = zeros(len(OKpoints),dtype = [('vec', '3float'),('mag', 'float')])
         for iOK,ipoint in enumerate(OKpoints):
-            vec = self.braggVecs[ipoint]['vec']
+            vec = self.interscPoints[ipoint]['vec']
             self.facetsPoints[iOK]['vec'] = vec
-            self.facetsPoints[ipoint]['mag'] = norm(vec)
-        self.facetsPoints.sort(order = 'mag')    
+            self.facetsPoints[iOK]['mag'] = norm(vec)
+        self.facetsPoints.sort(order = 'mag')
 
     def getInterscPoints(self):
         combs = list(combinations(range(len(self.boundaries)),3))
@@ -279,9 +301,8 @@ class meshConstruct():
 #         nCoarseMax = 200
         self.B = B
 
-        self.test1()
         
-        sys.exit('stop')
+
         
         print 'B',B
         [self.symops,self.nops] = getGroup(self.B)
@@ -294,6 +315,10 @@ class meshConstruct():
         self.edgeFactor = 3.0
         self.rmin = 0.8*self.ravg #
         self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
+        self.eps = self.ravg/1000
+        self.getVorCell() ############################        
+        
+        sys.exit('stop')        
         print 'Typical spacing:', self.ravg
         self.initPoints() 
         self.initTets()
