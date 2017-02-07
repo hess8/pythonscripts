@@ -190,6 +190,9 @@ def areEqual(x,y):
     eps = 5.0e-5
     return abs(x-y)<eps
 
+def areParallel(v1,v2):
+    return areEqual(dot(v1/norm(v1),v2/norm(v2)),1.0)
+
 def isreal(x):
     eps = 1.0e-6
     return abs(x.imag)<eps

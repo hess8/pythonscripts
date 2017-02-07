@@ -56,7 +56,7 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where)
+                   trace,where,real)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi
 from numpy.linalg import inv, norm, det, eig
@@ -80,7 +80,7 @@ from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, la
     orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double,
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell,
-    reverseStructured,isInVoronoi)
+    reverseStructured,isInVoronoi,areParallel)
 
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
@@ -156,6 +156,7 @@ class meshConstruct():
         print 'intersection',vec
 #         outside = zeros(len(self.boundaries),dtype = bool)
         for iplane, pvec in enumerate(self.boundaries):            
+            print 'pvec',pvec
             if dot(vec,pvec) - dot(pvec,pvec) > self.eps: #point is outside this plane
                 print '\tboundary', iplane, pvec, norm(pvec)
                 print '\tboundary component', dot(vec,pvec), dot(pvec,pvec)
@@ -177,6 +178,8 @@ class meshConstruct():
         checkNext = True
         gstart,ng = self.magGroup(self.braggVecs,1) # group of smallest bragg plane vectors
         self.boundaries = [] #a list of vector plane normals
+        for i in range(ng):
+            self.boundaries.append(self.braggVecs[i]['vec'])
         print 'Smallest bragg vectors  boundaries', self.boundaries
         while checkNext:
             igroup += 1
@@ -277,9 +280,9 @@ class meshConstruct():
     
     def choose111(self,uvec):
         if dot(uvec,array([1,1,1]))>= 0:
-            return uvec
+            return real(uvec)
         else:
-            return -uvec  
+            return -real(uvec) 
            
     def getIBZ(self):
         '''
@@ -319,34 +322,41 @@ class meshConstruct():
         '''
         #copy array of boundary plane normal vectors, that we will add to later
         
-#         self.boundaries = zeros(len(self.boundaries),dtype = [('vec','3float'),()])
-#         for ip, label in enumerate(self.boundaries):
-#             
-        
-        
-        #choose starting point arbitrarily by which has the highest sum of components
+
+        #choose starting facet point arbitrarily by which has the highest sum of components
 #         sumComps = []
-        shift = 1e-6
+        
 #         for vec in self.facetsPoints[:]['vec']:
 #             sumComps.append(sum(vec))
+        print '\n\nReducing Brillouin zone by symmetry'
+        self.newPlanes = []
         for iop in range(self.nops):
             op = self.symops[:,:,iop]
-            if abs(trace(op)< 3): #skip E and inverse
+            if abs(trace(op))< 3: #skip E and inverse
                 evals,evecs = eig(self.symops[:,:,iop])
-                if det(op) == 1.0  : #rotation
-                    evec = evecs[evals.index(1.0)] #axis
+                evecs = array([evec for evec in evecs])
+                if areEqual(det(op),1.0)  : #rotation
+                    evec = evecs[:,where(areEqual(evals,1.0))[0][0]] #axis
                     ipt = 0
-                    while abs(dot(self.facetsPoints[ipt]['vec'], evec)) <  1e-6: #axis parallel to point vector
+                    while areParallel(self.facetsPoints[ipt]['vec'],evec): 
                         ipt += 1
-                    pnto = self.facetsPoints[ipt]['vec']                   
-                    u1 = choose111(cross(evec,pnto)/norm(pnto))  
-                    self.boundaries.append(-shift*u1)
+                    pnto = self.facetsPoints[ipt]['vec'] 
+                    #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   
+                    #tvec = cross(pnto,cross(pnto,evec))
+                    tvec = cross(evec,pnto)
+                    u1 = self.choose111(tvec/norm(tvec))
+                    self.addPlane(u1)
                     pntp = dot(op,pnto)
-                    u2 = choose111(cross(evec,pnto/norm(pnto))) 
-                    self.boundaries.append(-shift*u2)
+                    u2 = self.choose111(cross(evec,pnto/norm(pnto))) 
+                    self.addPlane(u2) 
                 else: # -1: reflection/improper rotatioin
-                    u1 = self.choose111(evecs[where(1.0)])
-                    self.boundaries.append(-shift*u1)
+                    if len(where(areEqual(evals,-1.0))) > 1: evals = -evals #improper rotation
+                    evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
+                    u1 = self.choose111(evec)
+                    self.addPlane(u1)
+        print 'add inversion operator'
+                        
+                    
         #reshape the boundaries
         self.getFacetsPoints()
         self.arrangeFacets()
@@ -356,7 +366,13 @@ class meshConstruct():
             
         return 
              
-        
+    def addPlane(self,u):
+        '''adds a plane shifted just away from the origin. '''
+        shift = 1e-4
+        strP = [str(u[0])[:self.strLen]+str(u[1])[:self.strLen]+str(u[2])[:self.strLen]]
+        if strP not in self.newPlanes:
+            self.newPlanes.append(strP)
+            self.boundaries.append(-shift*u)        
         
         
                  
