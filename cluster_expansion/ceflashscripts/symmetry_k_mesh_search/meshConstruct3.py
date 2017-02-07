@@ -136,30 +136,28 @@ class meshConstruct():
         
     def checkInside(self,grp):
         newPlanes = False
-        newboundaries = self.braggBound
+        newboundaries = self.boundaries
         for ig  in range(len(grp)):
             gvec = self.braggVecs[grp[ig]]['vec']
             if self.isInside(gvec):
-                newboundaries.append(grp[ig])
+                newboundaries.append(gvec)
                 newPlanes = True         
-        self.braggBound = newboundaries
+        self.boundaries = newboundaries
         return newPlanes
     
     def isInside(self,vec):
-        inside = zeros(len(self.braggBound),dtype = bool)
-        for iplane in range(len(self.braggBound)):
-            pvec = self.braggVecs[iplane]['vec']
+        inside = zeros(len(self.boundaries),dtype = bool)
+        for iplane, pvec in enumerate(self.boundaries):
             if dot(vec,pvec) < dot(pvec,pvec)- self.eps: #point is inside this plane
                 inside[iplane] = True
         return all(inside)
 
     def isOutside(self,vec):
         print 'intersection',vec
-#         outside = zeros(len(self.braggBound),dtype = bool)
-        for iplane in range(len(self.braggBound)):
-            pvec = self.braggVecs[iplane]['vec']            
+#         outside = zeros(len(self.boundaries),dtype = bool)
+        for iplane, pvec in enumerate(self.boundaries):            
             if dot(vec,pvec) - dot(pvec,pvec) > self.eps: #point is outside this plane
-                print '\tboundary', iplane, pvec, self.braggVecs[iplane]['mag']
+                print '\tboundary', iplane, pvec, norm(pvec)
                 print '\tboundary component', dot(vec,pvec), dot(pvec,pvec)
                 print
 
@@ -178,21 +176,20 @@ class meshConstruct():
         igroup = 1
         checkNext = True
         gstart,ng = self.magGroup(self.braggVecs,1) # group of smallest bragg plane vectors
-        self.braggBound = range(0,ng)
-        print 'Smallest bragg vectors  boundaries', self.braggBound
+        self.boundaries = [] #a list of vector plane normals
+        print 'Smallest bragg vectors  boundaries', self.boundaries
         while checkNext:
             igroup += 1
             gstart,ng = self.magGroup(self.braggVecs,igroup)
             nextGroup = range(gstart,gstart+ng)
             checkNext = self.checkInside(nextGroup)
-        print 'new boundaries', self.braggBound
-        self.getInterscPoints(self.braggBound,)
-        for i in self.braggBound:
-            print i, self.braggVecs[i]['mag'], self.braggVecs[i]['vec']
+        print 'new boundaries', self.boundaries
+        self.getInterscPoints(self.boundaries)
+        for iplane, pvec in enumerate(self.boundaries):   
+            print iplane, pvec, norm(pvec)
         #write plane equations:
-        for i in self.braggBound:
-            vec = self.braggVecs[self.braggBound[i]]['vec']
-            print '{}x+{}y+{}z<={}&&'.format(vec[0],vec[1],vec[2],dot(vec,vec)) #write plane equations for mathematica
+        for iplane, pvec in enumerate(self.boundaries):
+            print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)) #write plane equations for mathematica
         print 'intersections'
         for i in range(self.nIntersc):
             print i, self.interscPoints[i]['mag'], self.interscPoints[i]['vec']
@@ -201,15 +198,15 @@ class meshConstruct():
         for i in range(len(self.facetsPoints)):
             print i, self.facetsPoints[i]['mag'], self.facetsPoints[i]['vec']
         self.arrangeFacets()
+        return
 
     def arrangeFacets(self):        
         #arrange facets in each plane according to their angular order in the plane
-        self.facets = [[]]*len(self.braggBound)
-        for ip in self.braggBound:
+        self.facets = [[]]*len(self.boundaries)
+        for iplane, pvec in enumerate(self.boundaries):
             facetvecs = []
             facetlabels = []
             angles = []
-            pvec = self.braggVecs[self.braggBound[ip]]['vec']
             for i, fvec in  enumerate(self.facetsPoints['vec']):
                 if self.onPlane(fvec,pvec):
                     facetlabels.append(i)
@@ -221,8 +218,8 @@ class meshConstruct():
             for i, vec in enumerate(facetvecs):
                 vx = dot(vec,xunitv); vy = dot(vec,yunitv)
                 angles.append(arctan2(vy,vx))
-            self.facets[ip] = [label for (angle,label) in sorted(zip(angles,facetlabels))]
-            print ip, 'facets', self.facets[ip]
+            self.facets[iplane] = [label for (angle,label) in sorted(zip(angles,facetlabels))]
+            print iplane, 'facets', self.facets[iplane]
         
     def getFacetsPoints(self):
         '''u111 is dot(uvec,[111]), which measures of how close its 
@@ -242,14 +239,12 @@ class meshConstruct():
 #             self.facetsPoints[iOK]['u111'] = dot(vec,u_111)/mag
         self.facetsPoints.sort(order = 'mag')
 
-    def getInterscPoints(self,labels,vecs):
-        combs = list(combinations(range(len(labels)),3))
+    def getInterscPoints(self,vecs):
+        combs = list(combinations(vecs,3))
         unique = []
         uniqStrs = []
         for c in combs:
-            points = array([self.vecs[c[0]]['vec'],
-                            self.vecs[c[1]]['vec'],self.vecs[c[2]]['vec']])
-            interscP = threePlaneIntersect(points)
+            interscP = threePlaneIntersect(c)
             if not interscP is None:
                 vecStr = str(interscP[0])[:self.strLen]+str(interscP[1])[:self.strLen]+str(interscP[2])[:self.strLen]
                 if vecStr not in uniqStrs:
@@ -263,8 +258,7 @@ class meshConstruct():
             self.interscPoints[ipoint]['mag'] = norm(vec)
 #             print vec
         self.interscPoints.sort(order = 'mag')    
-        
-                 
+                        
     def getBraggVecs(self):
         '''The Bragg vectors are halfway from the origin to a lattice point.
         The planes normal to some of these will be bounding planes of the Voronoi cell '''
@@ -325,9 +319,9 @@ class meshConstruct():
         '''
         #copy array of boundary plane normal vectors, that we will add to later
         
-        self.boundaries = zeros(len(self.braggBound),dtype = [('vec','3float'),()])
-        for ip, label in enumerate(self.braggBound):
-            
+#         self.boundaries = zeros(len(self.boundaries),dtype = [('vec','3float'),()])
+#         for ip, label in enumerate(self.boundaries):
+#             
         
         
         #choose starting point arbitrarily by which has the highest sum of components
@@ -346,13 +340,13 @@ class meshConstruct():
                         ipt += 1
                     pnto = self.facetsPoints[ipt]['vec']                   
                     u1 = choose111(cross(evec,pnto)/norm(pnto))  
-                    self.braggBound.append(-shift*u1)
+                    self.boundaries.append(-shift*u1)
                     pntp = dot(op,pnto)
                     u2 = choose111(cross(evec,pnto/norm(pnto))) 
-                    self.braggBound.append(-shift*u2)
+                    self.boundaries.append(-shift*u2)
                 else: # -1: reflection/improper rotatioin
                     u1 = self.choose111(evecs[where(1.0)])
-                    self.braggBound.append(-shift*u1)
+                    self.boundaries.append(-shift*u1)
         #reshape the boundaries
         self.getFacetsPoints()
         self.arrangeFacets()
