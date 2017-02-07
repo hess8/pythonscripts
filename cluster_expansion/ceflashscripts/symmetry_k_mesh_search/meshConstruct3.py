@@ -5,7 +5,7 @@
 # 3.5. use any mirror planes to slice the VBZ
 4. Populate the BZ with Nops copies. 
 5. Find the NC symmetries of the crystal
-6. eep NC copies that are contiguous: LBZ
+6. keep NC copies that are contiguous: LBZ
 
 All matrices store vectors as COULUMNS
 '''
@@ -55,10 +55,11 @@ All matrices store vectors as COULUMNS
 import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
-                   delete,mean,square,argmax,argmin,insert,s_,concatenate,all)
+                   delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
+                   trace,where)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi
-from numpy.linalg import inv, norm, det
+from numpy.linalg import inv, norm, det, eig
 from numpy.random import rand
 from copy import copy,deepcopy
 from sched import scheduler
@@ -135,18 +136,18 @@ class meshConstruct():
         
     def checkInside(self,grp):
         newPlanes = False
-        newboundaries = self.boundaries
+        newboundaries = self.braggBound
         for ig  in range(len(grp)):
             gvec = self.braggVecs[grp[ig]]['vec']
             if self.isInside(gvec):
                 newboundaries.append(grp[ig])
                 newPlanes = True         
-        self.boundaries = newboundaries
+        self.braggBound = newboundaries
         return newPlanes
     
     def isInside(self,vec):
-        inside = zeros(len(self.boundaries),dtype = bool)
-        for iplane in range(len(self.boundaries)):
+        inside = zeros(len(self.braggBound),dtype = bool)
+        for iplane in range(len(self.braggBound)):
             pvec = self.braggVecs[iplane]['vec']
             if dot(vec,pvec) < dot(pvec,pvec)- self.eps: #point is inside this plane
                 inside[iplane] = True
@@ -154,8 +155,8 @@ class meshConstruct():
 
     def isOutside(self,vec):
         print 'intersection',vec
-#         outside = zeros(len(self.boundaries),dtype = bool)
-        for iplane in range(len(self.boundaries)):
+#         outside = zeros(len(self.braggBound),dtype = bool)
+        for iplane in range(len(self.braggBound)):
             pvec = self.braggVecs[iplane]['vec']            
             if dot(vec,pvec) - dot(pvec,pvec) > self.eps: #point is outside this plane
                 print '\tboundary', iplane, pvec, self.braggVecs[iplane]['mag']
@@ -177,20 +178,20 @@ class meshConstruct():
         igroup = 1
         checkNext = True
         gstart,ng = self.magGroup(self.braggVecs,1) # group of smallest bragg plane vectors
-        self.boundaries = range(0,ng)
-        print 'Smallest bragg vectors  boundaries', self.boundaries
+        self.braggBound = range(0,ng)
+        print 'Smallest bragg vectors  boundaries', self.braggBound
         while checkNext:
             igroup += 1
             gstart,ng = self.magGroup(self.braggVecs,igroup)
             nextGroup = range(gstart,gstart+ng)
             checkNext = self.checkInside(nextGroup)
-        print 'new boundaries', self.boundaries
-        self.getInterscPoints()
-        for i in self.boundaries:
+        print 'new boundaries', self.braggBound
+        self.getInterscPoints(self.braggBound,)
+        for i in self.braggBound:
             print i, self.braggVecs[i]['mag'], self.braggVecs[i]['vec']
         #write plane equations:
-        for i in self.boundaries:
-            vec = self.braggVecs[self.boundaries[i]]['vec']
+        for i in self.braggBound:
+            vec = self.braggVecs[self.braggBound[i]]['vec']
             print '{}x+{}y+{}z<={}&&'.format(vec[0],vec[1],vec[2],dot(vec,vec)) #write plane equations for mathematica
         print 'intersections'
         for i in range(self.nIntersc):
@@ -199,13 +200,16 @@ class meshConstruct():
         print 'facet points'
         for i in range(len(self.facetsPoints)):
             print i, self.facetsPoints[i]['mag'], self.facetsPoints[i]['vec']
+        self.arrangeFacets()
+
+    def arrangeFacets(self):        
         #arrange facets in each plane according to their angular order in the plane
-        self.facets = [[]]*len(self.boundaries)
-        for ip in self.boundaries:
+        self.facets = [[]]*len(self.braggBound)
+        for ip in self.braggBound:
             facetvecs = []
             facetlabels = []
             angles = []
-            pvec = self.braggVecs[self.boundaries[ip]]['vec']
+            pvec = self.braggVecs[self.braggBound[ip]]['vec']
             for i, fvec in  enumerate(self.facetsPoints['vec']):
                 if self.onPlane(fvec,pvec):
                     facetlabels.append(i)
@@ -219,32 +223,10 @@ class meshConstruct():
                 angles.append(arctan2(vy,vx))
             self.facets[ip] = [label for (angle,label) in sorted(zip(angles,facetlabels))]
             print ip, 'facets', self.facets[ip]
-#             [x for (y,x) in sorted(zip(Y,X))]
-
-
-            
-            
-            
-
-            
-                
-#             for c in combs:
-#                 rab = facetpoints[c[0]]-facetpoints[c[1]]
-#                 rcd = facetpoints[c[3]]-facetpoints[c[2]]
-#                 print 'c',c
-#                 print 'rab',rab
-#                 print 'rcd',rcd
-#                 print dot(rab,transpose(rcd))
-#                 print 
-#                 if dot(rab,transpose(rcd))+1< self.eps:
-#                     for ifp in range(4):
-#                         self.facets[ip,ifp,:] = facetpoints(c[ifp])
-#                     break #this order is a face
-#             else:
-#                 sys.exit('stop.  Could not find a correct facet order')
-#         return
         
     def getFacetsPoints(self):
+        '''u111 is dot(uvec,[111]), which measures of how close its 
+        r points to the [1,1,1 direction]'''
         OKpoints = []
         for i in range(len(self.interscPoints)):
             print i,
@@ -254,16 +236,19 @@ class meshConstruct():
         for iOK,ipoint in enumerate(OKpoints):
             vec = self.interscPoints[ipoint]['vec']
             self.facetsPoints[iOK]['vec'] = vec
-            self.facetsPoints[iOK]['mag'] = norm(vec)
+            mag = norm(vec)
+            u_111 = array([1,1,1])
+            self.facetsPoints[iOK]['mag'] = mag
+#             self.facetsPoints[iOK]['u111'] = dot(vec,u_111)/mag
         self.facetsPoints.sort(order = 'mag')
 
-    def getInterscPoints(self):
-        combs = list(combinations(range(len(self.boundaries)),3))
+    def getInterscPoints(self,labels,vecs):
+        combs = list(combinations(range(len(labels)),3))
         unique = []
         uniqStrs = []
         for c in combs:
-            points = array([self.braggVecs[c[0]]['vec'],
-                            self.braggVecs[c[1]]['vec'],self.braggVecs[c[2]]['vec']])
+            points = array([self.vecs[c[0]]['vec'],
+                            self.vecs[c[1]]['vec'],self.vecs[c[2]]['vec']])
             interscP = threePlaneIntersect(points)
             if not interscP is None:
                 vecStr = str(interscP[0])[:self.strLen]+str(interscP[1])[:self.strLen]+str(interscP[2])[:self.strLen]
@@ -295,6 +280,91 @@ class meshConstruct():
                         self.braggVecs[ipoint]['mag'] = norm(vec)
                         ipoint+=1
         self.braggVecs.sort(order = 'mag')
+    
+    def choose111(self,uvec):
+        if dot(uvec,array([1,1,1]))>= 0:
+            return uvec
+        else:
+            return -uvec  
+           
+    def getIBZ(self):
+        '''
+        Apply symmetry operators to a facet point O:, to get point P.
+        as a convention, choose points and volumes 
+        that have vertices with the highest sum of components
+        Define the point O as the vertex with the highest sum of components (or one of them if degenerate).
+        1. Inversion: slice half the volume away about any plane through the center.
+           Choice: define plane O-InvO-P, where P is any neighboring point to O on a fact.
+        2. Reflection: slice through reflection plane
+            Det is -1.  Has one eigenvalue that is -1, and that is the plane normal.
+            a.  the plane normal gives a unique plane centered at the origin.  Use this to cut cell. 
+        3. Rotation: They have det=1, and only one eigenvalue that is 1, which
+        corresponds to the rotation axis.   with two -1's
+            a. If O is not on axis, axis + rO form a plane.  Cut cell in half.  Then use axis + RO as
+            a cut plane.  Keep part that has O and P. 
+            b. if O is on axis, choose a different point for O.  
+        from the axis of rotation to some point O and to point RO
+        4. Improper rotation (Sn):  inversion + rotation, equivalent to rotation and reflection.
+           Det -1.   In this case also we have a plane normal (reflection plane.  
+           Use it to cut the system in half...we dont care about which Cn is part of the operation.
+           
+        Cutting: 
+        Rotation: a plane through the origin has dot(r,u) = 0, for the normal u.  
+        dot(r,u) > 0 means the half space beyond the plane in the direction of u. 
+        We can get u defined by a point and the rotation axis  by u = +-cross(u_axis,u_point)
+        For the +-, choose the direction to keep as that closest to the (1,1,1) direction
+        (sum over components is largest). 
+        
+        Reflection/improper rotation: uR is given by the eigenvalue of R with eigen vector -1. 
+        Choose either uR or -uR, the one closest to the (1,1,1) direction.   
+        
+        Cut the part of the cell that is dot(r,u) < 0
+        #Add this plane (with a small shift to get it just past the origin
+        #origin from 111 direction) to the 'boundaries'
+            
+        '''
+        #copy array of boundary plane normal vectors, that we will add to later
+        
+        self.boundaries = zeros(len(self.braggBound),dtype = [('vec','3float'),()])
+        for ip, label in enumerate(self.braggBound):
+            
+        
+        
+        #choose starting point arbitrarily by which has the highest sum of components
+#         sumComps = []
+        shift = 1e-6
+#         for vec in self.facetsPoints[:]['vec']:
+#             sumComps.append(sum(vec))
+        for iop in range(self.nops):
+            op = self.symops[:,:,iop]
+            if abs(trace(op)< 3): #skip E and inverse
+                evals,evecs = eig(self.symops[:,:,iop])
+                if det(op) == 1.0  : #rotation
+                    evec = evecs[evals.index(1.0)] #axis
+                    ipt = 0
+                    while abs(dot(self.facetsPoints[ipt]['vec'], evec)) <  1e-6: #axis parallel to point vector
+                        ipt += 1
+                    pnto = self.facetsPoints[ipt]['vec']                   
+                    u1 = choose111(cross(evec,pnto)/norm(pnto))  
+                    self.braggBound.append(-shift*u1)
+                    pntp = dot(op,pnto)
+                    u2 = choose111(cross(evec,pnto/norm(pnto))) 
+                    self.braggBound.append(-shift*u2)
+                else: # -1: reflection/improper rotatioin
+                    u1 = self.choose111(evecs[where(1.0)])
+                    self.braggBound.append(-shift*u1)
+        #reshape the boundaries
+        self.getFacetsPoints()
+        self.arrangeFacets()
+
+
+            
+            
+        return 
+             
+        
+        
+        
                  
     def relaxMeshSym(self,B,targetNmesh,path):
         #1. nCoarse random points in the cell parallelpiped.  
@@ -316,7 +386,8 @@ class meshConstruct():
         self.rmin = 0.8*self.ravg #
         self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
         self.eps = self.ravg/1000
-        self.getVorCell() ############################        
+        self.getVorCell() ############################   
+        self.getIBZ()     
         
         sys.exit('stop')        
         print 'Typical spacing:', self.ravg
