@@ -56,7 +56,7 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where,real)
+                   trace,where,real,allclose)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi
 from numpy.linalg import inv, norm, det, eig
@@ -326,46 +326,65 @@ class meshConstruct():
         #choose starting facet point arbitrarily by which has the highest sum of components
 #         sumComps = []
         
-#         for vec in self.facetsPoints[:]['vec']:
+#         for vec in self.[:]['vec']:
 #             sumComps.append(sum(vec))
         print '\n\nReducing Brillouin zone by symmetry'
-        self.newPlanes = []
-        for iop in range(self.nops):
-            op = self.symops[:,:,iop]
-            if abs(trace(op))< 3: #skip E and inverse
-                evals,evecs = eig(self.symops[:,:,iop])
-                evecs = array([evec for evec in evecs])
-                if areEqual(det(op),1.0)  : #rotation
-                    evec = evecs[:,where(areEqual(evals,1.0))[0][0]] #axis
-                    ipt = 0
-                    while areParallel(self.facetsPoints[ipt]['vec'],evec): 
-                        ipt += 1
-                    pnto = self.facetsPoints[ipt]['vec'] 
-                    #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   
-                    #tvec = cross(pnto,cross(pnto,evec))
-                    tvec = cross(evec,pnto)
-                    u1 = self.choose111(tvec/norm(tvec))
-                    self.addPlane(u1)
-                    pntp = dot(op,pnto)
-                    u2 = self.choose111(cross(evec,pnto/norm(pnto))) 
-                    self.addPlane(u2) 
-                else: # -1: reflection/improper rotatioin
-                    if len(where(areEqual(evals,-1.0))) > 1: evals = -evals #improper rotation
-                    evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
-                    u1 = self.choose111(evec)
-                    self.addPlane(u1)
-        print 'add inversion operator'
-                        
-                    
-        #reshape the boundaries
-        self.getFacetsPoints()
-        self.arrangeFacets()
-
-
+        #define midpoints to all facets
+        self.midPoints  = [[]]*len(self.facets)
+        for il,list in enumerate(self.facets):
+            for ip,label1 in enumerate(list):
+                jp = ip + 1
+                if jp == len(list): jp = 0
+                label2 = list[jp]
+                self.midPoints[il].append((self.facetsPoints[label1]['vec'] +\
+                                     self.facetsPoints[label2]['vec'])/2.0 )                     
+        #define symmetry partners
+        self.partners = zeros((len(self.facetsPoints),len(self.facetsPoints)),dtype = bool)
+        for i in range(len(self.facetsPoints)):
+            for j in range(i+1,len(self.facetsPoints)):
+                for iop in range(self.nops):
+                    op = self.symops[:,:,iop]
+                    symVec = dot(op,self.facetsPoints[j]['vec'])
+                    if allclose(self.facetsPoints[i]['vec'],symVec):
+                        self.partners[i,j] = True
+                        self.partners[j,i] = True
+                        break
+        #order the facets according to the closeness of their centers to 1,1,1 directioin
+        close111 = []
+        for list in self.facets:
+            center = sum([self.facetsPoints[i]['vec'] for i in list])
+            close111.append(-dot(center,array([1,1,1]))/norm(center))
+        self.facets = [list for (close,list) in sorted(zip(close111,self.facets))]
+        #find which facet points we keep, and which lists we truncate by midpoints
+        self.newFacets = [[]]*len(self.facets)
+        
+        clist = copy(self.facets)
+        for il,list in enumerate(self.facets):
+            for i in range(len(list)-1,0,-1):
+                for iup in range(1,i+1):#moving toward front of list
+                    if self.partners[clist[il][i],clist[il][i-iup]]:
+                        sponsor = clist[il][i-iup]
+                        dup = clist[il][i]
+                        clist = self.replaceDup(dup,sponsor,clist)
+                        break #it's a duplicate    
+            if -1 in clist: #duplicates
+                boundary = clist.index(-1)
+                self.newFacets[il] = list[:boundary]
+                self.newFacets[il].append('mp{}'.format(list[boundary-1]))
+                self.newFacets[il].append('C') #C: center mp: midpoint
+                self.newFacets[il].append('mp-1')              
+        return          
+        
+    def replaceDup(self,dup,sponsor,list):
+        clist = [[]]*len(list)
+        for il,sublist in enumerate(list):
+            csub = sublist
+            for i,s in enumerate(sublist):
+                if s == dup:
+                    csub[i] = -sponsor
+            clist[il] = csub
+        return clist
             
-            
-        return 
-             
     def addPlane(self,u):
         '''adds a plane shifted just away from the origin. '''
         shift = 1e-4
