@@ -56,7 +56,7 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where,real,allclose)
+                   trace,where,real,array_equal,sign,pi)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi
 from numpy.linalg import inv, norm, det, eig
@@ -85,8 +85,10 @@ from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, la
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 
-def threePlaneIntersect(rRows):
-    '''Planes are given by normals to ro, at the point ro.  All points r in the
+def threePlaneIntersect(rRows):  
+    '''This routine is for three planes that will intersect at only one point, 
+    as part of a facet, as we have for the Voronoi cell boundaries. 
+    Planes are given by normals to ro, at the point ro.  All points r in the
     plane obey dot(r,ro) = ro^2 = dot(ro,ro)
       If they intersect, then 
         inv[[[xo,yo,zo]
@@ -167,6 +169,21 @@ class meshConstruct():
                 print 'On boundary check',iplane,dot(vec,pvec) - dot(pvec,pvec),pvec
         print
         return False
+    
+    def isOnGoodSides(self,vec):
+        '''If the vector is on the plane or on the side of the defined normal,
+        keep it'''
+        #inside or on the original VC boundaries
+        for iplane, pvec in enumerate(self.boundaries[:self.nBoundVC]):            
+            print 'pvec',pvec
+            if dot(vec,pvec) > dot(pvec,pvec) + self.eps: #point is inside this plane
+                return False
+        #on the good side of symmetry cuts
+        for iplane, pvec in enumerate(self.boundaries[self.nBoundVC:]):            
+            print 'pvec',pvec
+            if dot(vec,pvec) < -self.eps: #point is not on the plane or on the good side 
+                return False
+        return True
            
     def onPlane(self,vec,planevec):
         return abs(dot(vec,planevec) - dot(planevec,planevec)) < self.eps #point is inside this plane
@@ -186,10 +203,11 @@ class meshConstruct():
             gstart,ng = self.magGroup(self.braggVecs,igroup)
             nextGroup = range(gstart,gstart+ng)
             checkNext = self.checkInside(nextGroup)
-        print 'new boundaries', self.boundaries
-        self.getInterscPoints(self.boundaries)
+        print 'new boundaries'
         for iplane, pvec in enumerate(self.boundaries):   
             print iplane, pvec, norm(pvec)
+        self.getInterscPoints(self.boundaries)
+
         #write plane equations:
         for iplane, pvec in enumerate(self.boundaries):
             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)) #write plane equations for mathematica
@@ -201,6 +219,7 @@ class meshConstruct():
         for i in range(len(self.facetsPoints)):
             print i, self.facetsPoints[i]['mag'], self.facetsPoints[i]['vec']
         self.arrangeFacets()
+        self.nBoundVC = len(self.boundaries)
         return
 
     def arrangeFacets(self):        
@@ -215,18 +234,18 @@ class meshConstruct():
                     facetlabels.append(i)
                     facetvecs.append(fvec)          
             # get the angle that each vector is, in a plane of the facet
-            rcenter = sum(facetvecs)
+            rcenter = sum(facetvecs)/len(facetvecs)
             xunitv =  (facetvecs[0] - rcenter)/norm(facetvecs[0] - rcenter)
             yunitv = cross(xunitv, rcenter)/norm(cross(xunitv, rcenter))         
             for i, vec in enumerate(facetvecs):
                 vx = dot(vec,xunitv); vy = dot(vec,yunitv)
-                angles.append(arctan2(vy,vx))
+                angle = arctan2(vy,vx)
+                if angle < 0: angle = 2*pi + angle
+                angles.append(angle)
             self.facets[iplane] = [label for (angle,label) in sorted(zip(angles,facetlabels))]
             print iplane, 'facets', self.facets[iplane]
         
     def getFacetsPoints(self):
-        '''u111 is dot(uvec,[111]), which measures of how close its 
-        r points to the [1,1,1 direction]'''
         OKpoints = []
         for i in range(len(self.interscPoints)):
             print i,
@@ -237,9 +256,22 @@ class meshConstruct():
             vec = self.interscPoints[ipoint]['vec']
             self.facetsPoints[iOK]['vec'] = vec
             mag = norm(vec)
-            u_111 = array([1,1,1])
             self.facetsPoints[iOK]['mag'] = mag
-#             self.facetsPoints[iOK]['u111'] = dot(vec,u_111)/mag
+        self.facetsPoints.sort(order = 'mag')
+        
+    def getFPByInside(self):
+        ''''''
+        OKpoints = []
+        for i in range(len(self.interscPoints)):
+            print i,
+            if self.isOnGoodSides(self.interscPoints[i]['vec']):
+                OKpoints.append(i)
+        self.facetsPoints = zeros(len(OKpoints),dtype = [('vec', '3float'),('mag', 'float')])
+        for iOK,ipoint in enumerate(OKpoints):
+            vec = self.interscPoints[ipoint]['vec']
+            self.facetsPoints[iOK]['vec'] = vec
+            mag = norm(vec)
+            self.facetsPoints[iOK]['mag'] = mag
         self.facetsPoints.sort(order = 'mag')
 
     def getInterscPoints(self,vecs):
@@ -280,9 +312,101 @@ class meshConstruct():
     
     def choose111(self,uvec):
         if dot(uvec,array([1,1,1]))>= 0:
-            return real(uvec)
+            return trimSmall(real(uvec))
         else:
-            return -real(uvec) 
+            return trimSmall(-real(uvec)) 
+    
+    def IntsPlLinSeg(self,u,r1,r2):
+        '''Intersection between a plane through the origin and a line.
+        A plane through the origin is given by dot(r,u) = 0.  
+        A line segment between r1 and r2 is given by vectors r = r1+t(r2-r1), for t in (0,1) 
+        Combining these:  r1u = dot(r1,u).  r2u = dot(r2,u).  Then t = r1u/(r1u-r2u).
+        So if t is in (0,1), then we have an intersection'''
+        den = dot(r2-r1,u)
+        if areEqual(den,0.0):
+            intersect = False
+            return intersect, array([1e6,1e6,1e6])
+        else:
+            t = dot(r1,u)/den
+            if 0 + self.eps < t < 1.0-self.eps:
+                rinters = r1 + t*(r2-r1)
+                intersect = True
+            else:
+                 intersect = False
+                 rinters =   array([1e6,1e6,1e6])
+        return intersect, rinters
+    
+    def cutCell(self,u):
+        '''Cell is cut about the plane given by normal u.  Facets that intersect
+        the plane are cut, and only the portion on one side is kept.  The intersection points
+        between the plane and the facet segments are new facet points.  If a facet
+        point lies on the plane, it stays in the facet. '''
+        ftemp = [[]]*len(self.fpoints) #this will contain only point, not labels
+        for ifac, facet in enumerate(self.fpoints):
+            print 'facet',ifac
+            bounds = []
+            rbounds = []
+            for ip,point1 in enumerate(facet):
+                if areEqual(dot(u,point1),0.0): #then this point is on the cut plane
+                    bounds.append(ip)
+                else: #check line segment
+                    jp = ip + 1
+                    if jp == len(facet): jp = 0 
+                    point2 = facet[jp]
+                    [intersect, rinters] = self.IntsPlLinSeg(u,point1,point2)          
+                    if intersect:
+                        bounds.append(ip + 0.5)  #to show it intersects, but not necessarily at a midpoint. 
+                        rbounds.append(rinters)
+            if len(bounds) == 2 and not (bounds[1]-bounds[0] ==1 or  
+                    (bounds[1]==len(facet)-1 and bounds[0] == 0)): # if adjacent points, then one edge of a facet is on the plane...don't cut
+                #we check the u-projection of the point just beyond the first 
+                # boundary to see which part of the facet we keep...
+                # the half that u points toward
+                print 'bounds',bounds
+                ucheck = dot(u,facet[int(ceil(bounds[0] + self.eps))])
+                direc = int(sign(ucheck)) #+1 or -1 
+                newfacet = []
+                if isinteger(bounds[0]):
+                    for i in range(bounds[1]-bounds[0]+1):
+                        ip = bounds[0] + i*direc
+                        if ip < 0: ip  += len(facet)
+                        elif ip > len(facet): ip  -= len(facet)
+                        newfacet.append(facet[ip])
+                else: # the facet runs from rbounds[0]...rbounds[1], which are in between facet points
+                    newfacet.append(rbounds[0])
+                    for ip in range(bounds[0]+ 0.5*dir,bounds[1]-0.5*dir,dir):
+                        newfacet.append(facet[ip])
+                    newfacet.append(rbounds[1]) 
+                ftemp[ifac] = newfacet
+            else:
+                ftemp[ifac] = facet
+        self.fpoints = ftemp
+        return
+                                              
+#                 if isinteger(bounds[0]):
+#                     for ip in range(bounds[0],bounds[1]+1):
+#                         newfacet.append(facet[ip])
+#                 else: # the facet runs from rbounds[0]...rbounds[1], which are in between facet points
+
+#                 else: # we go backwards through the facet
+#                     if isinteger(bounds[0]):
+#                         for ip in range(bounds[0],bounds[1]+1):
+#                             newfacet.append(facet[ip])
+#                     else: # the facet runs from rbounds[0]...rbounds[1], which are in between facet points
+#                         newfacet.append(rbounds[0])
+#                         for ip in range(bounds[0]+ 0.5,bounds[1]-0.51):
+#                             newfacet.append(facet[ip])
+#                         newfacet.append(rbounds[1])                    
+                    
+                         
+                
+            
+            
+
+                
+        
+                
+
            
     def getIBZ(self):
         '''
@@ -326,73 +450,89 @@ class meshConstruct():
         #choose starting facet point arbitrarily by which has the highest sum of components
 #         sumComps = []
         
-#         for vec in self.[:]['vec']:
+#         for vec in self.facetsPoints[:]['vec']:
 #             sumComps.append(sum(vec))
         print '\n\nReducing Brillouin zone by symmetry'
-        #define midpoints to all facets
-        self.midPoints  = [[]]*len(self.facets)
-        for il,list in enumerate(self.facets):
-            for ip,label1 in enumerate(list):
-                jp = ip + 1
-                if jp == len(list): jp = 0
-                label2 = list[jp]
-                self.midPoints[il].append((self.facetsPoints[label1]['vec'] +\
-                                     self.facetsPoints[label2]['vec'])/2.0 )                     
-        #define symmetry partners
-        self.partners = zeros((len(self.facetsPoints),len(self.facetsPoints)),dtype = bool)
-        for i in range(len(self.facetsPoints)):
-            for j in range(i+1,len(self.facetsPoints)):
-                for iop in range(self.nops):
-                    op = self.symops[:,:,iop]
-                    symVec = dot(op,self.facetsPoints[j]['vec'])
-                    if allclose(self.facetsPoints[i]['vec'],symVec):
-                        self.partners[i,j] = True
-                        self.partners[j,i] = True
-                        break
-        #order the facets according to the closeness of their centers to 1,1,1 directioin
-        close111 = []
-        for list in self.facets:
-            center = sum([self.facetsPoints[i]['vec'] for i in list])
-            close111.append(-dot(center,array([1,1,1]))/norm(center))
-        self.facets = [list for (close,list) in sorted(zip(close111,self.facets))]
-        #find which facet points we keep, and which lists we truncate by midpoints
-        self.newFacets = [[]]*len(self.facets)
         
-        clist = copy(self.facets)
-        for il,list in enumerate(self.facets):
-            for i in range(len(list)-1,0,-1):
-                for iup in range(1,i+1):#moving toward front of list
-                    if self.partners[clist[il][i],clist[il][i-iup]]:
-                        sponsor = clist[il][i-iup]
-                        dup = clist[il][i]
-                        clist = self.replaceDup(dup,sponsor,clist)
-                        break #it's a duplicate    
-            if -1 in clist: #duplicates
-                boundary = clist.index(-1)
-                self.newFacets[il] = list[:boundary]
-                self.newFacets[il].append('mp{}'.format(list[boundary-1]))
-                self.newFacets[il].append('C') #C: center mp: midpoint
-                self.newFacets[il].append('mp-1')              
-        return          
         
-    def replaceDup(self,dup,sponsor,list):
-        clist = [[]]*len(list)
-        for il,sublist in enumerate(list):
-            csub = sublist
-            for i,s in enumerate(sublist):
-                if s == dup:
-                    csub[i] = -sponsor
-            clist[il] = csub
-        return clist
-            
+#         self.newPlanes = []
+        self.fpoints = [[]]*len(self.facets) #this will contain only point, not labels
+        for ifac,facet in enumerate(self.facets):
+            temp = []
+            for ip in facet:
+               temp.append(self.facetsPoints[ip]['vec'])
+            self.fpoints[ifac] = temp 
+        for iop in range(self.nops):
+            op = self.symops[:,:,iop]
+            if abs(trace(op))< 3: #skip E and inverse
+                evals,evecs = eig(self.symops[:,:,iop])
+                evecs = array([evec for evec in evecs])
+                if areEqual(det(op),1.0)  : #rotation
+                    evec = evecs[:,where(areEqual(evals,1.0))[0][0]] #axis
+                    ipt = 0
+                    while areParallel(self.facetsPoints[ipt]['vec'],evec): 
+                        ipt += 1
+                    pnto = self.facetsPoints[ipt]['vec'] 
+                    #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   
+                    #tvec = cross(pnto,cross(pnto,evec))
+                    tvec = cross(evec,pnto)
+                    u1 = self.choose111(tvec/norm(tvec))
+                    self.cutCell(u1)
+#                     self.addPlane(u1)
+                    pntp = dot(op,pnto)
+                    tvec = cross(evec,pntp)
+                    u2 = self.choose111(tvec/norm(tvec))
+                    self.cutCell(u2)
+#                     self.addPlane(u2) 
+                else: # -1: reflection/improper rotatioin
+                    if len(where(areEqual(evals,-1.0))) > 1: evals = -evals #improper rotation
+                    evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
+                    u1 = self.choose111(evec) 
+                    self.cutCell(u1)         
+#                     self.addPlane(u1)
+#         print '\n\n\n\n\nadd inversion operator!!!'
+#         print 'new boundaries'
+#         for iplane, pvec in enumerate(self.boundaries):   
+#             print iplane, pvec, norm(pvec)
+#         self.getInterscPoints(self.boundaries)
+#   
+#         #reshape the boundaries
+#         self.getInterscPoints(self.boundaries)
+#         print 'intersections'
+#         for i in range(self.nIntersc):
+#             print i, self.interscPoints[i]['mag'], self.interscPoints[i]['vec']
+#         self.getFPByInside()
+        print 'facet points'
+        for ifac, facet in enumerate(self.fpoints):
+            print ifac, facet
+#         self.arrangeFacets()          
+        return 
+             
+#     def addPlane(self,u):
+#         '''adds a plane shifted just away from the origin. '''
+# #         shift = 1e-4
+# #         shift = 1.0
+#         for i in range(3):
+#             if abs(u[i]) < self.eps: u[i] = 1e-14
+#         strP = str(u[0])[:self.strLen]+str(u[1])[:self.strLen]+str(u[2])[:self.strLen]
+#         strP2 = str(-u[0])[:self.strLen]+str(-u[1])[:self.strLen]+str(-u[2])[:self.strLen]
+#         
+#         if not (strP in self.newPlanes or strP2 in self.newPlanes):
+#             temp = self.newPlanes
+#             self.newPlanes.append(strP)
+#             self.newPlanes.append(strP2)
+#                      
+# #             self.boundaries.append(-shift*u) 
+#             self.boundaries.append(u)        
+
     def addPlane(self,u):
-        '''adds a plane shifted just away from the origin. '''
-        shift = 1e-4
-        strP = [str(u[0])[:self.strLen]+str(u[1])[:self.strLen]+str(u[2])[:self.strLen]]
-        if strP not in self.newPlanes:
-            self.newPlanes.append(strP)
-            self.boundaries.append(-shift*u)        
-        
+        '''adds a plane if it its normal is unique within a sign.  These are meant to go through the origin. '''
+#         shift = 1e-4
+#         shift = 1.0
+        for pvec in self.boundaries[self.nBoundVC:]:
+            if array_equal(u,pvec) or array_equal(-u,pvec):
+                return
+        self.boundaries.append(u)
         
                  
     def relaxMeshSym(self,B,targetNmesh,path):
