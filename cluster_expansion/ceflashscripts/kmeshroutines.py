@@ -193,6 +193,14 @@ def areEqual(x,y):
 def areParallel(v1,v2):
     return areEqual(dot(v1/norm(v1),v2/norm(v2)),1.0)
 
+def addVec(self,vec,list):
+    '''adds a vector to a list of vectors if it's not in the list '''
+    for lvec in list:
+        if array_equal(vec,lvec):
+            return list
+    list.append(list)
+    return list
+
 def isreal(x):
     eps = 1.0e-6
     return abs(x.imag)<eps
