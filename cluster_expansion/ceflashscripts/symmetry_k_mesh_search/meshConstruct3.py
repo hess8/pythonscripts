@@ -56,7 +56,7 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where,real,array_equal,sign,pi)
+                   trace,where,real,allclose,sign,pi)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi
 from numpy.linalg import inv, norm, det, eig
@@ -141,7 +141,7 @@ class meshConstruct():
         self.strLen = 5
         self.indIn = []
         self.indOut = []
-        self.icut = 0
+        self.icut = -1
         
     def magGroup(self,arr, igroup):
         '''returns the ith group, numbered from 1, (starting index and length of group) of vectors in a structured array, 
@@ -370,7 +370,7 @@ class meshConstruct():
         
         for ifac, facet in enumerate(self.fpoints):
             marker = ''
-            print 'facet',ifac
+            print 'facet',ifac, facet
             bounds = []
             rbounds = []
             allLs = range(len(facet))
@@ -390,59 +390,63 @@ class meshConstruct():
                     if intersect:
                         bounds.append(ip + 0.5)  #to show it intersects, but not necessarily at a midpoint. 
                         rbounds.append(rinters)
+            print 'bounds',bounds 
             print 'bounds',bounds
-            if 1 < len(bounds) < len(facet) and not (bounds[1]-bounds[0] ==1 or  
-                    (bounds[1]==len(facet)-1 and bounds[0] == 0)): # if adjacent points, then one edge of a facet is on the plane...don't cut
-                #we check the u-projection of the point just beyond the first 
-                # boundary to see which part of the facet we keep...
-                # the half that u points toward
-                 #
-                ucheck = dot(u,facet[int(ceil(bounds[0] + self.eps))])
-                direc = int(sign(ucheck)) #+1 or -1 
-                newfacet = []
-                if isinteger(bounds[0]):
-                    newfacet.append(facet[bounds[0]])
-                    keepLs.append(bounds[0])
-                    bordersFacet = addVec(facet[bounds[0]],bordersFacet)
-                    print 'append',bounds[0]
-                    ip = nextpos(bounds[0],direc,len(facet))
-                else:
-                    newfacet.append(rbounds[0])
-                    bordersFacet = addVec(rbounds[0],bordersFacet)
-                    print 'append rb0'
-                    ip = int(rint(bounds[0]+0.5*direc))
-                print ip,abs(ip - bounds[1])
-                while abs(ip - bounds[1])>=0.5:
-                    newfacet.append(facet[ip])
-                    keepLs.append(ip)
-                    print 'append',ip
-                    if abs(ip - bounds[1])==0.5:
-                        break
-                    ip = nextpos(ip,direc,len(facet))
-                if isinteger(bounds[1]):
-                    newfacet.append(facet[bounds[1]])
-                    bordersFacet = addVec(facet[bounds[1]],bordersFacet)
-                    keepLs.append(bounds[1])
-                    print 'append',bounds[1]
-                else:
-                    newfacet.append(rbounds[1])
-                    bordersFacet = addVec(rbounds[1],bordersFacet)
-                    print 'append rb1'
-                if len(newfacet) != len(facet):
-                    print 'newfacet',marker, newfacet
-                    ftemp[ifac] = newfacet
-                    #mark removed points for deletion in other facets
-                    removed = [facet[i] for i in allLs if i not in keepLs]
-                    for point in removed:
-                        addVec(point,allRemoved)      
+            if 1 < len(bounds) < len(facet):
+                if isinteger(bounds[0]) and not (bounds[1]-bounds[0] ==1 or  
+                        bounds[1]==len(facet)-1 and bounds[0] == 0): #if adjacent facet points, then one edge of a facet is on the plane...don't cut
+                    #we check the u-projection of the point just beyond the first 
+                    # boundary to see which part of the facet we keep...
+                    # the half that u points toward
+                    ucheck = dot(u,facet[int(ceil(bounds[0] + self.eps))])
+                    direc = int(sign(ucheck)) #+1 or -1 
+                    newfacet = []
+                    if isinteger(bounds[0]):
+                        newfacet.append(facet[bounds[0]])
+                        keepLs.append(bounds[0])
+                        bordersFacet = addVec(facet[bounds[0]],bordersFacet)
+                        print 'append',bounds[0]
+                        ip = nextpos(bounds[0],direc,len(facet))
+                    else:
+                        newfacet.append(rbounds[0])
+                        bordersFacet = addVec(rbounds[0],bordersFacet)
+                        print 'append rb0'
+                        ip = int(rint(bounds[0]+0.5*direc))
+    #                 print ip,abs(ip - bounds[1])
+                    while abs(ip - bounds[1])>=0.5 and abs(ip - (bounds[1] - len(facet)))>=0.5:
+                        newfacet.append(facet[ip])
+                        keepLs.append(ip)
+                        print 'append',ip
+                        if abs(ip - bounds[1])==0.5 or abs(ip - (bounds[1] - len(facet)))==0.5: #next to boundary...done interior point
+                            break
+                        ip = nextpos(ip,direc,len(facet))
+                    if isinteger(bounds[1]):
+                        newfacet.append(facet[bounds[1]])
+                        bordersFacet = addVec(facet[bounds[1]],bordersFacet)
+                        keepLs.append(bounds[1])
+                        print 'append',bounds[1]
+                    else:
+                        newfacet.append(rbounds[1])
+                        bordersFacet = addVec(rbounds[1],bordersFacet)
+                        print 'append rb1'
+                    if len(newfacet) != len(facet) or not allclose(newfacet,facet):
+                        print 'newfacet',marker, newfacet
+                        ftemp[ifac] = newfacet
+                        #mark removed points for deletion in other facets
+                        removed = [facet[i] for i in allLs if i not in keepLs]
+                        for point in removed:
+                            addVec(point,allRemoved)      
         if len(allRemoved)>0:
+            self.icut += 1
+            if self.icut == 1:
+                print
             ftemp2 = deepcopy(ftemp)
             for i2, facet in enumerate(ftemp):
                 nextbreak = False
                 if i2 != ifac:
                     for ip,point in enumerate(facet):
                         for rpoint in allRemoved: #empty this facet
-                            if array_equal(point,rpoint):
+                            if allclose(point,rpoint):
                                 ftemp2[i2] = []
                                 nextbreak = True
                                 break
@@ -457,7 +461,6 @@ class meshConstruct():
                 ftemp.append([bordersFacet[i] for i in labels])
                 self.fpoints = ftemp
                 print 'Cut', self.icut
-                self.icut += 1
                 self.facetsMathPrint(self.fpoints)
                             
         return
@@ -596,21 +599,19 @@ class meshConstruct():
 
 
     def facetsMathPrint(self,farr):
+        ''' Mathematica'''
         print 'Graphics3D[{Red, Thick,{',
         for ifac, facet in enumerate(farr):
             print 'Line[{',
             for point in facet:
 #                 print 'point',point
                 print '{'+'{},{},{}'.format(point[0],point[1],point[2])+'},',
-            print '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}',
+            print '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}', #back to first
             print '}]',
             if ifac < len(farr)-1:
                 print ',',
-        print '}}]'     
+        print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}]'     
         return    
-
-
-        
                  
     def relaxMeshSym(self,B,targetNmesh,path):
         #1. nCoarse random points in the cell parallelpiped.  

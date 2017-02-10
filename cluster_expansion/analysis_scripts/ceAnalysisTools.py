@@ -179,7 +179,7 @@ def checkCluster(i,orderi,vertsi,disti,bestorders,bestverts, bestdists):
                     for ivert in range(orderb):
                         bvert = bestverts[ib,ivert,:3]
 #                        print bvert, vertsi[ivert]
-                        if np.array_equal(bvert,vertsi[ivert]) or np.array_equal(bvert,-vertsi[ivert]): #any new vertex means no match
+                        if np.allclose(bvert,vertsi[ivert]) or np.allclose(bvert,-vertsi[ivert]): #any new vertex means no match
                             vectmatch[ivert] = 1
 #                        print vectmatch
                     if np.sum(vectmatch) == orderb:

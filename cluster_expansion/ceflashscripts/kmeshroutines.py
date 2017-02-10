@@ -3,7 +3,7 @@
 import time, os, subprocess, sys
 from numpy import array, cos, sin,arccos, dot, cross, pi,  floor, sum, sqrt, exp, log, asarray
 from numpy import sign, matrix, transpose,rint,inner,multiply,size,argmin,argmax,round,ceil
-from numpy import zeros,nonzero,float64, sort, argsort, mod, amin, amax,array_equal
+from numpy import zeros,nonzero,float64, sort, argsort, mod, amin, amax,allclose
 fprec=float64
 #from numpy.matlib import zeros, matrix #creates np.matrix rather than array, but limited to 2-D!!!!  uses *, but array uses matrixmultiply
 from numpy.linalg import norm, det, inv, eig
@@ -196,7 +196,7 @@ def areParallel(v1,v2):
 def addVec(vec,list):
     '''adds a vector to a list of vectors if it's not in the list '''
     for lvec in list:
-        if array_equal(vec,lvec):
+        if allclose(vec,lvec):
             return list
     list.append(vec)
     return list
