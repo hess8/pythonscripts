@@ -114,7 +114,7 @@ def orderAngle(facet,labels):
         rcenter = sum(facet)/len(facet)
         xunitv =  (facet[0] - rcenter)/norm(facet[0] - rcenter)
 #         yunitv = cross(xunitv, rcenter)/norm(cross(xunitv, rcenter))    
-        vec = facet[1] - dot(facet[0],facet[1])
+        vec = (facet[1] - rcenter) - dot((facet[1] - rcenter),xunitv)
         yunitv =   vec/norm(vec)  
         angles = []
         for i, vec in enumerate(facet):
@@ -363,21 +363,23 @@ class meshConstruct():
         between the plane and the facet segments are new facet points.  If a facet
         point lies on the plane, it stays in the facet. '''
         print '\nu',u
+        if abs(norm(u-array([ 0.70710678,  0.,         -0.70710678]))) <1e-4:
+            print
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the new edges of cut facets
 #         ftemp = [[]]*len(self.fpoints) #this will contain only points, not labels
         ftemp = deepcopy(self.fpoints) #this will contain only points, not labels
+#         if allclose(u,array([ 0.    ,      0.70710678 ,-0.70710678])):
+#             print
         
         for ifac, facet in enumerate(self.fpoints):
             marker = ''
-            print 'facet',ifac, facet
+            print 'facet',ifac, 'len',len(facet), facet
             bounds = []
             rbounds = []
             allLs = range(len(facet))
             keepLs = []
             for ip,point1 in enumerate(facet):
-#                 if abs(norm(point1-array([0.55619576 , 0.55619576 , 0.55619576]))) <1e-4:
-#                     'pause'
 #                     marker = "*"                  
                 if areEqual(dot(u,point1),0.0): #then this point is on the cut plane
                     bounds.append(ip)
@@ -390,14 +392,16 @@ class meshConstruct():
                     if intersect:
                         bounds.append(ip + 0.5)  #to show it intersects, but not necessarily at a midpoint. 
                         rbounds.append(rinters)
-            print 'bounds',bounds 
-            print 'bounds',bounds
+           
             if 1 < len(bounds) < len(facet):
-                if isinteger(bounds[0]) and not (bounds[1]-bounds[0] ==1 or  
-                        bounds[1]==len(facet)-1 and bounds[0] == 0): #if adjacent facet points, then one edge of a facet is on the plane...don't cut
+                if (isinteger(bounds[0]) and not (bounds[1]-bounds[0] ==1 or  
+                        bounds[1]==len(facet)-1 and bounds[0] == 0) )\
+                or\
+                   (not isinteger(bounds[0]) or not isinteger(bounds[1])) : #if adjacent facet points, then one edge of a facet is on the plane...don't cut
                     #we check the u-projection of the point just beyond the first 
                     # boundary to see which part of the facet we keep...
                     # the half that u points toward
+                    print 'bounds',bounds
                     ucheck = dot(u,facet[int(ceil(bounds[0] + self.eps))])
                     direc = int(sign(ucheck)) #+1 or -1 
                     newfacet = []
@@ -443,15 +447,14 @@ class meshConstruct():
             ftemp2 = deepcopy(ftemp)
             for i2, facet in enumerate(ftemp):
                 nextbreak = False
-                if i2 != ifac:
-                    for ip,point in enumerate(facet):
-                        for rpoint in allRemoved: #empty this facet
-                            if allclose(point,rpoint):
-                                ftemp2[i2] = []
-                                nextbreak = True
-                                break
-                        if nextbreak:
+                for ip,point in enumerate(facet):
+                    for rpoint in allRemoved: #empty this facet
+                        if allclose(point,rpoint):
+                            ftemp2[i2] = []
+                            nextbreak = True
                             break
+                    if nextbreak:
+                        break
             ftemp = []
             for i2, facet in enumerate(ftemp2):
                 if len(facet)> 0:
@@ -554,26 +557,27 @@ class meshConstruct():
                 evecs = array([evec for evec in evecs])
                 if areEqual(det(op),1.0)  : #rotation
                     evec = evecs[:,where(areEqual(evals,1.0))[0][0]] #axis
-                    ipt = 0
-                    #choose a facet point that is close to the rotation axis to avoid unusual cutting planes
-                    ds = []
-                    labels = range(len(self.facetsPoints))
-                    for vec in self.facetsPoints['vec']:
-                        if areEqual(abs(dot(evec,vec)),norm(vec)): #axis and vec are parallel...don't want this one.
-                             ds.append(100)
-                        else:
-                            ds.append(norm(vec - evec*dot(evec,vec)))
-                    labels =  [label for (d,label) in sorted(zip(ds,labels))]#sort by distance
-                    pnto = self.facetsPoints[labels[0]]['vec']
-                    #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   
-                    #tvec = cross(pnto,cross(pnto,evec))
-                    tvec = cross(evec,pnto)
-                    u1 = self.choose111(tvec/norm(tvec))
-                    self.cutCell(u1)
-                    pntp = dot(op,pnto)
-                    tvec = cross(evec,pntp)
-                    u2 = self.choose111(tvec/norm(tvec))
-                    self.cutCell(u2) 
+                    if self.rotDuplicates(): #does this operation cause current facet points to lie on top of other current facet points. 
+                        ipt = 0
+                        #choose a facet point that is close to the rotation axis to avoid unusual cutting planes
+                        ds = []
+                        labels = range(len(self.facetsPoints))
+                        for vec in self.facetsPoints['vec']:
+                            if areEqual(abs(dot(evec,vec)),norm(vec)): #axis and vec are parallel...don't want this one.
+                                 ds.append(100)
+                            else:
+                                ds.append(norm(vec - evec*dot(evec,vec)))
+                        labels =  [label for (d,label) in sorted(zip(ds,labels))]#sort by distance
+                        pnto = self.facetsPoints[labels[0]]['vec']
+                        #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   
+                        #tvec = cross(pnto,cross(pnto,evec))
+                        tvec = cross(evec,pnto)
+                        u1 = self.choose111(tvec/norm(tvec))
+                        self.cutCell(u1)
+                        pntp = dot(op,pnto)
+                        tvec = cross(evec,pntp)
+                        u2 = self.choose111(tvec/norm(tvec))
+                        self.cutCell(u2) 
                 else: # -1: reflection/improper rotatioin
                     if len(where(areEqual(evals,-1.0))) > 1: evals = -evals #improper rotation
                     evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
@@ -595,7 +599,12 @@ class meshConstruct():
         for ifac, facet in enumerate(self.fpoints):
             print ifac, facet
         self.facetsMathPrint(self.fpoints)
-        return
+        allpoints = []
+#         for ifac,facet in enumerate(self.fpoints):
+#             for point in facet:
+#                 addVec(point,allpoints)
+#         print 'tet volume', self.volTet(allpoints)
+#         return
 
 
     def facetsMathPrint(self,farr):
@@ -654,7 +663,7 @@ class meshConstruct():
             self.points[i]['vec'] = intoVoronoi(self.points[i]['vec'],self.B)
     
     def volTet(self,vertPoints): 
-        return dot((vertPoints[0]-vertPoints[3]),cross((vertPoints[1]-vertPoints[3]),(vertPoints[2]-vertPoints[3])))/6.0
+        return abs(dot((vertPoints[0]-vertPoints[3]),cross((vertPoints[1]-vertPoints[3]),(vertPoints[2]-vertPoints[3])))/6.0)
     
     def delauPoints(self):
 #         print 'len self.points', len(self.points[:self.npoints]['vec']) 
