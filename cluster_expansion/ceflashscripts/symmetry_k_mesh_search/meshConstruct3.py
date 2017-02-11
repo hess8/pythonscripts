@@ -457,7 +457,7 @@ class meshConstruct():
             for i2, facet in enumerate(ftemp):
                 nextbreak = False
                 for ip,point in enumerate(facet):
-                    for rpoint in allRemoved: #empty this facet
+                    for rpoint in allRemoved: 
                         if allclose(point,rpoint):
                             ftemp2[i2] = []
                             nextbreak = True
@@ -468,13 +468,18 @@ class meshConstruct():
             for i2, facet in enumerate(ftemp2):
                 if len(facet)> 0:
                    ftemp.append(facet)
+            #Add any points that are in the cut plane into bordersFacet.  Some are not in facets with cuts. 
+            points = flatVecsList(self.fpoints)
+            for i in range(len(points)):
+                if areEqual(dot(u,points[i]),0):
+                    addVec(points[i],bordersFacet)            
+            #Order by angle in the facet
             if len(bordersFacet)> 0:
                 labels = orderAngle(bordersFacet,range(len(bordersFacet)))
                 ftemp.append([bordersFacet[i] for i in labels])
                 self.fpoints = ftemp
                 print 'Cut', self.icut
-                self.facetsMathPrint(self.fpoints)
-                            
+                self.facetsMathPrint(self.fpoints)               
         return
                                               
 #                 if isinteger(bounds[0]):
@@ -526,7 +531,8 @@ class meshConstruct():
         from the axis of rotation to some point O and to point RO
         4. Improper rotation (Sn):  inversion + rotation, equivalent to rotation and reflection.
            Det -1.   In this case also we have a plane normal (reflection plane.  
-           Use it to cut the system in half...we dont care about which Cn is part of the operation.
+           The cuts for improper rots are the same as for proper rots, so we change improper ones
+           into proper ones before applying. 
         
         All rotations with angle not 0 or  pi have complex eigenvalues.  So an improper rotation
         has complex eigenvalues and a determinate less than 1. 
@@ -557,6 +563,7 @@ class meshConstruct():
 #         for vec in self.facetsPoints[:]['vec']:
 #             sumComps.append(sum(vec))
         print '\n\nReducing Brillouin zone by symmetry'
+        print '\tThis routine does not reduce improper rotations'
 #         print '\n\nUsing dummy symmetry ops'
 #         for iop in range(self.nops):
 #             op = self.symops[:,:,iop]
@@ -568,14 +575,16 @@ class meshConstruct():
             temp = []
             for ip in facet:
                temp.append(self.facetsPoints[ip]['vec'])
-            self.fpoints[ifac] = temp 
+            self.fpoints[ifac] = temp
+        print'Voronoi cell plot'; self.facetsMathPrint(self.fpoints) 
+        inversion = False
         for iop in range(self.nops):
             op = self.symops[:,:,iop]            
             if abs(trace(op))< 3: #skip E and inverse
                 evals,evecs = eig(op)
                 evecs = array([evec for evec in evecs])
                 if areEqual(det(op),-1.0) and not allclose(imag(evecs),zeros((3,3))):
-                    print '\nChanged improper rotation to proper one.'
+#                     print '\nChanged improper rotation to proper one.'
                     op = -op
                     evals,evecs = eig(op)
                     evecs = array([evec for evec in evecs])
@@ -615,8 +624,15 @@ class meshConstruct():
                         u1 = self.choose111(evec) 
                         self.cutCell(u1) 
                 else:
-                    print '\nOp {} yields no duplicates\n'.format(iop),op     
-#         print '\n\n\n\n\nadd inversion operator!!!'
+                    print '\nOp {} yields no duplicates\n'.format(iop)  
+            elif areEqual(det(op),-1.0):
+                inversion = True
+        if inversion: #apply last of all
+            if self.makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]])):
+                #can cut along any plane
+                self.cutCell(array([1.0,0.0,0.0]))
+                
+             
 #         print 'new boundaries'
 #         for iplane, pvec in enumerate(self.boundaries):   
 #             print iplane, pvec, norm(pvec)
