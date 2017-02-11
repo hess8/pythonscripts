@@ -56,7 +56,7 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where,real,allclose,sign,pi)
+                   trace,where,real,allclose,sign,pi,imag)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi
 from numpy.linalg import inv, norm, det, eig
@@ -123,6 +123,15 @@ def orderAngle(facet,labels):
             if angle < 0: angle = 2*pi + angle
             angles.append(angle)
         return [label for (angle,label) in sorted(zip(angles,labels))]
+
+def flatVecsList(vecsList):
+    '''Returns a flat list of vectors, from a list of lists that might have duplicates, 
+    as in the case of facets on a polyhedron'''
+    allpoints = []
+    for isub,sub in enumerate(vecsList):
+        for vec in sub:
+            addVec(vec,allpoints)
+    return allpoints
 
 def nextpos(ip,direc,nfacet):
     ip += direc
@@ -363,8 +372,8 @@ class meshConstruct():
         between the plane and the facet segments are new facet points.  If a facet
         point lies on the plane, it stays in the facet. '''
         print '\nu',u
-        if abs(norm(u-array([ 0.70710678,  0.,         -0.70710678]))) <1e-4:
-            print
+#         if abs(norm(u-array([ 0.70710678,  0.,         -0.70710678]))) <1e-4:
+#             print
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the new edges of cut facets
 #         ftemp = [[]]*len(self.fpoints) #this will contain only points, not labels
@@ -483,15 +492,20 @@ class meshConstruct():
 #                             newfacet.append(facet[ip])
 #                         newfacet.append(rbounds[1])                    
                     
-                         
-                
-            
-            
-
-                
-        
-                
-
+    def makesDups(self,op):
+        '''Applies symmetry operator to all facet points. If any facet points are 
+        moved on top of other facet points, then return true'''
+        points = flatVecsList(self.fpoints)
+        for i in range(len(points)):
+            rpoint = dot(op,points[i])
+            if allclose(points[i],rpoint):
+                break #no rotation effect
+            otherLabels = range(len(points))
+            otherLabels.pop(i)
+            for j in otherLabels:
+                if allclose(rpoint,points[j]):
+                    return True
+        return False
            
     def getIBZ(self):
         '''
@@ -513,6 +527,11 @@ class meshConstruct():
         4. Improper rotation (Sn):  inversion + rotation, equivalent to rotation and reflection.
            Det -1.   In this case also we have a plane normal (reflection plane.  
            Use it to cut the system in half...we dont care about which Cn is part of the operation.
+        
+        All rotations with angle not 0 or  pi have complex eigenvalues.  So an improper rotation
+        has complex eigenvalues and a determinate less than 1. 
+        
+        
            
         Cutting: 
         Rotation: a plane through the origin has dot(r,u) = 0, for the normal u.  
@@ -551,13 +570,23 @@ class meshConstruct():
                temp.append(self.facetsPoints[ip]['vec'])
             self.fpoints[ifac] = temp 
         for iop in range(self.nops):
-            op = self.symops[:,:,iop]
+            op = self.symops[:,:,iop]            
             if abs(trace(op))< 3: #skip E and inverse
-                evals,evecs = eig(self.symops[:,:,iop])
+                evals,evecs = eig(op)
                 evecs = array([evec for evec in evecs])
+                if areEqual(det(op),-1.0) and not allclose(imag(evecs),zeros((3,3))):
+                    print '\nChanged improper rotation to proper one.'
+                    op = -op
+                    evals,evecs = eig(op)
+                    evecs = array([evec for evec in evecs])
+                print '\niop',iop;print op
                 if areEqual(det(op),1.0)  : #rotation
-                    evec = evecs[:,where(areEqual(evals,1.0))[0][0]] #axis
-                    if self.rotDuplicates(): #does this operation cause current facet points to lie on top of other current facet points. 
+                    print 'Rotation',  real(evecs[:,where(areEqual(evals,1.0))[0][0]])
+                else:
+                    print 'Reflection',real(evecs[:,where(areEqual(evals,-1.0))[0][0]])
+                if self.makesDups(op): #does this operation cause current facet points to lie on top of other current facet points. 
+                    if areEqual(det(op),1.0)  : #rotation
+                        evec = evecs[:,where(areEqual(evals,1.0))[0][0]] #axis
                         ipt = 0
                         #choose a facet point that is close to the rotation axis to avoid unusual cutting planes
                         ds = []
@@ -577,12 +606,16 @@ class meshConstruct():
                         pntp = dot(op,pnto)
                         tvec = cross(evec,pntp)
                         u2 = self.choose111(tvec/norm(tvec))
+                        print'\n\t2nd half of rot'
                         self.cutCell(u2) 
-                else: # -1: reflection/improper rotatioin
-                    if len(where(areEqual(evals,-1.0))) > 1: evals = -evals #improper rotation
-                    evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
-                    u1 = self.choose111(evec) 
-                    self.cutCell(u1)         
+
+                    else: # -1: reflection/improper rotatioin
+                        if len(where(areEqual(evals,-1.0))) > 1: evals = -evals #improper rotation
+                        evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
+                        u1 = self.choose111(evec) 
+                        self.cutCell(u1) 
+                else:
+                    print '\nOp {} yields no duplicates\n'.format(iop),op     
 #         print '\n\n\n\n\nadd inversion operator!!!'
 #         print 'new boundaries'
 #         for iplane, pvec in enumerate(self.boundaries):   
@@ -599,13 +632,6 @@ class meshConstruct():
         for ifac, facet in enumerate(self.fpoints):
             print ifac, facet
         self.facetsMathPrint(self.fpoints)
-        allpoints = []
-#         for ifac,facet in enumerate(self.fpoints):
-#             for point in facet:
-#                 addVec(point,allpoints)
-#         print 'tet volume', self.volTet(allpoints)
-#         return
-
 
     def facetsMathPrint(self,farr):
         ''' Mathematica'''
