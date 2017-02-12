@@ -179,7 +179,7 @@ class meshConstruct():
         self.eps = self.ravg/1000
         self.getVorCell() ############################   
         self.getIBZ() 
-        self.meshCubic()    
+#         self.meshCubic()    
         
         sys.exit('stop')        
         print 'Typical spacing:', self.ravg
@@ -242,10 +242,10 @@ class meshConstruct():
         aKcubConv = (volKcubConv/len(sites))**(1/3.0)
         cubicLVs = cubicLVs*aKcubConv
         #Find the planar boundaries
-        self.boundaries = []
+        self.boundaries =[[],[]] #planes [u's],[ro's]
         for ifac, facet in enumerate(self.fpoints):
             u,ro = plane3pts(facet[:3])
-            self.boundaries.append([u,ro])
+            self.boundaries[0].append(u);self.boundaries[1].append(ro)
         #Find the extremes in each cubLV direction:
 #         maxMins = zeros((3,2))
         intMaxs = [] #factors of aKcubConv
@@ -257,11 +257,11 @@ class meshConstruct():
             intMaxs.append(ceil(max(projs)/aKcubConv))
             intMins.append(floor(min(projs)/aKcubConv))       
         #Create the cubic mesh inside the irreducible BZ
-        cubPoints = []
-        for i in range(intMins[0],intMaxs[0]):
-            for j in range(intMins[1],intMaxs[1]):
-                for k in range(intMins[2],intMaxs[2]):
-                    if 
+#         cubPoints = []
+#         for i in range(intMins[0],intMaxs[0]):
+#             for j in range(intMins[1],intMaxs[1]):
+#                 for k in range(intMins[2],intMaxs[2]):
+#                     if 
             
         
         
@@ -297,28 +297,27 @@ class meshConstruct():
         for ig  in range(len(grp)):
             gvec = self.braggVecs[grp[ig]]['vec']
             if self.isInside(gvec):
-                newboundaries.append(gvec)
+                gnorm = norm(gvec)
+                newboundaries[0].append(array(gvec/gnorm)); newboundaries[1].append(gnorm)
                 newPlanes = True         
         self.boundaries = newboundaries
         return newPlanes
     
     def isInside(self,vec):
-        inside = zeros(len(self.boundaries),dtype = bool)
-        for iplane, pvec in enumerate(self.boundaries):
-            if dot(vec,pvec) < dot(pvec,pvec)- self.eps: #point is inside this plane
+        inside = zeros(len(self.boundaries[0]),dtype = bool)
+        for iplane, uvec in enumerate(self.boundaries[0]):
+            if dot(vec,uvec) < self.boundaries[1][iplane] - self.eps: #point is inside this plane
                 inside[iplane] = True
         return all(inside)
 
     def isOutside(self,vec):
         print 'intersection',vec
-#         outside = zeros(len(self.boundaries),dtype = bool)
-        for iplane, pvec in enumerate(self.boundaries):            
-            print 'pvec',pvec
-            if dot(vec,pvec) - dot(pvec,pvec) > self.eps: #point is outside this plane
-                print '\tboundary', iplane, pvec, norm(pvec)
-                print '\tboundary component', dot(vec,pvec), dot(pvec,pvec)
-                print
-
+        for iplane, uvec in enumerate(self.boundaries[0]): 
+            pvec = uvec*self.boundaries[1][iplane]           
+            if dot(vec,uvec) > self.boundaries[1][iplane] + self.eps: #point is outside this plane
+#                 print '\tboundary', iplane, uvec, norm(pvec)
+#                 print '\tboundary component', dot(vec,pvec), dot(pvec,pvec)
+#                 print
                 return True
             else:
                 print 'On boundary check',iplane,dot(vec,pvec) - dot(pvec,pvec),pvec
@@ -334,22 +333,20 @@ class meshConstruct():
         igroup = 1
         checkNext = True
         gstart,ng = self.magGroup(self.braggVecs,1) # group of smallest bragg plane vectors
-        self.boundaries = [] #a list of vector plane normals and the min plane distance to the plane
+        self.boundaries =[[],[]] #planes [u's],[ro's]
         for i in range(ng):
-            self.boundaries.append(self.braggVecs[i]['vec'])
+            vec = self.braggVecs[i]['vec']; mag = norm(vec)
+            self.boundaries[0].append(vec/mag); self.boundaries[1].append(mag)
         print 'Smallest bragg vectors  boundaries', self.boundaries
         while checkNext:
             igroup += 1
             gstart,ng = self.magGroup(self.braggVecs,igroup)
             nextGroup = range(gstart,gstart+ng)
             checkNext = self.checkInside(nextGroup)
-        print 'new boundaries'
-        for iplane, pvec in enumerate(self.boundaries):   
-            print iplane, pvec, norm(pvec)
         self.getInterscPoints(self.boundaries)
-
         #write plane equations:
-        for iplane, pvec in enumerate(self.boundaries):
+        for iplane, uvec in enumerate(self.boundaries[0]):
+            pvec = uvec*self.boundaries[1][iplane]
             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)) #write plane equations for mathematica
         print 'intersections'
         for i in range(self.nIntersc):
@@ -359,13 +356,13 @@ class meshConstruct():
         for i in range(len(self.facetsPoints)):
             print i, self.facetsPoints[i]['mag'], self.facetsPoints[i]['vec']
         self.arrangeFacets()
-        self.nBoundVC = len(self.boundaries)
         return
 
     def arrangeFacets(self):        
         #arrange facets in each plane according to their angular order in the plane
-        self.facets = [[]]*len(self.boundaries)
-        for iplane, pvec in enumerate(self.boundaries):
+        self.facets = [[]]*len(self.boundaries[0])
+        for iplane, uvec in enumerate(self.boundaries[0]):
+            pvec = uvec*self.boundaries[1][iplane]
             facetvecs = []
             facetlabels = []
             for i, fvec in  enumerate(self.facetsPoints['vec']):
@@ -398,7 +395,10 @@ class meshConstruct():
             mag = norm(vec)
             self.facetsPoints[iOK]['mag'] = mag
 
-    def getInterscPoints(self,vecs):
+    def getInterscPoints(self,planes):
+        '''intersection points of planes, taken 3 at a time, where the planes
+        have unit vector u (list 0) and are displaced a distance ro (list 1 in planes)'''
+        vecs = [planes[0][i]*planes[1][i] for i in range(len(planes[0]))]
         combs = list(combinations(vecs,3))
         unique = []
         uniqStrs = []
