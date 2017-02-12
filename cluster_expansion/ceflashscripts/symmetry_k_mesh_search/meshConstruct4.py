@@ -56,7 +56,7 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where,real,allclose,sign,pi,imag)
+                   trace,where,real,allclose,sign,pi,imag,identity)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi
 from numpy.linalg import inv, norm, det, eig
@@ -134,6 +134,14 @@ def flatVecsList(vecsList):
             addVec(vec,allpoints)
     return allpoints
 
+def plane3pts(points):
+    '''From the first 3 points of a list of points, 
+    returns a normal and closest distance to origin of the plane
+    The closest distance is d = dot(r0,u)'''
+    r0 = points[0]; r1 = points[1]; r2 = points[2]
+    u = cross(r1-r0,r2-r0)
+    return u,dot(r0,u) 
+
 def nextpos(ip,direc,nfacet):
     ip += direc
     if ip < 0: ip  += nfacet
@@ -191,14 +199,83 @@ class meshConstruct():
         orthogonal, align the cubic mesh with them.  '''
         sitesBCC = [array([0, 0 , 0]), array([a/2,a/2,a/2])]
         sitesFCC = [array([0, 0 , 0]), array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])]
-                    
-                        
-                       [a,a,0],\
-                        [a,a,a]])  #bcc like best avg pf on 50: 0.66
-                    
-            LVfcc = array([[5, a/c , a/c],[a/c,0,a/c],[a/c,a/c,-5]]) #fcc like best avg pf on 50: 0.59
+        cubicLVs = identity(3)
+        if type == 'fcc':
+            sites = sitesFCC
+            pf = 0.74
+        elif type == 'bcc':
+            sites = sitesBCC
+            pf = 0.68
+        #test vacet points for orthogonality
+        points = flatVecsList(self.fpoints)
+        rs = []
+        pairs = []
+        triples = []
+        for i in range(len(points)):
+            rs.append(norm(points[i]))
+            for j in range(i,len(points)):
+                if areEqual(dot(points[i],points[j]),0.0):
+                    pairs.append(points[i],points[j])
+        for i in range(len(points)):
+            for pair in pairs:
+                if areEqual(dot(pair[0],points[i]),0.0) and areEqual(dot(pair[1],points[i]),0.0):
+                    triple = deepcopy(pairs)
+                    triple.append(points[i])
+                    triples.append(triple)
+        #Define basis vectors for cubic lattice:
+        if len(triple)>0:
+            for i in range(3):
+                print 'At least one triplet of orthogonal point vectors found.'
+                vec = triples[0][i]
+                cubicLVs[:,i] = vec/norm(vec)
+        elif len(pairs)>0:
+            for i in range(2):
+                print 'At least one pair of orthogonal point vectors found.'
+                vec = pair[0][i]
+                cubicLVs[:,i] = vec/norm(vec)
+            cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
+        else:
+            print 'no orthogonal point vectors found.'
+        #scale
+        volSC= det(self.B)
+        volKcubConv = volSc/self.nTarget
+        aKcubConv = (volKcubConv/len(sites))**(1/3.0)
+        cubicLVs = cubicLVs*aKcubConv
+        #Find the planar boundaries
+        self.boundaries = []
+        for ifac, facet in enumerate(self.fpoints):
+            u,ro = plane3pts(facet[:3])
+            self.boundaries.append([u,ro])
+        #Find the extremes in each cubLV direction:
+#         maxMins = zeros((3,2))
+        intMaxs = [] #factors of aKcubConv
+        intMins = []
+        for i in range(3):
+            projs = []
+            for point in points:
+                projs.append(dot(cubicLVs[:,i],point))
+            intMaxs.append(ceil(max(projs)/aKcubConv))
+            intMins.append(floor(min(projs)/aKcubConv))       
+        #Create the cubic mesh inside the irreducible BZ
+        cubPoints = []
+        for i in range(intMins[0],intMaxs[0]):
+            for j in range(intMins[1],intMaxs[1]):
+                for k in range(intMins[2],intMaxs[2]):
+                    if 
+            
+        
+        
+            
+        
+        
+        
         
 
+            
+            
+        
+            
+       
         
     def magGroup(self,arr, igroup):
         '''returns the ith group, numbered from 1, (starting index and length of group) of vectors in a structured array, 
@@ -257,7 +334,7 @@ class meshConstruct():
         igroup = 1
         checkNext = True
         gstart,ng = self.magGroup(self.braggVecs,1) # group of smallest bragg plane vectors
-        self.boundaries = [] #a list of vector plane normals
+        self.boundaries = [] #a list of vector plane normals and the min plane distance to the plane
         for i in range(ng):
             self.boundaries.append(self.braggVecs[i]['vec'])
         print 'Smallest bragg vectors  boundaries', self.boundaries
@@ -648,19 +725,6 @@ class meshConstruct():
             if self.makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]])):
                 #can cut along any plane
                 self.cutCell(array([1.0,0.0,0.0]))
-                
-             
-#         print 'new boundaries'
-#         for iplane, pvec in enumerate(self.boundaries):   
-#             print iplane, pvec, norm(pvec)
-#         self.getInterscPoints(self.boundaries)
-#   
-#         #reshape the boundaries
-#         self.getInterscPoints(self.boundaries)
-#         print 'intersections'
-#         for i in range(self.nIntersc):
-#             print i, self.interscPoints[i]['mag'], self.interscPoints[i]['vec']
-#         self.getFPByInside()
         print 'facet points'
         for ifac, facet in enumerate(self.fpoints):
             print ifac, facet

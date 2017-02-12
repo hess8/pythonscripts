@@ -12,7 +12,7 @@ from kmeshroutines import nstrip, readposcar,create_poscar
 # from bestmeshIter_vary_pf import bestmeshIter_vary_pf
 # from bestmeshIter_vary_N import bestmeshIter_vary_N
 fprec=float64
-import meshConstruct3
+import meshConstruct4
 
 ################# script #######################
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test101x/'
@@ -37,7 +37,7 @@ maindir = '/fslhome/bch/cluster_expansion/meshConstruct/AlAl'
 #maindir = '/fslhome/bch/cluster_expansion/sisi/test10^3/'
 #maindir = '/fslhome/bch/cluster_expansion/sisi/test10^4/'
 
-meshc = meshConstruct3.meshConstruct() #instance
+meshc = meshConstruct4.meshConstruct() #instance
 
 testfile = 'POSCAR'
 # Nkppra = 10000#*10  
