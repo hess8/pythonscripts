@@ -179,7 +179,7 @@ class meshConstruct():
         self.eps = self.ravg/1000
         self.getVorCell() ############################   
         self.getIBZ() 
-#         self.meshCubic()    
+        self.meshCubic('fcc')    
         
         sys.exit('stop')        
         print 'Typical spacing:', self.ravg
@@ -197,6 +197,7 @@ class meshConstruct():
     def meshCubic(self,type):
         '''Add a cubic mesh to the volume. If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with them.  '''
+        a = 1.0
         sitesBCC = [array([0, 0 , 0]), array([a/2,a/2,a/2])]
         sitesFCC = [array([0, 0 , 0]), array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])]
         cubicLVs = identity(3)
@@ -204,7 +205,7 @@ class meshConstruct():
             sites = sitesFCC
             pf = 0.74
         elif type == 'bcc':
-            sites = sitesBCC
+            sites = deepcopy(sitesBCC)
             pf = 0.68
         #test vacet points for orthogonality
         points = flatVecsList(self.fpoints)
@@ -212,25 +213,30 @@ class meshConstruct():
         pairs = []
         triples = []
         for i in range(len(points)):
+            if areEqual(norm(points[i]),0.0): break
             rs.append(norm(points[i]))
             for j in range(i,len(points)):
+                if areEqual(norm(points[j]),0.0): break
                 if areEqual(dot(points[i],points[j]),0.0):
-                    pairs.append(points[i],points[j])
-        for i in range(len(points)):
-            for pair in pairs:
+                    pairs.append([points[i],points[j]])
+
+        for ip,pair in enumerate(pairs):
+            for i in range(len(points)):
+                if areEqual(norm(points[i]),0.0): break
                 if areEqual(dot(pair[0],points[i]),0.0) and areEqual(dot(pair[1],points[i]),0.0):
-                    triple = deepcopy(pairs)
+                    triple = deepcopy(pair)
                     triple.append(points[i])
                     triples.append(triple)
+                    break
         #Define basis vectors for cubic lattice:
         if len(triple)>0:
+            print 'At least one triplet of orthogonal point vectors found:',triples[0]
             for i in range(3):
-                print 'At least one triplet of orthogonal point vectors found.'
                 vec = triples[0][i]
                 cubicLVs[:,i] = vec/norm(vec)
         elif len(pairs)>0:
             for i in range(2):
-                print 'At least one pair of orthogonal point vectors found.'
+                print 'At least one pair of orthogonal point vectors found:', pairs[0]
                 vec = pair[0][i]
                 cubicLVs[:,i] = vec/norm(vec)
             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
@@ -238,9 +244,8 @@ class meshConstruct():
             print 'no orthogonal point vectors found.'
         #scale
         volSC= det(self.B)
-        volKcubConv = volSc/self.nTarget
-        aKcubConv = (volKcubConv/len(sites))**(1/3.0)
-        cubicLVs = cubicLVs*aKcubConv
+        volKcubConv = volSC/self.nTarget*len(sites)
+        aKcubConv = volKcubConv**(1/3.0)
         #Find the planar boundaries
         self.boundaries =[[],[]] #planes [u's],[ro's]
         for ifac, facet in enumerate(self.fpoints):
@@ -254,28 +259,22 @@ class meshConstruct():
             projs = []
             for point in points:
                 projs.append(dot(cubicLVs[:,i],point))
-            intMaxs.append(ceil(max(projs)/aKcubConv))
-            intMins.append(floor(min(projs)/aKcubConv))       
+            intMaxs.append(int(ceil(max(projs)/aKcubConv)))
+            intMins.append(int(floor(min(projs)/aKcubConv)))       
         #Create the cubic mesh inside the irreducible BZ
-#         cubPoints = []
-#         for i in range(intMins[0],intMaxs[0]):
-#             for j in range(intMins[1],intMaxs[1]):
-#                 for k in range(intMins[2],intMaxs[2]):
-#                     if 
-            
-        
-        
-            
-        
-        
-        
-        
-
-            
-            
-        
-            
-       
+        cubicLVs = cubicLVs * aKcubConv
+        sites = [site * aKcubConv for site in sites]
+        cubPoints = []
+        for i in range(intMins[0],intMaxs[0]):
+            for j in range(intMins[1],intMaxs[1]):
+                for k in range(intMins[2],intMaxs[2]):
+                        lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
+                        for site in sites:
+                            kpoint = lvec + site
+                            if self.isInside(kpoint):
+                                cubPoints.append(kpoint)
+        print 'cubPoints',cubPoints  
+        return     
         
     def magGroup(self,arr, igroup):
         '''returns the ith group, numbered from 1, (starting index and length of group) of vectors in a structured array, 
