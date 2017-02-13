@@ -184,7 +184,10 @@ class meshConstruct():
         self.eps = self.ravg/1000
         self.getVorCell() ############################   
         self.getIBZ() 
-        self.meshCubic('fcc')    
+        self.meshCubic('fcc')
+#         self.meshCubic('bcc')
+
+#         self.meshCubic('cub')   
         
         sys.exit('stop')        
         print 'Typical spacing:', self.ravg
@@ -203,15 +206,18 @@ class meshConstruct():
         '''Add a cubic mesh to the volume. If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with them.  '''
         a = 1.0
-        sitesBCC = [array([0, 0 , 0]), array([a/2,a/2,a/2])]
-        sitesFCC = [array([0, 0 , 0]), array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])]
         cubicLVs = identity(3)
         if type == 'fcc':
-            sites = sitesFCC
+            sites = [array([0, 0 , 0]), array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])]
             pf = 0.74
         elif type == 'bcc':
-            sites = deepcopy(sitesBCC)
+            sites = [array([0, 0 , 0]), array([a/2,a/2,a/2])]
             pf = 0.68
+        elif type == 'cub':
+            pf = 0.52
+            sites = [array([0, 0 , 0])]
+        else: 
+            sys.exit('stop. Type error in meshCubich')
         #test vacet points for orthogonality
         points = flatVecsList(self.fpoints)
         bodyCenter = sum(points)
