@@ -137,9 +137,14 @@ def flatVecsList(vecsList):
 def plane3pts(points):
     '''From the first 3 points of a list of points, 
     returns a normal and closest distance to origin of the plane
-    The closest distance is d = dot(r0,u)'''
+    The closest distance is d = dot(r0,u).  The normal's direction 
+    (degenerate vs multiplication by -1)
+    is chosen to be that which points away from the side the origin is on.  If the 
+    plane goes through the origin, then all the r's are in the plane, and no choice is made '''
     r0 = points[0]; r1 = points[1]; r2 = points[2]
-    u = cross(r1-r0,r2-r0)
+    vec = cross(r1-r0,r2-r0)
+    u = vec/norm(vec)
+    if dot(u,r0) < 0: u = -u
     return u,dot(r0,u) 
 
 def nextpos(ip,direc,nfacet):
@@ -209,6 +214,7 @@ class meshConstruct():
             pf = 0.68
         #test vacet points for orthogonality
         points = flatVecsList(self.fpoints)
+        bodyCenter = sum(points)
         rs = []
         pairs = []
         triples = []
@@ -228,16 +234,30 @@ class meshConstruct():
                     triple.append(points[i])
                     triples.append(triple)
                     break
+        
         #Define basis vectors for cubic lattice:
+        Lsum= [] #length of vectors in pair or triplet
         if len(triple)>0:
             print 'At least one triplet of orthogonal point vectors found:',triples[0]
+            if len(triples)>1: #find the one with most total vector length
+                sums = zeros(len(triples))
+                for it, triple in enumerate(triples):
+                    for i in range(3):
+                        sums[it] += norm(triple[i])
+                triples = [triple for (sum1,triple) in zip(sums,triples)] #sorted by lowest sum    
             for i in range(3):
-                vec = triples[0][i]
+                vec = triples[-1][i]
                 cubicLVs[:,i] = vec/norm(vec)
         elif len(pairs)>0:
-            for i in range(2):
-                print 'At least one pair of orthogonal point vectors found:', pairs[0]
-                vec = pair[0][i]
+            print 'At least one pair of orthogonal point vectors found:', pairs[0]
+            if len(pairs)>1:
+                sums = zeros(len(pairs))
+                for ip, pair in enumerate(pairs):
+                    for i in range(2):
+                        sums[it] += norm(triple[i])
+                pairs = [pair for (sum1,pair) in zip(sums,pairs)] #sorted by lowest sum    
+            for i in range(2):        
+                vec = pair[-1][i]
                 cubicLVs[:,i] = vec/norm(vec)
             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
         else:
@@ -249,10 +269,13 @@ class meshConstruct():
         #Find the planar boundaries
         self.boundaries =[[],[]] #planes [u's],[ro's]
         for ifac, facet in enumerate(self.fpoints):
+            facCenter = sum(facet)
             u,ro = plane3pts(facet[:3])
+            if ro == 0: #plane goes through origin...choose a normal that points "outside" the cell
+                if dot(facCenter - bodyCenter, u )<0:
+                    u = -u
             self.boundaries[0].append(u);self.boundaries[1].append(ro)
         #Find the extremes in each cubLV direction:
-#         maxMins = zeros((3,2))
         intMaxs = [] #factors of aKcubConv
         intMins = []
         for i in range(3):
@@ -264,7 +287,7 @@ class meshConstruct():
         #Create the cubic mesh inside the irreducible BZ
         cubicLVs = cubicLVs * aKcubConv
         sites = [site * aKcubConv for site in sites]
-        cubPoints = []
+        self.cubPoints = []
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
@@ -272,8 +295,10 @@ class meshConstruct():
                         for site in sites:
                             kpoint = lvec + site
                             if self.isInside(kpoint):
-                                cubPoints.append(kpoint)
-        print 'cubPoints',cubPoints  
+                                self.cubPoints.append(kpoint)
+    
+        print 'cubPoints',len(self.cubPoints), self.cubPoints  
+        self.facetsMeshPrint(self.fpoints,self.cubPoints)
         return     
         
     def magGroup(self,arr, igroup):
@@ -303,6 +328,7 @@ class meshConstruct():
         return newPlanes
     
     def isInside(self,vec):
+        '''Inside means on opposite side of the plane vs its normal vector'''
         inside = zeros(len(self.boundaries[0]),dtype = bool)
         for iplane, uvec in enumerate(self.boundaries[0]):
             if dot(vec,uvec) < self.boundaries[1][iplane] - self.eps: #point is inside this plane
@@ -368,16 +394,6 @@ class meshConstruct():
                 if self.onPlane(fvec,pvec):
                     facetlabels.append(i)
                     facetvecs.append(fvec)          
-#             # get the angle that each vector is, in a plane of the facet
-#             rcenter = sum(facetvecs)/len(facetvecs)
-#             xunitv =  (facetvecs[0] - rcenter)/norm(facetvecs[0] - rcenter)
-#             yunitv = cross(xunitv, rcenter)/norm(cross(xunitv, rcenter))         
-#             for i, vec in enumerate(facetvecs):
-#                 vx = dot(vec,xunitv); vy = dot(vec,yunitv)
-#                 angle = arctan2(vy,vx)
-#                 if angle < 0: angle = 2*pi + angle
-#                 angles.append(angle)
-#             self.facets[iplane] = [label for (angle,label) in sorted(zip(angles,facetlabels))]
             self.facets[iplane] = orderAngle(facetvecs,facetlabels)
             print iplane, 'facets', self.facets[iplane]
         
@@ -502,10 +518,10 @@ class meshConstruct():
                    (not isinteger(bounds[0]) or not isinteger(bounds[1])) : #if adjacent facet points, then one edge of a facet is on the plane...don't cut
                     #we check the u-projection of the point just beyond the first 
                     # boundary to see which part of the facet we keep...
-                    # the half that u points toward
+                    # the half that u points away from
                     print 'bounds',bounds
                     ucheck = dot(u,facet[int(ceil(bounds[0] + self.eps))])
-                    direc = int(sign(ucheck)) #+1 or -1 
+                    direc = -int(sign(ucheck)) #+1 or -1 
                     newfacet = []
                     if isinteger(bounds[0]):
                         newfacet.append(facet[bounds[0]])
@@ -642,10 +658,8 @@ class meshConstruct():
         Reflection/improper rotation: uR is given by the eigenvalue of R with eigen vector -1. 
         Choose either uR or -uR, the one closest to the (1,1,1) direction.   
         
-        Cut the part of the cell that is dot(r,u) < 0
-        #Add this plane (with a small shift to get it just past the origin
-        #origin from 111 direction) to the 'boundaries'
-            
+        Keep the part of the cell that is dot(r,u) < 0
+
         '''
         #copy array of boundary plane normal vectors, that we will add to later
         
@@ -735,7 +749,6 @@ class meshConstruct():
         for ifac, facet in enumerate(farr):
             print 'Line[{',
             for point in facet:
-#                 print 'point',point
                 print '{'+'{},{},{}'.format(point[0],point[1],point[2])+'},',
             print '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}', #back to first
             print '}]',
@@ -743,8 +756,28 @@ class meshConstruct():
                 print ',',
         print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}]'     
         return    
-                 
-
+    
+    def facetsMeshPrint(self,farr,parr):
+        ''' Mathematica'''
+        print 'p=Graphics3D[{Red, Thick,{',
+        for ifac, facet in enumerate(farr):
+            print 'Line[{',
+            for point in facet:
+                print '{'+'{},{},{}'.format(point[0],point[1],point[2])+'},',
+            print '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}', #back to first
+            print '}]',
+            if ifac < len(farr)-1:
+                print ',',
+        print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}];',
+        print 'q=ListPointPlot3D[{',
+        for ipoint,point in enumerate(self.cubPoints):
+            print '{' + '{},{},{}'.format(point[0],point[1],point[2])+ '}',
+            if ipoint < len(self.cubPoints) -1:
+                print ',',
+        print '},PlotStyle -> PointSize[0.01]];', #end of ListPointPlot3D command 
+        print 'Show[p,q]'          
+        return  
+  
     def movetoVoronoi(self):
         for i in range(self.npoints):
             self.points[i]['vec'] = intoVoronoi(self.points[i]['vec'],self.B)
