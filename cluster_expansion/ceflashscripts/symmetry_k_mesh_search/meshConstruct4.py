@@ -58,7 +58,7 @@ from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
                    trace,where,real,allclose,sign,pi,imag,identity)
 # from scipy.optimize import fmin_cg
-from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi
+from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi, ConvexHull as convexH
 from numpy.linalg import inv, norm, det, eig
 from numpy.random import rand
 from copy import copy,deepcopy
@@ -72,6 +72,8 @@ from _ast import operator
 from pip._vendor.html5lib.constants import rcdataElements
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 sys.path.append('/fslhome/bch/graphener/graphener')
+
+from meshpy.tet import MeshInfo, build, Options
 
 
 # from conjGradMin.optimize import fmin_cg
@@ -185,6 +187,7 @@ class meshConstruct():
         self.getVorCell() ############################   
         self.getIBZ() 
         self.meshCubic('fcc')
+#         self.triFaces()
 #         self.meshCubic('bcc')
 
 #         self.meshCubic('cub')   
@@ -202,6 +205,24 @@ class meshConstruct():
         sys.exit('stop')     
         return meshvecs, Nmesh, lattype, pfB, pf, status
 
+    def triFaces(self):
+        '''cell surface meshing'''
+        self.surfMeshPoints = []
+        for ifac,facet in enumerate(self.fpoints):
+            #Find 2-d representation for the points in this plane
+            inPlane = []
+            rcenter = sum(facet)/len(facet)
+            xunitv =  (facet[0] - rcenter)/norm(facet[0] - rcenter)
+    #         yunitv = cross(xunitv, rcenter)/norm(cross(xunitv, rcenter))    
+            vec = (facet[1] - rcenter) - dot((facet[1] - rcenter),xunitv)
+            yunitv =   vec/norm(vec)  
+            for i, vec in enumerate(facet):
+                inPlane.append([dot(vec-rcenter,xunitv),dot(vec-rcenter,yunitv)])  
+            tri = delaunay(array(inPlane))
+            self.surfMeshPoints.append(delaunay())  
+        print len(self.surfMeshPoints),self.surfMeshPoints
+        self.allMathPrint()
+    
     def meshCubic(self,type):
         '''Add a cubic mesh to the volume. If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with them.  '''
@@ -294,17 +315,20 @@ class meshConstruct():
         cubicLVs = cubicLVs * aKcubConv
         sites = [site * aKcubConv for site in sites]
         self.cubPoints = []
+        self.cubWeights = []
+#         offset = array([0.5,0.5,0.5])*aKcubConv
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
-                        lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
-                        for site in sites:
-                            kpoint = lvec + site
-                            if self.isInside(kpoint):
-                                self.cubPoints.append(kpoint)
-    
+#                     lvec = offset + i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
+                    lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
+
+                    for site in sites:
+                        kpoint = lvec + site
+                        if not self.isOutside(kpoint):
+                            self.cubPoints.append(kpoint)           
         print 'cubPoints',len(self.cubPoints), self.cubPoints  
-        self.facetsMeshPrint(self.fpoints,self.cubPoints)
+        self.facetsCubMathPrint(); print 'Show[p,q]'
         return     
         
     def magGroup(self,arr, igroup):
@@ -594,7 +618,7 @@ class meshConstruct():
                 ftemp.append([bordersFacet[i] for i in labels])
                 self.fpoints = ftemp
                 print 'Cut', self.icut
-                self.facetsMathPrint(self.fpoints)               
+                self.facetsMathPrint(); print 'Show[p]'              
         return
                                               
 #                 if isinteger(bounds[0]):
@@ -689,7 +713,7 @@ class meshConstruct():
             for ip in facet:
                temp.append(self.facetsPoints[ip]['vec'])
             self.fpoints[ifac] = temp
-        print'Voronoi cell plot'; self.facetsMathPrint(self.fpoints) 
+        print'Voronoi cell plot'; self.facetsMathPrint();print 'Show[p]' 
         inversion = False
         for iop in range(self.nops):
             op = self.symops[:,:,iop]            
@@ -747,42 +771,43 @@ class meshConstruct():
         print 'facet points'
         for ifac, facet in enumerate(self.fpoints):
             print ifac, facet
-        self.facetsMathPrint(self.fpoints)
+        self.facetsMathPrint();print 'Show[p]'
 
-    def facetsMathPrint(self,farr):
+    def facetsMathPrint(self):
         ''' Mathematica'''
-        print 'Graphics3D[{Red, Thick,{',
-        for ifac, facet in enumerate(farr):
+        print 'p = Graphics3D[{Red, Thick,{',
+        for ifac, facet in enumerate(self.fpoints):
             print 'Line[{',
             for point in facet:
                 print '{'+'{},{},{}'.format(point[0],point[1],point[2])+'},',
             print '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}', #back to first
             print '}]',
-            if ifac < len(farr)-1:
+            if ifac < len(self.fpoints)-1:
                 print ',',
-        print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}]'     
+        print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}]',    
         return    
     
-    def facetsMeshPrint(self,farr,parr):
-        ''' Mathematica'''
-        print 'p=Graphics3D[{Red, Thick,{',
-        for ifac, facet in enumerate(farr):
-            print 'Line[{',
-            for point in facet:
-                print '{'+'{},{},{}'.format(point[0],point[1],point[2])+'},',
-            print '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}', #back to first
-            print '}]',
-            if ifac < len(farr)-1:
-                print ',',
-        print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}];',
+    def facetsCubMathPrint(self):
+        self.facetsMathPrint()
         print 'q=ListPointPlot3D[{',
         for ipoint,point in enumerate(self.cubPoints):
             print '{' + '{},{},{}'.format(point[0],point[1],point[2])+ '}',
             if ipoint < len(self.cubPoints) -1:
                 print ',',
-        print '},PlotStyle -> PointSize[0.01]];', #end of ListPointPlot3D command 
-        print 'Show[p,q]'          
+        print '},PlotStyle -> PointSize[0.03]];',
+    
+    def allMathPrint(self):
+        ''' Mathematica'''
+        self.facetsCubMathPrint()
+        print 'r=ListPointPlot3D[{',
+        for ipoint,point in enumerate(self.cubPoints):
+            print '{' + '{},{},{}'.format(point[0],point[1],point[2])+ '}',
+            if ipoint < len(self.surfMeshPoints) -1:
+                print ',',
+        print '},PlotStyle -> {Green,PointSize[0.03]}];',                
+        print 'Show[p,q,r]'          
         return  
+
   
     def movetoVoronoi(self):
         for i in range(self.npoints):

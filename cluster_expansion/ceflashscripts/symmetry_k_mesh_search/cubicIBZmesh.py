@@ -107,9 +107,12 @@ mesh_info.set_facets([
     [6,2,3,7],
     [6,7,4,5]])
 
+addpoints = [(0.0,0.0,0.0), (0.375,0.375,0.375)]
+# addpoints = [array([0.0,0.0,0.0]), array(0.375,0.375,0.375)]
+
 opts = Options("VO9pa0.04") # Overriding 'pq'  
 
-mesh = build(mesh_info,options=opts)
+mesh = build(mesh_info,options=opts, insert_points = addpoints)
 # mesh = build(mesh_info,max_volume = 0.1)
 vols = []
 tets = []
@@ -136,6 +139,7 @@ print 'Std/Avg', std(vols)/mean(vols)
 # import numpy as np
 # import matplotlib.mlab as mlab
 # import matplotlib.pyplot as plt
+
 
 plothist(vols)
 
