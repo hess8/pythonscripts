@@ -156,7 +156,7 @@ def nextpos(ip,direc,nfacet):
     return ip
     
 class meshConstruct(): 
-    '''Makes superperiodic structures and cuts'''
+    '''Compact mesh reduced by point symmetry operations'''
     from comMethods import readfile,writefile,trimSmall,areEqual,directFromCart,cartFromDirect
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
@@ -187,7 +187,7 @@ class meshConstruct():
         self.getVorCell() ############################   
         self.getIBZ() 
         self.meshCubic('fcc')
-        self.triFaces()
+#         self.triFaces()
 #         self.meshCubic('bcc')
 
 #         self.meshCubic('cub')   
@@ -205,23 +205,23 @@ class meshConstruct():
         sys.exit('stop')     
         return meshvecs, Nmesh, lattype, pfB, pf, status
 
-    def triFaces(self):
-        '''cell surface meshing'''
-        self.surfMeshPoints = []
-        for ifac,facet in enumerate(self.fpoints):
-            #Find 2-d representation for the points in this plane
-            inPlane = []
-            rcenter = sum(facet)/len(facet)
-            xunitv =  (facet[0] - rcenter)/norm(facet[0] - rcenter)
-    #         yunitv = cross(xunitv, rcenter)/norm(cross(xunitv, rcenter))    
-            vec = (facet[1] - rcenter) - dot((facet[1] - rcenter),xunitv)
-            yunitv =   vec/norm(vec)  
-            for i, vec in enumerate(facet):
-                inPlane.append([dot(vec-rcenter,xunitv),dot(vec-rcenter,yunitv)])  
-            tri = delaunay(array(inPlane))
-            self.surfMeshPoints.append(delaunay())  
-        print len(self.surfMeshPoints),self.surfMeshPoints
-        self.allMathPrint()
+#     def triFaces(self):
+#         '''cell surface meshing'''
+#         self.surfMeshPoints = []
+#         for ifac,facet in enumerate(self.fpoints):
+#             #Find 2-d representation for the points in this plane
+#             inPlane = []
+#             rcenter = sum(facet)/len(facet)
+#             xunitv =  (facet[0] - rcenter)/norm(facet[0] - rcenter)
+#     #         yunitv = cross(xunitv, rcenter)/norm(cross(xunitv, rcenter))    
+#             vec = (facet[1] - rcenter) - dot((facet[1] - rcenter),xunitv)
+#             yunitv =   vec/norm(vec)  
+#             for i, vec in enumerate(facet):
+#                 inPlane.append([dot(vec-rcenter,xunitv),dot(vec-rcenter,yunitv)])  
+#             tri = delaunay(array(inPlane))
+#             self.surfMeshPoints.append(delaunay())  
+#         print len(self.surfMeshPoints),self.surfMeshPoints
+#         self.allMathPrint()
     
     def meshCubic(self,type):
         '''Add a cubic mesh to the volume. If any 2 or 3 of the facet planes are 
@@ -342,11 +342,20 @@ class meshConstruct():
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
-                    lvec = offset + i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
+                    lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for site in sites:
                         kpoint = lvec + site
                         if not self.isOutside(kpoint):
                             self.cubPoints.append(kpoint)
+                            self.cubWeights.append(self.IBZvolCut) #weight of a general point
+        # We need to make our cubic mesh extend 
+        # A mesh *point* is either outside, inside, on surface, on segment beween verticies, or is a vertex.
+        # A point's volume may be inside, partially inside.   
+        # If a point's sphere is cut by one plane, use the sphere's inside volume ratio to weight the 
+        # point compared to a wholly inside point. This is fast.
+        # If a point's sphere is cut by two or three planes (only a relatively few points),
+        # use the VC cutting routines to find the volume inside.  
+        # This automatically gives us all the symmetry weights!
                     
 #         print 'cubPoints',len(self.cubPoints), self.cubPoints  
         self.facetsCubMathPrint(); print 'Show[p,q]'
@@ -420,10 +429,10 @@ class meshConstruct():
             nextGroup = range(gstart,gstart+ng)
             checkNext = self.checkInside(nextGroup)
         self.getInterscPoints(self.boundaries)
-        #write plane equations:
-        for iplane, uvec in enumerate(self.boundaries[0]):
-            pvec = uvec*self.boundaries[1][iplane]
-            print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)) #write plane equations for mathematica
+        #write plane equations for Mathematica:
+#         for iplane, uvec in enumerate(self.boundaries[0]):
+#             pvec = uvec*self.boundaries[1][iplane]
+#             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)) #write plane equations for mathematica
         #print 'intersections'
 #         for i in range(self.nIntersc):
             #print i, self.interscPoints[i]['mag'], self.interscPoints[i]['vec']
@@ -719,7 +728,6 @@ class meshConstruct():
 #         for vec in self.facetsPoints[:]['vec']:
 #             sumComps.append(sum(vec))
         print '\n\nReducing Brillouin zone by symmetry'
-        print '\tThis routine does not reduce improper rotations'
 #         print '\n\nUsing dummy symmetry ops'
 #         for iop in range(self.nops):
 #             op = self.symops[:,:,iop]
@@ -791,6 +799,12 @@ class meshConstruct():
 #         for ifac, facet in enumerate(self.fpoints):
 #             print ifac, facet
         self.facetsMathPrint();print 'Show[p]'
+        #get volume
+        points = flatVecsList(self.fpoints)
+        hull = convexH(points)
+        self.IBZvolCut = det(self.B)/hull.volume
+        print 'Vol BZ / Vol IBZ', self.IBZvolCut
+        return
 
     def facetsMathPrint(self):
         ''' Mathematica'''
