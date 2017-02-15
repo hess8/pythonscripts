@@ -29,7 +29,13 @@ import meshConstruct5
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/f3varyN/'
 # maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
 maindir = '/fslhome/bch/cluster_expansion/meshConstruct/AlAl'
-
+method = 0  #0,1 for now.
+            #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
+            #         from the IBZ center origin to check if the point's volume is cut. 
+            #         Cut the VC to determine the volume contribution      
+            #1: approx 1. Use sphere around mesh point to test whether it is near a surface.  
+            #         For a 1-plane cut, use the spherical section that is inside. 
+            #         For 2 or 3 plane cut, we use the exact method. 
 
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testMP/'
@@ -71,7 +77,7 @@ for dir in dirs:
 # for trials where we want to vary pf for testing       
 #         meshesfile = open('meshesfile','w')
 #         meshesfile.write(dir+' ============\n')
-        [meshvecs, Nmesh, lattype, pfB, pf, status] = meshc.relaxMeshSym(reciplatt,targetNmesh,path)
+        [meshvecs, Nmesh, lattype, pfB, pf, status] = meshc.meshSym(reciplatt,targetNmesh,path,method)
 #        bestmeshIter_vary_N(reciplatt,Nmesh,path)
 # End trials
 

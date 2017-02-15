@@ -9,8 +9,6 @@
 
 All matrices store vectors as COLUMNS
 '''
-
-
 # '''
 # Builds a mesh from the symmetry operations and random starting points.
 # There is no lattice
@@ -75,7 +73,6 @@ sys.path.append('/fslhome/bch/graphener/graphener')
 
 from meshpy.tet import MeshInfo, build, Options
 
-
 # from conjGradMin.optimize import fmin_cg
 
 from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, lattice, surfvol,
@@ -83,9 +80,6 @@ from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, la
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double,
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell,
     reverseStructured,isInVoronoi,areParallel, addVec)
-
-def timestamp():
-    return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 
 def threePlaneIntersect(rRows):  
     '''This routine is for three planes that will intersect at only one point, 
@@ -154,21 +148,27 @@ def nextpos(ip,direc,nfacet):
     if ip < 0: ip  += nfacet
     elif ip > nfacet: ip  -= nfacet
     return ip
+
+class cell():
+    def __init__(self):
+        self.bounds = [[],[]] #planes, written as normals and distances from origin [u's] , [ro's]
+        self.fpoints = [] #facet points
+        self.volume = None
     
 class meshConstruct(): 
     '''Compact mesh reduced by point symmetry operations'''
     from comMethods import readfile,writefile,trimSmall,areEqual,directFromCart,cartFromDirect
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
-    from conjGradMin2 import (fmin_cg,minimize_cg,line_search_wolfe1,scalar_search_wolfe1)
 
     def __init__(self):
-        self.strLen = 5
-        self.indIn = []
-        self.indOut = []
         self.icut = -1
+#         self.BZboundaries = [[],[]] #for BZ Voronoi cell or IBZ.  written as [u's] , [ro's]
+#         self.MPboundaries = [[],[]] #for mesh point Voronoi cell
+#         self.BZfpoints = [] #facet points for BZ Voronoi cell or IBZ
+#         self.MPfpoints = [] #facet points for mesh point Voronoi cell
         
-    def relaxMeshSym(self,B,targetNmesh,path):
+    def meshSym(self,B,targetNmesh,path,method):
         #1. nCoarse random points in the cell parallelpiped.  
 #         nCoarseMax = 200
         self.B = B
@@ -176,6 +176,14 @@ class meshConstruct():
         [self.symops,self.nops] = getGroup(self.B)
         self.nTarget = targetNmesh
         self.path = path
+        self.method = method
+            #0,1 for now.
+            #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
+            #         from the IBZ center origin to check if the point's volume is cut. 
+            #         Cut the VC to determine the volume contribution      
+            #1: approx 1. Use sphere around mesh point to test whether it is near a surface.  
+            #         For a 1-plane cut, use the spherical section that is inside. 
+            #         For 2 or 3 plane cut, we use the exact method.
         print 'Number of desired points:', targetNmesh
         print 'Symmetry operations:', self.nops
         vol = abs(det(B))
@@ -184,8 +192,10 @@ class meshConstruct():
         self.rmin = 0.8*self.ravg #
         self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
         self.eps = self.ravg/1000
-        self.getVorCell() ############################   
-        self.getIBZ() 
+        BZ = cell() #instance
+        self.getVorCell(self.B,BZ)
+        self.getIBZ(BZ) #changes BZboundaries.  fpoints are the facet points. 
+        
         self.meshCubic('fcc')
 #         self.triFaces()
 #         self.meshCubic('bcc')
@@ -193,38 +203,10 @@ class meshConstruct():
 #         self.meshCubic('cub')   
         
         sys.exit('stop')        
-        print 'Typical spacing:', self.ravg
-        self.initPoints() 
-        self.initTets()
-        self.movetoVoronoi()
-        self.addBorders()
-        self.delauPoints()
-        self.fillTets()
-        self.relax()
-        self.plotPoints(self.points,self.npoints,'vec')
-        sys.exit('stop')     
         return meshvecs, Nmesh, lattype, pfB, pf, status
-
-#     def triFaces(self):
-#         '''cell surface meshing'''
-#         self.surfMeshPoints = []
-#         for ifac,facet in enumerate(self.fpoints):
-#             #Find 2-d representation for the points in this plane
-#             inPlane = []
-#             rcenter = sum(facet)/len(facet)
-#             xunitv =  (facet[0] - rcenter)/norm(facet[0] - rcenter)
-#     #         yunitv = cross(xunitv, rcenter)/norm(cross(xunitv, rcenter))    
-#             vec = (facet[1] - rcenter) - dot((facet[1] - rcenter),xunitv)
-#             yunitv =   vec/norm(vec)  
-#             for i, vec in enumerate(facet):
-#                 inPlane.append([dot(vec-rcenter,xunitv),dot(vec-rcenter,yunitv)])  
-#             tri = delaunay(array(inPlane))
-#             self.surfMeshPoints.append(delaunay())  
-#         print len(self.surfMeshPoints),self.surfMeshPoints
-#         self.allMathPrint()
-    
+   
     def meshCubic(self,type):
-        '''Add a cubic mesh to the volume. If any 2 or 3 of the facet planes are 
+        '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with them.       
         Weighting of each point:
         Volume of IBZ:  http://scipy.github.io/devdocs/generated/scipy.spatial.ConvexHull.html
@@ -247,7 +229,17 @@ class meshConstruct():
 
         In practice, if a mesh point is within a distance of the packing sphere 
         radius from a plane, we use that plane to slice the VC of the point.   The distance is ro-dot(r,u).  Then use spatial.ConvexHull
-        to get the volume'''
+        to get the volume
+        
+        # We need to make our cubic mesh extend one layer beyond any IBZ borders
+        # A mesh *point* is either outside, inside, on surface, on segment beween verticies, or is a vertex.
+        # A point's volume may be inside, partially inside.   
+        # If a point's sphere is cut by one plane, use the sphere's inside volume ratio to weight the 
+        # point compared to a wholly inside point. This is fast.
+        # If a point's sphere is cut by two or three planes (only a relatively few points),
+        # use the VC cutting routines to find the volume inside.
+        # This automatically gives us all the symmetry weights!'''
+        
         a = 1.0
         cubicLVs = identity(3)
         if type == 'fcc':
@@ -262,7 +254,7 @@ class meshConstruct():
         else: 
             sys.exit('stop. Type error in meshCubich')
         #test vacet points for orthogonality
-        points = flatVecsList(self.fpoints)
+        points = flatVecsList(self.BZfpoints)
         bodyCenter = sum(points)
         rs = []
         pairs = []
@@ -310,20 +302,20 @@ class meshConstruct():
                 cubicLVs[:,i] = vec/norm(vec)
             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
         else:
-            print 'no orthogonal point vectors found.'
+            print 'no orthogonal point vectors pairs found.'
         #scale
         volSC= det(self.B)
         volKcubConv = volSC/self.nTarget*len(sites)
         aKcubConv = volKcubConv**(1/3.0)
+        self.rpacking = 
         #Find the planar boundaries
-        self.boundaries =[[],[]] #planes [u's],[ro's]
-        for ifac, facet in enumerate(self.fpoints):
+        for ifac, facet in enumerate(self.BZfpoints):
             facCenter = sum(facet)
             u,ro = plane3pts(facet[:3])
             if ro == 0: #plane goes through origin...choose a normal that points "outside" the cell
                 if dot(facCenter - bodyCenter, u )<0:
                     u = -u
-            self.boundaries[0].append(u);self.boundaries[1].append(ro)
+            cell.bounds[0].append(u);cell.bounds[1].append(ro)
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -345,17 +337,23 @@ class meshConstruct():
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for site in sites:
                         kpoint = lvec + site
-                        if not self.isOutside(kpoint):
+                        if self.isInside(kpoint):
                             self.cubPoints.append(kpoint)
-                            self.cubWeights.append(self.IBZvolCut) #weight of a general point
-        # We need to make our cubic mesh extend 
-        # A mesh *point* is either outside, inside, on surface, on segment beween verticies, or is a vertex.
-        # A point's volume may be inside, partially inside.   
-        # If a point's sphere is cut by one plane, use the sphere's inside volume ratio to weight the 
-        # point compared to a wholly inside point. This is fast.
-        # If a point's sphere is cut by two or three planes (only a relatively few points),
-        # use the VC cutting routines to find the volume inside.  
-        # This automatically gives us all the symmetry weights!
+                            self.cubWeights.append(self.IBZvolCut)
+                        else:
+                            nearPlanes = checkNearSurf(self,vec)
+                            if self.method == 1 and len(nearPlanes) == 1: #give weight proportional to sphere
+                                d = nearPlanes[0][1] 
+                                if d<0:
+                                elif d>0:
+                                else:
+                                     
+                                if len(nearPlanes)
+                            else: #cut a Voronoi cell:
+                                
+                                
+                             #weight of a general point
+
                     
 #         print 'cubPoints',len(self.cubPoints), self.cubPoints  
         self.facetsCubMathPrint(); print 'Show[p,q]'
@@ -375,31 +373,31 @@ class meshConstruct():
                     return newMags[ngroups-2],newMags[ngroups-1]-newMags[ngroups-2]
         return 0,len(arr)       
         
-    def checkInside(self,grp):
+    def newBoundsifInside(self,grp,cell):
         newPlanes = False
-        newboundaries = self.boundaries
+        newboundaries = cell.bounds
         for ig  in range(len(grp)):
-            gvec = self.braggVecs[grp[ig]]['vec']
+            gvec = braggVecs[grp[ig]]['vec']
             if self.isInside(gvec):
                 gnorm = norm(gvec)
                 newboundaries[0].append(array(gvec/gnorm)); newboundaries[1].append(gnorm)
                 newPlanes = True         
-        self.boundaries = newboundaries
+        cell.bounds = newboundaries
         return newPlanes
     
-    def isInside(self,vec):
+    def isInside(self,vec,boundaries):
         '''Inside means on opposite side of the plane vs its normal vector'''
-        inside = zeros(len(self.boundaries[0]),dtype = bool)
-        for iplane, uvec in enumerate(self.boundaries[0]):
-            if dot(vec,uvec) < self.boundaries[1][iplane] - self.eps: #point is inside this plane
+        inside = zeros(len(boundaries[0]),dtype = bool)
+        for iplane, uvec in enumerate(boundaries[0]):
+            if dot(vec,uvec) < boundaries[1][iplane] - self.eps: #point is inside this plane
                 inside[iplane] = True
         return all(inside)
 
-    def isOutside(self,vec):
+    def isOutside(self,vec,boundaries):
         #print 'intersection',vec
-        for iplane, uvec in enumerate(self.boundaries[0]): 
-            pvec = uvec*self.boundaries[1][iplane]           
-            if dot(vec,uvec) > self.boundaries[1][iplane] + self.eps: #point is outside this plane
+        for iplane, uvec in enumerate(boundaries[0]): 
+            pvec = uvec*boundaries[1][iplane]           
+            if dot(vec,uvec) > boundaries[1][iplane] + self.eps: #point is outside this plane
 #                 print '\tboundary', iplane, uvec, norm(pvec)
 #                 print '\tboundary component', dot(vec,pvec), dot(pvec,pvec)
 #                 print
@@ -408,30 +406,38 @@ class meshConstruct():
                 #print 'On boundary check',iplane,dot(vec,pvec) - dot(pvec,pvec),pvec
         #print
         return False
+    
+    def checkNearSurf(self,vec):
+        nearPlanes = []
+        for iplane, uvec in enumerate(boundaries[0]):   
+            if self.method == 1:
+                d = ro - dot(vec,uvec)
+                if abs(d) < self.rpacking:
+                    nearPlanes.append([iplane,d)
+        return nearPlanes
               
     def onPlane(self,vec,planevec):
         return abs(dot(vec,planevec) - dot(planevec,planevec)) < self.eps #point is inside this plane
         
-    def getVorCell(self):
+    def getVorCell(self,LVs,cell):
         '''Boundaries and vertices of Voronoi cell'''
-        self.getBraggVecs()
+        braggVecs = getBraggVecs(LVs,cell)
         igroup = 1
         checkNext = True
-        gstart,ng = self.magGroup(self.braggVecs,1) # group of smallest bragg plane vectors
-        self.boundaries =[[],[]] #planes [u's],[ro's]
+        gstart,ng = self.magGroup(braggVecs,1) # group of smallest bragg plane vectors
         for i in range(ng):
-            vec = self.braggVecs[i]['vec']; mag = norm(vec)
-            self.boundaries[0].append(vec/mag); self.boundaries[1].append(mag)
-        #print 'Smallest bragg vectors  boundaries', self.boundaries
+            vec = braggVecs[i]['vec']; mag = norm(vec)
+            cell.bounds[0].append(vec/mag); cell.bounds[1].append(mag)
+        #print 'Smallest bragg vectors  boundaries', cell.bounds
         while checkNext:
             igroup += 1
-            gstart,ng = self.magGroup(self.braggVecs,igroup)
+            gstart,ng = self.magGroup(braggVecs,igroup)
             nextGroup = range(gstart,gstart+ng)
-            checkNext = self.checkInside(nextGroup)
-        self.getInterscPoints(self.boundaries)
+            checkNext = self.newBoundsifInside(nextGroup)
+        self.getInterscPoints(cell.bounds)
         #write plane equations for Mathematica:
-#         for iplane, uvec in enumerate(self.boundaries[0]):
-#             pvec = uvec*self.boundaries[1][iplane]
+#         for iplane, uvec in enumerate(cell.bounds[0]):
+#             pvec = uvec*cell.bounds[1][iplane]
 #             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)) #write plane equations for mathematica
         #print 'intersections'
 #         for i in range(self.nIntersc):
@@ -441,13 +447,13 @@ class meshConstruct():
 #         for i in range(len(self.facetsPoints)):
 #             print i, self.facetsPoints[i]['mag'], self.facetsPoints[i]['vec']
         self.arrangeFacets()
-        return
+        return boundaries
 
-    def arrangeFacets(self):        
+    def arrangeFacets(self,cell):        
         #arrange facets in each plane according to their angular order in the plane
-        self.facets = [[]]*len(self.boundaries[0])
-        for iplane, uvec in enumerate(self.boundaries[0]):
-            pvec = uvec*self.boundaries[1][iplane]
+        self.facets = [[]]*len(cell.bounds[0])
+        for iplane, uvec in enumerate(cell.bounds[0]):
+            pvec = uvec*cell.bounds[1][iplane]
             facetvecs = []
             facetlabels = []
             for i, fvec in  enumerate(self.facetsPoints['vec']):
@@ -475,11 +481,13 @@ class meshConstruct():
         have unit vector u (list 0) and are displaced a distance ro (list 1 in planes)'''
         vecs = [planes[0][i]*planes[1][i] for i in range(len(planes[0]))]
         combs = list(combinations(vecs,3))
+        self.interscPoints = []
         unique = []
         uniqStrs = []
         for c in combs:
             interscP = threePlaneIntersect(c)
             if not interscP is None:
+                addVec
                 vecStr = str(interscP[0])[:self.strLen]+str(interscP[1])[:self.strLen]+str(interscP[2])[:self.strLen]
                 if vecStr not in uniqStrs:
                     uniqStrs.append(vecStr)
@@ -493,21 +501,22 @@ class meshConstruct():
 #             print vec
         self.interscPoints.sort(order = 'mag')    
                         
-    def getBraggVecs(self):
+    def getBraggVecs(self,LVs):
         '''The Bragg vectors are halfway from the origin to a lattice point.
         The planes normal to some of these will be bounding planes of the Voronoi cell '''
-        self.braggVecs = zeros(124,dtype = [('vec', '3float'),('mag', 'float'),('dep', 'S15')])        
+        braggVecs = zeros(124,dtype = [('vec', '3float'),('mag', 'float'),('dep', 'S15')])        
         ipoint = 0
         for i in range(-2,3):
             for j in range(-2,3):
                 for k in range(-2,3):
                     if not (i==0 and j==0 and k==0):
-                        vec = trimSmall(0.5*dot(self.B,array([i,j,k])))
-                        self.braggVecs[ipoint]['vec'] = vec
-                        self.braggVecs[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
-                        self.braggVecs[ipoint]['mag'] = norm(vec)
+                        vec = trimSmall(0.5*dot(LVs,array([i,j,k])))
+                        braggVecs[ipoint]['vec'] = vec
+                        braggVecs[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
+                        braggVecs[ipoint]['mag'] = norm(vec)
                         ipoint+=1
-        self.braggVecs.sort(order = 'mag')
+        braggVecs.sort(order = 'mag')
+        return braggVecs
     
     def choose111(self,uvec):
         if dot(uvec,array([1,1,1]))>= 0:
@@ -545,12 +554,12 @@ class meshConstruct():
 #             print
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the new edges of cut facets
-#         ftemp = [[]]*len(self.fpoints) #this will contain only points, not labels
-        ftemp = deepcopy(self.fpoints) #this will contain only points, not labels
+#         ftemp = [[]]*len(self.BZfpoints) #this will contain only points, not labels
+        ftemp = deepcopy(self.BZfpoints) #this will contain only points, not labels
 #         if allclose(u,array([ 0.    ,      0.70710678 ,-0.70710678])):
 #             print
         
-        for ifac, facet in enumerate(self.fpoints):
+        for ifac, facet in enumerate(self.BZfpoints):
             marker = ''
             #print 'facet',ifac, 'len',len(facet), facet
             bounds = []
@@ -636,7 +645,7 @@ class meshConstruct():
                 if len(facet)> 0:
                    ftemp.append(facet)
             #Add any points that are in the cut plane into bordersFacet.  Some are not in facets with cuts. 
-            points = flatVecsList(self.fpoints)
+            points = flatVecsList(self.BZfpoints)
             for i in range(len(points)):
                 if areEqual(dot(u,points[i]),0):
                     addVec(points[i],bordersFacet)            
@@ -644,7 +653,7 @@ class meshConstruct():
             if len(bordersFacet)> 0:
                 labels = orderAngle(bordersFacet,range(len(bordersFacet)))
                 ftemp.append([bordersFacet[i] for i in labels])
-                self.fpoints = ftemp
+                self.BZfpoints = ftemp
                 #print 'Cut', self.icut
                 self.facetsMathPrint(); print 'Show[p]'              
         return
@@ -667,7 +676,7 @@ class meshConstruct():
     def makesDups(self,op):
         '''Applies symmetry operator to all facet points. If any facet points are 
         moved on top of other facet points, then return true'''
-        points = flatVecsList(self.fpoints)
+        points = flatVecsList(self.BZfpoints)
         for i in range(len(points)):
             rpoint = dot(op,points[i])
             if allclose(points[i],rpoint):
@@ -734,12 +743,12 @@ class meshConstruct():
 #             print op        
         
 #         self.newPlanes = []
-        self.fpoints = [[]]*len(self.facets) #this will contain only point, not labels
+        self.BZfpoints = [[]]*len(self.facets) #this will contain only point, not labels
         for ifac,facet in enumerate(self.facets):
             temp = []
             for ip in facet:
                temp.append(self.facetsPoints[ip]['vec'])
-            self.fpoints[ifac] = temp
+            self.BZfpoints[ifac] = temp
         print'Voronoi cell plot'; self.facetsMathPrint();print 'Show[p]' 
         inversion = False
         for iop in range(self.nops):
@@ -796,11 +805,11 @@ class meshConstruct():
                 #can cut along any plane
                 self.cutCell(array([1.0,0.0,0.0]))
         #print 'facet points'
-#         for ifac, facet in enumerate(self.fpoints):
+#         for ifac, facet in enumerate(self.BZfpoints):
 #             print ifac, facet
         self.facetsMathPrint();print 'Show[p]'
         #get volume
-        points = flatVecsList(self.fpoints)
+        points = flatVecsList(self.BZfpoints)
         hull = convexH(points)
         self.IBZvolCut = det(self.B)/hull.volume
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
@@ -809,13 +818,13 @@ class meshConstruct():
     def facetsMathPrint(self):
         ''' Mathematica'''
         print 'p = Graphics3D[{Red, Thick,{',
-        for ifac, facet in enumerate(self.fpoints):
+        for ifac, facet in enumerate(self.BZfpoints):
             print 'Line[{',
             for point in facet:
                 print '{'+'{},{},{}'.format(point[0],point[1],point[2])+'},',
             print '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}', #back to first
             print '}]',
-            if ifac < len(self.fpoints)-1:
+            if ifac < len(self.BZfpoints)-1:
                 print ',',
         print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}]',    
         return    

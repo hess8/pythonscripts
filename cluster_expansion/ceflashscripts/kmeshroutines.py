@@ -17,6 +17,9 @@ utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
 getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
 
+def timestamp():
+    return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
+
 def reverseStructured(arr):
     temp = deepcopy(arr)
     for i in range(len(temp)):
