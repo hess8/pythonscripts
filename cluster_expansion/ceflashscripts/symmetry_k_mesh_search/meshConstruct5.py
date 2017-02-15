@@ -122,12 +122,12 @@ def magGroup(arr, igroup,eps):
                 return newMags[ngroups-2],newMags[ngroups-1]-newMags[ngroups-2]
     return 0,len(arr)   
 
-def newBoundsifInside(grp,cell):
+def newBoundsifInside(braggVecs,grp,cell,eps):
     newPlanes = False
     newboundaries = deepcopy(cell.bounds)
     for ig  in range(len(grp)):
         gvec = braggVecs[grp[ig]]['vec']
-        if isInside(gvec,cell.bounds):
+        if isInside(gvec,cell.bounds,eps):
             gnorm = norm(gvec)
             newboundaries[0].append(array(gvec/gnorm)); newboundaries[1].append(gnorm)
             newPlanes = True         
@@ -151,20 +151,20 @@ def getInterscPoints(planes):
     interscPoints = [interscP for (mag,interscP) in zip(interscPmags,interscPoints)] #sorted by distance from origin 
     return interscPoints
 
-def getFacetsPoints(interscPoints,cell):
-    facetsPoints = []
-    for point in interscPoints:
-        if not isOutside(point,cell.bounds):
-            facetsPoints.append(point)
+def getFacetsPoints(interscPoints,cell,eps):
+    cell.facets = [[]]*len(cell.bounds[0])
+#     facetsPoints = []
+#     for point in interscPoints:
+#         if not isOutside(point,cell.bounds,eps):
+#             facetsPoints.append(point)
     #arrange intersection points in each plane according to their angular order in the plane
     for iplane, uvec in enumerate(cell.bounds[0]):
         pvec = uvec*cell.bounds[1][iplane]
         facetvecs = []
-        for i, fvec in  enumerate(facetsPoints):
-            if onPlane(fvec,pvec,eps):
-                facetvecs.append(fvec)          
+        for i, vec in  enumerate(interscPoints):
+            if onPlane(vec,pvec,eps):
+                facetvecs.append(vec)          
         cell.facets[iplane] = orderAngle(facetvecs)
-    cell.facets = facetsPoints
         
 def isInside(vec,bounds,eps):
     '''Inside means on opposite side of the plane vs its normal vector'''
@@ -174,7 +174,7 @@ def isInside(vec,bounds,eps):
             inside[iplane] = True
     return all(inside)
 
-def isOutside(vec,boundaries):
+def isOutside(vec,boundaries,eps):
     #print 'intersection',vec
     for iplane, uvec in enumerate(boundaries[0]): 
         pvec = uvec*boundaries[1][iplane]           
@@ -188,7 +188,7 @@ def isOutside(vec,boundaries):
     #print
     return False
 
-def onPlane(self,vec,planevec,eps):
+def onPlane(vec,planevec,eps):
     return abs(dot(vec,planevec) - dot(planevec,planevec)) < eps #point is inside this plane
                     
 def makesDups(self,op,facets):
@@ -206,21 +206,21 @@ def makesDups(self,op,facets):
                 return True
     return False
 
-def getVorCell(LVs,cell):
+def getVorCell(LVs,cell,eps):
     '''Boundaries and vertices of Voronoi cell'''
-    braggVecs = getBraggVecs(LVs,cell)
+    braggVecs = getBraggVecs(LVs)
     igroup = 1
     checkNext = True
-    gstart,ng = magGroup(braggVecs,1) # group of smallest bragg plane vectors
+    gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
     for i in range(ng):
         vec = braggVecs[i]['vec']; mag = norm(vec)
         cell.bounds[0].append(vec/mag); cell.bounds[1].append(mag)
     #print 'Smallest bragg vectors  boundaries', cell.bounds
     while checkNext:
         igroup += 1
-        gstart,ng = magGroup(braggVecs,igroup)
+        gstart,ng = magGroup(braggVecs,igroup,eps)
         nextGroup = range(gstart,gstart+ng)
-        checkNext = newBoundsifInside(nextGroup)
+        checkNext = newBoundsifInside(braggVecs,nextGroup,cell,eps)
     interscPoints = getInterscPoints(cell.bounds)
     #write plane equations for Mathematica:
 #         for iplane, uvec in enumerate(cell.bounds[0]):
@@ -229,7 +229,7 @@ def getVorCell(LVs,cell):
     #print 'intersections'
 #         for i in range(self.nIntersc):
         #print i, interscPoints[i]['mag'], interscPoints[i]['vec']
-    getFacetsPoints(interscPoints,cell)
+    getFacetsPoints(interscPoints,cell,eps)
     #print 'facet points'
 #         for i in range(len(self.facetsPoints)):
 #             print i, self.facetsPoints[i]['mag'], self.facetsPoints[i]['vec']
@@ -315,7 +315,7 @@ class meshConstruct():
         self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
         self.eps = self.ravg/1000
         BZ = cell() #instance
-        self.getVorCell(self.B,BZ)
+        getVorCell(self.B,BZ,self.eps)
         sys.exit('stop') 
         
         self.getIBZ(BZ) #changes BZboundaries.   
