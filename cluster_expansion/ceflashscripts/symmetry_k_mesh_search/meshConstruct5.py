@@ -9,47 +9,7 @@
 
 All matrices store vectors as COLUMNS
 '''
-# '''
-# Builds a mesh from the symmetry operations and random starting points.
-# There is no lattice
-# 0. The mesh should be optimized as an atomic space superlattice (transform of k-space)
-# 0.1 Choose a 
-# 1. nCoarse sub-random points in the BZ cell parallelpiped.  
-#     We don't need to work in Voronoi cell version because we are running in 3x3x3 supercell of the BZ
-#     https://en.wikipedia.org/wiki/Low-discrepancy_sequence#Additive_recurrence for subRandSym 
-# 2. Define cutoff as rc = (nCoarse/Vcell)^1/3
-# 3. Make all copies due to translation and symmetry operations
-# 4. In neighboring cells (3x3x3 construction of plpd), keep only those that 
-# are within e.g. 1.5 * rc of the cell boundaries
-# 5. If two points are less than e.g. 0.8*rc away from each other, combine them 
-# into a point at their center. 
-# 5.5 if we have too many delete those that are closest to their neighbors
-# 5.6 If we have too few, get the Delaunay tetrahedra, and add to the center 
-# of the largest tets. 
-# 6. Keep track of independent points (all are "sponsors") and symmetry partners
-# Dependent points (which can also be sponsors) have "dep" label:  if by translations: "-1,0,1". 
-# if by symmetry, a single vecitive integer "3" that gives the operation
-# 7. Calculate the force on each ind. point from all the points that lie within
-# a distance rForce.  Use a power law: Fi = k*Sum(r_vec_i,j/ rij^p
-# 8.  Move the ind. points in a vector proportional to the force
-# 9.  Copy all the ind. points by trans and pt symmetry again. 
-# 10. repeat from 7 until the force on each point is less than minForce
-# 11. Copy all the ind. points by trans and pt symmetry again. r
-# ________
-# Fine tetrahedral mesh
-# ________
-# 1. Find Delaunay tetrahedra
-# 2. Subdivide each tet that has an independent point in it with a formula that 
-# minimizes the S/V of the 6 new tets. Call these independent children, 
-# even though they might have parents that are not independent
-# 3. Copy these by trans and point sym, removing duplicates
-# 4. Subdivide the indChildren (repeat 2 and 3) until we have the number of points we want.
-# 5. By symmetry, find the number of truly independent among all points, and their weights. 
-# 6. Write these to KPOINTS: https://cms.mpi.univie.ac.at/vasp/vasp/Entering_all_k_points_explicitly.html 
-# until we have the number of points we want. 
-# 
-# All matrices store vectors as COULUMNS
-# '''
+
 import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
@@ -106,7 +66,7 @@ def threePlaneIntersect(rRows):
         else:
             return None
         
-def orderAngle(facet,labels):
+def orderAngle(facet):
         '''get the angle that each vector is, in the plane of the facet.'''
         rcenter = sum(facet)/len(facet)
         xunitv =  (facet[0] - rcenter)/norm(facet[0] - rcenter)
@@ -119,7 +79,7 @@ def orderAngle(facet,labels):
             angle = arctan2(vy,vx)
             if angle < 0: angle = 2*pi + angle
             angles.append(angle)
-        return [label for (angle,label) in sorted(zip(angles,labels))]
+        return [point for (angle,point) in sorted(zip(angles,facet))]
 
 def flatVecsList(vecsList):
     '''Returns a flat list of vectors, from a list of lists that might have duplicates, 
@@ -149,10 +109,172 @@ def nextpos(ip,direc,nfacet):
     elif ip > nfacet: ip  -= nfacet
     return ip
 
+def magGroup(arr, igroup,eps):
+    '''returns the ith group, numbered from 1, (starting index and length of group) of vectors in a structured array, 
+    which must be sorted beforehand by magnitude (in either direction), in field 'mag' '''
+    newMags = [0] # shows indices of new group starts
+    ngroups = 1
+    for i in range(1,len(arr)):
+        if abs(arr[i]['mag']-arr[i-1]['mag']) > eps:
+            newMags.append(i)
+            ngroups += 1
+            if ngroups > igroup:
+                return newMags[ngroups-2],newMags[ngroups-1]-newMags[ngroups-2]
+    return 0,len(arr)   
+
+def newBoundsifInside(grp,cell):
+    newPlanes = False
+    newboundaries = deepcopy(cell.bounds)
+    for ig  in range(len(grp)):
+        gvec = braggVecs[grp[ig]]['vec']
+        if isInside(gvec,cell.bounds):
+            gnorm = norm(gvec)
+            newboundaries[0].append(array(gvec/gnorm)); newboundaries[1].append(gnorm)
+            newPlanes = True         
+    cell.bounds = newboundaries
+    return newPlanes    
+
+def getInterscPoints(planes):
+    '''intersection points of planes, taken 3 at a time, where the planes
+    have unit vector u (list 0) and are displaced a distance ro (list 1 in planes)'''
+    vecs = [planes[0][i]*planes[1][i] for i in range(len(planes[0]))]
+    combs = list(combinations(vecs,3))
+    interscPoints = []
+    interscPmags = []
+    uniqStrs = []
+    for c in combs:
+        interscP = threePlaneIntersect(c)
+        if not interscP is None:
+            addVec(interscP,interscPoints)
+    for ipoint, vec in enumerate(interscPoints):
+        interscPmags.append(norm(vec))
+    interscPoints = [interscP for (mag,interscP) in zip(interscPmags,interscPoints)] #sorted by distance from origin 
+    return interscPoints
+
+def getFacetsPoints(interscPoints,cell):
+    facetsPoints = []
+    for point in interscPoints:
+        if not isOutside(point,cell.bounds):
+            facetsPoints.append(point)
+    #arrange intersection points in each plane according to their angular order in the plane
+    for iplane, uvec in enumerate(cell.bounds[0]):
+        pvec = uvec*cell.bounds[1][iplane]
+        facetvecs = []
+        for i, fvec in  enumerate(facetsPoints):
+            if onPlane(fvec,pvec,eps):
+                facetvecs.append(fvec)          
+        cell.facets[iplane] = orderAngle(facetvecs)
+    cell.facets = facetsPoints
+        
+def isInside(vec,bounds,eps):
+    '''Inside means on opposite side of the plane vs its normal vector'''
+    inside = zeros(len(bounds[0]),dtype = bool)
+    for iplane, uvec in enumerate(bounds[0]):
+        if dot(vec,uvec) < bounds[1][iplane] - eps: #point is inside this plane
+            inside[iplane] = True
+    return all(inside)
+
+def isOutside(vec,boundaries):
+    #print 'intersection',vec
+    for iplane, uvec in enumerate(boundaries[0]): 
+        pvec = uvec*boundaries[1][iplane]           
+        if dot(vec,uvec) > boundaries[1][iplane] + eps: #point is outside this plane
+#                 print '\tboundary', iplane, uvec, norm(pvec)
+#                 print '\tboundary component', dot(vec,pvec), dot(pvec,pvec)
+#                 print
+            return True
+#             else:
+            #print 'On boundary check',iplane,dot(vec,pvec) - dot(pvec,pvec),pvec
+    #print
+    return False
+
+def onPlane(self,vec,planevec,eps):
+    return abs(dot(vec,planevec) - dot(planevec,planevec)) < eps #point is inside this plane
+                    
+def makesDups(self,op,facets):
+    '''Applies symmetry operator to all facet points. If any facet points are 
+    moved on top of other facet points, then return true'''
+    points = flatVecsList(facets)
+    for i in range(len(points)):
+        rpoint = dot(op,points[i])
+        if allclose(points[i],rpoint):
+            break #no rotation effect
+        otherLabels = range(len(points))
+        otherLabels.pop(i)
+        for j in otherLabels:
+            if allclose(rpoint,points[j]):
+                return True
+    return False
+
+def getVorCell(LVs,cell):
+    '''Boundaries and vertices of Voronoi cell'''
+    braggVecs = getBraggVecs(LVs,cell)
+    igroup = 1
+    checkNext = True
+    gstart,ng = magGroup(braggVecs,1) # group of smallest bragg plane vectors
+    for i in range(ng):
+        vec = braggVecs[i]['vec']; mag = norm(vec)
+        cell.bounds[0].append(vec/mag); cell.bounds[1].append(mag)
+    #print 'Smallest bragg vectors  boundaries', cell.bounds
+    while checkNext:
+        igroup += 1
+        gstart,ng = magGroup(braggVecs,igroup)
+        nextGroup = range(gstart,gstart+ng)
+        checkNext = newBoundsifInside(nextGroup)
+    interscPoints = getInterscPoints(cell.bounds)
+    #write plane equations for Mathematica:
+#         for iplane, uvec in enumerate(cell.bounds[0]):
+#             pvec = uvec*cell.bounds[1][iplane]
+#             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)) #write plane equations for mathematica
+    #print 'intersections'
+#         for i in range(self.nIntersc):
+        #print i, interscPoints[i]['mag'], interscPoints[i]['vec']
+    getFacetsPoints(interscPoints,cell)
+    #print 'facet points'
+#         for i in range(len(self.facetsPoints)):
+#             print i, self.facetsPoints[i]['mag'], self.facetsPoints[i]['vec']
+             
+def getBraggVecs(LVs):
+    '''The Bragg vectors are halfway from the origin to a lattice point.
+    The planes normal to some of these will be bounding planes of the Voronoi cell '''
+    braggVecs = zeros(124,dtype = [('vec', '3float'),('mag', 'float'),('dep', 'S15')])        
+    ipoint = 0
+    for i in range(-2,3):
+        for j in range(-2,3):
+            for k in range(-2,3):
+                if not (i==0 and j==0 and k==0):
+                    vec = trimSmall(0.5*dot(LVs,array([i,j,k])))
+                    braggVecs[ipoint]['vec'] = vec
+                    braggVecs[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
+                    braggVecs[ipoint]['mag'] = norm(vec)
+                    ipoint+=1
+    braggVecs.sort(order = 'mag')
+    return braggVecs
+
+def IntsPlLinSeg(u,r1,r2,eps):
+    '''Intersection between a plane through the origin and a line.
+    A plane through the origin is given by dot(r,u) = 0.  
+    A line segment between r1 and r2 is given by vectors r = r1+t(r2-r1), for t in (0,1) 
+    Combining these:  r1u = dot(r1,u).  r2u = dot(r2,u).  Then t = r1u/(r1u-r2u).
+    So if t is in (0,1), then we have an intersection'''
+    den = dot(r1-r2,u)
+    if areEqual(den,0.0):
+        intersect = False
+        return intersect, array([1e6,1e6,1e6])
+    else:
+        t = dot(r1,u)/den
+        if 0 + eps < t < 1.0-eps:
+            rinters =  trimSmall(r1 + t*(r2-r1))
+            intersect = True
+        else:
+             intersect = False
+             rinters =   array([1e6,1e6,1e6])
+    return intersect, rinters  
+
 class cell():
     def __init__(self):
         self.bounds = [[],[]] #planes, written as normals and distances from origin [u's] , [ro's]
-        self.fpoints = [] #facet points
+        self.facets = [] #facet points
         self.volume = None
     
 class meshConstruct(): 
@@ -165,8 +287,8 @@ class meshConstruct():
         self.icut = -1
 #         self.BZboundaries = [[],[]] #for BZ Voronoi cell or IBZ.  written as [u's] , [ro's]
 #         self.MPboundaries = [[],[]] #for mesh point Voronoi cell
-#         self.BZfpoints = [] #facet points for BZ Voronoi cell or IBZ
-#         self.MPfpoints = [] #facet points for mesh point Voronoi cell
+#         self.BZfacets = [] #facet points for BZ Voronoi cell or IBZ
+#         self.MPfacets = [] #facet points for mesh point Voronoi cell
         
     def meshSym(self,B,targetNmesh,path,method):
         #1. nCoarse random points in the cell parallelpiped.  
@@ -194,7 +316,9 @@ class meshConstruct():
         self.eps = self.ravg/1000
         BZ = cell() #instance
         self.getVorCell(self.B,BZ)
-        self.getIBZ(BZ) #changes BZboundaries.  fpoints are the facet points. 
+        sys.exit('stop') 
+        
+        self.getIBZ(BZ) #changes BZboundaries.   
         
         self.meshCubic('fcc')
 #         self.triFaces()
@@ -254,7 +378,7 @@ class meshConstruct():
         else: 
             sys.exit('stop. Type error in meshCubich')
         #test vacet points for orthogonality
-        points = flatVecsList(self.BZfpoints)
+        points = flatVecsList(self.BZfacets)
         bodyCenter = sum(points)
         rs = []
         pairs = []
@@ -307,9 +431,9 @@ class meshConstruct():
         volSC= det(self.B)
         volKcubConv = volSC/self.nTarget*len(sites)
         aKcubConv = volKcubConv**(1/3.0)
-        self.rpacking = 
+#         self.rpacking = 
         #Find the planar boundaries
-        for ifac, facet in enumerate(self.BZfpoints):
+        for ifac, facet in enumerate(self.BZfacets):
             facCenter = sum(facet)
             u,ro = plane3pts(facet[:3])
             if ro == 0: #plane goes through origin...choose a normal that points "outside" the cell
@@ -340,17 +464,17 @@ class meshConstruct():
                         if self.isInside(kpoint):
                             self.cubPoints.append(kpoint)
                             self.cubWeights.append(self.IBZvolCut)
-                        else:
-                            nearPlanes = checkNearSurf(self,vec)
-                            if self.method == 1 and len(nearPlanes) == 1: #give weight proportional to sphere
-                                d = nearPlanes[0][1] 
-                                if d<0:
-                                elif d>0:
-                                else:
-                                     
-                                if len(nearPlanes)
-                            else: #cut a Voronoi cell:
-                                
+#                         else:
+#                             nearPlanes = checkNearSurf(self,vec)
+#                             if self.method == 1 and len(nearPlanes) == 1: #give weight proportional to sphere
+#                                 d = nearPlanes[0][1] 
+#                                 if d<0:
+#                                 elif d>0:
+#                                 else:
+#                                      
+#                                 if len(nearPlanes)
+#                             else: #cut a Voronoi cell:
+#                                 
                                 
                              #weight of a general point
 
@@ -358,54 +482,9 @@ class meshConstruct():
 #         print 'cubPoints',len(self.cubPoints), self.cubPoints  
         self.facetsCubMathPrint(); print 'Show[p,q]'
         return     
-        
-    def magGroup(self,arr, igroup):
-        '''returns the ith group, numbered from 1, (starting index and length of group) of vectors in a structured array, 
-        which must be sorted by magnitude (in either direction), in field 'mag' '''
+                
 
-        newMags = [0] # shows indices of new group starts
-        ngroups = 1
-        for i in range(1,len(arr)):
-            if abs(arr[i]['mag']-arr[i-1]['mag']) > self.eps:
-                newMags.append(i)
-                ngroups += 1
-                if ngroups > igroup:
-                    return newMags[ngroups-2],newMags[ngroups-1]-newMags[ngroups-2]
-        return 0,len(arr)       
-        
-    def newBoundsifInside(self,grp,cell):
-        newPlanes = False
-        newboundaries = cell.bounds
-        for ig  in range(len(grp)):
-            gvec = braggVecs[grp[ig]]['vec']
-            if self.isInside(gvec):
-                gnorm = norm(gvec)
-                newboundaries[0].append(array(gvec/gnorm)); newboundaries[1].append(gnorm)
-                newPlanes = True         
-        cell.bounds = newboundaries
-        return newPlanes
     
-    def isInside(self,vec,boundaries):
-        '''Inside means on opposite side of the plane vs its normal vector'''
-        inside = zeros(len(boundaries[0]),dtype = bool)
-        for iplane, uvec in enumerate(boundaries[0]):
-            if dot(vec,uvec) < boundaries[1][iplane] - self.eps: #point is inside this plane
-                inside[iplane] = True
-        return all(inside)
-
-    def isOutside(self,vec,boundaries):
-        #print 'intersection',vec
-        for iplane, uvec in enumerate(boundaries[0]): 
-            pvec = uvec*boundaries[1][iplane]           
-            if dot(vec,uvec) > boundaries[1][iplane] + self.eps: #point is outside this plane
-#                 print '\tboundary', iplane, uvec, norm(pvec)
-#                 print '\tboundary component', dot(vec,pvec), dot(pvec,pvec)
-#                 print
-                return True
-#             else:
-                #print 'On boundary check',iplane,dot(vec,pvec) - dot(pvec,pvec),pvec
-        #print
-        return False
     
     def checkNearSurf(self,vec):
         nearPlanes = []
@@ -413,136 +492,14 @@ class meshConstruct():
             if self.method == 1:
                 d = ro - dot(vec,uvec)
                 if abs(d) < self.rpacking:
-                    nearPlanes.append([iplane,d)
+                    nearPlanes.append([iplane,d])
         return nearPlanes
-              
-    def onPlane(self,vec,planevec):
-        return abs(dot(vec,planevec) - dot(planevec,planevec)) < self.eps #point is inside this plane
-        
-    def getVorCell(self,LVs,cell):
-        '''Boundaries and vertices of Voronoi cell'''
-        braggVecs = getBraggVecs(LVs,cell)
-        igroup = 1
-        checkNext = True
-        gstart,ng = self.magGroup(braggVecs,1) # group of smallest bragg plane vectors
-        for i in range(ng):
-            vec = braggVecs[i]['vec']; mag = norm(vec)
-            cell.bounds[0].append(vec/mag); cell.bounds[1].append(mag)
-        #print 'Smallest bragg vectors  boundaries', cell.bounds
-        while checkNext:
-            igroup += 1
-            gstart,ng = self.magGroup(braggVecs,igroup)
-            nextGroup = range(gstart,gstart+ng)
-            checkNext = self.newBoundsifInside(nextGroup)
-        self.getInterscPoints(cell.bounds)
-        #write plane equations for Mathematica:
-#         for iplane, uvec in enumerate(cell.bounds[0]):
-#             pvec = uvec*cell.bounds[1][iplane]
-#             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)) #write plane equations for mathematica
-        #print 'intersections'
-#         for i in range(self.nIntersc):
-            #print i, self.interscPoints[i]['mag'], self.interscPoints[i]['vec']
-        self.getFacetsPoints()
-        #print 'facet points'
-#         for i in range(len(self.facetsPoints)):
-#             print i, self.facetsPoints[i]['mag'], self.facetsPoints[i]['vec']
-        self.arrangeFacets()
-        return boundaries
-
-    def arrangeFacets(self,cell):        
-        #arrange facets in each plane according to their angular order in the plane
-        self.facets = [[]]*len(cell.bounds[0])
-        for iplane, uvec in enumerate(cell.bounds[0]):
-            pvec = uvec*cell.bounds[1][iplane]
-            facetvecs = []
-            facetlabels = []
-            for i, fvec in  enumerate(self.facetsPoints['vec']):
-                if self.onPlane(fvec,pvec):
-                    facetlabels.append(i)
-                    facetvecs.append(fvec)          
-            self.facets[iplane] = orderAngle(facetvecs,facetlabels)
-            #print iplane, 'facets', self.facets[iplane]
-        
-    def getFacetsPoints(self):
-        OKpoints = []
-        for i in range(len(self.interscPoints)):
-            #print i,
-            if not self.isOutside(self.interscPoints[i]['vec']):
-                OKpoints.append(i)
-        self.facetsPoints = zeros(len(OKpoints),dtype = [('vec', '3float'),('mag', 'float')])
-        for iOK,ipoint in enumerate(OKpoints):
-            vec = self.interscPoints[ipoint]['vec']
-            self.facetsPoints[iOK]['vec'] = vec
-            mag = norm(vec)
-            self.facetsPoints[iOK]['mag'] = mag
-
-    def getInterscPoints(self,planes):
-        '''intersection points of planes, taken 3 at a time, where the planes
-        have unit vector u (list 0) and are displaced a distance ro (list 1 in planes)'''
-        vecs = [planes[0][i]*planes[1][i] for i in range(len(planes[0]))]
-        combs = list(combinations(vecs,3))
-        self.interscPoints = []
-        unique = []
-        uniqStrs = []
-        for c in combs:
-            interscP = threePlaneIntersect(c)
-            if not interscP is None:
-                addVec
-                vecStr = str(interscP[0])[:self.strLen]+str(interscP[1])[:self.strLen]+str(interscP[2])[:self.strLen]
-                if vecStr not in uniqStrs:
-                    uniqStrs.append(vecStr)
-                    unique.append(interscP)
-        self.nIntersc = len(unique)
-        self.interscPoints = zeros(self.nIntersc,dtype = [('vec', '3float'),('mag', 'float')])
-        #print 'unique:',self.nIntersc
-        for ipoint, vec in enumerate(unique):
-            self.interscPoints[ipoint]['vec'] = vec
-            self.interscPoints[ipoint]['mag'] = norm(vec)
-#             print vec
-        self.interscPoints.sort(order = 'mag')    
-                        
-    def getBraggVecs(self,LVs):
-        '''The Bragg vectors are halfway from the origin to a lattice point.
-        The planes normal to some of these will be bounding planes of the Voronoi cell '''
-        braggVecs = zeros(124,dtype = [('vec', '3float'),('mag', 'float'),('dep', 'S15')])        
-        ipoint = 0
-        for i in range(-2,3):
-            for j in range(-2,3):
-                for k in range(-2,3):
-                    if not (i==0 and j==0 and k==0):
-                        vec = trimSmall(0.5*dot(LVs,array([i,j,k])))
-                        braggVecs[ipoint]['vec'] = vec
-                        braggVecs[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
-                        braggVecs[ipoint]['mag'] = norm(vec)
-                        ipoint+=1
-        braggVecs.sort(order = 'mag')
-        return braggVecs
     
     def choose111(self,uvec):
         if dot(uvec,array([1,1,1]))>= 0:
             return trimSmall(real(uvec))
         else:
-            return trimSmall(-real(uvec)) 
-    
-    def IntsPlLinSeg(self,u,r1,r2):
-        '''Intersection between a plane through the origin and a line.
-        A plane through the origin is given by dot(r,u) = 0.  
-        A line segment between r1 and r2 is given by vectors r = r1+t(r2-r1), for t in (0,1) 
-        Combining these:  r1u = dot(r1,u).  r2u = dot(r2,u).  Then t = r1u/(r1u-r2u).
-        So if t is in (0,1), then we have an intersection'''
-        den = dot(r1-r2,u)
-        if areEqual(den,0.0):
-            intersect = False
-            return intersect, array([1e6,1e6,1e6])
-        else:
-            t = dot(r1,u)/den
-            if 0 + self.eps < t < 1.0-self.eps:
-                rinters =  trimSmall(r1 + t*(r2-r1))
-                intersect = True
-            else:
-                 intersect = False
-                 rinters =   array([1e6,1e6,1e6])
-        return intersect, rinters        
+            return trimSmall(-real(uvec))      
     
     def cutCell(self,u):
         '''Cell is cut about the plane given by normal u.  Facets that intersect
@@ -554,12 +511,11 @@ class meshConstruct():
 #             print
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the new edges of cut facets
-#         ftemp = [[]]*len(self.BZfpoints) #this will contain only points, not labels
-        ftemp = deepcopy(self.BZfpoints) #this will contain only points, not labels
+#         ftemp = [[]]*len(self.BZfacets) #this will contain only points, not labels
+        ftemp = deepcopy(self.BZfacets) #this will contain only points, not labels
 #         if allclose(u,array([ 0.    ,      0.70710678 ,-0.70710678])):
-#             print
-        
-        for ifac, facet in enumerate(self.BZfpoints):
+#             print       
+        for ifac, facet in enumerate(self.BZfacets):
             marker = ''
             #print 'facet',ifac, 'len',len(facet), facet
             bounds = []
@@ -645,15 +601,13 @@ class meshConstruct():
                 if len(facet)> 0:
                    ftemp.append(facet)
             #Add any points that are in the cut plane into bordersFacet.  Some are not in facets with cuts. 
-            points = flatVecsList(self.BZfpoints)
+            points = flatVecsList(self.BZfacets)
             for i in range(len(points)):
                 if areEqual(dot(u,points[i]),0):
                     addVec(points[i],bordersFacet)            
             #Order by angle in the facet
             if len(bordersFacet)> 0:
-                labels = orderAngle(bordersFacet,range(len(bordersFacet)))
-                ftemp.append([bordersFacet[i] for i in labels])
-                self.BZfpoints = ftemp
+                self.BZfacets = orderAngle(bordersFacet)
                 #print 'Cut', self.icut
                 self.facetsMathPrint(); print 'Show[p]'              
         return
@@ -672,21 +626,7 @@ class meshConstruct():
 #                         for ip in range(bounds[0]+ 0.5,bounds[1]-0.51):
 #                             newfacet.append(facet[ip])
 #                         newfacet.append(rbounds[1])                    
-                    
-    def makesDups(self,op):
-        '''Applies symmetry operator to all facet points. If any facet points are 
-        moved on top of other facet points, then return true'''
-        points = flatVecsList(self.BZfpoints)
-        for i in range(len(points)):
-            rpoint = dot(op,points[i])
-            if allclose(points[i],rpoint):
-                break #no rotation effect
-            otherLabels = range(len(points))
-            otherLabels.pop(i)
-            for j in otherLabels:
-                if allclose(rpoint,points[j]):
-                    return True
-        return False
+
            
     def getIBZ(self):
         '''
@@ -743,12 +683,12 @@ class meshConstruct():
 #             print op        
         
 #         self.newPlanes = []
-        self.BZfpoints = [[]]*len(self.facets) #this will contain only point, not labels
+        self.BZfacets = [[]]*len(self.facets) #this will contain only point, not labels
         for ifac,facet in enumerate(self.facets):
             temp = []
             for ip in facet:
                temp.append(self.facetsPoints[ip]['vec'])
-            self.BZfpoints[ifac] = temp
+            self.BZfacets[ifac] = temp
         print'Voronoi cell plot'; self.facetsMathPrint();print 'Show[p]' 
         inversion = False
         for iop in range(self.nops):
@@ -805,11 +745,11 @@ class meshConstruct():
                 #can cut along any plane
                 self.cutCell(array([1.0,0.0,0.0]))
         #print 'facet points'
-#         for ifac, facet in enumerate(self.BZfpoints):
+#         for ifac, facet in enumerate(self.BZfacets):
 #             print ifac, facet
         self.facetsMathPrint();print 'Show[p]'
         #get volume
-        points = flatVecsList(self.BZfpoints)
+        points = flatVecsList(self.BZfacets)
         hull = convexH(points)
         self.IBZvolCut = det(self.B)/hull.volume
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
@@ -818,13 +758,13 @@ class meshConstruct():
     def facetsMathPrint(self):
         ''' Mathematica'''
         print 'p = Graphics3D[{Red, Thick,{',
-        for ifac, facet in enumerate(self.BZfpoints):
+        for ifac, facet in enumerate(self.BZfacets):
             print 'Line[{',
             for point in facet:
                 print '{'+'{},{},{}'.format(point[0],point[1],point[2])+'},',
             print '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}', #back to first
             print '}]',
-            if ifac < len(self.BZfpoints)-1:
+            if ifac < len(self.BZfacets)-1:
                 print ',',
         print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}]',    
         return    
