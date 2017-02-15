@@ -79,7 +79,7 @@ def orderAngle(facet):
             angle = arctan2(vy,vx)
             if angle < 0: angle = 2*pi + angle
             angles.append(angle)
-        return [point for (angle,point) in sorted(zip(angles,facet))]
+        return [point for (angle,point) in sorted(zip(angles,facet),key = lambda x: x[0])] 
 
 def flatVecsList(vecsList):
     '''Returns a flat list of vectors, from a list of lists that might have duplicates, 
@@ -145,10 +145,10 @@ def getInterscPoints(planes):
     for c in combs:
         interscP = threePlaneIntersect(c)
         if not interscP is None:
-            addVec(interscP,interscPoints)
+            interscPoints = addVec(interscP,interscPoints)
     for ipoint, vec in enumerate(interscPoints):
         interscPmags.append(norm(vec))
-    interscPoints = [interscP for (mag,interscP) in zip(interscPmags,interscPoints)] #sorted by distance from origin 
+    interscPoints = [point for (mag,point) in sorted(zip(interscPmags,interscPoints),key = lambda x: x[0])] #sorted by distance from origin 
     return interscPoints
 
 def getFacetsPoints(interscPoints,cell,eps):
@@ -177,24 +177,16 @@ def isInside(vec,bounds,eps):
     return all(inside)
 
 def isOutside(vec,boundaries,eps):
-    #print 'intersection',vec
     for iplane, uvec in enumerate(boundaries[0]): 
         pvec = uvec*boundaries[1][iplane]           
         if dot(vec,uvec) > boundaries[1][iplane] + eps: #point is outside this plane
-#                 print '\tboundary', iplane, uvec, norm(pvec)
-#                 print '\tboundary component', dot(vec,pvec), dot(pvec,pvec)
-#                 print
             return True
-#             else:
-            #print 'On boundary check',iplane,dot(vec,pvec) - dot(pvec,pvec),pvec
-    #print
     return False
 
 def onPlane(vec,planevec,eps):
-    print 'vec,planevec',vec,planevec, abs(dot(vec,planevec) - dot(planevec,planevec)) < eps
     return abs(dot(vec,planevec) - dot(planevec,planevec)) < eps #point is inside this plane
                     
-def makesDups(self,op,facets):
+def makesDups(op,facets):
     '''Applies symmetry operator to all facet points. If any facet points are 
     moved on top of other facet points, then return true'''
     points = flatVecsList(facets)
@@ -254,7 +246,7 @@ def getBraggVecs(LVs):
     braggVecs.sort(order = 'mag')
     return braggVecs
 
-def IntsPlLinSeg(u,r1,r2,eps):
+def intsPlLinSeg(u,r1,r2,eps):
     '''Intersection between a plane through the origin and a line.
     A plane through the origin is given by dot(r,u) = 0.  
     A line segment between r1 and r2 is given by vectors r = r1+t(r2-r1), for t in (0,1) 
@@ -316,14 +308,12 @@ class meshConstruct():
         self.edgeFactor = 3.0
         self.rmin = 0.8*self.ravg #
         self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
-        self.eps = self.ravg/1000
+        eps = self.ravg/1000
         BZ = cell() #instance
-        getVorCell(self.B,BZ,self.eps)
-        self.facetsMathPrint(BZ)
-        sys.exit('stop') 
-        
-        self.getIBZ(BZ) #changes BZboundaries.   
-        
+        getVorCell(self.B,BZ,eps)
+        self.facetsMathPrint(BZ) 
+        self.getIBZ(BZ,eps) #changes BZboundaries.   
+        sys.exit('stop')        
         self.meshCubic('fcc')
 #         self.triFaces()
 #         self.meshCubic('bcc')
@@ -413,7 +403,7 @@ class meshConstruct():
                 for it, triple in enumerate(triples):
                     for i in range(3):
                         sums[it] += norm(triple[i])
-                triples = [triple for (sum1,triple) in zip(sums,triples)] #sorted by lowest sum    
+                triples = [triple for (sum1,triple) in sorted(zip(sums,triples),key = lambda x: x[0])] #sorted by lowest sum  
             for i in range(3):
                 vec = triples[-1][i]
                 cubicLVs[:,i] = vec/norm(vec)
@@ -424,7 +414,7 @@ class meshConstruct():
                 for ip, pair in enumerate(pairs):
                     for i in range(2):
                         sums[it] += norm(triple[i])
-                pairs = [pair for (sum1,pair) in zip(sums,pairs)] #sorted by lowest sum    
+                pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
             for i in range(2):        
                 vec = pair[-1][i]
                 cubicLVs[:,i] = vec/norm(vec)
@@ -505,7 +495,7 @@ class meshConstruct():
         else:
             return trimSmall(-real(uvec))      
     
-    def cutCell(self,u):
+    def cutCell(self,u,BZ,eps):
         '''Cell is cut about the plane given by normal u.  Facets that intersect
         the plane are cut, and only the portion on one side is kept.  The intersection points
         between the plane and the facet segments are new facet points.  If a facet
@@ -516,10 +506,10 @@ class meshConstruct():
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the new edges of cut facets
 #         ftemp = [[]]*len(self.BZfacets) #this will contain only points, not labels
-        ftemp = deepcopy(self.BZfacets) #this will contain only points, not labels
+        ftemp = deepcopy(BZ.facets) 
 #         if allclose(u,array([ 0.    ,      0.70710678 ,-0.70710678])):
 #             print       
-        for ifac, facet in enumerate(self.BZfacets):
+        for ifac, facet in enumerate(BZ.facets):
             marker = ''
             #print 'facet',ifac, 'len',len(facet), facet
             bounds = []
@@ -535,7 +525,7 @@ class meshConstruct():
                     jp = ip + 1
                     if jp == len(facet): jp = 0 
                     point2 = facet[jp]
-                    [intersect, rinters] = self.IntsPlLinSeg(u,point1,point2)          
+                    [intersect, rinters] = intsPlLinSeg(u,point1,point2,eps)          
                     if intersect:
                         bounds.append(ip + 0.5)  #to show it intersects, but not necessarily at a midpoint. 
                         rbounds.append(rinters)
@@ -549,7 +539,7 @@ class meshConstruct():
                     # boundary to see which part of the facet we keep...
                     # the half that u points away from
                     #print 'bounds',bounds
-                    ucheck = dot(u,facet[int(ceil(bounds[0] + self.eps))])
+                    ucheck = dot(u,facet[int(ceil(bounds[0] + eps))])
                     direc = -int(sign(ucheck)) #+1 or -1 
                     newfacet = []
                     if isinteger(bounds[0]):
@@ -604,16 +594,17 @@ class meshConstruct():
             for i2, facet in enumerate(ftemp2):
                 if len(facet)> 0:
                    ftemp.append(facet)
-            #Add any points that are in the cut plane into bordersFacet.  Some are not in facets with cuts. 
-            points = flatVecsList(self.BZfacets)
+            #Add any points that are in the cut plane into bordersFacet.  Some may not be in facets with cuts. 
+            points = flatVecsList(BZ.facets)
             for i in range(len(points)):
                 if areEqual(dot(u,points[i]),0):
                     addVec(points[i],bordersFacet)            
             #Order by angle in the facet
             if len(bordersFacet)> 0:
-                self.BZfacets = orderAngle(bordersFacet)
+                ftemp.append(orderAngle(bordersFacet))
                 #print 'Cut', self.icut
-                self.facetsMathPrint(); print 'Show[p]'              
+            BZ.facets = ftemp
+#             self.facetsMathPrint(BZ); print 'Show[p]'              
         return
                                               
 #                 if isinteger(bounds[0]):
@@ -632,7 +623,7 @@ class meshConstruct():
 #                         newfacet.append(rbounds[1])                    
 
            
-    def getIBZ(self):
+    def getIBZ(self,BZ,eps):
         '''
         Apply symmetry operators to a facet point O:, to get point P.
         as a convention, choose points and volumes 
@@ -670,30 +661,8 @@ class meshConstruct():
         Choose either uR or -uR, the one closest to the (1,1,1) direction.   
         
         Keep the part of the cell that is dot(r,u) < 0
-
         '''
-        #copy array of boundary plane normal vectors, that we will add to later
-        
-
-        #choose starting facet point arbitrarily by which has the highest sum of components
-#         sumComps = []
-        
-#         for vec in self.facetsPoints[:]['vec']:
-#             sumComps.append(sum(vec))
         print '\n\nReducing Brillouin zone by symmetry'
-#         print '\n\nUsing dummy symmetry ops'
-#         for iop in range(self.nops):
-#             op = self.symops[:,:,iop]
-#             print op        
-        
-#         self.newPlanes = []
-        self.BZfacets = [[]]*len(self.facets) #this will contain only point, not labels
-        for ifac,facet in enumerate(self.facets):
-            temp = []
-            for ip in facet:
-               temp.append(self.facetsPoints[ip]['vec'])
-            self.BZfacets[ifac] = temp
-        print'Voronoi cell plot'; self.facetsMathPrint();print 'Show[p]' 
         inversion = False
         for iop in range(self.nops):
             op = self.symops[:,:,iop]            
@@ -710,36 +679,35 @@ class meshConstruct():
 #                     print 'Rotation',  real(evecs[:,where(areEqual(evals,1.0))[0][0]])
 #                 else:
 #                     print 'Reflection',real(evecs[:,where(areEqual(evals,-1.0))[0][0]])
-                if self.makesDups(op): #does this operation cause current facet points to lie on top of other current facet points. 
+                if makesDups(op,BZ.facets): #does this operation cause current facet points to lie on top of other current facet points. 
                     if areEqual(det(op),1.0)  : #rotation
                         evec = evecs[:,where(areEqual(evals,1.0))[0][0]] #axis
                         ipt = 0
                         #choose a facet point that is close to the rotation axis to avoid unusual cutting planes
                         ds = []
-                        labels = range(len(self.facetsPoints))
-                        for vec in self.facetsPoints['vec']:
+                        allPoints = flatVecsList(BZ.facets)
+                        for vec in allPoints:
                             if areEqual(abs(dot(evec,vec)),norm(vec)): #axis and vec are parallel...don't want this one.
                                  ds.append(100)
                             else:
                                 ds.append(norm(vec - evec*dot(evec,vec)))
-                        labels =  [label for (d,label) in sorted(zip(ds,labels))]#sort by distance
-                        pnto = self.facetsPoints[labels[0]]['vec']
-                        #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   
-                        #tvec = cross(pnto,cross(pnto,evec))
-                        tvec = cross(evec,pnto)
-                        u1 = self.choose111(tvec/norm(tvec))
-                        self.cutCell(u1)
+                        allPoints = [point for (d,point) in sorted(zip(ds,allPoints),key = lambda x: x[0])]#sort by distance
+                        pnto = allPoints[0]
+                        #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   )
+                        tempvec = cross(evec,pnto)
+                        u1 = self.choose111(tempvec/norm(tempvec))
+                        self.cutCell(u1,BZ)
                         pntp = dot(op,pnto)
-                        tvec = cross(evec,pntp)
-                        u2 = self.choose111(tvec/norm(tvec))
+                        tempvec = cross(evec,pntp)
+                        u2 = self.choose111(tempvec/norm(tempvec))
                         #print'\n\t2nd half of rot'
-                        self.cutCell(u2) 
+                        self.cutCell(u2,BZ) 
 
                     else: # -1: reflection/improper rotatioin
                         if len(where(areEqual(evals,-1.0))) > 1: evals = -evals #improper rotation
                         evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
                         u1 = self.choose111(evec) 
-                        self.cutCell(u1) 
+                        self.cutCell(u1,BZ,eps) 
 #                 else:
                     #print '\nOp {} yields no duplicates\n'.format(iop)  
             elif areEqual(det(op),-1.0):
@@ -749,13 +717,14 @@ class meshConstruct():
                 #can cut along any plane
                 self.cutCell(array([1.0,0.0,0.0]))
         #print 'facet points'
-#         for ifac, facet in enumerate(self.BZfacets):
+#         for ifac, facet in enumerate(BZ.facets):
 #             print ifac, facet
         self.facetsMathPrint();print 'Show[p]'
         #get volume
-        points = flatVecsList(self.BZfacets)
+        points = flatVecsList(BZ.facets)
         hull = convexH(points)
-        self.IBZvolCut = det(self.B)/hull.volume
+        BZ.volume = hull.volume
+        self.IBZvolCut = det(self.B)/BZ.volume
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
         return
 
