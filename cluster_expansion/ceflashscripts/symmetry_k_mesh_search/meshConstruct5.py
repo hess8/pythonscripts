@@ -162,9 +162,11 @@ def getFacetsPoints(interscPoints,cell,eps):
         pvec = uvec*cell.bounds[1][iplane]
         facetvecs = []
         for i, vec in  enumerate(interscPoints):
-            if onPlane(vec,pvec,eps):
+            if onPlane(vec,pvec,eps) and not isOutside(vec,cell.bounds,eps):
                 facetvecs.append(vec)          
         cell.facets[iplane] = orderAngle(facetvecs)
+        print 
+    print
         
 def isInside(vec,bounds,eps):
     '''Inside means on opposite side of the plane vs its normal vector'''
@@ -189,6 +191,7 @@ def isOutside(vec,boundaries,eps):
     return False
 
 def onPlane(vec,planevec,eps):
+    print 'vec,planevec',vec,planevec, abs(dot(vec,planevec) - dot(planevec,planevec)) < eps
     return abs(dot(vec,planevec) - dot(planevec,planevec)) < eps #point is inside this plane
                     
 def makesDups(self,op,facets):
@@ -316,6 +319,7 @@ class meshConstruct():
         self.eps = self.ravg/1000
         BZ = cell() #instance
         getVorCell(self.B,BZ,self.eps)
+        self.facetsMathPrint(BZ)
         sys.exit('stop') 
         
         self.getIBZ(BZ) #changes BZboundaries.   
@@ -755,21 +759,21 @@ class meshConstruct():
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
         return
 
-    def facetsMathPrint(self):
+    def facetsMathPrint(self,cell):
         ''' Mathematica'''
         print 'p = Graphics3D[{Red, Thick,{',
-        for ifac, facet in enumerate(self.BZfacets):
+        for ifac, facet in enumerate(cell.facets):
             print 'Line[{',
             for point in facet:
                 print '{'+'{},{},{}'.format(point[0],point[1],point[2])+'},',
             print '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}', #back to first
             print '}]',
-            if ifac < len(self.BZfacets)-1:
+            if ifac < len(cell.facets)-1:
                 print ',',
         print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}]',    
         return    
     
-    def facetsCubMathPrint(self):
+    def facetsCubMathPrint(self,cell):
         self.facetsMathPrint()
         print 'q=ListPointPlot3D[{',
         for ipoint,point in enumerate(self.cubPoints):
