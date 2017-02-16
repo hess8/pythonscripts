@@ -29,7 +29,7 @@ import meshConstruct5
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/f3varyN/'
 # maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
 maindir = '/fslhome/bch/cluster_expansion/meshConstruct/AlAl'
-method = 0  #0,1 for now.
+method = 1  #0,1 for now.
             #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
             #         from the IBZ center origin to check if the point's volume is cut. 
             #         Cut the VC to determine the volume contribution      
