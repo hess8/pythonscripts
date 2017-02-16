@@ -66,19 +66,18 @@ def threePlaneIntersect(rRows):
         else:
             return None
         
-def orderAngle(facet):
+def orderAngle(facet,uvec,eps):
         '''get the angle that each vector is, in the plane of the facet.'''
         rcenter = sum(facet)/len(facet)
         xunitv =  (facet[0] - rcenter)/norm(facet[0] - rcenter)
-#         yunitv = cross(xunitv, rcenter)/norm(cross(xunitv, rcenter))    
-        vec = (facet[1] - rcenter) - dot((facet[1] - rcenter),xunitv)
-        yunitv =   vec/norm(vec)  
+        yunitv = cross(xunitv, uvec)  
         angles = []
         for i, vec in enumerate(facet):
             vx = dot(vec-rcenter,xunitv); vy = dot(vec-rcenter,yunitv)
             angle = arctan2(vy,vx)
-            if angle < 0: angle = 2*pi + angle
+            if angle < 0-eps: angle += 2*pi
             angles.append(angle)
+        print 'angles',angles
         return [point for (angle,point) in sorted(zip(angles,facet),key = lambda x: x[0])] 
 
 def flatVecsList(vecsList):
@@ -163,8 +162,8 @@ def getFacetsPoints(interscPoints,cell,eps):
         facetvecs = []
         for i, vec in  enumerate(interscPoints):
             if onPlane(vec,pvec,eps) and not isOutside(vec,cell.bounds,eps):
-                facetvecs.append(vec)          
-        cell.facets[iplane] = orderAngle(facetvecs)
+                addVec(vec,facetvecs)          
+        cell.facets[iplane] = orderAngle(facetvecs,uvec,eps)
         print 
     print
         
@@ -324,7 +323,7 @@ class meshConstruct():
         sys.exit('stop')        
         return meshvecs, Nmesh, lattype, pfB, pf, status
    
-    def meshCubic(self,cell,type,eps):
+    def meshCubic(self,BZ,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with them.       
         Weighting of each point:
@@ -363,17 +362,20 @@ class meshConstruct():
         cubicLVs = identity(3)
         if type == 'fcc':
             sites = [array([0, 0 , 0]), array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])]
+            primLVs = array([array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])])
             pf = 0.74
         elif type == 'bcc':
             sites = [array([0, 0 , 0]), array([a/2,a/2,a/2])]
+            primLVs = array([array([-a/2,a/2,a/2]), array([a/2,-a/2,a/2]), array([a/2,a/2,-a/2])])
             pf = 0.68
         elif type == 'cub':
             pf = 0.52
             sites = [array([0, 0 , 0])]
-        else: 
+            primLVs = cubicLVs
+        else:
             sys.exit('stop. Type error in meshCubich')
         #test facet points for orthogonality
-        points = flatVecsList(cell.facets)
+        points = flatVecsList(BZ.facets)
         bodyCenter = sum(points)
         rs = []
         pairs = []
@@ -426,15 +428,19 @@ class meshConstruct():
         volSC= det(self.B)
         volKcubConv = volSC/self.nTarget*len(sites)
         aKcubConv = volKcubConv**(1/3.0)
+        #define mesh point voronoi cell
+        MP = cell()
+        getVorCell(primLVs,MP,eps)
+        print 'Mesh Point Voronoi cell'; self.facetsMathPrint(MP)        
 #         self.rpacking = 
         #Find the planar boundaries
-        for ifac, facet in enumerate(cell.facets):
+        for ifac, facet in enumerate(BZ.facets):
             facCenter = sum(facet)
             u,ro = plane3pts(facet[:3])
-            if ro == 0: #plane goes through origin...choose a normal that points "outside" the cell
+            if ro == 0: #plane goes through origin...choose a normal that points "outside" the BZ
                 if dot(facCenter - bodyCenter, u )<0:
                     u = -u
-            cell.bounds[0].append(u);cell.bounds[1].append(ro)
+            BZ.bounds[0].append(u);BZ.bounds[1].append(ro)
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -447,8 +453,8 @@ class meshConstruct():
         #Create the cubic mesh inside the irreducible BZ
         cubicLVs = cubicLVs * aKcubConv
         sites = [site * aKcubConv for site in sites]
-        cell.mesh = []
-        cell.weights = []
+        BZ.mesh = []
+        BZ.weights = []
 #         offset = array([0.5,0.5,0.5])*aKcubConv
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
@@ -456,14 +462,18 @@ class meshConstruct():
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for site in sites:
                         kpoint = lvec + site
-                        if isInside(kpoint,cell.bounds,eps):
-                            cell.mesh.append(kpoint)
-                            cell.weights.append(self.IBZvolCut)
-#                         else:
-#                             nearPlanes = checkNearSurf(self,vec)
-#                             if self.method == 1 and len(nearPlanes) == 1: #give weight proportional to sphere
-#                                 d = nearPlanes[0][1] 
-#                                 if d<0:
+                        if isInside(kpoint,BZ.bounds,eps):
+                            BZ.mesh.append(kpoint)
+                            BZ.weights.append(self.IBZvolCut)
+                        else:
+                            nearPlanes = checkNearSurf(self,vec)
+                            if self.method == 1 and len(nearPlanes) == 1: #give weight proportional to sphere
+                                BZ.mesh.append(kpoint)
+                                d = nearPlanes[0][1]
+                                cap = 1/3*pi*d*(self.rpacking-d)**2 
+                                if d<0: #most of the sphere is inside:
+                                    BZ.weights.append()
+                                    
 #                                 elif d>0:
 #                                 else:
 #                                      
@@ -475,7 +485,7 @@ class meshConstruct():
 
                     
 #         print 'cubPoints',len(cell.mesh), cell.mesh  
-        self.facetsMeshMathPrint(cell); print 'Show[p,q]'
+        self.facetsMeshMathPrint(BZ); print 'Show[p,q]'
         return     
                 
 
@@ -602,7 +612,8 @@ class meshConstruct():
                     addVec(points[i],bordersFacet)            
             #Order by angle in the facet
             if len(bordersFacet)> 0:
-                ftemp.append(orderAngle(bordersFacet))
+                uvec = plane3pts(bordersFacet)[0]
+                ftemp.append(orderAngle(bordersFacet,uvec,eps))
                 #print 'Cut', self.icut
             cell.facets = ftemp
 #             self.facetsMathPrint(cell); print 'Show[p]'              
@@ -736,7 +747,7 @@ class meshConstruct():
             print '}]',
             if ifac < len(cell.facets)-1:
                 print ',',
-        print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}];',    
+        print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}]',    
         return    
             
     def facetsMeshMathPrint(self,cell):
