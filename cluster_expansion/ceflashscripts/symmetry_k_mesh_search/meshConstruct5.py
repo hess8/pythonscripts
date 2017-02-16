@@ -77,7 +77,6 @@ def orderAngle(facet,uvec,eps):
             angle = arctan2(vy,vx)
             if angle < 0-eps: angle += 2*pi
             angles.append(angle)
-        print 'angles',angles
         return [point for (angle,point) in sorted(zip(angles,facet),key = lambda x: x[0])] 
 
 def flatVecsList(vecsList):
@@ -245,11 +244,11 @@ def getBraggVecs(LVs):
     braggVecs.sort(order = 'mag')
     return braggVecs
 
-def intsPlLinSeg(u,r1,r2,eps):
+def intsPlLinSeg(u,ro,r1,r2,eps):
     '''Intersection between a plane through the origin and a line.
-    A plane through the origin is given by dot(r,u) = 0.  
+    A plane through the origin is given by dot(r,u) = ro.  
     A line segment between r1 and r2 is given by vectors r = r1+t(r2-r1), for t in (0,1) 
-    Combining these:  r1u = dot(r1,u).  r2u = dot(r2,u).  Then t = r1u/(r1u-r2u).
+    Combining these:  r1u = dot(r1,u).  r2u = dot(r2,u).  Then t = (ro-r1u)/(r2u-r1u).
     So if t is in (0,1), then we have an intersection'''
     den = dot(r1-r2,u)
     if areEqual(den,0.0):
@@ -362,18 +361,22 @@ class meshConstruct():
         cubicLVs = identity(3)
         if type == 'fcc':
             sites = [array([0, 0 , 0]), array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])]
-            primLVs = array([array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])])
-            pf = 0.74
+            primLVs = array([[0,a/2,a/2], [a/2,0,a/2], [a/2,a/2,0]])
+            self.rpacking = 1/2.0/sqrt(2)
+            pf = 4*4/3.0*pi*self.rpacking**3  #0.74
         elif type == 'bcc':
             sites = [array([0, 0 , 0]), array([a/2,a/2,a/2])]
-            primLVs = array([array([-a/2,a/2,a/2]), array([a/2,-a/2,a/2]), array([a/2,a/2,-a/2])])
-            pf = 0.68
+            primLVs = array([[-a/2,a/2,a/2], [a/2,-a/2,a/2], [a/2,a/2,-a/2]])
+            self.rpacking = sqrt(3)/4
+            pf = 2*4/3.0*pi*self.rpacking**3 #0.68
         elif type == 'cub':
-            pf = 0.52
             sites = [array([0, 0 , 0])]
             primLVs = cubicLVs
+            self.rpacking = 0.5
+            pf = 4/3.0*pi*self.rpacking**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubich')
+        self.Vsphere = 4/3.0*pi*self.rpacking
         #test facet points for orthogonality
         points = flatVecsList(BZ.facets)
         bodyCenter = sum(points)
@@ -428,11 +431,14 @@ class meshConstruct():
         volSC= det(self.B)
         volKcubConv = volSC/self.nTarget*len(sites)
         aKcubConv = volKcubConv**(1/3.0)
+        primLVs = primLVs * aKcubConv
+        cubicLVs = cubicLVs * aKcubConv
+        sites = [site * aKcubConv for site in sites]
         #define mesh point voronoi cell
         MP = cell()
         getVorCell(primLVs,MP,eps)
         print 'Mesh Point Voronoi cell'; self.facetsMathPrint(MP)        
-#         self.rpacking = 
+#         
         #Find the planar boundaries
         for ifac, facet in enumerate(BZ.facets):
             facCenter = sum(facet)
@@ -451,8 +457,6 @@ class meshConstruct():
             intMaxs.append(int(ceil(max(projs)/aKcubConv)))
             intMins.append(int(floor(min(projs)/aKcubConv)))       
         #Create the cubic mesh inside the irreducible BZ
-        cubicLVs = cubicLVs * aKcubConv
-        sites = [site * aKcubConv for site in sites]
         BZ.mesh = []
         BZ.weights = []
 #         offset = array([0.5,0.5,0.5])*aKcubConv
@@ -462,43 +466,51 @@ class meshConstruct():
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for site in sites:
                         kpoint = lvec + site
-                        if isInside(kpoint,BZ.bounds,eps):
+                        ds = self.dToPlanes(vec,BZ.bounds)
+                        if self.isAllInside(ds):
                             BZ.mesh.append(kpoint)
                             BZ.weights.append(self.IBZvolCut)
                         else:
-                            nearPlanes = checkNearSurf(self,vec)
-                            if self.method == 1 and len(nearPlanes) == 1: #give weight proportional to sphere
-                                BZ.mesh.append(kpoint)
-                                d = nearPlanes[0][1]
-                                cap = 1/3*pi*d*(self.rpacking-d)**2 
-                                if d<0: #most of the sphere is inside:
-                                    BZ.weights.append()
-                                    
-#                                 elif d>0:
-#                                 else:
-#                                      
-#                                 if len(nearPlanes)
-#                             else: #cut a Voronoi cell:
+                            nearPlanes = where(ds >= self.rpacking)
+                            nearDs =  ds[nearPlanes]
+                            if len(nearPlanes)>0:
+                                if len(nearPlanes) == 1 and self.method == 1: #give weight proportional to sphere
+                                    BZ.mesh.append(kpoint)
+                                    d = ds[0]
+                                    print 'one-plane cut',d
+                                    cap = 1/3.0*pi*abs(d)*(self.rpacking-abs(d))**2 
+                                    if d<=0: #most of the sphere is inside:
+                                        BZ.weights.append(self.IBZvolCut*(1-cap/self.IBZvolCut))
+                                    else:
+                                        BZ.weights.append(self.IBZvolCut*cap/self.IBZvolCut)
+                                elif len(nearPlanes) in [2,3]: #cut the mesh point Voronoi cell:
+                                    cutMP = deepcopy(MP)
+                                    for ip in nearPlanes:
+                                        uvec = BZ.bounds[ip]
+                                        cutCell(self,uvec,nearDs[ip],cutMP,eps) # we always keep the part that is "inside", opposite u
+                                    self.facetsMathPrint(cutMP); print 'Show[p]\n'
+                                    print
+                                else: 
+                                    sys.exit('Stop. Error: point {},{},{} is "close" to more than three planes'\
+                                             .format(i,j,k))
+                            else:
+                                print 'point {},{},{} is neither inside nor close'.format(i,j,k)
 #                                 
                                 
                              #weight of a general point
 
                     
 #         print 'cubPoints',len(cell.mesh), cell.mesh  
-        self.facetsMeshMathPrint(BZ); print 'Show[p,q]'
+        self.facetsMeshMathPrint(BZ); print 'Show[p,q]\n'
         return     
-                
-
-    
-    
-    def checkNearSurf(self,vec):
-        nearPlanes = []
-        for iplane, uvec in enumerate(boundaries[0]):   
+            
+    def dToPlanes(self,vec,bounds):
+        ds = []
+        for iplane, uvec in enumerate(bounds[0]):   
             if self.method == 1:
                 d = ro - dot(vec,uvec)
-                if abs(d) < self.rpacking:
-                    nearPlanes.append([iplane,d])
-        return nearPlanes
+            ds.append(d)
+        return array(ds)
     
     def choose111(self,uvec):
         if dot(uvec,array([1,1,1]))>= 0:
@@ -506,9 +518,125 @@ class meshConstruct():
         else:
             return trimSmall(-real(uvec))      
     
-    def cutCell(self,u,cell,eps):
-        '''Cell is cut about the plane given by normal u.  Facets that intersect
-        the plane are cut, and only the portion on one side is kept.  The intersection points
+    
+    
+#     def cutCell(self,u,cell,eps):
+#         '''Cell is cut about the plane through the center, given by normal u.  Facets that intersect
+#         the plane are cut, and only the portion on one side is kept.  The intersection points
+#         between the plane and the facet segments are new facet points.  If a facet
+#         point lies on the plane, it stays in the facet. '''
+#         #print '\nu',u
+# #         if abs(norm(u-array([ 0.70710678,  0.,         -0.70710678]))) <1e-4:
+# #             print
+#         allRemoved = [] #points that are cut out
+#         bordersFacet = [] #new facet from the new edges of cut facets
+# #         ftemp = [[]]*len(cell.facets) #this will contain only points, not labels
+#         ftemp = deepcopy(cell.facets) 
+# #         if allclose(u,array([ 0.    ,      0.70710678 ,-0.70710678])):
+# #             print       
+#         for ifac, facet in enumerate(cell.facets):
+#             marker = ''
+#             #print 'facet',ifac, 'len',len(facet), facet
+#             bounds = []
+#             rbounds = []
+#             allLs = range(len(facet))
+#             keepLs = []
+#             for ip,point1 in enumerate(facet):
+# #                     marker = "*"                  
+#                 if areEqual(dot(u,point1),0.0): #then this point is on the cut plane
+#                     bounds.append(ip)
+#                     rbounds.append('') #placeholder
+#                 else: #check line segment
+#                     jp = ip + 1
+#                     if jp == len(facet): jp = 0 
+#                     point2 = facet[jp]
+#                     [intersect, rinters] = intsPlLinSeg(u,point1,point2,eps)          
+#                     if intersect:
+#                         bounds.append(ip + 0.5)  #to show it intersects, but not necessarily at a midpoint. 
+#                         rbounds.append(rinters)
+#            
+#             if 1 < len(bounds) < len(facet):
+#                 if (isinteger(bounds[0]) and not (bounds[1]-bounds[0] ==1 or  
+#                         bounds[1]==len(facet)-1 and bounds[0] == 0) )\
+#                 or\
+#                    (not isinteger(bounds[0]) or not isinteger(bounds[1])) : #if adjacent facet points, then one edge of a facet is on the plane...don't cut
+#                     #we check the u-projection of the point just beyond the first 
+#                     # boundary to see which part of the facet we keep...
+#                     # the half that u points away from
+#                     #print 'bounds',bounds
+#                     ucheck = dot(u,facet[int(ceil(bounds[0] + eps))])
+#                     direc = -int(sign(ucheck)) #+1 or -1 
+#                     newfacet = []
+#                     if isinteger(bounds[0]):
+#                         newfacet.append(facet[bounds[0]])
+#                         keepLs.append(bounds[0])
+#                         bordersFacet = addVec(facet[bounds[0]],bordersFacet)
+#                         #print 'append',bounds[0]
+#                         ip = nextpos(bounds[0],direc,len(facet))
+#                     else:
+#                         newfacet.append(rbounds[0])
+#                         bordersFacet = addVec(rbounds[0],bordersFacet)
+#                         #print 'append rb0'
+#                         ip = int(rint(bounds[0]+0.5*direc))
+#     #                 print ip,abs(ip - bounds[1])
+#                     while abs(ip - bounds[1])>=0.5 and abs(ip - (bounds[1] - len(facet)))>=0.5:
+#                         newfacet.append(facet[ip])
+#                         keepLs.append(ip)
+#                         #print 'append',ip
+#                         if abs(ip - bounds[1])==0.5 or abs(ip - (bounds[1] - len(facet)))==0.5: #next to boundary...done interior point
+#                             break
+#                         ip = nextpos(ip,direc,len(facet))
+#                     if isinteger(bounds[1]):
+#                         newfacet.append(facet[bounds[1]])
+#                         bordersFacet = addVec(facet[bounds[1]],bordersFacet)
+#                         keepLs.append(bounds[1])
+#                         #print 'append',bounds[1]
+#                     else:
+#                         newfacet.append(rbounds[1])
+#                         bordersFacet = addVec(rbounds[1],bordersFacet)
+#                         #print 'append rb1'
+#                     if len(newfacet) != len(facet) or not allclose(newfacet,facet):
+#                         #print 'newfacet',marker, newfacet
+#                         ftemp[ifac] = newfacet
+#                         #mark removed points for deletion in other facets
+#                         removed = [facet[i] for i in allLs if i not in keepLs]
+#                         for point in removed:
+#                             addVec(point,allRemoved)      
+#         if len(allRemoved)>0:
+#             self.icut += 1
+#             ftemp2 = deepcopy(ftemp)
+#             for i2, facet in enumerate(ftemp):
+#                 nextbreak = False
+#                 for ip,point in enumerate(facet):
+#                     for rpoint in allRemoved: 
+#                         if allclose(point,rpoint):
+#                             ftemp2[i2] = []
+#                             nextbreak = True
+#                             break
+#                     if nextbreak:
+#                         break
+#             ftemp = []
+#             for i2, facet in enumerate(ftemp2):
+#                 if len(facet)> 0:
+#                    ftemp.append(facet)
+#             #Add any points that are in the cut plane into bordersFacet.  Some may not be in facets with cuts. 
+#             points = flatVecsList(cell.facets)
+#             for i in range(len(points)):
+#                 if areEqual(dot(u,points[i]),0):
+#                     addVec(points[i],bordersFacet)            
+#             #Order by angle in the facet
+#             if len(bordersFacet)> 0:
+#                 uvec = plane3pts(bordersFacet)[0]
+#                 ftemp.append(orderAngle(bordersFacet,uvec,eps))
+#                 #print 'Cut', self.icut
+#             cell.facets = ftemp
+# #             self.facetsMathPrint(cell); print 'Show[p]\n'              
+#         return                  
+
+    def cutCell(self,u,ro,cell,eps):
+        '''Cell is cut about an arbitrary plane given by normal u and plane distance from 
+        origin ro.  Facets that intersect the plane are cut, 
+        and only the portion on one side is kept.  The intersection points
         between the plane and the facet segments are new facet points.  If a facet
         point lies on the plane, it stays in the facet. '''
         #print '\nu',u
@@ -529,29 +657,28 @@ class meshConstruct():
             keepLs = []
             for ip,point1 in enumerate(facet):
 #                     marker = "*"                  
-                if areEqual(dot(u,point1),0.0): #then this point is on the cut plane
+                if areEqual(dot(u,point1),ro): #BCH then this point is on the cut plane
                     bounds.append(ip)
                     rbounds.append('') #placeholder
                 else: #check line segment
                     jp = ip + 1
                     if jp == len(facet): jp = 0 
                     point2 = facet[jp]
-                    [intersect, rinters] = intsPlLinSeg(u,point1,point2,eps)          
+                    [intersect, rinters] = intsPlLinSeg(u,ro,point1,point2,eps) #BCH         
                     if intersect:
-                        bounds.append(ip + 0.5)  #to show it intersects, but not necessarily at a midpoint. 
+                        bounds.append(ip + 0.5)  #to record it intersects, but not necessarily at a midpoint. 
                         rbounds.append(rinters)
-           
             if 1 < len(bounds) < len(facet):
-                if (isinteger(bounds[0]) and not (bounds[1]-bounds[0] ==1 or  
+                if (isinteger(bounds[0]) and not (bounds[1]-bounds[0] == 1 or  
                         bounds[1]==len(facet)-1 and bounds[0] == 0) )\
                 or\
                    (not isinteger(bounds[0]) or not isinteger(bounds[1])) : #if adjacent facet points, then one edge of a facet is on the plane...don't cut
-                    #we check the u-projection of the point just beyond the first 
-                    # boundary to see which part of the facet we keep...
-                    # the half that u points away from
+                    #we check the u-projection of the point with the index just beyond the first 
+                    # boundary's index to see which part of the facet we keep...
+                    # the part that u points away from.
                     #print 'bounds',bounds
-                    ucheck = dot(u,facet[int(ceil(bounds[0] + eps))])
-                    direc = -int(sign(ucheck)) #+1 or -1 
+                    ucheck = dot(u,facet[int(ceil(bounds[0] + eps))]) 
+                    direc = -int(sign(ucheck)) #+1 or -1  #keep side of plane opposite the normal direction
                     newfacet = []
                     if isinteger(bounds[0]):
                         newfacet.append(facet[bounds[0]])
@@ -616,23 +743,8 @@ class meshConstruct():
                 ftemp.append(orderAngle(bordersFacet,uvec,eps))
                 #print 'Cut', self.icut
             cell.facets = ftemp
-#             self.facetsMathPrint(cell); print 'Show[p]'              
-        return
-                                              
-#                 if isinteger(bounds[0]):
-#                     for ip in range(bounds[0],bounds[1]+1):
-#                         newfacet.append(facet[ip])
-#                 else: # the facet runs from rbounds[0]...rbounds[1], which are in between facet points
-
-#                 else: # we go backwards through the facet
-#                     if isinteger(bounds[0]):
-#                         for ip in range(bounds[0],bounds[1]+1):
-#                             newfacet.append(facet[ip])
-#                     else: # the facet runs from rbounds[0]...rbounds[1], which are in between facet points
-#                         newfacet.append(rbounds[0])
-#                         for ip in range(bounds[0]+ 0.5,bounds[1]-0.51):
-#                             newfacet.append(facet[ip])
-#                         newfacet.append(rbounds[1])                    
+#             self.facetsMathPrint(cell); print 'Show[p]\n'              
+        return                  
 
            
     def getIBZ(self,BZ,eps):
@@ -708,18 +820,18 @@ class meshConstruct():
                         #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   )
                         tempvec = cross(evec,pnto)
                         u1 = self.choose111(tempvec/norm(tempvec))
-                        self.cutCell(u1,BZ,eps)
+                        self.cutCell(u1,0.0,BZ,eps)
                         pntp = dot(op,pnto)
                         tempvec = cross(evec,pntp)
                         u2 = self.choose111(tempvec/norm(tempvec))
                         #print'\n\t2nd half of rot'
-                        self.cutCell(u2,BZ,eps) 
+                        self.cutCell(u2,0.0,BZ,eps) 
 
                     else: # -1: reflection/improper rotatioin
                         if len(where(areEqual(evals,-1.0))) > 1: evals = -evals #improper rotation
                         evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
                         u1 = self.choose111(evec) 
-                        self.cutCell(u1,BZ,eps) 
+                        self.cutCell(u1,0.0,BZ,eps) 
 #                 else:
                     #print '\nOp {} yields no duplicates\n'.format(iop)  
             elif areEqual(det(op),-1.0):
@@ -727,14 +839,23 @@ class meshConstruct():
         if inversion: #apply last of all
             if makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ.facets):
                 #can cut along any plane
-                self.cutCell(array([1.0,0.0,0.0]))
-        self.facetsMathPrint(BZ);print 'Show[p]'
+                self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
+        self.facetsMathPrint(BZ);print 'Show[p]\n'
         points = flatVecsList(BZ.facets)
         hull = convexH(points)
         BZ.volume = hull.volume
         self.IBZvolCut = det(self.B)/BZ.volume
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
         return
+
+    def isAllInside(self,ds):
+        '''AllInside means on opposite side of the plane vs its normal vector, 
+        and at least a distance of rpacking away from it'''
+        allInside = zeros(len(ds),dtype = bool)
+        for i,d in enumerate(ds):
+            if d < self.rpacking - eps: #point is inside this plane
+                allInside[iplane] = True
+        return all(allInside)
 
     def facetsMathPrint(self,cell):
         ''' Mathematica'''
@@ -768,5 +889,5 @@ class meshConstruct():
 #             if ipoint < len(self.surfMeshPoints) -1:
 #                 print ',',
 #         print '},PlotStyle -> {Green,PointSize[0.03]}];',                
-#         print 'Show[p,q,r]'          
+#         print 'Show[p,q,r]\n'          
 #         return  
