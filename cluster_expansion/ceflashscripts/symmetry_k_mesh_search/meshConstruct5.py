@@ -376,6 +376,7 @@ class meshConstruct():
             primLVs = array([[0,a/2,a/2], [a/2,0,a/2], [a/2,a/2,0]])
             self.rpacking = 1/2.0/sqrt(2)
             pf = 4*4/3.0*pi*self.rpacking**3  #0.74
+#             fccFacets = 
         elif type == 'bcc':
             sites = [array([0, 0 , 0]), array([a/2,a/2,a/2])]
             primLVs = array([[-a/2,a/2,a/2], [a/2,-a/2,a/2], [a/2,a/2,-a/2]])
@@ -445,19 +446,20 @@ class meshConstruct():
         primLVs = primLVs * aKcubConv
         cubicLVs = cubicLVs * aKcubConv
         sites = [site * aKcubConv for site in sites]
+        self.rpacking = self.rpacking*aKcubConv
         #define mesh point voronoi cell
         MP = cell()
         getVorCell(primLVs,MP,eps)
-        print 'Mesh Point Voronoi cell'; self.facetsMathPrint(MP)        
+        print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP);print 'Show[p]\n'        
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
         for i in range(3):
             projs = []
             for point in points:
-                projs.append(dot(cubicLVs[:,i],point))
-            intMaxs.append(int(ceil(max(projs)/aKcubConv)))
-            intMins.append(int(floor(min(projs)/aKcubConv)))       
+                projs.append(dot(cubicLVs[:,i],point)/aKcubConv**2)
+            intMaxs.append(int(ceil(max(projs))))
+            intMins.append(int(floor(min(projs))))       
         #Create the cubic mesh inside the irreducible BZ
         BZ.mesh = []
         BZ.weights = []
@@ -468,14 +470,17 @@ class meshConstruct():
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for site in sites:
                         kpoint = lvec + site
-                        ds = self.dToPlanes(lvec,BZ.bounds)
+                        print '\nkpoint',kpoint
+                        ds = self.dToPlanes(kpoint,BZ.bounds)
+                        print 'ds',ds
                         if self.isAllInside(ds,eps):
                             print 'inside',ds,kpoint
                             BZ.mesh.append(kpoint)
                             BZ.weights.append(self.IBZvolCut)
                         else:
-                            near = where(ds <= self.rpacking+eps)
+                            near = where(abs(ds) <= self.rpacking+eps)
                             nearPlanes = near[0] #arrays
+                            print 'near',nearPlanes
                             nearDs =  ds[near]
                             if len(nearPlanes)>0:
                                 if len(nearPlanes) == 1 and self.method == 1: #give weight proportional to sphere
@@ -488,13 +493,17 @@ class meshConstruct():
                                     else:
                                         BZ.weights.append(self.IBZvolCut*cap/self.IBZvolCut)
                                 elif len(nearPlanes) in [2,3,4]: #cut the mesh point Voronoi cell:
+                                    BZ.mesh.append(kpoint)
                                     cutMP = deepcopy(MP)
-                                    for ip in nearPlanes:
-                                        uvec = BZ.bounds[ip]
-                                        self.cutCell(uvec,nearDs[ip],cutMP,eps) # we always keep the part that is "inside", opposite u
+                                    for iplane, BZlabel in enumerate(nearPlanes):
+                                        uvec = BZ.bounds[0][BZlabel]
+                                        d = nearDs[iplane]
+                                        print 'd',d
+                                        self.cutCell(uvec,d,cutMP,eps) # we always keep the part that is "inside", opposite u
                                     self.facetsMathPrint(cutMP); print 'Show[p]\n'
+                                    print 
                                 else: 
-                                    sys.exit('Stop. Error: point {},{},{} is "close" to more than three planes'\
+                                    sys.exit('Stop. Error: point {},{},{} is "close" to more than four planes'\
                                              .format(i,j,k))
                             else:
                                 print 'point {},{},{} is neither inside nor close'.format(i,j,k)
@@ -511,7 +520,7 @@ class meshConstruct():
         ds = []
         for iplane, uvec in enumerate(bounds[0]):   
             if self.method == 1:
-                d = dot(vec,uvec)
+                d = dot(vec,uvec) - bounds[1][iplane] 
             ds.append(d)
         return array(ds)
     
@@ -537,7 +546,7 @@ class meshConstruct():
 #         if allclose(u,array([ 0.    ,      0.70710678 ,-0.70710678])):
 #             print       
         for ifac, facet in enumerate(cell.facets):
-            marker = ''
+#             marker = ''
             #print 'facet',ifac, 'len',len(facet), facet
             bounds = []
             rbounds = []
@@ -545,7 +554,6 @@ class meshConstruct():
             keepLs = []
             for ip,point1 in enumerate(facet):
 #                     marker = "*" 
-                print 'dot(u,point1)',dot(u,point1),ro                
                 if areEqual(dot(u,point1),ro): #BCH then this point is on the cut plane
                     bounds.append(ip)
                     rbounds.append('') #placeholder
@@ -567,7 +575,7 @@ class meshConstruct():
                     # the part that u points away from.
                     #print 'bounds',bounds
                     ucheck = dot(u,facet[int(ceil(bounds[0] + eps))]) 
-                    direc = -int(sign(ucheck)) #+1 or -1  #keep side of plane opposite the normal direction
+                    direc = int(sign(ucheck)) #+1 or -1  #keep side of plane opposite the normal direction
                     newfacet = []
                     if isinteger(bounds[0]):
                         newfacet.append(facet[bounds[0]])
@@ -709,18 +717,21 @@ class meshConstruct():
                         #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   )
                         tempvec = cross(evec,pnto)
                         u1 = self.choose111(tempvec/norm(tempvec))
+                        self.facetsMathPrint(BZ);print 'Show[p]\n'
                         self.cutCell(u1,0.0,BZ,eps)
                         pntp = dot(op,pnto)
                         tempvec = cross(evec,pntp)
                         u2 = self.choose111(tempvec/norm(tempvec))
                         #print'\n\t2nd half of rot'
-                        self.cutCell(u2,0.0,BZ,eps) 
+                        self.cutCell(u2,0.0,BZ,eps)
+                        self.facetsMathPrint(BZ);print 'Show[p]\n' 
 
                     else: # -1: reflection/improper rotatioin
                         if len(where(areEqual(evals,-1.0))) > 1: evals = -evals #improper rotation
                         evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
                         u1 = self.choose111(evec) 
-                        self.cutCell(u1,0.0,BZ,eps) 
+                        self.cutCell(u1,0.0,BZ,eps)
+                        self.facetsMathPrint(BZ);print 'Show[p]\n' 
 #                 else:
                     #print '\nOp {} yields no duplicates\n'.format(iop)  
             elif areEqual(det(op),-1.0):
@@ -745,6 +756,7 @@ class meshConstruct():
         for i,d in enumerate(ds):
             if d < 0 and abs(d)>self.rpacking - eps: #point is inside this plane
                 allInside[i] = True
+        print 'Inside list', allInside
         return all(allInside)
 
     def facetsMathPrint(self,cell):
@@ -758,7 +770,7 @@ class meshConstruct():
             print '}]',
             if ifac < len(cell.facets)-1:
                 print ',',
-        print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}]',    
+        print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}];',    
         return    
             
     def facetsMeshMathPrint(self,cell):
