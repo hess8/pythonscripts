@@ -224,6 +224,7 @@ def getVorCell(LVs,cell,eps):
     cell = getFacetsPoints(interscPoints,cell,eps)
     cell.points = flatVecsList(cell.facets) 
     cell.center = sum(cell.points)/len(cell.points)
+    cell.volume = convexH(cell.points).volume
     return cell
     #print 'facet points'
 #         for i in range(len(self.facetsPoints)):
@@ -358,9 +359,8 @@ class meshConstruct():
         devalued vs an unprojected point on the surface by how much volume belongs to it.  
         We make a sphere for each point, which for normal packing is a given for a cell.  
         We derate the weight by how much the projected point's sphere overlaps other spheres.
-        The volume of a sphere cut by a place a distance d<R from the center is 
-        V = 1/3 Pi d(R-d)^2 (MathWorld).  d = ro-dot(r,u)
-
+        The volume of a sphere cut by a plane a distance d<R from the center is 
+        V = 1/3 Pi (R-d)^2(2R-d)
         More accurate: each point inside and across the border has its own mesh (e.g. bcc or fcc) voronoi cell. 
         If we keep (calculate) kpoints that have any of their facets inside the IBZ planes, 
         we weight them by their volume that is inside the 1BZ, even though the center might be outside.
@@ -375,7 +375,7 @@ class meshConstruct():
         # A point's volume may be inside, partially inside.   
         # If a point's sphere is cut by one plane, use the sphere's inside volume ratio to weight the 
         # point compared to a wholly inside point. This is fast.
-        # If a point's sphere is cut by two or three planes (only a relatively few points),
+        # If a point's sphere is cut by wtwo or three planes (only a relatively few points),
         # use the VC cutting routines to find the volume inside.
         # This automatically gives us all the symmetry weights!'''
         
@@ -399,7 +399,6 @@ class meshConstruct():
             pf = 4/3.0*pi*self.rpacking**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubich')
-        self.Vsphere = 4/3.0*pi*self.rpacking
         #test facet points for orthogonality
         rs = []
         pairs = []
@@ -456,6 +455,8 @@ class meshConstruct():
         cubicLVs = cubicLVs * aKcubConv
         sites = [site * aKcubConv for site in sites]
         self.rpacking = self.rpacking*aKcubConv
+        self.Vsphere = 4/3.0*pi*self.rpacking**3
+        print 'rpacking',self.rpacking
         BZ = getBoundsFacets(BZ,self.rpacking) #adds expanded cell
         #define mesh point voronoi cell
         MP = cell()
@@ -473,6 +474,12 @@ class meshConstruct():
         #Create the cubic mesh inside the irreducible BZ
         BZ.mesh = []
         BZ.weights = []
+        weightsInside = 0
+        nInside = 0
+        weightsOnePlane = 0
+        nOnePlane = 0
+        weightsCuts = 0
+        nCut = 0
 #         offset = array([0.5,0.5,0.5])*aKcubConv
         print 'bounds'
         for i in range(len(BZ.bounds[0])):
@@ -490,29 +497,41 @@ class meshConstruct():
                             print 'inside',ds,kpoint
                             BZ.mesh.append(kpoint)
                             BZ.weights.append(self.IBZvolCut)
+                            weightsInside += self.IBZvolCut
+                            nInside += 1
                         elif self.isInsideExpanded(ds,eps):
-                            near = where(ds <= eps)
+                            near = where(abs(ds) <= 2.0*self.rpacking + eps)
                             nearPlanes = near[0] #arrays
                             print 'near',nearPlanes
                             nearDs =  ds[near]
                             if len(nearPlanes)>0:
                                 if len(nearPlanes) == 1 and self.method == 1: #give weight proportional to sphere
                                     BZ.mesh.append(kpoint)
-                                    d = ds[0]
-                                    print 'one-plane cut',d, kpoint
-                                    cap = 1/3.0*pi*abs(d)*(self.rpacking-abs(d))**2 
-                                    if d<=0: #most of the sphere is inside:
-                                        BZ.weights.append(self.IBZvolCut*(1-cap/self.IBZvolCut))
+                                    d2 = ds[nearPlanes[0]] + self.rpacking #the d's are negative here, and measured vs the expanded boundary
+                                    print 'one-plane cut',d2, kpoint
+                                    cap = 1/3.0*pi*(self.rpacking-abs(d2))**2 *(2*self.rpacking+abs(d2))
+                                    print 'cap',cap, 'vs sphere',self.Vsphere
+                                    if d2<=0: #most of the sphere is inside:
+                                        weight = self.IBZvolCut*(1-cap/self.Vsphere)
                                     else:
-                                        BZ.weights.append(self.IBZvolCut*cap/self.IBZvolCut)
+                                        weight = self.IBZvolCut*cap/self.Vsphere
+                                    BZ.weights.append(weight)
+                                    weightsOnePlane += weight
+                                    nOnePlane += 1
+                                    print 'weight',weight
                                 elif len(nearPlanes) in [2,3,4]: #cut the mesh point Voronoi cell:
                                     BZ.mesh.append(kpoint)
                                     cutMP = deepcopy(MP)
                                     for iplane, BZlabel in enumerate(nearPlanes):
                                         uvec = BZ.bounds[0][BZlabel]
-                                        d = nearDs[iplane]
+                                        d = nearDs[iplane] - self.rpacking
                                         print 'd',d
                                         cutMP = self.cutCell(uvec,d,cutMP,eps) # we always keep the part that is "inside", opposite u
+                                    cutMP.volume = convexH(cutMP.points).volume
+                                    weight = self.IBZvolCut*cutMP.volume/MP.volume ; BZ.weights.append(weight)
+                                    print 'weight',weight
+                                    weightsCuts += weight
+                                    nCut += 1
                                     self.facetsMathPrint(cutMP); print 'Show[p]\n'
                                     print 
                                 else: 
@@ -525,7 +544,11 @@ class meshConstruct():
                              #weight of a general point
 
                     
-#         print 'cubPoints',len(cell.mesh), cell.mesh  
+        print 'Total volume in weights:', (nCut + nOnePlane + nInside), sum(BZ.weights)*cutMP.volume
+        print 'Weights inside', nInside, weightsInside
+        print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
+        print 'Weights cuts', nCut,weightsCuts, weightsCuts/float(nCut)
+        print 'BZ volume:', det(self.B)
         self.facetsMeshMathPrint(BZ); print 'Show[p,q]\n'
         return     
             
@@ -780,7 +803,7 @@ class meshConstruct():
         for i,d in enumerate(ds):
             if d < - eps: #point is inside the expanded cell boundary
                 inside[i] = True
-        print 'Inside exp list', inside
+#         print 'Exp in', inside
         return all(inside)
 
     def facetsMathPrint(self,cell):

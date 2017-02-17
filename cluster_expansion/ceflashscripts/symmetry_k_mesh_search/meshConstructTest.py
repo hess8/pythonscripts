@@ -36,7 +36,9 @@ method = 1  #0,1 for now.
             #1: approx 1. Use sphere around mesh point to test whether it is near a surface.  
             #         For a 1-plane cut, use the spherical section that is inside. 
             #         For 2 or 3 plane cut, we use the exact method. 
-
+            #2: approx 2. For spheres with their centers beyond the cell boundaries
+                      # but inside the expanded boundaries, add their weights to 
+                      # nearest neighbors that are inside. 
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testSi/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/testMP/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/AlIr34-50/'
