@@ -468,8 +468,8 @@ class meshConstruct():
             projs = []
             for point in points:
                 projs.append(dot(cubicLVs[:,i],point)/aKcubConv**2)
-            intMaxs.append(int(ceil(max(projs))))
-            intMins.append(int(floor(min(projs))))       
+            intMaxs.append(int(ceil(max(projs)))+1)
+            intMins.append(int(floor(min(projs)))-1)       
         #Create the cubic mesh inside the irreducible BZ
         BZ.mesh = []
         BZ.weights = []
@@ -491,7 +491,7 @@ class meshConstruct():
                             BZ.mesh.append(kpoint)
                             BZ.weights.append(self.IBZvolCut)
                         elif self.isInsideExpanded(ds,eps):
-                            near = where(abs(ds) <= self.rpacking+eps)
+                            near = where(ds <= eps)
                             nearPlanes = near[0] #arrays
                             print 'near',nearPlanes
                             nearDs =  ds[near]
@@ -770,16 +770,17 @@ class meshConstruct():
         and at least a distance of rpacking away from it'''
         allInside = zeros(len(ds),dtype = bool)
         for i,d in enumerate(ds):
-            if d < 0 and abs(d)> 2*self.rpacking - eps: #point is inside the true cell boundaries
+            if d < - eps and abs(d)> 2*self.rpacking - eps: #point volume is all inside the true cell boundary
                 allInside[i] = True
-        print 'Inside list', allInside
+#         print 'Inside list', allInside
         return all(allInside)
 
     def isInsideExpanded(self,ds,eps):
         inside = zeros(len(ds),dtype = bool)
         for i,d in enumerate(ds):
-            if d < 0 and abs(d)> self.rpacking - eps: #point is inside the expanded cell boundaries
+            if d < - eps: #point is inside the expanded cell boundary
                 inside[i] = True
+        print 'Inside exp list', inside
         return all(inside)
 
     def facetsMathPrint(self,cell):
