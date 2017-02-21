@@ -312,6 +312,8 @@ class meshConstruct():
         print 'B',B
         [self.symops,self.nops] = getGroup(self.B)
         self.nTarget = targetNmesh
+        self.nTarget = 48
+        print 'testing with ntarget',self.nTarget
         self.path = path
         self.method = method
             #0,1 for now.
@@ -331,7 +333,7 @@ class meshConstruct():
         eps = self.ravg/1000
         BZ = cell() #instance
         BZ = getVorCell(self.B,BZ,eps)
-        self.facetsMathPrint(BZ) 
+        self.facetsMathPrint(BZ,'p',True,'Red') 
         BZ = self.getIBZ(BZ,eps) #changes BZboundaries.         
         self.meshCubic(BZ,'fcc',eps)
 #         self.triFaces()
@@ -458,7 +460,7 @@ class meshConstruct():
         #define mesh point voronoi cell
         MP = cell()
         MP = getVorCell(primLVs,MP,eps)
-        print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP);print 'Show[p]\n'        
+        print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -482,6 +484,10 @@ class meshConstruct():
         for i in range(len(BZ.bounds[0])):
             print BZ.bounds[0][i],BZ.bounds[1][i]               
         ik = 0 
+        #begin MP facets printing
+        self.facetsMathPrint(BZ,'s','True','Red');print ';', #draw supecell voronoi cell
+        showCommand = 'Show[s,' 
+        #end start of MP facets printing 
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
@@ -489,29 +495,31 @@ class meshConstruct():
                     for site in sites:
                         ik+=1
                         kpoint = lvec + site
-                        print '\nkpoint',kpoint, ik, [i,j,k]
-                        if ik == 258:
-                            'pause'
                         ds = self.dToPlanes(kpoint,BZ.expBounds)
-                        print 'ds',ds
                         if self.isAllInside(ds,eps):
-                            print 'inside',ds,kpoint
+#                             print '\nkpoint',kpoint, ik, [i,j,k]
+#                             print 'ds',ds
+#                             print 'inside',ds,kpoint
                             BZ.mesh.append(kpoint)
                             BZ.weights.append(self.IBZvolCut)
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif self.isInsideExpanded(ds,eps):
-                            near = where(abs(ds) <= 2.0*self.rpacking + eps)
+                            print '\nkpoint',kpoint, ik, [i,j,k]
+                            if ik == 86:
+                                'pause'
+#                             print 'ds',ds
+                            near = where(abs(ds) <= 2.0*self.rpacking - eps)
                             nearPlanes = near[0] #arrays
-                            print 'near',nearPlanes
+#                             print 'near',nearPlanes
                             nearDs =  ds[near]
                             if len(nearPlanes)>0:
                                 if len(nearPlanes) == 1 and self.method == 1: #give weight proportional to sphere
                                     BZ.mesh.append(kpoint)
                                     d2 = ds[nearPlanes[0]] + self.rpacking #the d's are negative here, and measured vs the expanded boundary
-                                    print 'one-plane cut',d2, kpoint
+#                                     print 'one-plane cut',d2, kpoint
                                     cap = 1/3.0*pi*(self.rpacking-abs(d2))**2 *(2*self.rpacking+abs(d2))
-                                    print 'cap',cap, 'vs sphere',self.Vsphere
+#                                     print 'cap',cap, 'vs sphere',self.Vsphere
                                     if d2<=0: #most of the sphere is inside:
                                         weight = self.IBZvolCut*(1-cap/self.Vsphere)
                                     else:
@@ -519,53 +527,71 @@ class meshConstruct():
                                     BZ.weights.append(weight)
                                     weightsOnePlane += weight
                                     nOnePlane += 1
-                                    print 'weight',weight
-                                elif len(nearPlanes) in [2,3,4]: #cut the mesh point Voronoi cell:
+#                                     print 'weight',weight
+                                elif len(nearPlanes) <=4: #cut the mesh point Voronoi cell:
                                     BZ.mesh.append(kpoint)
                                     cutMP = deepcopy(MP)
                                     for iplane, BZlabel in enumerate(nearPlanes):
                                         uvec = BZ.bounds[0][BZlabel]
-                                        d2 = nearDs[iplane] + self.rpacking
-                                        print 'd2',d2
+                                        d2 = nearDs[iplane] + self.rpacking #ds are negative
+#                                         print 'd2',d2
                                         cutMP = self.cutCell(uvec,abs(d2),cutMP,eps) # we always keep the part that is "inside", opposite u
                                     cutMP.volume = convexH(cutMP.points).volume
-                                    weight = self.IBZvolCut*cutMP.volume/MP.volume ; BZ.weights.append(weight)
-                                    print 'weight',weight
+                                    weight = self.IBZvolCut*cutMP.volume/MP.volume; BZ.weights.append(weight)
+#                                     print 'weight',weight
                                     weightsCuts += weight
                                     nCut += 1
-                                    self.facetsMathPrint(cutMP); print 'Show[p]\n'
-                                    print 
+                                    #MP facet printing loop line
+                                    showCommand = self.cutMPCellMathPrint(BZ,cutMP,kpoint,
+                                                    ik,ik<len(sites)*(intMaxs[0]-intMins[0]-1)*(intMaxs[1]-intMins[1]-1)*(intMaxs[2]-intMins[2]-1)\
+                                                    ,showCommand)
+                                    #end MP facet printing loop entry
+#                                     self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
                                 else: 
                                     sys.exit('Stop. Error: point {},{},{} is "close" to more than four planes'\
                                              .format(i,j,k))
                             else:
                                 print 'point {},{},{} is neither inside nor close'.format(i,j,k)
-#                                 
-                                
-                             #weight of a general point
-
-                    
-        print 'Total volume in weights:', (nCut + nOnePlane + nInside), sum(BZ.weights)*cutMP.volume
+        showCommand += ']' 
+        print ';', 
+        print showCommand 
+        #end MP facets printing
+        print 'Total volume in weights:', (nCut + nOnePlane + nInside), sum(BZ.weights)*MP.volume
         print 'Weights inside', nInside, weightsInside
-        print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
+        if nOnePlane>0: print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
         print 'Weights cuts', nCut,weightsCuts, weightsCuts/float(nCut)
         print 'BZ volume:', det(self.B)
-        self.facetsMeshMathPrint(BZ); print 'Show[p,q]\n'
+        self.facetsMeshMathPrint(BZ); print ';Show[p,q]\n'
+        self.facetsMeshVCMathPrint(BZ,MP)
         return     
+
+    def cutMPCellMathPrint(self,BZ,cellcut,point,ipoint,comma,showCommand):
+        '''For showing cut facets inside IBZ, loop work'''
+        tCell = cell()
+        tCell.facets = [[]]*len(cellcut.facets)
+        for ifac,facet in enumerate(cellcut.facets):
+            temp = []
+            for facetPoint in facet:
+                temp.append(facetPoint + point)
+            tCell.facets[ifac] = temp
+        self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,'Blue');print ';',
+        showCommand += 'v{}'.format(ipoint)
+        if comma:
+            showCommand += ','
+        return showCommand
             
     def dToPlanes(self,vec,bounds):
         ds = []
         for iplane, uvec in enumerate(bounds[0]):   
-            if self.method == 1:
-                d = dot(vec,uvec) - bounds[1][iplane] 
+            d = dot(vec,uvec) - bounds[1][iplane] 
             ds.append(d)
         return array(ds)
     
     def choose111(self,uvec):
         if dot(uvec,array([1,1,1]))>= 0:
-            return trimSmall(real(uvec))
+            return -trimSmall(real(uvec))
         else:
-            return trimSmall(-real(uvec))                   
+            return trimSmall(real(uvec))                   
 
     def cutCell(self,u,ro,cell,eps):
         '''Cell is cut about an arbitrary plane given by normal u and plane distance from 
@@ -610,9 +636,11 @@ class meshConstruct():
                     # boundary's index to see which part of the facet we keep...
                     # the part that u points away from.
                     #print 'bounds',bounds
-                    rcenter = sum(facet)
+                    rcenter = sum(facet)/len(facet)
                     ucheck = dot(u,facet[int(ceil(bounds[0] + eps))]-rcenter) 
-                    direc = int(sign(ucheck)) #+1 or -1  #keep side of plane opposite the normal direction
+                    direc = -int(sign(ucheck)) #+1 or -1  #keep side of plane opposite the normal direction
+                    if direc == 0:
+                        sys.exit('Stop. direc in cutCell is zero. Check facet points order,etc')
                     newfacet = []
                     if isinteger(bounds[0]):
                         newfacet.append(facet[bounds[0]])
@@ -676,17 +704,16 @@ class meshConstruct():
             if len(bordersFacet)> 0:
                 uvec = plane3pts(bordersFacet)[0]
                 ftemp.append(orderAngle(bordersFacet,uvec,eps))
-                print'bordersFacet:'
-                self.mathPrintPoints(bordersFacet)
+#                 print'bordersFacet:'
+#                 self.mathPrintPoints(bordersFacet)
 
                 #print 'Cut', self.icut
             cell.facets = ftemp
             cell.points = flatVecsList(cell.facets) 
             cell.center = sum(cell.points)/len(cell.points)
-#             self.facetsMathPrint(cell); print 'Show[p]\n'              
+#             self.facetsMathPrint(cell,'p); print ';Show[p]\n'              
         return cell                  
 
-           
     def getIBZ(self,BZ,eps):
         '''
         Apply symmetry operators to a facet point O:, to get point P.
@@ -760,21 +787,21 @@ class meshConstruct():
                         #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   )
                         tempvec = cross(evec,pnto)
                         u1 = self.choose111(tempvec/norm(tempvec))
-                        self.facetsMathPrint(BZ);print 'Show[p]\n'
+                        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
                         BZ = self.cutCell(u1,0.0,BZ,eps)
                         pntp = dot(op,pnto)
                         tempvec = cross(evec,pntp)
                         u2 = self.choose111(tempvec/norm(tempvec))
                         #print'\n\t2nd half of rot'
                         BZ =self.cutCell(u2,0.0,BZ,eps)
-                        self.facetsMathPrint(BZ);print 'Show[p]\n' 
+                        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
 
                     else: # -1: reflection/improper rotatioin
                         if len(where(areEqual(evals,-1.0))) > 1: evals = -evals #improper rotation
                         evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
                         u1 = self.choose111(evec) 
                         BZ = self.cutCell(u1,0.0,BZ,eps)
-                        self.facetsMathPrint(BZ);print 'Show[p]\n' 
+                        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
 #                 else:
                     #print '\nOp {} yields no duplicates\n'.format(iop)  
             elif areEqual(det(op),-1.0):
@@ -783,7 +810,7 @@ class meshConstruct():
             if makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ):
                 #can cut along any plane
                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
-        self.facetsMathPrint(BZ);print 'Show[p]\n'
+        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         hull = convexH(BZ.points)
         BZ.volume = hull.volume
         self.IBZvolCut = det(self.B)/BZ.volume
@@ -811,9 +838,9 @@ class meshConstruct():
 #         print 'Exp in', inside
         return all(inside)
 
-    def facetsMathPrint(self,cell):
+    def facetsMathPrint(self,cell,label,axes = False, color = 'Red'):
         ''' Mathematica'''
-        print 'p = Graphics3D[{Red, Thick,{',
+        print '{}'.format(label),' = Graphics3D[{'+'{}'.format(color)+', Thick,{',
         for ifac, facet in enumerate(cell.facets):
             print 'Line[{',
             for point in facet:
@@ -822,22 +849,51 @@ class meshConstruct():
             print '}]',
             if ifac < len(cell.facets)-1:
                 print ',',
-        print '}}, Axes -> True,AxesLabel -> {"x", "y", "z"}];',    
+        print '}}',
+        if axes:
+            print ',Axes -> True,AxesLabel -> {"x", "y", "z"}]',
+        else:
+            print ']',   
         return    
             
     def facetsMeshMathPrint(self,cell):
-        self.facetsMathPrint(cell); 
+        self.facetsMathPrint(cell,'p',True,'Red'); 
+        print ';'
         print 'q=Graphics3D[{',
         for ipoint,point in enumerate(cell.mesh):
-            print 'Sphere[{' + '{},{},{}'.format(point[0],point[1],point[2])+ '},0.05]',
+            print 'Sphere[{' + '{},{},{}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking),
             if ipoint < len(cell.mesh) -1:
                 print ',',
         print '}];',
     
+    def facetsMeshVCMathPrint(self,BZ,MP):
+        '''Put a mesh point VC at each mesh point'''
+        self.facetsMathPrint(BZ,'s','True','Red'); #draw supecell voronoi cell
+        showCommand = ';Show[s,'    
+        print ';',
+        for ipoint,point in enumerate(BZ.mesh):
+            tCell = cell()
+            tCell.facets = [[]]*len(MP.facets)
+            for ifac,facet in enumerate(MP.facets):
+                temp = []
+                for facetPoint in facet:
+                    temp.append(facetPoint + point)
+                tCell.facets[ifac] = temp
+            self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,'Blue');print ';',
+            showCommand += 'v{}'.format(ipoint)
+            if ipoint < len(BZ.mesh)-1:
+                showCommand += ','
+#                 print ',', 
+        showCommand += ']'
+        print ';', 
+        print showCommand 
+          
+
     def mathPrintPoints(self,points):
+        '''As spheres'''
         print 'Graphics3D[{',
         for ipoint,point in enumerate(points):
-            print 'Sphere[{' + '{},{},{}'.format(point[0],point[1],point[2])+ '},0.05]',
+            print 'Sphere[{' + '{},{},{}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking),
             if ipoint < len(points ) -1:
                 print ',',
         print '}, Axes -> True, AxesLabel -> {"x", "y", "z"}]\n'
