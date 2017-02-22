@@ -9,7 +9,6 @@
 
 All matrices store vectors as COLUMNS
 '''
-
 import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
@@ -505,9 +504,7 @@ class meshConstruct():
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif self.isInsideExpanded(ds,eps):
-                            print '\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
-                            if ik == 89:
-                                'pause'
+#                             print '\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
 #                             print 'ds',ds
                             near = where(abs(ds) <= 2.0*self.rpacking - eps)
                             nearPlanes = near[0] #arrays
@@ -599,12 +596,12 @@ class meshConstruct():
         and only the portion on one side is kept.  The intersection points
         between the plane and the facet segments are new facet points.  If a facet
         point lies on the plane, it stays in the facet. '''
-        print 'u',u
+#         print 'u',u
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the new edges of cut facets
 #         ftemp = [[]]*len(cell.facets) #this will contain only points, not labels
-        if allclose(u,array([-1,0,0])):
-            'pause'
+#         if allclose(u,array([-1,0,0])):
+#             'pause'
         ftemp = deepcopy(cell.facets)       
         for ifac, facet in enumerate(cell.facets):
 #             print 'facet',ifac,'len',len(facet),facet
