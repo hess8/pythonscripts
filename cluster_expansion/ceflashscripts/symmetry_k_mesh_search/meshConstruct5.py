@@ -505,8 +505,8 @@ class meshConstruct():
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif self.isInsideExpanded(ds,eps):
-                            print '\nkpoint',kpoint, ik, [i,j,k]
-                            if ik == 86:
+                            print '\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
+                            if ik == 89:
                                 'pause'
 #                             print 'ds',ds
                             near = where(abs(ds) <= 2.0*self.rpacking - eps)
@@ -541,11 +541,11 @@ class meshConstruct():
 #                                     print 'weight',weight
                                     weightsCuts += weight
                                     nCut += 1
-                                    #MP facet printing loop line
+                                    #####MP facet printing loop line
                                     showCommand = self.cutMPCellMathPrint(BZ,cutMP,kpoint,
                                                     ik,ik<len(sites)*(intMaxs[0]-intMins[0]-1)*(intMaxs[1]-intMins[1]-1)*(intMaxs[2]-intMins[2]-1)\
                                                     ,showCommand)
-                                    #end MP facet printing loop entry
+                                    #####end MP facet printing loop entry
 #                                     self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
                                 else: 
                                     sys.exit('Stop. Error: point {},{},{} is "close" to more than four planes'\
@@ -599,85 +599,120 @@ class meshConstruct():
         and only the portion on one side is kept.  The intersection points
         between the plane and the facet segments are new facet points.  If a facet
         point lies on the plane, it stays in the facet. '''
-        #print '\nu',u
-#         if abs(norm(u-array([ 0.70710678,  0.,         -0.70710678]))) <1e-4:
-#             print
+        print 'u',u
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the new edges of cut facets
 #         ftemp = [[]]*len(cell.facets) #this will contain only points, not labels
+        if allclose(u,array([-1,0,0])):
+            'pause'
         ftemp = deepcopy(cell.facets)       
         for ifac, facet in enumerate(cell.facets):
+#             print 'facet',ifac,'len',len(facet),facet
 #             marker = ''
             #print 'facet',ifac, 'len',len(facet), facet
-            bounds = []
-            rbounds = []
+#             bounds = []
+#             rbounds = []
             allLs = range(len(facet))
             keepLs = []
-            for ip,point1 in enumerate(facet):
-#                     marker = "*" 
-                if areEqual(dot(u,point1),ro): #BCH then this point is on the cut plane
-                    bounds.append(ip)
-                    rbounds.append('') #placeholder
-                else: #check line segment
+            newfacet = []
+            #first, determine if the plane intersects any facet points or 
+            #line segments, by checking the change of sign of dot products
+#             sign0 = sign(dot(u,facet[0]))
+            signs = []
+            for ip,point in enumerate(facet):
+                signs.append(sign(dot(u,point)))
+#             print 'signs',signs
+            if -1 in signs and 1 in signs: #facet is cut
+                for ip,pointi in enumerate(facet):
+    #                     marker = "*" 
+                    pu = dot(u,pointi)
+                    if areEqual(pu,ro): # then this point is on the cut plane 
+                        newfacet.append(pointi)
+                        bordersFacet = addVec(pointi,bordersFacet)
+                    elif pu < ro + eps: #inside the plane
+                        newfacet.append(pointi)
+                    else: #outside
+                        allRemoved = addVec(pointi,allRemoved)
+                    #check line segment between point1 and next point on facet
                     jp = ip + 1
                     if jp == len(facet): jp = 0 
-                    point2 = facet[jp]
-                    [intersect, rinters] = intsPlLinSeg(u,ro,point1,point2,eps) #BCH         
+                    pointj = facet[jp]
+                    [intersect, rinters] = intsPlLinSeg(u,ro,pointi,pointj,eps) #         
                     if intersect:
-                        bounds.append(ip + 0.5)  #to record it intersects, but not necessarily at a midpoint. 
-                        rbounds.append(rinters)
-            if 1 < len(bounds) < len(facet):
-                if (isinteger(bounds[0]) and not (bounds[1]-bounds[0] == 1 or  
-                        bounds[1]==len(facet)-1 and bounds[0] == 0) )\
-                or\
-                   (not isinteger(bounds[0]) or not isinteger(bounds[1])) : 
+                        newfacet.append(rinters)
+                        bordersFacet = addVec(rinters,bordersFacet)
+#                 
+#                 print 'newFacet',newfacet
+#                 print 'bordersFacet',bordersFacet
+                ftemp[ifac] = orderAngle(newfacet,u,eps)
+            
+#             if 1 < len(bounds) < len(facet):
+#                 if (isinteger(bounds[0]) and not (bounds[1]-bounds[0] == 1 or  
+#                         bounds[1]==len(facet)-1 and bounds[0] == 0) )\
+#                 or\
+#                    (not isinteger(bounds[0]) or not isinteger(bounds[1])) : 
+                
                     #if adjacent facet points, then one edge of a facet is on the plane...don't cut
-                    #we check the u-projection of the point with the index just beyond the first 
-                    # boundary's index to see which part of the facet we keep...
-                    # the part that u points away from.
-                    #print 'bounds',bounds
-                    rcenter = sum(facet)/len(facet)
-                    ucheck = dot(u,facet[int(ceil(bounds[0] + eps))]-rcenter) 
-                    direc = -int(sign(ucheck)) #+1 or -1  #keep side of plane opposite the normal direction
-                    if direc == 0:
-                        sys.exit('Stop. direc in cutCell is zero. Check facet points order,etc')
-                    newfacet = []
-                    if isinteger(bounds[0]):
-                        newfacet.append(facet[bounds[0]])
-                        keepLs.append(bounds[0])
-                        bordersFacet = addVec(facet[bounds[0]],bordersFacet)
-                        #print 'append',bounds[0]
-                        
-                        ip = nextpos(bounds[0],direc,len(facet))
-                    else:
-                        newfacet.append(rbounds[0])
-                        bordersFacet = addVec(rbounds[0],bordersFacet)
-                        #print 'append rb0'
-                        ip = int(rint(bounds[0]+0.5*direc))
-    #                 print ip,abs(ip - bounds[1])
-                    while abs(ip - bounds[1])>=0.5 and abs(ip - (bounds[1] - len(facet)))>=0.5:
-                        newfacet.append(facet[ip])
-                        keepLs.append(ip)
-                        #print 'append',ip
-                        if abs(ip - bounds[1])==0.5 or abs(ip - (bounds[1] - len(facet)))==0.5: #next to boundary...done interior point
-                            break
-                        ip = nextpos(ip,direc,len(facet))
-                    if isinteger(bounds[1]):
-                        newfacet.append(facet[bounds[1]])
-                        bordersFacet = addVec(facet[bounds[1]],bordersFacet)
-                        keepLs.append(bounds[1])
-                        #print 'append',bounds[1]
-                    else:
-                        newfacet.append(rbounds[1])
-                        bordersFacet = addVec(rbounds[1],bordersFacet)
-                        #print 'append rb1'
-                    if len(newfacet) != len(facet) or not allclose(newfacet,facet):
-                        #print 'newfacet',marker, newfacet
-                        ftemp[ifac] = newfacet
-                        #mark removed points for deletion in other facets
-                        removed = [facet[i] for i in allLs if i not in keepLs]
-                        for point in removed:
-                            allRemoved = addVec(point,allRemoved)
+                    # we keep any points with u-components that are ro (on plane) or less than ro (inside)
+                    
+                    
+                    
+                    
+#                     #if adjacent facet points, then one edge of a facet is on the plane...don't cut
+#                     #we check the u-projection of the point with the index just beyond the first 
+#                     # boundary's index to see which part of the facet we keep...
+#                     # the part that u points away from.
+#                     #print 'bounds',bounds
+#                     rcenter = sum(facet)/len(facet)
+#                     ucheck = dot(u,facet[int(ceil(bounds[0] + eps))]-rcenter) 
+#                     direc = -int(sign(ucheck)) #+1 or -1  #keep side of plane opposite the normal direction
+#                     
+#                     if direc == 0:
+#                         print 'u',u
+#                         print 'ro',ro
+#                         print 'rcenter',rcenter
+#                         print 'index',int(ceil(bounds[0] + eps))
+#                         print 'nextvec',facet[int(ceil(bounds[0] + eps))]-rcenter
+#                         print 'facet',facet
+#                         print 'bounds',bounds
+#                         sys.exit('Stop. direc in cutCell is zero. Check facet points order,etc')
+#                     newfacet = []
+#                     if isinteger(bounds[0]):
+#                         newfacet.append(facet[bounds[0]])
+#                         keepLs.append(bounds[0])
+#                         bordersFacet = addVec(facet[bounds[0]],bordersFacet)
+#                         #print 'append',bounds[0]
+#                         
+#                         ip = nextpos(bounds[0],direc,len(facet))
+#                     else:
+#                         newfacet.append(rbounds[0])
+#                         bordersFacet = addVec(rbounds[0],bordersFacet)
+#                         #print 'append rb0'
+#                         ip = int(rint(bounds[0]+0.5*direc))
+#     #                 print ip,abs(ip - bounds[1])
+#                     while abs(ip - bounds[1])>=0.5 and abs(ip - (bounds[1] - len(facet)))>=0.5:
+#                         newfacet.append(facet[ip])
+#                         keepLs.append(ip)
+#                         #print 'append',ip
+#                         if abs(ip - bounds[1])==0.5 or abs(ip - (bounds[1] - len(facet)))==0.5: #next to boundary...done interior point
+#                             break
+#                         ip = nextpos(ip,direc,len(facet))
+#                     if isinteger(bounds[1]):
+#                         newfacet.append(facet[bounds[1]])
+#                         bordersFacet = addVec(facet[bounds[1]],bordersFacet)
+#                         keepLs.append(bounds[1])
+#                         #print 'append',bounds[1]
+#                     else:
+#                         newfacet.append(rbounds[1])
+#                         bordersFacet = addVec(rbounds[1],bordersFacet)
+#                         #print 'append rb1'
+#                     if len(newfacet) != len(facet) or not allclose(newfacet,facet):
+#                         #print 'newfacet',marker, newfacet
+#                         ftemp[ifac] = newfacet
+#                         #mark removed points for deletion in other facets
+#                         removed = [facet[i] for i in allLs if i not in keepLs]
+#                         for point in removed:
+#                             allRemoved = addVec(point,allRemoved)
         if len(allRemoved)>0:
             self.icut += 1
             ftemp2 = deepcopy(ftemp)
@@ -701,9 +736,11 @@ class meshConstruct():
                 if areEqual(dot(u,point),ro):
                     bordersFacet = addVec(point,bordersFacet)            
             #Order by angle in the facet
-            if len(bordersFacet)> 0:
+            if len(bordersFacet)> 2:
                 uvec = plane3pts(bordersFacet)[0]
                 ftemp.append(orderAngle(bordersFacet,uvec,eps))
+            else:
+                sys.exit('Stop.  Length of bordersFacet is less than 3')
 #                 print'bordersFacet:'
 #                 self.mathPrintPoints(bordersFacet)
 
