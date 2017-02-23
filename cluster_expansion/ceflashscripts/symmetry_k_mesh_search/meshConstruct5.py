@@ -485,7 +485,7 @@ class meshConstruct():
             print BZ.bounds[0][i],BZ.bounds[1][i]               
         ik = 0 
         #begin MP facets printing
-        self.facetsMathPrint(BZ,'s','True','Red');print ';', #draw supecell voronoi cell
+        self.facetsMathPrint(BZ,'s','True','Red'); print ';', #draw supecell voronoi cell
         showCommand = 'Show[s,' 
         #end start of MP facets printing 
         for i in range(intMins[0],intMaxs[0]):
@@ -494,8 +494,8 @@ class meshConstruct():
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for site in sites:
                         ik+=1
-#                         if ik == 717:
-#                             'pause'
+                        if ik == 105:
+                            'pause'
                         kpoint = lvec + site
                         ds = self.dToPlanes(kpoint,BZ.expBounds)
                         if self.isAllInside(ds,eps):
@@ -507,7 +507,7 @@ class meshConstruct():
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif self.isInsideExpanded(ds,eps):
-#                             print '\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
+#                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
 #                             print 'ds',ds
                             near = where(abs(ds) <= 2.0*self.rpacking - eps)
                             nearPlanes = near[0] #arrays
@@ -532,15 +532,18 @@ class meshConstruct():
 #                                     if ik == 105:
 #                                         self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
                                     BZ.mesh.append(kpoint)
-                                    cutMP = deepcopy(MP)
+                                    cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
                                     for iplane, BZlabel in enumerate(nearPlanes):
                                         uvec = BZ.bounds[0][BZlabel]
-                                        d2 = nearDs[iplane] + self.rpacking #ds are negative
+                                        ro = BZ.bounds[1][BZlabel]
+#                                         d2 = nearDs[iplane] + self.rpacking #ds are negative
 #                                         print 'd2',d2
-                                        cutMP = self.cutCell(uvec,abs(d2),cutMP,eps) # we always keep the part that is "inside", opposite u
+                                        cutMP = self.cutCell(uvec,ro,cutMP,eps) # we always keep the part that is "inside", opposite u
+                                        if cutMP.volume == 0.0: #(outside BZ. happens in oblique corners of expanded cell)
+                                            break
 #                                         if ik == 105:
 #                                             self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
-                                    cutMP.volume = convexH(cutMP.points).volume
+                                        cutMP.volume = convexH(cutMP.points).volume
                                     weight = self.IBZvolCut*cutMP.volume/MP.volume; BZ.weights.append(weight)
 #                                    print 'weight',weight
                                     weightsCuts += weight
@@ -568,16 +571,29 @@ class meshConstruct():
         self.facetsMeshVCMathPrint(BZ,MP)
         return
 
+    def prepCutMP(self,MP,kpoint):
+        cutMP = deepcopy(MP)
+        for ifac, facet in enumerate(MP.facets):
+            temp = []
+            for point in facet:
+                temp.append(point + kpoint)
+            cutMP.facets[ifac] = temp
+        temp = []
+        for ipoint, point in enumerate(MP.points):
+            temp.append(point+kpoint)
+        cutMP.points = temp
+        return cutMP
+        
     def cutMPCellMathPrint(self,BZ,cellcut,point,ipoint,showCommand):
         '''For showing cut facets inside IBZ, loop work'''
-        tCell = cell()
-        tCell.facets = [[]]*len(cellcut.facets)
-        for ifac,facet in enumerate(cellcut.facets):
-            temp = []
-            for facetPoint in facet:
-                temp.append(facetPoint + point)
-            tCell.facets[ifac] = temp
-        self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,'Blue');print ';',
+#         tCell = cell()
+#         tCell.facets = [[]]*len(cellcut.facets)
+#         for ifac,facet in enumerate(cellcut.facets):
+#             temp = []
+#             for facetPoint in facet:
+#                 temp.append(facetPoint + point)
+#             tCell.facets[ifac] = temp
+        self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'Blue');print ';',
         showCommand += 'v{},'.format(ipoint)
         return showCommand
             
@@ -704,8 +720,10 @@ class meshConstruct():
                 #print 'Cut', self.icut
             cell.facets = ftemp
             cell.points = flatVecsList(cell.facets) 
-            cell.center = sum(cell.points)/len(cell.points)
-    
+            if len(cell.points)== 0:
+                cell.volume = 0
+            else:
+                cell.center = sum(cell.points)/len(cell.points)
 #             self.facetsMathPrint(cell,'p',True,'Red');print ';Show[p]\n'              
         return cell      
 
@@ -823,6 +841,7 @@ class meshConstruct():
         for i,d in enumerate(ds):
             if d < - eps: #point is inside the expanded cell boundary
                 inside[i] = True
+        
 #         print 'Exp in', inside
         return all(inside)
 
