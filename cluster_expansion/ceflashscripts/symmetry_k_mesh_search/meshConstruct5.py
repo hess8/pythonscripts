@@ -507,7 +507,7 @@ class meshConstruct():
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif self.isInsideExpanded(ds,eps):
-                            print '\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
+#                             print '\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
 #                             print 'ds',ds
                             near = where(abs(ds) <= 2.0*self.rpacking - eps)
                             nearPlanes = near[0] #arrays
@@ -529,8 +529,8 @@ class meshConstruct():
                                     nOnePlane += 1
 #                                     print 'weight',weight
                                 elif len(nearPlanes) <=4: #cut the mesh point Voronoi cell:
-                                    if ik == 105:
-                                        self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
+#                                     if ik == 105:
+#                                         self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
                                     BZ.mesh.append(kpoint)
                                     cutMP = deepcopy(MP)
                                     for iplane, BZlabel in enumerate(nearPlanes):
@@ -538,8 +538,8 @@ class meshConstruct():
                                         d2 = nearDs[iplane] + self.rpacking #ds are negative
 #                                         print 'd2',d2
                                         cutMP = self.cutCell(uvec,abs(d2),cutMP,eps) # we always keep the part that is "inside", opposite u
-                                        if ik == 105:
-                                            self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
+#                                         if ik == 105:
+#                                             self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
                                     cutMP.volume = convexH(cutMP.points).volume
                                     weight = self.IBZvolCut*cutMP.volume/MP.volume; BZ.weights.append(weight)
 #                                    print 'weight',weight
@@ -605,7 +605,8 @@ class meshConstruct():
 #         ftemp = [[]]*len(cell.facets) #this will contain only points, not labels
 #         if allclose(u,array([-1,0,0])):
 #             'pause'
-#         print '\nu',ro,u
+#         print        
+#         print 'u',u,'ro',ro
         ftemp = deepcopy(cell.facets)       
         for ifac, facet in enumerate(cell.facets):
 #             print 'facet',ifac,'len',len(facet),facet
@@ -657,9 +658,9 @@ class meshConstruct():
 #                     print'pause', u
 #                     sys.stdout.flush()
 #                     'pause'
-#             elif all(signs): #are 1.0.  This entire facet is outside
-#                 for ip,pointi in enumerate(facet):
-#                     allRemoved = addVec(pointi,allRemoved)      
+            elif areEqual(sum(signs),len(signs)): #are 1.0.  This entire facet is outside
+                for ip,pointi in enumerate(facet):
+                    allRemoved = addVec(pointi,allRemoved)      
         if len(allRemoved)>0:
             self.icut += 1
             ftemp2 = deepcopy(ftemp)
@@ -684,14 +685,14 @@ class meshConstruct():
                     bordersFacet = addVec(point,bordersFacet)            
             #Order by angle in the facet
             if len(bordersFacet)> 2:
-                #debugging:
-                points = bordersFacet
-                r0 = points[0]; r1 = points[1]; r2 = points[2]
-                vec = cross(r1-r0,r2-r0)
-                nv = norm(vec)
-                if areEqual(nv,0):
-                    'Pause'
-                #end debugging
+#                 #debugging:
+#                 points = bordersFacet
+#                 r0 = points[0]; r1 = points[1]; r2 = points[2]
+#                 vec = cross(r1-r0,r2-r0)
+#                 nv = norm(vec)
+#                 if areEqual(nv,0):
+#                     'Pause'
+#                 #end debugging
 
                 uvec = plane3pts(bordersFacet)[0]
                 ftemp.append(orderAngle(bordersFacet,uvec,eps))
