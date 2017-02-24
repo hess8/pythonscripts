@@ -64,17 +64,21 @@ def threePlaneIntersect(rRows):
         else:
             return None
         
-def orderAngle(facet,uvec,eps):
+def orderAngle(facet,eps):
         '''get the angle that each vector is, in the plane of the facet.'''
+        uvec = plane3pts(facet)[0] #normal of facet, not cut plane.  These are the same only for bordersfacet
         rcenter = sum(facet)/len(facet)
         xunitv =  (facet[0] - rcenter)/norm(facet[0] - rcenter)
-        yunitv = cross(xunitv, uvec)  
+        crss = cross(xunitv, uvec)
+        yunitv = crss/norm(crss)
         angles = []
         for i, vec in enumerate(facet):
-            vx = dot(vec-rcenter,xunitv); vy = dot(vec-rcenter,yunitv)
+            vc = vec - rcenter
+            vx = dot(vc,xunitv); vy = dot(vc,yunitv)
             angle = arctan2(vy,vx)
             if angle < 0-eps: angle += 2*pi
             angles.append(angle)
+#         print 'angles',angles
         return [point for (angle,point) in sorted(zip(angles,facet),key = lambda x: x[0])] 
 
 def flatVecsList(vecsList):
@@ -163,7 +167,7 @@ def getFacetsPoints(interscPoints,cell,eps):
         for i, vec in  enumerate(interscPoints):
             if onPlane(vec,pvec,eps) and not isOutside(vec,cell.bounds,eps):
                 facetvecs = addVec(vec,facetvecs)          
-        cell.facets[iplane] = orderAngle(facetvecs,uvec,eps)
+        cell.facets[iplane] = orderAngle(facetvecs,eps)
     return cell
 
 def isInside(vec,bounds,eps):
@@ -494,8 +498,6 @@ class meshConstruct():
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for site in sites:
                         ik+=1
-                        if ik == 105:
-                            'pause'
                         kpoint = lvec + site
                         ds = self.dToPlanes(kpoint,BZ.expBounds)
                         if self.isAllInside(ds,eps):
@@ -533,11 +535,16 @@ class meshConstruct():
 #                                         self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
                                     BZ.mesh.append(kpoint)
                                     cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
+#                                     if ik == 524:
+#                                         self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
+#                                         'pause'
                                     for iplane, BZlabel in enumerate(nearPlanes):
                                         uvec = BZ.bounds[0][BZlabel]
                                         ro = BZ.bounds[1][BZlabel]
 #                                         d2 = nearDs[iplane] + self.rpacking #ds are negative
 #                                         print 'd2',d2
+#                                         if ik == 524:
+#                                             self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n'                                        
                                         cutMP = self.cutCell(uvec,ro,cutMP,eps) # we always keep the part that is "inside", opposite u
                                         if cutMP.volume == 0.0: #(outside BZ. happens in oblique corners of expanded cell)
                                             break
@@ -668,7 +675,7 @@ class meshConstruct():
                         bordersFacet = addVec(rinters,bordersFacet)
 #                 print 'newFacet',newfacet
 #                 print 'bordersFacet',bordersFacet
-                ftemp[ifac] = orderAngle(newfacet,u,eps)
+                ftemp[ifac] = orderAngle(newfacet,eps)
 #                 if allclose(u,array([0,0,1])):
 #                     sys.stdout.flush()
 #                     print'pause', u
@@ -711,7 +718,7 @@ class meshConstruct():
 #                 #end debugging
 
                 uvec = plane3pts(bordersFacet)[0]
-                ftemp.append(orderAngle(bordersFacet,uvec,eps))
+                ftemp.append(orderAngle(bordersFacet,eps))
 #             else:
 #                 sys.exit('Stop.  Length of bordersFacet is less than 3')
 #                 print'bordersFacet:'
