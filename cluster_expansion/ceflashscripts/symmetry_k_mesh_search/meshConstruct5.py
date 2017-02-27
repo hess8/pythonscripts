@@ -511,10 +511,13 @@ class meshConstruct():
                         elif self.isInsideExpanded(ds,eps):
 #                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
 #                             print 'ds',ds
-                            near = where(abs(ds) <= 2.0*self.rpacking - eps)
-                            nearPlanes = near[0] #arrays
-#                             print 'near',nearPlanes
-                            nearDs =  ds[near]
+                            if self.method == 0:
+                                testMP = self.prepCutMP(MP,kpoint)
+                                nearPlanes,nearDs = self.checkVertices(BZ,testMP,ds) #do any vertices lie beyond the BZ boundaries
+                            elif self.method == 1:
+                                near = where(abs(ds) <= 2.0*self.rpacking - eps)
+                                nearPlanes = near[0] #arrays
+                                nearDs =  ds[near]
                             if len(nearPlanes)>0:
                                 if len(nearPlanes) == 1 and self.method == 1: #give weight proportional to sphere
                                     BZ.mesh.append(kpoint)
@@ -531,7 +534,7 @@ class meshConstruct():
                                     nOnePlane += 1
 #                                     print 'weight',weight
                                 elif len(nearPlanes) <=4: #cut the mesh point Voronoi cell:
-#                                     if ik == 105:
+#                                     if ik == 54:
 #                                         self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
                                     BZ.mesh.append(kpoint)
                                     cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
@@ -600,7 +603,10 @@ class meshConstruct():
 #             for facetPoint in facet:
 #                 temp.append(facetPoint + point)
 #             tCell.facets[ifac] = temp
-        self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'Blue');print ';',
+#         self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'Blue');print ';',
+        ncolors = 100
+        self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'discreteColors[{}][[{}]]'\
+                             .format(ncolors,mod(ipoint,ncolors)));print ';',
         showCommand += 'v{},'.format(ipoint)
         return showCommand
             
@@ -852,6 +858,20 @@ class meshConstruct():
 #         print 'Exp in', inside
         return all(inside)
 
+    def checkVertices(self,BZ,tMP,ds):
+        nearPlanes = []
+        nearDs = []
+        for id, d in enumerate(ds):
+            if d>(1.0+sqrt(2))*self.rpacking:
+                break
+            else:
+                for point in tMP.points:
+                    if dot(point,BZ.bounds[0][id]) < BZ.bounds[1][id]:
+                        nearPlanes.append(id)
+                        nearDs.append(d)
+                        break
+        return nearPlanes,nearDs
+                        
     def facetsMathPrint(self,cell,label,axes = False, color = 'Red'):
         ''' Mathematica'''
         print '{}'.format(label),' = Graphics3D[{'+'{}'.format(color)+', Thick,{',
@@ -896,7 +916,8 @@ class meshConstruct():
                 for facetPoint in facet:
                     temp.append(facetPoint + point)
                 tCell.facets[ifac] = temp
-            self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,'Blue');print ';',
+            self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,\
+                                 'discreteColors[{}][[{}]]'.format(len(BZ.mesh),ipoint));print ';',
             showCommand += 'v{}'.format(ipoint)
             if ipoint < len(BZ.mesh)-1:
                 showCommand += ','
