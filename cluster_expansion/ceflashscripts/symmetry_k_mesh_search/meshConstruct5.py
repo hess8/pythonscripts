@@ -620,8 +620,9 @@ class meshConstruct():
 #             tCell.facets[ifac] = temp
 #         self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'Blue');print ';',
         ncolors = 100
-        self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'discreteColors[{}][[{}]]'\
-                             .format(ncolors,mod(ipoint,ncolors)));print ';',
+#         self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'discreteColors[{}][[{}]]'\
+#                              .format(ncolors,mod(ipoint,ncolors)));print ';',
+        self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'RandomColor[]');print ';',
         showCommand += 'v{},'.format(ipoint)
         return showCommand
             
@@ -696,7 +697,8 @@ class meshConstruct():
                         bordersFacet = addVec(rinters,bordersFacet)
 #                 print 'newFacet',newfacet
 #                 print 'bordersFacet',bordersFacet
-                ftemp[ifac] = orderAngle(newfacet,eps)
+                if len(newfacet) >= 3:
+                    ftemp[ifac] = orderAngle(newfacet,eps)
 #                 if allclose(u,array([0,0,1])):
 #                     sys.stdout.flush()
 #                     print'pause', u
@@ -942,8 +944,10 @@ class meshConstruct():
                 for facetPoint in facet:
                     temp.append(facetPoint + point)
                 tCell.facets[ifac] = temp
-            self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,\
-                                 'discreteColors[{}][[{}]]'.format(len(BZ.mesh),ipoint));print ';',
+#             self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,\
+#                                  'discreteColors[{}][[{}]]'.format(len(BZ.mesh),ipoint));print ';',
+            self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,'RandomColor[]');print ';',
+
             showCommand += 'v{}'.format(ipoint)
             if ipoint < len(BZ.mesh)-1:
                 showCommand += ','

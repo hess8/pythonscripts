@@ -221,7 +221,7 @@ def isindependent(vec1,vec2):
     return not areEqual(abs(cosvecs(vec1,vec2)),1)
 
 def trimSmall(list_mat):
-    low_values_indices = abs(list_mat) < 1.0e-6
+    low_values_indices = abs(list_mat) < 1.0e-5
     list_mat[low_values_indices] = 0.0
     return list_mat
 
