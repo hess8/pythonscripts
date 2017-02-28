@@ -515,8 +515,8 @@ class meshConstruct():
 #                             print 'ds',dsBZ
                             if self.method == 0:
                                 testMP = self.prepCutMP(MP,kpoint)
-                                if ik == 51:
-                                    'pause'
+#                                 if ik == 51:
+#                                     'pause'
                                 nearPlanes,nearDs = self.checkVertices(BZ,testMP,dsBZ) #do any vertices lie beyond the BZ boundaries
                                 if len(nearPlanes) == 0: 
                                     break
@@ -554,7 +554,7 @@ class meshConstruct():
                                         if cutMP.volume == 0.0: #(outside BZ. happens in oblique corners of expanded cell)
                                             break
 #                                         if ik == 105:
-                                        self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
+#                                         self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
                                         if len(cutMP.facets)>=4:
                                             cutMP.volume = convexH(cutMP.points).volume
                                         else:
@@ -825,7 +825,7 @@ class meshConstruct():
                         u1 = self.choose111(tempvec/norm(tempvec),eps)
                         BZ = self.cutCell(u1,0.0,BZ,eps)
                         pntp = dot(op,pnto)
-                        tempvec = cross(evec,pntp)
+                        tempvec = cross(evec,pntp)/norm(cross(evec,pntp))
                         if not allclose(tempvec,-u1):
                             u2 = self.choose111(tempvec/norm(tempvec),eps)
                             #print'\n\t2nd half of rot'
@@ -835,8 +835,8 @@ class meshConstruct():
                         evec = evecs[:,where(areEqual(evals,-1.0))[0][0]]
                         u1 = self.choose111(evec,eps) 
                         BZ = self.cutCell(u1,0.0,BZ,eps)
-                    print 'iop',iop
-                    self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'    
+#                     print 'iop',iop
+#                     self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'    
             elif areEqual(det(op),-1.0):
                 inversion = True
         if inversion: #apply last of all
