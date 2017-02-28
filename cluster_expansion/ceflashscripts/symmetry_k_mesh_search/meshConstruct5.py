@@ -513,65 +513,75 @@ class meshConstruct():
                             dsBZ = [d + sqrt(2)*self.rpacking for d in ds]
 #                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
 #                             print 'ds',dsBZ
-                            if self.method == 0:
-                                testMP = self.prepCutMP(MP,kpoint)
-#                                 if ik == 51:
+                            
+                            
+#                             if self.method == 0:
+#                                 testMP = self.prepCutMP(MP,kpoint)
+#                                 if ik == 19:
 #                                     'pause'
-                                nearPlanes,nearDs = self.checkVertices(BZ,testMP,dsBZ) #do any vertices lie beyond the BZ boundaries
-                                if len(nearPlanes) == 0: 
-                                    break
-                            elif self.method == 1:
-                                near = where(abs(dsBZ) <= 2.0*self.rpacking - eps)
-                                nearPlanes = near[0] #arrays
-                                nearDs = dsBZ[near]
-                            if len(nearPlanes)>0:
-                                if len(nearPlanes) == 1 and self.method == 1: #give weight proportional to sphere
-                                    BZ.mesh.append(kpoint)
-#                                     d2 = ds[nearPlanes[0]] + self.rpacking #the d's are negative here, and measured vs the expanded boundary
-#                                     print 'one-plane cut',d2, kpoint
-                                    cap = 1/3.0*pi*(self.rpacking-abs(dsBZ[0]))**2 *(2*self.rpacking+abs(d2))
-#                                     print 'cap',cap, 'vs sphere',self.Vsphere
-                                    if d2<=0: #most of the sphere is inside:
-                                        weight = self.IBZvolCut*(1-cap/self.Vsphere)
-                                    else:
-                                        weight = self.IBZvolCut*cap/self.Vsphere
-                                    BZ.weights.append(weight)
-                                    weightsOnePlane += weight
-                                    nOnePlane += 1
-#                                     print 'weight',weight
-                                elif len(nearPlanes) <=4: #cut the mesh point Voronoi cell:
-#                                     if ik == 54:
-#                                         self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
-                                    BZ.mesh.append(kpoint)
-                                    cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
-#                                     if ik == 524:
+#                                 nearPlanes,nearDs = self.checkVertices(BZ,testMP,dsBZ) #do any vertices lie beyond the BZ boundaries
+#                                 if len(nearPlanes) == 0: 
+#                                     break
+#                             elif self.method == 1:
+#                                 near = where(abs(dsBZ) <= 2.0*self.rpacking - eps)
+#                                 nearPlanes = near[0] #arrays
+#                                 nearDs = dsBZ[near]
+#                             if len(nearPlanes)>0:
+#                                 if len(nearPlanes) == 1 and self.method == 1: #give weight proportional to sphere
+#                                     BZ.mesh.append(kpoint)
+# #                                     d2 = ds[nearPlanes[0]] + self.rpacking #the d's are negative here, and measured vs the expanded boundary
+# #                                     print 'one-plane cut',d2, kpoint
+#                                     cap = 1/3.0*pi*(self.rpacking-abs(dsBZ[0]))**2 *(2*self.rpacking+abs(d2))
+# #                                     print 'cap',cap, 'vs sphere',self.Vsphere
+#                                     if d2<=0: #most of the sphere is inside:
+#                                         weight = self.IBZvolCut*(1-cap/self.Vsphere)
+#                                     else:
+#                                         weight = self.IBZvolCut*cap/self.Vsphere
+#                                     BZ.weights.append(weight)
+#                                     weightsOnePlane += weight
+#                                     nOnePlane += 1
+# #                                     print 'weight',weight
+#                                 elif len(nearPlanes) <=4: #cut the mesh point Voronoi cell:
+# #                                     if ik == 54:
+# #                                         self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
+                            
+                            cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
+#                             if ik == 56:
+#                                 'pause'
 #                                     self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
 #                                         'pause'
-                                    for iplane, BZlabel in enumerate(nearPlanes):
-                                        uvec = BZ.bounds[0][BZlabel]
-                                        ro = BZ.bounds[1][BZlabel]                                      
-                                        cutMP = self.cutCell(uvec,ro,cutMP,eps) # we always keep the part that is "inside", opposite u
-                                        if cutMP.volume == 0.0: #(outside BZ. happens in oblique corners of expanded cell)
-                                            break
+                            for iplane, uvec in enumerate(BZ.bounds[0]):
+#                                 uvec = BZ.bounds[0][BZlabel]
+                                ro = BZ.bounds[1][iplane]                                      
+#                                 print 'u',uvec,'ro',ro
+                                cutMP = self.cutCell(uvec,ro,cutMP,eps) # we always keep the part that is "inside", opposite u
+#                                 self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
+                                if cutMP.volume == 0.0: #(outside BZ. happens in oblique corners of expanded cell)
+#                                     print 'volume is zero: zero points'
+                                    break
 #                                         if ik == 105:
 #                                         self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
-                                        if len(cutMP.facets)>=4:
-                                            cutMP.volume = convexH(cutMP.points).volume
-                                        else:
-                                            cutMP.volume = 0.0
-                                    weight = self.IBZvolCut*cutMP.volume/MP.volume; BZ.weights.append(weight)
-#                                    print 'weight',weight
-                                    weightsCuts += weight
-                                    nCut += 1
-                                    #####MP facet printing loop line
-                                    showCommand = self.cutMPCellMathPrint(BZ,cutMP,kpoint,ik,showCommand)
-                                    #####end MP facet printing loop entry
+                                if len(cutMP.facets)>=4:
+                                    cutMP.volume = convexH(cutMP.points).volume
+                                else:
+                                    cutMP.volume = 0.0
+#                                     print 'volume is zero: fewer than 4 facets'
+                                    break
+                            if cutMP.volume > 0.0:
+                                BZ.mesh.append(kpoint)
+                                weight = self.IBZvolCut*cutMP.volume/MP.volume; BZ.weights.append(weight)
+    #                                    print 'weight',weight
+                                weightsCuts += weight
+                                nCut += 1
+                                #####MP facet printing loop line
+                                showCommand = self.cutMPCellMathPrint(BZ,cutMP,kpoint,ik,showCommand)
+                                #####end MP facet printing loop entry
 #                                     self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
-                                else: 
-                                    sys.exit('Stop. Error: point {},{},{} is "close" to more than four planes'\
-                                             .format(i,j,k))
-                            else:
-                                print 'point {},{},{} is neither inside nor close'.format(i,j,k)
+#                                 else: 
+#                                     sys.exit('Stop. Error: point {},{},{} is "close" to more than four planes'\
+#                                              .format(i,j,k))
+#                             else:
+#                                 print 'point {},{},{} is neither inside nor close'.format(i,j,k)
         if showCommand[-1] == ',': showCommand = showCommand[:-1]
         showCommand += ']' 
         print ';', 
@@ -645,7 +655,7 @@ class meshConstruct():
         for ifac, facet in enumerate(cell.facets):
 #             print 'facet',ifac,'len',len(facet),facet
 #             marker = ''
-            #print 'facet',ifac, 'len',len(facet), facet
+#             print 'facet',ifac, 'len',len(facet), facet
 #             bounds = []
 #             rbounds = []
 #             allLs = range(len(facet))
