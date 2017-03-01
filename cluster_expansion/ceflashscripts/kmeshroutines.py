@@ -16,6 +16,7 @@ utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
 # utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
 getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
+get_spaceGrpPG = utilslib.symmetry_module_mp_get_SGpointgroup_
 
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
@@ -295,7 +296,7 @@ def abcalbega_latt(lvecs):
 
 def readposcar(filename, path): 
     ''' Format is explicit lattice vectors, not a,b,c,alpha, beta, gamma. 
-    Saves vectors as columns, not rows which POSCAR uses'''
+    Saves lattice vectors as columns, not rows which POSCAR uses'''
     file1 = open(path+'/'+filename,'r')
     poscar = file1.readlines()
     poscar = nstrip(poscar)
@@ -665,6 +666,19 @@ def checkq(user):
         print
         time.sleep(waitMin*60) #seconds between checks
         
+# def load_ctypes_int(IN):
+#     """Make a 1-d integer array into the right thing for ctypes"""
+#     a = c_int(IN)
+#     return a
+
+def load_ctypes_3xN_double(IN,N):
+    """Make a 3xN array into the right thing for ctypes"""
+    a = ((c_double * 3) *N)()
+    for i in range(3):
+        for j in range(N):
+            a[i][j] = c_double(IN[i,N])
+    return a
+
 def load_ctypes_3x3_double(IN):
     """Make a 3x3 array into the right thing for ctypes"""
     a = ((c_double * 3) *3)()
@@ -720,6 +734,67 @@ def getGroup(latt):
     nops = NopsOUT.value
     symops = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
     return [symops,nops]
+
+def getSGpointGroup(latt,atomTypes,pos):
+#    print "lattice in getGroup\n",latt
+    N = 3*3*48
+    opsOUT =(c_double * N)() 
+    NopsOUT =c_int(0) 
+    lattIN = load_ctypes_3x3_double(transpose(latt)) # for some reason going to Fortran gives the TRANSPOSE
+    aTypesIN = c_int(atomTypes)
+    aPosIN = load_ctypes_3xN_double(pos,len(atomTypes))
+    eps = 1.0e-4
+    epsIN = c_double(eps)
+    get_spaceGrpPG(byref(lattIN),byref(aTypesIN), byref(aPosIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
+    nops = NopsOUT.value
+    symops = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
+    return [symops,nops]
+# !*******************************************************************************
+# ! get_SGpointgroup: BCH version of get_spaceGroup. Returns only the lattice  point group operators
+# ! that survive in the space group. Requires cartesian coordinates for positions
+# 
+# ! This routine takes a crystal structure (basis vectors and basis atoms &
+# ! positions) and returns the point operators and fractional translations of the
+# ! space group. The routine assumes that the given crystal structure is already
+# ! primitive. To reduce a  non-primitive structure to a primitive one, use the
+# ! function "make_primitive" in this same module.
+# !
+# ! No assumptions are made about the orientation of the input vectors. The
+# ! positions of the basis atoms may be given in lattice coordinates or in
+# ! cartesian coordinates.
+# !
+# ! The main steps are:
+# !
+# ! (1) Check inputs and generate matrices for converting vectors (atom positions
+# ! an lattice points) from (to) lattice coordinates to (from) Cartesian
+# ! coordinates
+# 
+# ! (2) Convert atom positions from lattice coordinates, if necessary
+# ! (3) Translate all atoms into primitive unit cell
+# ! (4) Find the point operators of the given lattice
+# !     i) Generate all triplets of lattice points that preserve the length of
+# !        the original lattice vectors.
+# !    ii) Eliminate triplets that aren't primitive (cell volume is changed)
+# !   iii) Compute the transformation that takes the original lattice vectors to
+# !        the new triplet of points.
+# !    iv) Check that the transformation is orthogonal. If so, it is part of the
+# !        point group of the lattice.
+# ! (5) Find which of the point operators are part of the space group and compute
+# !     the corresponding fractional translations.
+# subroutine get_SGpointgroup(aVecs, atomType, input_pos, point_ops, num_ops, eps_)
+# 
+# real(dp), intent(in):: aVecs(3,3)       ! Real space primitive lattice vectors
+# integer, intent(inout):: atomType(:)    ! Integers representing type of each basis atom
+# real(dp), pointer:: input_pos(:,:)      ! Positions of the basis atoms
+# real(dp), pointer:: sg_op(:,:,:)        ! Rotations in the space group
+# real(dp), pointer:: point_ops(:,:,:)    ! Rotations in the space group,without duplicates
+# real(dp), pointer:: point_ops2(:)       ! Rotations in the space group,without duplicates, 1-D
+# integer, intent(out):: num_ops          ! Used to count the number of point operations found
+# real(dp), pointer:: sg_fract(:,:)       ! Translations of the space group
+# !logical lattcoords    ! If .true., atom positions are assumed to be in lattice
+#                       ! coordinates. Otherwise, they are treated as cartesian
+# real(dp), intent(in), optional:: eps_   ! "epsilon" for checking equivalence in
+#                                         ! floating point arithmetic
 
 def intsymops(A):
     '''finds integer symmetry operations in the basis of the vectors of lattice A, 

@@ -37,7 +37,7 @@ from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, la
     orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double,
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell,
-    reverseStructured,isInVoronoi,areParallel, addVec)
+    reverseStructured,isInVoronoi,areParallel, addVec, getSGpointGroup)
 
 def threePlaneIntersect(rRows):  
     '''This routine is for three planes that will intersect at only one point, 
@@ -309,12 +309,13 @@ class meshConstruct():
 #         cell.facets = [] #facet points for BZ Voronoi cell or IBZ
 #         self.MPfacets = [] #facet points for mesh point Voronoi cell
         
-    def meshSym(self,B,targetNmesh,path,method):
+    def meshSym(self,B,aPos,targetNmesh,path,method):
         #1. nCoarse random points in the cell parallelpiped.  
 #         nCoarseMax = 200
         self.B = B
         print 'B',B
-        [self.symops,self.nops] = getGroup(self.B)
+#         [self.symops,self.nops] = getGroup(self.B)
+        [self.symops,self.nops] =getSGpointGroup(self.B,aPos)
         self.nTarget = targetNmesh
 #         self.nTarget = 48
 #         print 'testing with ntarget',self.nTarget
