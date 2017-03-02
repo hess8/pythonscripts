@@ -701,8 +701,10 @@ class meshConstruct():
                     if intersect:
                         newfacet.append(rinters)
                         bordersFacet = addVec(rinters,bordersFacet)
+#                 print 'newFacet',newfacet
+#                 print 'bordersFacet',bordersFacet
                 if len(newfacet) >= 3:
-                    ftemp[ifac] = orderAngle(newfacet,eps)     
+                    ftemp[ifac] = orderAngle(newfacet,eps)
             else: #mark for removal all points that are outside of the plane
                 for i, sgn in enumerate(signs):
                     if sgn == 1.0:
