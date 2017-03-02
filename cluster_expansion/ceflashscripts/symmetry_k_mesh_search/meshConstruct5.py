@@ -191,7 +191,7 @@ def onPlane(vec,planevec,eps):
 def makesDups(op,cell):
     '''Applies symmetry operator to all facet points. If any facet points are 
     moved on top of other facet points, then return true'''
-    points = cell.points
+    points = cell.fpoints
     for i in range(len(points)):
         rpoint = dot(op,points[i])
         if allclose(points[i],rpoint):
@@ -227,9 +227,9 @@ def getVorCell(LVs,cell,eps):
 #         for i in range(self.nIntersc):
         #print i, interscPoints[i]['mag'], interscPoints[i]['vec']
     cell = getFacetsPoints(interscPoints,cell,eps)
-    cell.points = flatVecsList(cell.facets) 
-    cell.center = sum(cell.points)/len(cell.points)
-    cell.volume = convexH(cell.points).volume
+    cell.fpoints = flatVecsList(cell.facets) 
+    cell.center = sum(cell.fpoints)/len(cell.fpoints)
+    cell.volume = convexH(cell.fpoints).volume
     return cell
     #print 'facet points'
 #         for i in range(len(self.facetsPoints)):
@@ -291,10 +291,10 @@ class cell():
         self.bounds = [[],[]] #planes, written as normals and distances from origin [u's] , [ro's]
         self.expBounds = None #planes pushed outward by rpacking
         self.facets = None #points arranged in facets
-        self.points = None #points as a set (but a list)
+        self.fpoints = None #points as a set (but a list)
         self.volume = None
-        self.center = None
-        self.mesh = None
+        self.center = None #body center of cell
+        self.mesh = None #centers of each voronoi cell, or kpoints
         self.weights = None
     
 class meshConstruct(): 
@@ -314,15 +314,15 @@ class meshConstruct():
 #         nCoarseMax = 200
         self.B = B
         print 'B',B
-#         [self.symops,self.nops] = getGroup(self.B)
+        [self.symops,self.nops] = getGroup(self.B)
 #         [self.symops,self.nops] = getGroup(A)
 #         [self.symops,self.nops] = getGroup(transpose(A))
 #         [self.symops,self.nops] = testFor(A,aTypes,aPos)
-        if postype[0].lower() == 'd': #direct
-            direct = True
-        else:
-            direct = False
-        [self.symops,self.nops] = getSGpointGroup(A,totatoms,aTypes,aPos,direct)
+#         if postype[0].lower() == 'd': #direct
+#             direct = True
+#         else:
+#             direct = False
+#         [self.symops,self.nops] = getSGpointGroup(A,totatoms,aTypes,aPos,direct)
 #         [self.symops,self.nops] = getSGpointGroup(transpose(A),aTypes,aPos)
         self.nTarget = targetNmesh
 #         self.nTarget = 48
@@ -353,9 +353,29 @@ class meshConstruct():
 #         self.meshCubic('bcc')
 
 #         self.meshCubic('cub')   
-        
+        self.writeKpoints(BZ)
         sys.exit('stop')        
         return meshvecs, Nmesh, lattype, pfB, pf, status
+    
+    def writeKpoints(self,cell):
+        nk = len(cell.mesh)
+        totw = sum(cell.weights)
+        lines = []
+        lines.append('Vornoi cell tiling of IBZ (Bret Hess, BYU).  Total weights: {:12.6f} (vs 48 per general point in a cubic lattice)\n'.format(totw))
+        lines.append('{}\n'.format(nk))
+        lines.append('Cartesian\n')
+        for ik,kpoint in enumerate(cell.mesh):
+            lines.append('{:15.12f}  {:15.12f}  {:15.12f}  {:15.12f}\n'\
+                         .format(kpoint[0],kpoint[1],kpoint[2],cell.weights[ik]))
+        self.writefile(lines,'KPOINTS')
+            
+# Example file
+# 4
+# Cartesian
+# 0.0  0.0  0.0   1.
+# 0.0  0.0  0.5   1.
+# 0.0  0.5  0.5   2.
+# 0.5  0.5  0.5   4.            
    
     def meshCubic(self,BZ,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
@@ -415,7 +435,7 @@ class meshConstruct():
         rs = []
         pairs = []
         triples = []
-        points = BZ.points
+        points = BZ.fpoints
         for i in range(len(points)):
             if areEqual(norm(points[i]),0.0): break
             rs.append(norm(points[i]))
@@ -500,7 +520,7 @@ class meshConstruct():
         #begin MP facets printing
         self.facetsMathPrint(BZ,'s','True','Red'); print ';', #draw supecell voronoi cell
         showCommand = 'Show[s,' 
-        #end start of MP facets printing 
+        #end start of MP facets printing
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
@@ -571,7 +591,7 @@ class meshConstruct():
 #                                         if ik == 105:
 #                                         self.facetsMathPrint(cutMP,'p',True,'Red');print ';Show[p]\n'
                                 if len(cutMP.facets)>=4:
-                                    cutMP.volume = convexH(cutMP.points).volume
+                                    cutMP.volume = convexH(cutMP.fpoints).volume
                                 else:
                                     cutMP.volume = 0.0
 #                                     print 'volume is zero: fewer than 4 facets'
@@ -583,23 +603,18 @@ class meshConstruct():
                                 weightsCuts += weight
                                 nCut += 1
                                 #####MP facet printing loop line
-                                showCommand = self.cutMPCellMathPrint(BZ,cutMP,kpoint,ik,showCommand)
+                                print 'ik',ik
+#                                 showCommand = self.cutMPCellMathPrint(BZ,cutMP,kpoint,ik,showCommand)
                                 #####end MP facet printing loop entry
-#                                     self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
-#                                 else: 
-#                                     sys.exit('Stop. Error: point {},{},{} is "close" to more than four planes'\
-#                                              .format(i,j,k))
-#                             else:
-#                                 print 'point {},{},{} is neither inside nor close'.format(i,j,k)
         if showCommand[-1] == ',': showCommand = showCommand[:-1]
         showCommand += ']' 
         print ';', 
         print showCommand 
         #end MP facets printing
-        print 'Total volume in weights:', (nCut + nOnePlane + nInside), sum(BZ.weights)*MP.volume
         print 'Weights inside', nInside, weightsInside
         if nOnePlane>0: print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
-        print 'Weights cuts', nCut,weightsCuts, weightsCuts/float(nCut)
+        print 'Weights cuts', nCut,weightsCuts, 'Average per cut VC', weightsCuts/float(nCut)
+        print 'Total volume in weights:', (nCut + nOnePlane + nInside), sum(BZ.weights)*MP.volume
         print 'BZ volume:', det(self.B)
         self.facetsMeshMathPrint(BZ); print ';Show[p,q]\n'
         self.facetsMeshVCMathPrint(BZ,MP)
@@ -612,9 +627,9 @@ class meshConstruct():
             for point in facet:
                 temp.append(point + kpoint)
             cutMP.facets[ifac] = temp
-        cutMP.points = []
-        for ipoint, point in enumerate(MP.points):
-            cutMP.points.append(point+kpoint)
+        cutMP.fpoints = []
+        for ipoint, point in enumerate(MP.fpoints):
+            cutMP.fpoints.append(point+kpoint)
         cutMP.center = kpoint
         return cutMP
         
@@ -764,11 +779,11 @@ class meshConstruct():
 
                 #print 'Cut', self.icut
             cell.facets = ftemp
-            cell.points = flatVecsList(cell.facets) 
-            if len(cell.points)== 0:
+            cell.fpoints = flatVecsList(cell.facets) 
+            if len(cell.fpoints)== 0:
                 cell.volume = 0
             else:
-                cell.center = sum(cell.points)/len(cell.points)
+                cell.center = sum(cell.fpoints)/len(cell.fpoints)
 #             self.facetsMathPrint(cell,'p',True,'Red');print ';Show[p]\n'              
         return cell      
 
@@ -833,7 +848,7 @@ class meshConstruct():
                         ipt = 0
                         #choose a facet point that is close to the rotation axis to avoid unusual cutting planes
                         ds = []
-                        allPoints = BZ.points
+                        allPoints = BZ.fpoints
                         for vec in allPoints:
                             if areEqual(abs(dot(evec,vec)),norm(vec)): #axis and vec are parallel...don't want this one.
                                  ds.append(100)
@@ -865,12 +880,12 @@ class meshConstruct():
                 #can cut along any plane
                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
-        hull = convexH(BZ.points)
+        hull = convexH(BZ.fpoints)
         BZ.volume = hull.volume
         self.IBZvolCut = det(self.B)/BZ.volume
         getBoundsFacets(BZ)
-        BZ.points = flatVecsList(BZ.facets) 
-        BZ.center = sum(BZ.points)/len(BZ.points)
+        BZ.fpoints = flatVecsList(BZ.facets) 
+        BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
         return BZ        
 
@@ -901,7 +916,7 @@ class meshConstruct():
         nearDs = []
         for id, d in enumerate(ds):
             if abs(d)<=sqrt(2)*self.rpacking:
-                for point in tMP.points:
+                for point in tMP.fpoints:
                     if dot(point,BZ.bounds[0][id]) < BZ.bounds[1][id]:
 #                         print 'dot',dot(point,BZ.bounds[0][id]);sys.stdout.flush()
                         nearPlanes.append(id)

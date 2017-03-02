@@ -757,7 +757,6 @@ def mink_reduce(a,eps):
     return ared2
 
 def getGroup(latt):
-#    print "lattice in getGroup\n",latt
     N = 3*3*48
     opsOUT =(c_double * N)() 
     NopsOUT =c_int(0) 
@@ -770,7 +769,6 @@ def getGroup(latt):
     return [symops,nops]
 
 def getSGpointGroup(latt,totatoms,atomTypes,pos,direct):
-#    print "lattice in getGroup\n",latt
     N = 3*3*48
     opsOUT =(c_double * N)() 
     NopsOUT =c_int(0) 
@@ -801,67 +799,27 @@ def getSGpointGroup(latt,totatoms,atomTypes,pos,direct):
 #     nops = NopsOUT.value
 #     symops = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
 #     return [symops,nops]
-
-# def testFor(latt,atomTypes,pos):
-# #    print "lattice in getGroup\n",latt
-#     N = 3*3*48
-#     opsOUT =(c_double * N)() 
-#     NopsOUT =c_int(0) 
-#     lattIN = load_ctypes_3x3_double(transpose(latt)) # for some reason going to Fortran gives the TRANSPOSE
-#     aTypesIN = load_ctypes_int(atomTypes)
-#     aPosIN = load_ctypes_3xN_double(pos,len(atomTypes))
-#     eps = 1.0e-4
-#     epsIN = c_double(eps)
-#     testFortran(byref(lattIN),byref(aTypesIN), byref(aPosIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
-#     nops = NopsOUT.value
-#     symops = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
-#     return [symops,nops]
-# !*******************************************************************************
-# ! get_SGpointgroup: BCH version of get_spaceGroup. Returns only the lattice  point group operators
-# ! that survive in the space group. Requires cartesian coordinates for positions
-# 
-# ! This routine takes a crystal structure (basis vectors and basis atoms &
-# ! positions) and returns the point operators and fractional translations of the
-# ! space group. The routine assumes that the given crystal structure is already
-# ! primitive. To reduce a  non-primitive structure to a primitive one, use the
-# ! function "make_primitive" in this same module.
-# !
-# ! No assumptions are made about the orientation of the input vectors. The
-# ! positions of the basis atoms may be given in lattice coordinates or in
-# ! cartesian coordinates.
-# !
-# ! The main steps are:
-# !
-# ! (1) Check inputs and generate matrices for converting vectors (atom positions
-# ! an lattice points) from (to) lattice coordinates to (from) Cartesian
-# ! coordinates
-# 
-# ! (2) Convert atom positions from lattice coordinates, if necessary
-# ! (3) Translate all atoms into primitive unit cell
-# ! (4) Find the point operators of the given lattice
-# !     i) Generate all triplets of lattice points that preserve the length of
-# !        the original lattice vectors.
-# !    ii) Eliminate triplets that aren't primitive (cell volume is changed)
-# !   iii) Compute the transformation that takes the original lattice vectors to
-# !        the new triplet of points.
-# !    iv) Check that the transformation is orthogonal. If so, it is part of the
-# !        point group of the lattice.
-# ! (5) Find which of the point operators are part of the space group and compute
-# !     the corresponding fractional translations.
-# subroutine get_SGpointgroup(aVecs, atomType, input_pos, point_ops, num_ops, eps_)
+'''# subroutine get_sg_pointgroup(aVecs, nAtoms, tmpType, tmpAtom_pos, lattcoords, point_ops2, num_ops, eps_)
 # 
 # real(dp), intent(in):: aVecs(3,3)       ! Real space primitive lattice vectors
-# integer, intent(inout):: atomType(:)    ! Integers representing type of each basis atom
-# real(dp), pointer:: input_pos(:,:)      ! Positions of the basis atoms
-# real(dp), pointer:: sg_op(:,:,:)        ! Rotations in the space group
-# real(dp), pointer:: point_ops(:,:,:)    ! Rotations in the space group,without duplicates
-# real(dp), pointer:: point_ops2(:)       ! Rotations in the space group,without duplicates, 1-D
+# !integer, intent(in):: atomType(:)    ! Integers representing type of each basis atom
+# integer, intent(in):: nAtoms
+# integer, intent(in):: tmpType(1000)    ! Integers representing type of each basis atom...Can't read ctypes array size
+# integer atomType(nAtoms)
+# !integer :: atomType(:)
+# real(dp),intent(in):: tmpAtom_pos(3, 1000)
+# real(dp) atom_pos(3 ,nAtoms)
+# !real(dp) temp_pos(3,nAtoms)
+# !real(dp), allocatable:: input_pos(:,:)      ! Positions of the basis atoms
+# real(dp), allocatable:: sg_op(:,:,:)        ! Rotations in the space group
+# real(dp), allocatable:: point_ops(:,:,:)    ! Rotations in the space group,without duplicates
+# real(dp), allocatable:: point_ops2(:)       ! Rotations in the space group,without duplicates, 1-D
 # integer, intent(out):: num_ops          ! Used to count the number of point operations found
-# real(dp), pointer:: sg_fract(:,:)       ! Translations of the space group
-# !logical lattcoords    ! If .true., atom positions are assumed to be in lattice
-#                       ! coordinates. Otherwise, they are treated as cartesian
+# real(dp), allocatable:: sg_fract(:,:)       ! Translations of the space group
+# logical lattcoords    ! If .true., atom positions are assumed to be in lattice
+# !                      ! coordinates. Otherwise, they are treated as cartesian
 # real(dp), intent(in), optional:: eps_   ! "epsilon" for checking equivalence in
-#                                         ! floating point arithmetic
+#                                         ! floating point arithmetic'''
 
 def intsymops(A):
     '''finds integer symmetry operations in the basis of the vectors of lattice A, 
