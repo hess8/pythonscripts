@@ -9,15 +9,19 @@ fprec=float64
 from numpy.linalg import norm, det, inv, eig
 from numpy import int as np_int
 from random import random, randrange
-from ctypes import byref, cdll, c_double, c_int
+from ctypes import byref, cdll, c_double, c_int, c_bool
 from copy import copy, deepcopy
 
 utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
 # utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
 getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
-get_spaceGrpPG = utilslib.symmetry_module_mp_get_SGpointgroup_
+get_spaceGrpPG = utilslib.symmetry_module_mp_get_sg_pointgroup_ #don't use cap letters in fortran name. 
+# testFortran = utilslib.symmetry_module_mp_testsub_ 
 
+# get_spaceGrpPG = utilslib.symmetry_module_mp_find_site_equivalencies_
+# get_spaceGrpPG = utilslib.symmetry_module_mp_get_pointgroup_
+#bring_into_cell
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 
@@ -35,7 +39,7 @@ def latticeType(nops):
 def unique_anorms(latt):
     '''Returns whether each vector in turn has a unique length among the three, '''
     a0 = norm(latt[:,0]); a1 = norm(latt[:,1]); a2 = norm(latt[:,2])
-    return [not areEqual(a0,a1) and  not areEqual(a0,a2), not areEqual(a1,a0) and not areEqual(a1,a2), not areEqual(a2,a0) and not areEqual(a2,a1)] 
+    return [not areEqual(a0,a1) and  not areEqual(a0,a2), not areEqual(a1,a0) and not areEqual(a1,a2), not argeEqual(a2,a0) and not areEqual(a2,a1)] 
 
 def searchsphere(aVecs):
    '''Decide how many lattice points to look in each direction to get all the
@@ -666,17 +670,29 @@ def checkq(user):
         print
         time.sleep(waitMin*60) #seconds between checks
         
+def load_ctypes_int(IN):
+    """Make a 1-d integer array into the right thing for ctypes"""
+    N = len(IN)
+    a = (c_int*N)()
+    for i,item in enumerate(IN):
+        a[i] = item
+    return a
+
 # def load_ctypes_int(IN):
 #     """Make a 1-d integer array into the right thing for ctypes"""
-#     a = c_int(IN)
+#     N = len(IN)
+#     a = ((c_int)*N)()
+#     for i,item in enumerate(IN):
+#         a[i] = item
 #     return a
 
 def load_ctypes_3xN_double(IN,N):
     """Make a 3xN array into the right thing for ctypes"""
-    a = ((c_double * 3) *N)()
+    a = ((c_double * N) *3)()  #note the anti intuitive ordering of ((columns)rows)
     for i in range(3):
         for j in range(N):
-            a[i][j] = c_double(IN[i,N])
+#             print 'i,j',i,j
+            a[i][j] = c_double(IN[i,j])
     return a
 
 def load_ctypes_3x3_double(IN):
@@ -707,6 +723,24 @@ def unload_ctypes_3x3xN_double(OUT,nops):
                 ielement += 1                 
     return a
 
+# def unload_ctypes_3x3xN_double(OUT,nops):
+#     """Take a ctypes 3x3xN-dim array and load it into a 3x3xnops python array.  Couldn't get 
+#     the 3x3xN to work"""
+#     a = zeros((3,3,nops),dtype=fprec)
+#     test = (((c_double*48)*3)*3)()
+#     ielement = 0
+#     for i in range(3):
+#         for j in range(3):
+#             for k in range(nops): 
+#                 print 't',i,j,k   
+#                 print 'z',a[i,j,k]
+# #                 print 'OUT',OUT
+#                 print 'test',test[i][j][k]
+#                 print 'OUT',OUT[50]                  
+#                 a[i,j,k] = OUT[i][j][k]
+#                 ielement += 1                 
+#     return a
+
 def mink_reduce(a,eps):
     """Reduce the basis to the most orthogonal set.
        A Minkowski-reduced (via a "greedy algorithm basis) """
@@ -735,20 +769,53 @@ def getGroup(latt):
     symops = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
     return [symops,nops]
 
-def getSGpointGroup(latt,atomTypes,pos):
+def getSGpointGroup(latt,totatoms,atomTypes,pos,direct):
 #    print "lattice in getGroup\n",latt
     N = 3*3*48
     opsOUT =(c_double * N)() 
     NopsOUT =c_int(0) 
     lattIN = load_ctypes_3x3_double(transpose(latt)) # for some reason going to Fortran gives the TRANSPOSE
-    aTypesIN = c_int(atomTypes)
+    ntotIN = c_int(totatoms)
+    aTypesIN = load_ctypes_int(atomTypes)
     aPosIN = load_ctypes_3xN_double(pos,len(atomTypes))
+    directIN = c_bool(direct)
     eps = 1.0e-4
     epsIN = c_double(eps)
-    get_spaceGrpPG(byref(lattIN),byref(aTypesIN), byref(aPosIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
+    get_spaceGrpPG(byref(lattIN),byref(ntotIN),byref(aTypesIN), byref(aPosIN),byref(directIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
     nops = NopsOUT.value
     symops = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
     return [symops,nops]
+
+# def getSGpointGroup(latt,totatoms,atomTypes,pos,direct):
+# #    print "lattice in getGroup\n",latt
+#     opsOUT =(((c_double * 48)*3)*3)() 
+#     NopsOUT =c_int(0) 
+#     lattIN = load_ctypes_3x3_double(transpose(latt)) # for some reason going to Fortran gives the TRANSPOSE
+#     ntotIN = c_int(totatoms)
+#     aTypesIN = load_ctypes_int(atomTypes)
+#     aPosIN = load_ctypes_3xN_double(pos,len(atomTypes))
+#     directIN = c_bool(direct)
+#     eps = 1.0e-4
+#     epsIN = c_double(eps)
+#     get_spaceGrpPG(byref(lattIN),byref(ntotIN),byref(aTypesIN), byref(aPosIN),byref(directIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
+#     nops = NopsOUT.value
+#     symops = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
+#     return [symops,nops]
+
+# def testFor(latt,atomTypes,pos):
+# #    print "lattice in getGroup\n",latt
+#     N = 3*3*48
+#     opsOUT =(c_double * N)() 
+#     NopsOUT =c_int(0) 
+#     lattIN = load_ctypes_3x3_double(transpose(latt)) # for some reason going to Fortran gives the TRANSPOSE
+#     aTypesIN = load_ctypes_int(atomTypes)
+#     aPosIN = load_ctypes_3xN_double(pos,len(atomTypes))
+#     eps = 1.0e-4
+#     epsIN = c_double(eps)
+#     testFortran(byref(lattIN),byref(aTypesIN), byref(aPosIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
+#     nops = NopsOUT.value
+#     symops = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
+#     return [symops,nops]
 # !*******************************************************************************
 # ! get_SGpointgroup: BCH version of get_spaceGroup. Returns only the lattice  point group operators
 # ! that survive in the space group. Requires cartesian coordinates for positions

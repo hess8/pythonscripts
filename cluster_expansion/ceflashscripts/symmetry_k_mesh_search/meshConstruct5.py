@@ -309,13 +309,21 @@ class meshConstruct():
 #         cell.facets = [] #facet points for BZ Voronoi cell or IBZ
 #         self.MPfacets = [] #facet points for mesh point Voronoi cell
         
-    def meshSym(self,B,aPos,targetNmesh,path,method):
+    def meshSym(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,path,method):
         #1. nCoarse random points in the cell parallelpiped.  
 #         nCoarseMax = 200
         self.B = B
         print 'B',B
 #         [self.symops,self.nops] = getGroup(self.B)
-        [self.symops,self.nops] =getSGpointGroup(self.B,aPos)
+#         [self.symops,self.nops] = getGroup(A)
+#         [self.symops,self.nops] = getGroup(transpose(A))
+#         [self.symops,self.nops] = testFor(A,aTypes,aPos)
+        if postype[0].lower() == 'd': #direct
+            direct = True
+        else:
+            direct = False
+        [self.symops,self.nops] = getSGpointGroup(A,totatoms,aTypes,aPos,direct)
+#         [self.symops,self.nops] = getSGpointGroup(transpose(A),aTypes,aPos)
         self.nTarget = targetNmesh
 #         self.nTarget = 48
 #         print 'testing with ntarget',self.nTarget
@@ -443,7 +451,7 @@ class meshConstruct():
                 sums = zeros(len(pairs))
                 for ip, pair in enumerate(pairs):
                     for i in range(2):
-                        sums[it] += norm(triple[i])
+                        sums[ip] += norm(pairs[i])
                 pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
             for i in range(2):        
                 vec = pair[-1][i]

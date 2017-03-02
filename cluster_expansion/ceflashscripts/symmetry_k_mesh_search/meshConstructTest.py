@@ -79,7 +79,15 @@ for dir in dirs:
 # for trials where we want to vary pf for testing       
 #         meshesfile = open('meshesfile','w')
 #         meshesfile.write(dir+' ============\n')
-        [meshvecs, Nmesh, lattype, pfB, pf, status] = meshc.meshSym(reciplatt,transpose(positions),targetNmesh,path,method)
+        atype = 1
+        aTypes = []
+        for natom in natoms:
+            for i in range(natom):
+                aTypes.append(atype)
+            atype += 1
+        aTypes = array(aTypes)
+        
+        [meshvecs, Nmesh, lattype, pfB, pf, status] = meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,path,method)
 #        bestmeshIter_vary_N(reciplatt,Nmesh,path)
 # End trials
 
