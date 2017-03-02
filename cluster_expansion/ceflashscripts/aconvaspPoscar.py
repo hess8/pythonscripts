@@ -3,14 +3,14 @@
     
 import sys,os
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
-maindir = '/fslhome/bch/cluster_expansion/al.al.ntest/AFLOWDATAn/AlAl/'
+maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 print dirs
-atomic = 'Al:Ir'
+atomic = 'Cu:Pt'
 for dir in dirs:
     print dir
-    os.chdir(dir)
+    os.chdir(dir)     
     commstr2= 'aconvasp --proto=%s:%s | aconvasp --poscar>POSCAR' % (dir,atomic)   #for POSCAR creation         
     os.system(commstr2)
     os.chdir(maindir)

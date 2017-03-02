@@ -361,21 +361,13 @@ class meshConstruct():
         nk = len(cell.mesh)
         totw = sum(cell.weights)
         lines = []
-        lines.append('Vornoi cell tiling of IBZ (Bret Hess, BYU).  Total weights: {:12.6f} (vs 48 per general point in a cubic lattice)\n'.format(totw))
+        lines.append('Vornoi cell tiling of IBZ (Bret Hess, BYU). Total weights: {:12.8f} (vs 1.0 per general point without symmetry\n'.format(totw))
         lines.append('{}\n'.format(nk))
         lines.append('Cartesian\n')
         for ik,kpoint in enumerate(cell.mesh):
             lines.append('{:15.12f}  {:15.12f}  {:15.12f}  {:15.12f}\n'\
                          .format(kpoint[0],kpoint[1],kpoint[2],cell.weights[ik]))
-        self.writefile(lines,'KPOINTS')
-            
-# Example file
-# 4
-# Cartesian
-# 0.0  0.0  0.0   1.
-# 0.0  0.0  0.5   1.
-# 0.0  0.5  0.5   2.
-# 0.5  0.5  0.5   4.            
+        self.writefile(lines,'KPOINTS')         
    
     def meshCubic(self,BZ,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
@@ -621,7 +613,9 @@ class meshConstruct():
         return
 
     def prepCutMP(self,MP,kpoint):
-        cutMP = deepcopy(MP)
+#         cutMP = deepcopy(MP)
+        cutMP = cell()
+        cutMP.facets = [[]]*len(MP.facets)
         for ifac, facet in enumerate(MP.facets):
             temp = []
             for point in facet:
@@ -629,7 +623,7 @@ class meshConstruct():
             cutMP.facets[ifac] = temp
         cutMP.fpoints = []
         for ipoint, point in enumerate(MP.fpoints):
-            cutMP.fpoints.append(point+kpoint)
+            cutMP.fpoints.append(point + kpoint)
         cutMP.center = kpoint
         return cutMP
         
@@ -670,21 +664,12 @@ class meshConstruct():
         between the plane and the facet segments are new facet points.  If a facet
         point lies on the plane, it stays in the facet.'''
         allRemoved = [] #points that are cut out
-        bordersFacet = [] #new facet from the points of cut facets
-#         ftemp = [[]]*len(cell.facets) #this will contain only points, not labels
-#         if allclose(u,array([-1,0,0])):
-#             'pause'
-#         print        
+        bordersFacet = [] #new facet from the points of cut facets      
 #         print 'u',u,'ro',ro
         ftemp = deepcopy(cell.facets)       
         for ifac, facet in enumerate(cell.facets):
 #             print 'facet',ifac,'len',len(facet),facet
-#             marker = ''
 #             print 'facet',ifac, 'len',len(facet), facet
-#             bounds = []
-#             rbounds = []
-#             allLs = range(len(facet))
-#             keepLs = []
             newfacet = []
             #first, determine if the plane intersects any facet points or 
             #line segments, by checking the change of sign of dot products
@@ -698,11 +683,8 @@ class meshConstruct():
                     signs.append(0.0)
                 else:
                     signs.append(-1.0)
-#                 signs.append(sign())
-#             print 'signs',signs
             if -1 in signs and 1 in signs: #facet is cut
                 for ip,pointi in enumerate(facet):
-    #                     marker = "*" 
                     pu = dot(u,pointi)
                     if areEqual(pu,ro): # then this point is on the cut plane 
                         newfacet.append(pointi)
@@ -719,18 +701,8 @@ class meshConstruct():
                     if intersect:
                         newfacet.append(rinters)
                         bordersFacet = addVec(rinters,bordersFacet)
-#                 print 'newFacet',newfacet
-#                 print 'bordersFacet',bordersFacet
                 if len(newfacet) >= 3:
-                    ftemp[ifac] = orderAngle(newfacet,eps)
-#                 if allclose(u,array([0,0,1])):
-#                     sys.stdout.flush()
-#                     print'pause', u
-#                     sys.stdout.flush()
-#                     'pause'
-#             elif areEqual(sum(signs),len(signs)): #are 1.0.  This entire facet is outside
-#                 for ip,pointi in enumerate(facet):
-#                     allRemoved = addVec(pointi,allRemoved)      
+                    ftemp[ifac] = orderAngle(newfacet,eps)     
             else: #mark for removal all points that are outside of the plane
                 for i, sgn in enumerate(signs):
                     if sgn == 1.0:
@@ -761,23 +733,8 @@ class meshConstruct():
                     bordersFacet = addVec(point,bordersFacet)            
             #Order by angle in the facet
             if len(bordersFacet)> 2:
-#                 #debugging:
-#                 points = bordersFacet
-#                 r0 = points[0]; r1 = points[1]; r2 = points[2]
-#                 vec = cross(r1-r0,r2-r0)
-#                 nv = norm(vec)
-#                 if areEqual(nv,0):
-#                     'Pause'
-#                 #end debugging
-
                 uvec = plane3pts(bordersFacet)[0]
                 ftemp.append(orderAngle(bordersFacet,eps))
-#             else:
-#                 sys.exit('Stop.  Length of bordersFacet is less than 3')
-#                 print'bordersFacet:'
-#                 self.mathPrintPoints(bordersFacet)
-
-                #print 'Cut', self.icut
             cell.facets = ftemp
             cell.fpoints = flatVecsList(cell.facets) 
             if len(cell.fpoints)== 0:

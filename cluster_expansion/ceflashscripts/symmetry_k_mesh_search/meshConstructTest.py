@@ -28,7 +28,7 @@ import meshConstruct5
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/f3varyN/'
 # maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
-maindir = '/fslhome/bch/cluster_expansion/meshConstruct/AlAl'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/AlAl'
 method = 0  #0,1 for now.
             #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
             #         from the IBZ center origin to check if the point's volume is cut. 
@@ -49,7 +49,7 @@ meshc = meshConstruct5.meshConstruct() #instance
 
 testfile = 'POSCAR'
 # Nkppra = 10000#*10  
-Nkppra = 60#*10 
+Nkppra = 1200#*10 
 #reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
