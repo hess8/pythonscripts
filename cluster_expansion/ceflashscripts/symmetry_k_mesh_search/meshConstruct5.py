@@ -128,14 +128,14 @@ def magGroup(arr, igroup,eps):
 def newBoundsifInside(braggVecs,grp,cell,eps):
     newPlanes = False
     newboundaries = deepcopy(cell.bounds)
-    for ig  in range(len(grp)):
-        gvec = braggVecs[grp[ig]]['vec']
+    for ig  in grp:
+        gvec = braggVecs[ig]['vec']
         if isInside(gvec,cell.bounds,eps):
             gnorm = norm(gvec)
             newboundaries[0].append(array(gvec/gnorm)); newboundaries[1].append(gnorm)
             newPlanes = True         
     cell.bounds = newboundaries
-    return newPlanes    
+    return newPlanes,cell   
 
 def getInterscPoints(planes):
     '''intersection points of planes, taken 3 at a time, where the planes
@@ -217,7 +217,7 @@ def getVorCell(LVs,cell,eps):
         igroup += 1
         gstart,ng = magGroup(braggVecs,igroup,eps)
         nextGroup = range(gstart,gstart+ng)
-        checkNext = newBoundsifInside(braggVecs,nextGroup,cell,eps)
+        checkNext,cell = newBoundsifInside(braggVecs,nextGroup,cell,eps)
     interscPoints = getInterscPoints(cell.bounds)
     #write plane equations for Mathematica:
 #         for iplane, uvec in enumerate(cell.bounds[0]):
@@ -238,7 +238,8 @@ def getVorCell(LVs,cell,eps):
 def getBraggVecs(LVs):
     '''The Bragg vectors are halfway from the origin to a lattice point.
     The planes normal to some of these will be bounding planes of the Voronoi cell '''
-    braggVecs = zeros(124,dtype = [('vec', '3float'),('mag', 'float'),('dep', 'S15')])        
+    braggVecs = zeros(5*5*5-1,dtype = [('vec', '3float'),('mag', 'float'),('dep', 'S15')])  
+    #Exclude (0,0,0) in array dimensions (-1)
     ipoint = 0
     for i in range(-2,3):
         for j in range(-2,3):
@@ -783,11 +784,16 @@ class meshConstruct():
         Keep the part of the cell that is dot(r,u) < 0
         '''
         
+        if not areEqual(det(self.B),BZ.volume):
+            subprocess.call(['echo', '\nError: Voronoi cell volume {} is not equal to the parallelepiped volume {}'.format(BZ.volume,det(self.B))])
+            sys.exit('Stop.')
         print '\n\nReducing Brillouin zone by symmetry'
+        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
+         
         inversion = False
         for iop in range(self.nops):
             op = self.symops[:,:,iop]            
-            if abs(trace(op))< 3: #skip E and inverse
+            if abs(trace(op))< 3.0-eps: #skip E and inverse
                 evals,evecs = eig(op)
                 evecs = array([evec for evec in evecs])
                 if areEqual(det(op),-1.0) and not allclose(imag(evecs),zeros((3,3))):
@@ -830,7 +836,9 @@ class meshConstruct():
                         u1 = self.choose111(evec,eps) 
                         BZ = self.cutCell(u1,0.0,BZ,eps)
 #                     print 'iop',iop
-#                     self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'    
+                    BZ.volume = convexH(BZ.fpoints).volume
+                    self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'  
+                    print 'Vols',det(self.B)/BZ.volume  
             elif areEqual(det(op),-1.0):
                 inversion = True
         if inversion: #apply last of all
@@ -838,13 +846,13 @@ class meshConstruct():
                 #can cut along any plane
                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
-        hull = convexH(BZ.fpoints)
-        BZ.volume = hull.volume
+        BZ.volume = convexH(BZ.fpoints).volume
         self.IBZvolCut = det(self.B)/BZ.volume
         getBoundsFacets(BZ)
         BZ.fpoints = flatVecsList(BZ.facets) 
         BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
+        sys.exit('stop')
         return BZ        
 
     def isAllInside(self,ds,eps):
