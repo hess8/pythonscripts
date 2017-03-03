@@ -16,8 +16,7 @@ utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
 # utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
 getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
-get_spaceGrpPG = utilslib.symmetry_module_mp_get_sg_pointgroup_ #don't use cap letters in fortran name. 
-# testFortran = utilslib.symmetry_module_mp_testsub_ 
+# get_spaceGrpPG = utilslib.symmetry_module_mp_get_sg_pointgroup_ #don't use cap letters in fortran name.  
 
 # get_spaceGrpPG = utilslib.symmetry_module_mp_find_site_equivalencies_
 # get_spaceGrpPG = utilslib.symmetry_module_mp_get_pointgroup_
@@ -352,7 +351,6 @@ def create_poscar(filename,descriptor, scale, latticevecs, natoms, type_pos, pos
             poscar.write('%20.15f %20.15f %20.15f \n' % (positions[where,0],positions[where,1],positions[where,2]))
             where += 1
     poscar.close()
-
 
 def aflow2poscar(path): 
     '''DON"T USE THIS>>>Need to use (-scale/volume)**(1/3.0).  Use routine aconvaspPoscar.py'''

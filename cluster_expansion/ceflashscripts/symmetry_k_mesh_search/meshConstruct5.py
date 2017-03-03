@@ -353,9 +353,8 @@ class meshConstruct():
 #         self.meshCubic('bcc')
 
 #         self.meshCubic('cub')   
-        self.writeKpoints(BZ)
-        sys.exit('stop')        
-        return meshvecs, Nmesh, lattype, pfB, pf, status
+        self.writeKpoints(BZ)       
+        return
     
     def writeKpoints(self,cell):
         nk = len(cell.mesh)

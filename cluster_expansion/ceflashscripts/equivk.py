@@ -30,8 +30,11 @@ from ceroutines import readfile,readstructs,readlatt,scaleposcar, getscale, gets
 def writekpts_vasp_M(path,Bv,M,nops,symmops):
     '''write out kpoints file with IBZKPTS format.  This will specify all the kpoints and their weights. 
     No shift is allowed for now.  The symmops are those of B'''
-    #Fill a 1st brilloun zone with mesh points.  We will choose the 1st BZ to be that given by the parallepiped of (B0, B1, B2)
-    #Since B = KM.  The first column of M determines the first column of B (B0) We run trial mesh points over a grid made by the maximum and minimum values of columns of M and the three directions 
+    #Fill a 1st brilloun zone with mesh points.  We will choose the 1st BZ to be 
+    # that given by the parallepiped of (B0, B1, B2)
+    #Since B = KM, the first column of M determines the first column of B (B0) 
+    #We run trial mesh points over a grid made by the maximum and minimum values 
+    # of columns of M and the three directions 
     # of K.  The first row of M  gives the first k direction (first column of K)
     eps = 1e-4
     M = M * sign(det(M)) # want positive determinants

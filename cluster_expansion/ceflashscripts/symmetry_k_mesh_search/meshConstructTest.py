@@ -4,15 +4,10 @@
 import sys,os,subprocess
 from numpy import zeros,transpose,array,sum,float64,rint
 from numpy.linalg import norm
-sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
-#import kmeshroutines as km
-from kmeshroutines import nstrip, readposcar,create_poscar
-#from bestmeshIterJan22 import bestmeshIter
-# from bestmeshIter import bestmeshIter
-# from bestmeshIter_vary_pf import bestmeshIter_vary_pf
-# from bestmeshIter_vary_N import bestmeshIter_vary_N
-fprec=float64
+sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/')
 import meshConstruct5
+from kmeshroutines import nstrip, readposcar,create_poscar
+
 
 ################# script #######################
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test101x/'
@@ -49,7 +44,7 @@ meshc = meshConstruct5.meshConstruct() #instance
 
 testfile = 'POSCAR'
 # Nkppra = 10000#*10  
-Nkppra = 6000#*10 
+Nkppra = 600#*10 
 #reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
@@ -86,8 +81,10 @@ for dir in dirs:
                 aTypes.append(atype)
             atype += 1
         aTypes = array(aTypes)
-        
-        [meshvecs, Nmesh, lattype, pfB, pf, status] = meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,path,method)
+
+        meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,path,method)
+        sys.exit('stop')
+#         [meshvecs, Nmesh, lattype, pfB, pf, status] = meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,path,method)
 #        bestmeshIter_vary_N(reciplatt,Nmesh,path)
 # End trials
 
