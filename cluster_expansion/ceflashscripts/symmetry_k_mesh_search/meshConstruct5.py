@@ -40,12 +40,20 @@ from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, la
     reverseStructured,isInVoronoi,areParallel, among, addVec, getSGpointGroup)
 
 def mathPrintPoints(points):
-    print 'Graphics3D[{',
+    print 's=Graphics3D[{',
     for ipoint,point in enumerate(points):
         print 'Sphere[{' + '{},{},{}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(0.05),
         if ipoint < len(points ) -1:
             print ',',
     print '}, Axes -> True, AxesLabel -> {"x", "y", "z"}]\n'
+
+def mathPrintPlanes(planes):
+    print 'r=RegionPlot3D[',
+    for iplane, pvec in enumerate(planes):
+        print '{}x+{}y+{}z<={}'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)), #write plane equations for mathematica
+        if iplane < len(planes)-1:
+            print '&&',
+    print ',{x, -2, 2}, {y, -2, 2}, {z, -2, 2},PlotPoints -> 100]'
 
 def threePlaneIntersect(rRows):  
     '''This routine is for three planes that will intersect at only one point, 
@@ -145,7 +153,7 @@ def magGroup(arr, igroup,eps):
 #     cell.bounds = newboundaries
 #     return newPlanes,cell   
 
-def newBoundsifNewVertInside(braggVecs,grp,cell,eps):
+def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     '''Find intersections planes:  newBraggs+current taken 2 at a time with e
     each newBragg, excluding duplicates in the triplet. 
     If any of these intersections are inside the current boundaries, then they 
@@ -157,63 +165,74 @@ def newBoundsifNewVertInside(braggVecs,grp,cell,eps):
     keepLabels = []
     checkNext = True
     nCurr = len(cell.bounds[0])
-    bndsLabels = range(nCurr)
     allPlanes = [cell.bounds[0][i]*cell.bounds[1][i] for i in range(len(cell.bounds[0]))]
     allVerts = deepcopy(cell.fpoints)
     for ig  in grp:
         bndsLabels.append(ig)
     pairs = list(combinations(bndsLabels,2))
+    iInt = 0
     for ig in grp:
         for pair in pairs:
+#             print 'use',ig,pair
             planes3 = [braggVecs[ig]['vec']]
-            if not (ig in pair or ig in keepLabels):
+            if not (ig in pair):# or ig in keepLabels):
                 planes3.append(braggVecs[pair[0]]['vec'])
                 planes3.append(braggVecs[pair[1]]['vec'])
-                intersPt = threePlaneIntersect(planes3)
-                if not intersPt is None and not isOutside(intersPt,cell.bounds,eps)\
-                    and not among(intersPt,allVerts):
-                        addVec(intersPt,allVerts)
-                        addVec(planes3[0],allPlanes)
-                        keepLabels.append(ig)
-                        if pair[0]>=nCurr: 
-                            keepLabels.append(pair[0])
-                            addVec(planes3[1],allPlanes)
-                        if pair[1]>=nCurr: 
-                            keepLabels.append(pair[1])
-                            addVec(planes3[2],allPlanes)  
-                        break
-    #keep only the vertices that can be reached without crossing any plane
-    newVerts = []
-    for vert in allVerts:
-        for plane in allPlanes:
-            if dot(vert,plane)>dot(plane,plane)+eps:
-                break
-        else: 
-            newVerts.append(vert)            
-    #remove planes that don't host a vertex.
-    newPlanes = []
-    tryPlanes = deepcopy(allPlanes)
-    for vert in newVerts:
-        for ip,plane in enumerate(tryPlanes):
-            if areEqual(dot(vert,plane),dot(plane,plane)):
-                addVec(plane,newPlanes)
-                tryPlanes.pop(ip)    
-                break
-    cell.bounds = [[],[]]
-    for plane in newPlanes:
-        normPlane = norm(plane)
-        cell.bounds[0].append(plane/normPlane)
-        cell.bounds[1].append(normPlane)
-    cell.fpoints = newVerts
+#                 print 'planes3',[ig,pair], planes3
+                intersPt = threePlaneIntersect(planes3)    
+                if not intersPt is None:
+                    iInt+=1
+#                     print 'inters', iInt,intersPt
+                    if not isOutside(intersPt,cell.bounds,eps)\
+                        and not among(intersPt,allVerts):
+                            addVec(intersPt,allVerts)
+                            addVec(planes3[0],allPlanes)
+                            keepLabels.append(ig)
+                            if pair[0]>=nCurr: 
+                                keepLabels.append(pair[0])
+                                addVec(planes3[1],allPlanes)
+                            if pair[1]>=nCurr: 
+                                keepLabels.append(pair[1])
+                                addVec(planes3[2],allPlanes)           
+    if len(allVerts)>0:
+        #keep only the vertices that can be reached without crossing any plane
+        newVerts = []
+#         print 'allVerts',len(allVerts)
+        print
+        for vert in allVerts:
+            for plane in allPlanes:
+                if dot(vert,plane)>dot(plane,plane)+eps:
+                    break
+            else: 
+                newVerts.append(vert)
+                
+#         print 'newVerts', len(newVerts)
+        #remove planes that don't host a vertex.
+        newPlanes = []
+        tryPlanes = deepcopy(allPlanes)
+        for vert in newVerts:
+            for ip,plane in enumerate(tryPlanes):
+                if areEqual(dot(vert,plane),dot(plane,plane)):
+                    addVec(plane,newPlanes)
+                    tryPlanes.pop(ip)    
+                    break
+        cell.bounds = [[],[]]
+        for plane in newPlanes:
+            normPlane = norm(plane)
+            cell.bounds[0].append(plane/normPlane)
+            cell.bounds[1].append(normPlane)
+        cell.fpoints = newVerts
+#     mathPrintPlanes(allPlanes)
     if len(cell.fpoints) >= 3:
+#         mathPrintPoints(newVerts)
+#         print 'Show[r,s]'
         vol = convexH(newVerts).volume
         checkNext = not areEqual(vol,cell.volume)
-        print 'new vol' , vol, 'vs', cell.volume
-        mathPrintPoints(newVerts)
+#         print 'new vol' , vol, 'vs', cell.volume
     else:
         checkNext = True
-        print 'too few verts', len(cell.fpoints)
-    return checkNext,cell
+#         print 'too few verts', len(cell.fpoints)
+    return checkNext,bndsLabels,cell
 
 def getInterscPoints(planes):
     '''intersection points of planes, taken 3 at a time, where the planes
@@ -287,9 +306,11 @@ def getVorCell(LVs,cell,eps):
     igroup = 1
     checkNext = True
     gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
-    for i in range(ng):
+    boundsLabels = range(ng)
+    for i in boundsLabels:
         vec = braggVecs[i]['vec']; mag = norm(vec)
         cell.bounds[0].append(vec/mag); cell.bounds[1].append(mag)
+    
     #get any intersections between these planes
     cell.fpoints = getInterscPoints(cell.bounds)
     #print 'Smallest bragg vectors  boundaries', cell.bounds
@@ -297,8 +318,9 @@ def getVorCell(LVs,cell,eps):
         igroup += 1
         gstart,ng = magGroup(braggVecs,igroup,eps)
         nextGroup = range(gstart,gstart+ng)
+        
 #         checkNext,cell = newBoundsifInside(braggVecs,nextGroup,cell,eps)
-        checkNext,cell = newBoundsifNewVertInside(braggVecs,nextGroup,cell,eps)
+        checkNext,boundsLabels,cell = newBoundsifNewVertInside(braggVecs,boundsLabels,nextGroup,cell,eps)
 #     interscPoints = getInterscPoints(cell.bounds)
     #check to see if an
     #write plane equations for Mathematica:
@@ -430,7 +452,7 @@ class meshConstruct():
         BZ = cell() #instance
         BZ.volume = vol
         BZ = getVorCell(self.B,BZ,eps)
-        self.facetsMathPrint(BZ,'p',True,'Red') 
+#         self.facetsMathPrint(BZ,'p',True,'Red') 
         BZ = self.getIBZ(BZ,eps) #changes BZboundaries.         
         self.meshCubic(BZ,'fcc',eps)
 #         self.triFaces()
@@ -691,8 +713,8 @@ class meshConstruct():
         print 'Weights cuts', nCut,weightsCuts, 'Average per cut VC', weightsCuts/float(nCut)
         print 'Total volume in weights:', (nCut + nOnePlane + nInside), sum(BZ.weights)*MP.volume
         print 'BZ volume:', det(self.B)
-        self.facetsMeshMathPrint(BZ); print ';Show[p,q]\n'
-        self.facetsMeshVCMathPrint(BZ,MP)
+#         self.facetsMeshMathPrint(BZ); print ';Show[p,q]\n'
+#         self.facetsMeshVCMathPrint(BZ,MP)
         return
 
     def prepCutMP(self,MP,kpoint):
@@ -871,7 +893,7 @@ class meshConstruct():
             subprocess.call(['echo', '\nError: Voronoi cell volume {} is not equal to the parallelepiped volume {}'.format(BZ.volume,det(self.B))])
             sys.exit('Stop.')
         print '\n\nReducing Brillouin zone by symmetry'
-        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
+#         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
          
         inversion = False
         for iop in range(self.nops):
@@ -920,23 +942,22 @@ class meshConstruct():
                         BZ = self.cutCell(u1,0.0,BZ,eps)
 #                     print 'iop',iop
                     BZ.volume = convexH(BZ.fpoints).volume
-                    self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'  
-                    print 'Vols',det(self.B)/BZ.volume  
+#                     self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'  
+#                     print 'Vols',det(self.B)/BZ.volume  
             elif areEqual(det(op),-1.0):
                 inversion = True
         if inversion: #apply last of all
             if makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ):
                 #can cut along any plane
                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
-        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
+#         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         BZ.volume = convexH(BZ.fpoints).volume
         self.IBZvolCut = det(self.B)/BZ.volume
         getBoundsFacets(BZ)
         BZ.fpoints = flatVecsList(BZ.facets) 
         BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
-        sys.exit('stop')
-        return BZ        
+        return BZ      
 
     def isAllInside(self,ds,eps):
         '''AllInside means on opposite side of the plane vs its normal vector, 
@@ -1031,9 +1052,15 @@ class meshConstruct():
     
     def mathPrintPoints(self,points):
         '''As spheres'''
-        print 'Graphics3D[{',
+        print 's = Graphics3D[{',
         for ipoint,point in enumerate(points):
             print 'Sphere[{' + '{},{},{}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking),
             if ipoint < len(points ) -1:
                 print ',',
         print '}, Axes -> True, AxesLabel -> {"x", "y", "z"}]\n'
+
+    def mathPrintPlanes(self,planes):
+        print 'r=RegionPlot3D[',
+        for iplane, pvec in enumerate(planes):
+            print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)), #write plane equations for mathematica
+        print ']\n'
