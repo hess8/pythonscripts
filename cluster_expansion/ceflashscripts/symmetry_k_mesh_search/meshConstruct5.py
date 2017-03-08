@@ -37,7 +37,15 @@ from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, la
     orthdef, icy, isinteger, areEqual, isreal, isindependent, trimSmall, cosvecs,
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double,
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell,
-    reverseStructured,isInVoronoi,areParallel, addVec, getSGpointGroup)
+    reverseStructured,isInVoronoi,areParallel, among, addVec, getSGpointGroup)
+
+def mathPrintPoints(points):
+    print 'Graphics3D[{',
+    for ipoint,point in enumerate(points):
+        print 'Sphere[{' + '{},{},{}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(0.05),
+        if ipoint < len(points ) -1:
+            print ',',
+    print '}, Axes -> True, AxesLabel -> {"x", "y", "z"}]\n'
 
 def threePlaneIntersect(rRows):  
     '''This routine is for three planes that will intersect at only one point, 
@@ -125,17 +133,87 @@ def magGroup(arr, igroup,eps):
                 return newMags[ngroups-2],newMags[ngroups-1]-newMags[ngroups-2]
     return 0,len(arr)   
 
-def newBoundsifInside(braggVecs,grp,cell,eps):
-    newPlanes = False
-    newboundaries = deepcopy(cell.bounds)
+# def newBoundsifInside(braggVecs,grp,cell,eps):
+#     newPlanes = False
+#     newboundaries = deepcopy(cell.bounds)
+#     for ig  in grp:
+#         gvec = braggVecs[ig]['vec']
+#         if isInside(gvec,cell.bounds,eps):
+#             gnorm = norm(gvec)
+#             newboundaries[0].append(array(gvec/gnorm)); newboundaries[1].append(gnorm)
+#             newPlanes = True         
+#     cell.bounds = newboundaries
+#     return newPlanes,cell   
+
+def newBoundsifNewVertInside(braggVecs,grp,cell,eps):
+    '''Find intersections planes:  newBraggs+current taken 2 at a time with e
+    each newBragg, excluding duplicates in the triplet. 
+    If any of these intersections are inside the current boundaries, then they 
+    become new vertices, and the planes are added to boundaries. 
+    
+    If the new volume is the same as det(B), then we are done
+    '''
+#     newIntersect = []
+    keepLabels = []
+    checkNext = True
+    nCurr = len(cell.bounds[0])
+    bndsLabels = range(nCurr)
+    allPlanes = [cell.bounds[0][i]*cell.bounds[1][i] for i in range(len(cell.bounds[0]))]
+    allVerts = deepcopy(cell.fpoints)
     for ig  in grp:
-        gvec = braggVecs[ig]['vec']
-        if isInside(gvec,cell.bounds,eps):
-            gnorm = norm(gvec)
-            newboundaries[0].append(array(gvec/gnorm)); newboundaries[1].append(gnorm)
-            newPlanes = True         
-    cell.bounds = newboundaries
-    return newPlanes,cell   
+        bndsLabels.append(ig)
+    pairs = list(combinations(bndsLabels,2))
+    for ig in grp:
+        for pair in pairs:
+            planes3 = [braggVecs[ig]['vec']]
+            if not (ig in pair or ig in keepLabels):
+                planes3.append(braggVecs[pair[0]]['vec'])
+                planes3.append(braggVecs[pair[1]]['vec'])
+                intersPt = threePlaneIntersect(planes3)
+                if not intersPt is None and not isOutside(intersPt,cell.bounds,eps)\
+                    and not among(intersPt,allVerts):
+                        addVec(intersPt,allVerts)
+                        addVec(planes3[0],allPlanes)
+                        keepLabels.append(ig)
+                        if pair[0]>=nCurr: 
+                            keepLabels.append(pair[0])
+                            addVec(planes3[1],allPlanes)
+                        if pair[1]>=nCurr: 
+                            keepLabels.append(pair[1])
+                            addVec(planes3[2],allPlanes)  
+                        break
+    #keep only the vertices that can be reached without crossing any plane
+    newVerts = []
+    for vert in allVerts:
+        for plane in allPlanes:
+            if dot(vert,plane)>dot(plane,plane)+eps:
+                break
+        else: 
+            newVerts.append(vert)            
+    #remove planes that don't host a vertex.
+    newPlanes = []
+    tryPlanes = deepcopy(allPlanes)
+    for vert in newVerts:
+        for ip,plane in enumerate(tryPlanes):
+            if areEqual(dot(vert,plane),dot(plane,plane)):
+                addVec(plane,newPlanes)
+                tryPlanes.pop(ip)    
+                break
+    cell.bounds = [[],[]]
+    for plane in newPlanes:
+        normPlane = norm(plane)
+        cell.bounds[0].append(plane/normPlane)
+        cell.bounds[1].append(normPlane)
+    cell.fpoints = newVerts
+    if len(cell.fpoints) >= 3:
+        vol = convexH(newVerts).volume
+        checkNext = not areEqual(vol,cell.volume)
+        print 'new vol' , vol, 'vs', cell.volume
+        mathPrintPoints(newVerts)
+    else:
+        checkNext = True
+        print 'too few verts', len(cell.fpoints)
+    return checkNext,cell
 
 def getInterscPoints(planes):
     '''intersection points of planes, taken 3 at a time, where the planes
@@ -154,7 +232,7 @@ def getInterscPoints(planes):
     interscPoints = [point for (mag,point) in sorted(zip(interscPmags,interscPoints),key = lambda x: x[0])] #sorted by distance from origin 
     return interscPoints
 
-def getFacetsPoints(interscPoints,cell,eps):
+def getFacetsPoints(cell,eps):
     cell.facets = [[]]*len(cell.bounds[0])
 #     facetsPoints = []
 #     for point in interscPoints:
@@ -164,7 +242,7 @@ def getFacetsPoints(interscPoints,cell,eps):
     for iplane, uvec in enumerate(cell.bounds[0]):
         pvec = uvec*cell.bounds[1][iplane]
         facetvecs = []
-        for i, vec in  enumerate(interscPoints):
+        for i, vec in  enumerate(cell.fpoints):
             if onPlane(vec,pvec,eps) and not isOutside(vec,cell.bounds,eps):
                 facetvecs = addVec(vec,facetvecs)          
         cell.facets[iplane] = orderAngle(facetvecs,eps)
@@ -212,13 +290,17 @@ def getVorCell(LVs,cell,eps):
     for i in range(ng):
         vec = braggVecs[i]['vec']; mag = norm(vec)
         cell.bounds[0].append(vec/mag); cell.bounds[1].append(mag)
+    #get any intersections between these planes
+    cell.fpoints = getInterscPoints(cell.bounds)
     #print 'Smallest bragg vectors  boundaries', cell.bounds
     while checkNext:
         igroup += 1
         gstart,ng = magGroup(braggVecs,igroup,eps)
         nextGroup = range(gstart,gstart+ng)
-        checkNext,cell = newBoundsifInside(braggVecs,nextGroup,cell,eps)
-    interscPoints = getInterscPoints(cell.bounds)
+#         checkNext,cell = newBoundsifInside(braggVecs,nextGroup,cell,eps)
+        checkNext,cell = newBoundsifNewVertInside(braggVecs,nextGroup,cell,eps)
+#     interscPoints = getInterscPoints(cell.bounds)
+    #check to see if an
     #write plane equations for Mathematica:
 #         for iplane, uvec in enumerate(cell.bounds[0]):
 #             pvec = uvec*cell.bounds[1][iplane]
@@ -226,8 +308,8 @@ def getVorCell(LVs,cell,eps):
     #print 'intersections'
 #         for i in range(self.nIntersc):
         #print i, interscPoints[i]['mag'], interscPoints[i]['vec']
-    cell = getFacetsPoints(interscPoints,cell,eps)
-    cell.fpoints = flatVecsList(cell.facets) 
+    cell = getFacetsPoints(cell,eps)
+    cell.fpoints = flatVecsList(cell.facets)
     cell.center = sum(cell.fpoints)/len(cell.fpoints)
     cell.volume = convexH(cell.fpoints).volume
     return cell
@@ -346,6 +428,7 @@ class meshConstruct():
         self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
         eps = self.ravg/1000
         BZ = cell() #instance
+        BZ.volume = vol
         BZ = getVorCell(self.B,BZ,eps)
         self.facetsMathPrint(BZ,'p',True,'Red') 
         BZ = self.getIBZ(BZ,eps) #changes BZboundaries.         

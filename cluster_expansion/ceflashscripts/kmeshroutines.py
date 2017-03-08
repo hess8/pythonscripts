@@ -202,11 +202,17 @@ def areParallel(v1,v2):
 
 def addVec(vec,list):
     '''adds a vector to a list of vectors if it's not in the list '''
+    if among(vec,list):
+        return list
+    else:
+        list.append(vec)
+    return list
+
+def among(vec,list):
     for lvec in list:
         if allclose(vec,lvec):
-            return list
-    list.append(vec)
-    return list
+            return True
+    return False    
 
 def isreal(x):
     eps = 1.0e-6
