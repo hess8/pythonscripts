@@ -145,6 +145,8 @@ def plane3pts(points,eps):
 #         print'Two of these are almost identical (plane3pts)',r0,r1,r2
 #         'Pause'
     u = vec/nv
+    if dot(u,r0) < 0-eps:
+        u = -u
 #     if norm(r0)>5*eps:
 #         dotur = dot(u,r0)
 #     else:
@@ -655,7 +657,9 @@ class meshConstruct():
                 projs.append(dot(cubicLVs[:,i],point)/aKcubConv**2)
             print 'projs',i,projs
             intMaxs.append(int(ceil(max(projs)))+1)
-            intMins.append(int(floor(min(projs))))       
+            intMins.append(int(floor(min(projs)))-1)
+        print 'Maxes',intMaxs
+        print 'Mins',intMins       
         #Create the cubic mesh inside the irreducible BZ
         BZ.mesh = []
         BZ.weights = []
@@ -678,10 +682,9 @@ class meshConstruct():
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
-                    print 'lvec',lvec, [i,j,k]
+#                     print 'lvec',lvec, [i,j,k]
                     for site in sites:
                         ik+=1
-                        
                         kpoint = lvec + site
                         ds = self.dToPlanes(kpoint,BZ.expBounds)
                         if self.isAllInside(ds,eps):
@@ -714,13 +717,12 @@ class meshConstruct():
                                     cutMP.volume = convexH(cutMP.fpoints).volume
                             if cutMP.volume > 0.0:
                                 BZ.mesh.append(kpoint)
-#                                 print 'cutMP.volume',cutMP.volume
+#                                 print 'kpoint, vol',kpoint, cutMP.volume*8.0
                                 weight = self.IBZvolCut*cutMP.volume/MP.volume; BZ.weights.append(weight)
                                 weightsCuts += weight
                                 nCut += 1
-                                #####MP facet printing loop line
-                                
-#                                 showCommand = self.cutMPCellMathPrint(BZ,cutMP,kpoint,ik,showCommand)
+                                #####MP facet printing loop line                                
+                                showCommand = self.cutMPCellMathPrint(BZ,cutMP,kpoint,ik,showCommand)
                                 #####end MP facet printing loop entry
         if showCommand[-1] == ',': showCommand = showCommand[:-1]
         showCommand += ']' 
@@ -1038,11 +1040,11 @@ class meshConstruct():
         print 'q=Graphics3D[{',
         cell.mesh = list(trimSmall(array(cell.mesh)))
         for ipoint,point in enumerate(cell.mesh):
-            print 'Sphere[{' + '{},{},{}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking),
+            print 'Opacity[0.7],Sphere[{' + '{},{},{}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking),
             if ipoint < len(cell.mesh) -1:
                 print ',',
         print '}];',
-    
+   
     def facetsMeshVCMathPrint(self,BZ,MP):
         '''Put a mesh point VC at each mesh point'''
         self.facetsMathPrint(BZ,'s','True','Red'); #draw supecell voronoi cell
