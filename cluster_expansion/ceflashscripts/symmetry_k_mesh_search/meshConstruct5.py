@@ -188,6 +188,7 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     If the new volume is the same as det(B), then we are done
     '''
 #     newIntersect = []
+    print'group',grp
     keepLabels = []
     checkNext = True
     nCurr = len(cell.bounds[0])
@@ -246,8 +247,9 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     if len(cell.fpoints) >= 3:
 #         mathPrintPoints(newVerts)
 #         print 'Show[r,s]'
-        vol = convexH(newVerts).volume
-        checkNext = not areEqual(vol,cell.volume,eps)
+        print 'new Vol vs',convexH(newVerts).volume,cell.volume
+        checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps**3)
+        print checkNext
     else:
         checkNext = True
     return checkNext,bndsLabels,cell
@@ -617,14 +619,14 @@ class meshConstruct():
             primLVs = [array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
                         array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
                         array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]
-            self.rpacking = sqrt(3)/4*aKcubConv
-            pf = 2*4/3.0*pi*(sqrt(3)/4)**3 #0.68
+            self.rpacking = sqrt(3)/4.0*aKcubConv
+            pf = 2*4/3.0*pi*(sqrt(3)/4.0)**3 #0.68
         elif type == 'cub':
             volKcubConv = det(self.B)/self.nTarget
             aKcubConv = volKcubConv**(1/3.0)
             sites = [array([0, 0 , 0])]
             primLVs = cubicLVs*aKcubConv
-            self.rpacking = aKcubConv/2
+            self.rpacking = aKcubConv/2.0
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubich')
