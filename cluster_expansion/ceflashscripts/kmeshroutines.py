@@ -194,7 +194,7 @@ def isinteger(x):
     return areEqual(abs(rint(x)-x), 0)
 
 def areEqual(x,y):
-    eps = 5.0e-5
+    eps = 5.0e-4
     return abs(x-y)<eps
 
 def areParallel(v1,v2):
@@ -210,7 +210,7 @@ def addVec(vec,list):
 
 def among(vec,list):
     for lvec in list:
-        if allclose(vec,lvec):
+        if allclose(vec,lvec,rtol=1e-03):
             return True
     return False    
 

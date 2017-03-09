@@ -40,9 +40,9 @@ def otherPrep():
 #filename='training_set_structures.dat'
 #filename='f11000.dat'
 filename='training_set_structures2.dat'
-mainDir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/'
+mainDir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
 #finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
-finalDir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/AFLOWDATAn/'
+finalDir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/'
 if not os.path.isdir(finalDir):
     os.system('mkdir %s' % finalDir)
 atomic = 'Cu:Pt'

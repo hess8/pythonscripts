@@ -3,7 +3,7 @@
     
 import sys,os
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/AlIr/'
-maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 print dirs
