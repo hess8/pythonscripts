@@ -530,24 +530,24 @@ class meshConstruct():
         
         a = 1.0
         cubicLVs = identity(3)
-        if type == 'fcc':
-            sites = [array([0, 0 , 0]), array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])]
-            primLVs = array([[0,a/2,a/2], [a/2,0,a/2], [a/2,a/2,0]])
-            self.rpacking = 1/2.0/sqrt(2)
-            pf = 4*4/3.0*pi*self.rpacking**3  #0.74
-#             fccFacets = 
-        elif type == 'bcc':
-            sites = [array([0, 0 , 0]), array([a/2,a/2,a/2])]
-            primLVs = array([[-a/2,a/2,a/2], [a/2,-a/2,a/2], [a/2,a/2,-a/2]])
-            self.rpacking = sqrt(3)/4
-            pf = 2*4/3.0*pi*self.rpacking**3 #0.68
-        elif type == 'cub':
-            sites = [array([0, 0 , 0])]
-            primLVs = cubicLVs
-            self.rpacking = 0.5
-            pf = 4/3.0*pi*self.rpacking**3 #0.52
-        else:
-            sys.exit('stop. Type error in meshCubich')
+#         if type == 'fcc':
+#             sites = [array([0, 0 , 0]), array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])]
+#             primLVs = array([[0,a/2,a/2], [a/2,0,a/2], [a/2,a/2,0]])
+#             self.rpacking = 1/2.0/sqrt(2)
+#             pf = 4*4/3.0*pi*self.rpacking**3  #0.74
+# #             fccFacets = 
+#         elif type == 'bcc':
+#             sites = [array([0, 0 , 0]), array([a/2,a/2,a/2])]
+#             primLVs = array([[-a/2,a/2,a/2], [a/2,-a/2,a/2], [a/2,a/2,-a/2]])
+#             self.rpacking = sqrt(3)/4
+#             pf = 2*4/3.0*pi*self.rpacking**3 #0.68
+#         elif type == 'cub':
+#             sites = [array([0, 0 , 0])]
+#             primLVs = cubicLVs
+#             self.rpacking = 0.5
+#             pf = 4/3.0*pi*self.rpacking**3 #0.52
+#         else:
+#             sys.exit('stop. Type error in meshCubich')
         #test facet points for orthogonality
         rs = []
         pairs = []
@@ -597,13 +597,39 @@ class meshConstruct():
             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
         else:
             print 'no orthogonal point vectors pairs found.'
-        #scale
-        volKcubConv = det(self.B)/self.nTarget*len(sites)
-        aKcubConv = volKcubConv**(1/3.0)
-        primLVs = primLVs * aKcubConv
-        cubicLVs = cubicLVs * aKcubConv
-        sites = [site * aKcubConv for site in sites]
-        self.rpacking = self.rpacking*aKcubConv
+        if type == 'fcc':
+            volKcubConv = det(self.B)/self.nTarget*4
+            aKcubConv = volKcubConv**(1/3.0)
+            cubicLVs = cubicLVs * aKcubConv
+            sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
+                     1/2.0*(cubicLVs[:,0]+cubicLVs[:,2]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1])]
+            primLVs = sites[1:]
+            self.rpacking = 1/2.0/sqrt(2)*aKcubConv
+            pf = 4*4/3.0*pi*(1/2.0/sqrt(2))**3  #0.74
+#             fccFacets = 
+        elif type == 'bcc':
+            volKcubConv = det(self.B)/self.nTarget*2
+            aKcubConv = volKcubConv**(1/3.0)
+            cubicLVs = cubicLVs * aKcubConv
+            sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
+            primLVs = [array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
+                        array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
+                        array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]
+            self.rpacking = sqrt(3)/4*aKcubConv
+            pf = 2*4/3.0*pi*(sqrt(3)/4)**3 #0.68
+        elif type == 'cub':
+            volKcubConv = det(self.B)/self.nTarget
+            aKcubConv = volKcubConv**(1/3.0)
+            sites = [array([0, 0 , 0])]
+            primLVs = cubicLVs*aKcubConv
+            self.rpacking = aKcubConv/2
+            pf = 4/3.0*pi*(1/2.0)**3 #0.52
+        else:
+            sys.exit('stop. Type error in meshCubich')
+#         primLVs = primLVs * aKcubConv
+#         cubicLVs = cubicLVs * aKcubConv
+#         sites = [site * aKcubConv for site in sites]
+#         self.rpacking = self.rpacking*aKcubConv
         self.Vsphere = 4/3.0*pi*self.rpacking**3
         print 'rpacking',self.rpacking
         BZ = getBoundsFacets(BZ,eps,self.rpacking) #adds expanded cell
