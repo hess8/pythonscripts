@@ -324,7 +324,7 @@ def getVorCell(LVs,cell,eps):
     '''Boundaries and vertices of Voronoi cell'''
     braggVecs = getBraggVecs(LVs)
     igroup = 1
-#     mathPrintPoints(braggVecs[:]['vec'])
+    mathPrintPoints(braggVecs[:]['vec'])
     checkNext = True
     gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
     boundsLabels = range(ng)
@@ -363,10 +363,12 @@ def getBraggVecs(LVs):
         for j in range(-2,3):
             for k in range(-2,3):
                 if not (i==0 and j==0 and k==0):
-                    vec = trimSmall(0.5*dot(LVs,array([i,j,k])))
+                    vec = trimSmall(0.5*(i*LVs[0] + j*LVs[1] + k*LVs[2]))
+#                     vec = trimSmall(0.5*dot(LVs,array([i,j,k])))
                     braggVecs[ipoint]['vec'] = vec
                     braggVecs[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
                     braggVecs[ipoint]['mag'] = norm(vec)
+                    print 'brVec',ipoint,[i,j,k],norm(vec)
                     ipoint+=1
     braggVecs.sort(order = 'mag')
     return braggVecs
@@ -699,16 +701,16 @@ class meshConstruct():
                         ik+=1
                         kpoint = lvec + site
                         ds = self.dToPlanes(kpoint,BZ.expBounds)
-                        print 'kpoint',i,k,j,kpoint
-                        print 'ds',ds;print
+#                         print 'kpoint',i,k,j,kpoint
+#                         print 'ds',ds;print
                         if self.isAllInside(ds,eps):
-                            print 'inside'
+#                             print 'inside'
                             BZ.mesh.append(kpoint)
                             BZ.weights.append(self.IBZvolCut)
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif self.isInsideExpanded(ds,eps):
-                            print 'inborder'
+#                             print 'inborder'
                             #change to d's from real cell, the borders of the BZ
                             dsBZ = [d + sqrt(2)*self.rpacking for d in ds]
 #                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
