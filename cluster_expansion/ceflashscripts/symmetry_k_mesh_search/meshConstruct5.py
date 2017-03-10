@@ -248,8 +248,8 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
 #         mathPrintPoints(newVerts)
 #         print 'Show[r,s]'
         print 'new Vol vs',convexH(newVerts).volume,cell.volume
-        checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps**3)
-        print checkNext
+        checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps**2) #should be some power greater than 1
+#         print checkNext
     else:
         checkNext = True
     return checkNext,bndsLabels,cell
@@ -324,6 +324,7 @@ def getVorCell(LVs,cell,eps):
     '''Boundaries and vertices of Voronoi cell'''
     braggVecs = getBraggVecs(LVs)
     igroup = 1
+#     mathPrintPoints(braggVecs[:]['vec'])
     checkNext = True
     gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
     boundsLabels = range(ng)
@@ -477,8 +478,10 @@ class meshConstruct():
         BZ.volume = vol
         BZ = getVorCell(self.B,BZ,eps)
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
-        BZ = self.getIBZ(BZ,eps) #changes BZboundaries.         
-        self.meshCubic(BZ,'fcc',eps)
+        BZ = self.getIBZ(BZ,eps) #changes BZboundaries.  
+        self.meshCubic(BZ,'bcc',eps)       
+#         self.meshCubic(BZ,'fcc',eps)
+#         self.meshCubic(BZ,'cub',eps)
 #         self.triFaces()
 #         self.meshCubic('bcc')
 
@@ -603,6 +606,7 @@ class meshConstruct():
             print 'no orthogonal point vectors pairs found.'
         if type == 'fcc':
             volKcubConv = det(self.B)/self.nTarget*4
+#             volKcubConv = 1.0
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
@@ -624,8 +628,9 @@ class meshConstruct():
         elif type == 'cub':
             volKcubConv = det(self.B)/self.nTarget
             aKcubConv = volKcubConv**(1/3.0)
+            cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0])]
-            primLVs = cubicLVs*aKcubConv
+            primLVs = cubicLVs
             self.rpacking = aKcubConv/2.0
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
@@ -634,7 +639,7 @@ class meshConstruct():
 #         cubicLVs = cubicLVs * aKcubConv
 #         sites = [site * aKcubConv for site in sites]
 #         self.rpacking = self.rpacking*aKcubConv
-        self.Vsphere = 4/3.0*pi*self.rpacking**3
+        self.Vsphere = 4/3.0*pi*self.rpacking**3        
         print 'rpacking',self.rpacking
         BZ = getBoundsFacets(BZ,eps,self.rpacking) #adds expanded cell
         print 'bounds'
@@ -642,12 +647,17 @@ class meshConstruct():
             print i, BZ.bounds[0][i],BZ.bounds[1][i]
         #define mesh point voronoi cell
         MP = cell()
+        print 'MP VCell assigned volume',volKcubConv/len(sites)
         MP.volume = volKcubConv/len(sites)
 #         print 'vol1',MP.volume
         MP = getVorCell(primLVs,MP,eps)
         MP.volume = convexH(MP.fpoints).volume
-#         print 'vol2',MP.volume
+        print 'MP VCell volume',MP.volume
         print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
+        
+        print'testPrims'
+        self.test2MPVCs(BZ,MP,sites)
+        
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -689,12 +699,16 @@ class meshConstruct():
                         ik+=1
                         kpoint = lvec + site
                         ds = self.dToPlanes(kpoint,BZ.expBounds)
+                        print 'kpoint',i,k,j,kpoint
+                        print 'ds',ds;print
                         if self.isAllInside(ds,eps):
+                            print 'inside'
                             BZ.mesh.append(kpoint)
                             BZ.weights.append(self.IBZvolCut)
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif self.isInsideExpanded(ds,eps):
+                            print 'inborder'
                             #change to d's from real cell, the borders of the BZ
                             dsBZ = [d + sqrt(2)*self.rpacking for d in ds]
 #                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
@@ -738,7 +752,7 @@ class meshConstruct():
         print 'Total volume in weights:',  sum(BZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
         print 'BZ volume:', det(self.B),'\n'
         self.facetsMeshMathPrint(BZ); print ';Show[p,q]\n'
-#         self.facetsMeshVCMathPrint(BZ,MP)
+        self.facetsMeshVCMathPrint(BZ,MP)
         return
 
     def prepCutMP(self,MP,kpoint):
@@ -1072,6 +1086,28 @@ class meshConstruct():
         showCommand += ']'
         print ';',
         print showCommand 
+
+    def test2MPVCs(self,BZ,MP,sites):
+        '''Put a mesh point VC spaced by primitive lattice vectors'''
+        self.facetsMathPrint(BZ,'s','True','Red'); #draw supecell voronoi cell
+        showCommand = ';Show[s,'  
+        print ';',
+        for isite, site in enumerate(sites):
+            tCell = cell()
+            tCell.facets = [[]]*len(MP.facets)
+            for ifac,facet in enumerate(MP.facets):
+                facet = list(trimSmall(array(facet)))
+                temp = []
+                for facetPoint in facet:
+                    temp.append(facetPoint + site)
+                tCell.facets[ifac] = temp
+            self.facetsMathPrint(tCell,'v{}'.format(isite),False,'RandomColor[]');print ';',
+
+            showCommand += 'v{},'.format(isite)
+        showCommand += ']'
+        print ';',
+        print showCommand 
+
     
     def mathPrintPoints(self,points):
         '''As spheres'''
