@@ -44,7 +44,11 @@ meshc = meshConstruct5.meshConstruct() #instance
 
 testfile = 'POSCAR'
 # Nkppra = 10000#*10  
+<<<<<<< HEAD
 Nkppra = 660#*10 
+=======
+Nkppra = 600#*10 
+>>>>>>> 7eec720ecf90919679563f47304f3a02bc9fba38
 #reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])

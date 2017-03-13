@@ -565,7 +565,6 @@ class meshConstruct():
             print 'no orthogonal point vectors pairs found.'
         if type == 'fcc':
             volKcubConv = det(self.B)/self.nTarget*4
-#             volKcubConv = 1.0
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
@@ -582,19 +581,22 @@ class meshConstruct():
             primLVs = [array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
                         array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
                         array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]
-            self.rpacking = sqrt(3)/4.0*aKcubConv
-            pf = 2*4/3.0*pi*(sqrt(3)/4.0)**3 #0.68
+            self.rpacking = sqrt(3)/4*aKcubConv
+            pf = 2*4/3.0*pi*(sqrt(3)/4)**3 #0.68
         elif type == 'cub':
             volKcubConv = det(self.B)/self.nTarget
             aKcubConv = volKcubConv**(1/3.0)
-            cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0])]
-            primLVs = cubicLVs
-            self.rpacking = aKcubConv/2.0
+            primLVs = cubicLVs*aKcubConv
+            self.rpacking = aKcubConv/2
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
-            sys.exit('stop. Type error in meshCubic')
-        self.Vsphere = 4/3.0*pi*self.rpacking**3        
+            sys.exit('stop. Type error in meshCubich')
+#         primLVs = primLVs * aKcubConv
+#         cubicLVs = cubicLVs * aKcubConv
+#         sites = [site * aKcubConv for site in sites]
+#         self.rpacking = self.rpacking*aKcubConv
+        self.Vsphere = 4/3.0*pi*self.rpacking**3
         print 'rpacking',self.rpacking
         BZ = getBoundsFacets(BZ,eps,self.rpacking) #adds expanded cell
         MP = cell()
