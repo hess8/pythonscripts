@@ -142,16 +142,9 @@ def plane3pts(points,eps):
             r1 = points[3]
         vec = cross(r1-r0,r2-r0)
         nv = norm(vec)      
-#         print'Two of these are almost identical (plane3pts)',r0,r1,r2
-#         'Pause'
     u = vec/nv
     if dot(u,r0) < 0-eps:
         u = -u
-#     if norm(r0)>5*eps:
-#         dotur = dot(u,r0)
-#     else:
-#         dotur = dot(u,r1)
-#     if dotur < 0: u = -u;dotur= -dotur
     return u,dot(u,r0)
 
 def magGroup(arr, igroup,eps):
@@ -167,18 +160,6 @@ def magGroup(arr, igroup,eps):
                 return newMags[ngroups-2],newMags[ngroups-1]-newMags[ngroups-2]
     return 0,len(arr)   
 
-# def newBoundsifInside(braggVecs,grp,cell,eps):
-#     newPlanes = False
-#     newboundaries = deepcopy(cell.bounds)
-#     for ig  in grp:
-#         gvec = braggVecs[ig]['vec']
-#         if isInside(gvec,cell.bounds,eps):
-#             gnorm = norm(gvec)
-#             newboundaries[0].append(array(gvec/gnorm)); newboundaries[1].append(gnorm)
-#             newPlanes = True         
-#     cell.bounds = newboundaries
-#     return newPlanes,cell   
-
 def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     '''Find intersections planes:  newBraggs+current taken 2 at a time with e
     each newBragg, excluding duplicates in the triplet. 
@@ -187,8 +168,6 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     
     If the new volume is the same as det(B), then we are done
     '''
-#     newIntersect = []
-    print'group',grp
     keepLabels = []
     checkNext = True
     nCurr = len(cell.bounds[0])
@@ -221,7 +200,6 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     if len(allVerts)>0:
         #keep only the vertices that can be reached without crossing any plane
         newVerts = []
-        print
         for vert in allVerts:
             for plane in allPlanes:
                 if dot(vert,plane)>dot(plane,plane)+eps:
@@ -247,9 +225,8 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     if len(cell.fpoints) >= 3:
 #         mathPrintPoints(newVerts)
 #         print 'Show[r,s]'
-        print 'new Vol vs',convexH(newVerts).volume,cell.volume
+#         print 'new Vol vs',convexH(newVerts).volume,cell.volume
         checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps**2) #should be some power greater than 1
-#         print checkNext
     else:
         checkNext = True
     return checkNext,bndsLabels,cell
@@ -368,7 +345,6 @@ def getBraggVecs(LVs):
                     braggVecs[ipoint]['vec'] = vec
                     braggVecs[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
                     braggVecs[ipoint]['mag'] = norm(vec)
-                    print 'brVec',ipoint,[i,j,k],norm(vec)
                     ipoint+=1
     braggVecs.sort(order = 'mag')
     return braggVecs
@@ -481,9 +457,9 @@ class meshConstruct():
         BZ = getVorCell(self.B,BZ,eps)
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
         BZ = self.getIBZ(BZ,eps) #changes BZboundaries.  
-        self.meshCubic(BZ,'bcc',eps)       
+#         self.meshCubic(BZ,'bcc',eps)       
 #         self.meshCubic(BZ,'fcc',eps)
-#         self.meshCubic(BZ,'cub',eps)
+        self.meshCubic(BZ,'cub',eps)
 #         self.triFaces()
 #         self.meshCubic('bcc')
 
@@ -539,31 +515,12 @@ class meshConstruct():
         
         a = 1.0
         cubicLVs = identity(3)
-#         if type == 'fcc':
-#             sites = [array([0, 0 , 0]), array([0,a/2,a/2]), array([a/2,0,a/2]), array([a/2,a/2,0])]
-#             primLVs = array([[0,a/2,a/2], [a/2,0,a/2], [a/2,a/2,0]])
-#             self.rpacking = 1/2.0/sqrt(2)
-#             pf = 4*4/3.0*pi*self.rpacking**3  #0.74
-# #             fccFacets = 
-#         elif type == 'bcc':
-#             sites = [array([0, 0 , 0]), array([a/2,a/2,a/2])]
-#             primLVs = array([[-a/2,a/2,a/2], [a/2,-a/2,a/2], [a/2,a/2,-a/2]])
-#             self.rpacking = sqrt(3)/4
-#             pf = 2*4/3.0*pi*self.rpacking**3 #0.68
-#         elif type == 'cub':
-#             sites = [array([0, 0 , 0])]
-#             primLVs = cubicLVs
-#             self.rpacking = 0.5
-#             pf = 4/3.0*pi*self.rpacking**3 #0.52
-#         else:
-#             sys.exit('stop. Type error in meshCubich')
         #test facet points for orthogonality
         rs = []
         pairs = []
         triples = []
         points = BZ.fpoints
         for i in range(len(points)):
-            print 'fpoint',points[i]
             if areEqual(norm(points[i]),0.0,eps): break
             rs.append(norm(points[i]))
             for j in range(i,len(points)):
@@ -636,44 +593,29 @@ class meshConstruct():
             self.rpacking = aKcubConv/2.0
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
-            sys.exit('stop. Type error in meshCubich')
-#         primLVs = primLVs * aKcubConv
-#         cubicLVs = cubicLVs * aKcubConv
-#         sites = [site * aKcubConv for site in sites]
-#         self.rpacking = self.rpacking*aKcubConv
+            sys.exit('stop. Type error in meshCubic')
         self.Vsphere = 4/3.0*pi*self.rpacking**3        
         print 'rpacking',self.rpacking
         BZ = getBoundsFacets(BZ,eps,self.rpacking) #adds expanded cell
-        print 'bounds'
-        for i in range(len(BZ.bounds[0])):
-            print i, BZ.bounds[0][i],BZ.bounds[1][i]
-        #define mesh point voronoi cell
         MP = cell()
-        print 'MP VCell assigned volume',volKcubConv/len(sites)
         MP.volume = volKcubConv/len(sites)
-#         print 'vol1',MP.volume
         MP = getVorCell(primLVs,MP,eps)
         MP.volume = convexH(MP.fpoints).volume
-        print 'MP VCell volume',MP.volume
         print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
-        
-        print'testPrims'
-        self.test2MPVCs(BZ,MP,sites)
-        
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
         for i in range(3):
-            print 'cubic',i,cubicLVs[:,i]
+#             print 'cubic',i,cubicLVs[:,i]
             projs = []
             for point in points:
                 
                 projs.append(dot(cubicLVs[:,i],point)/aKcubConv**2)
-            print 'projs',i,projs
+#             print 'projs',i,projs
             intMaxs.append(int(ceil(max(projs)))+1)
             intMins.append(int(floor(min(projs)))-1)
-        print 'Maxes',intMaxs
-        print 'Mins',intMins       
+#         print 'Maxes',intMaxs
+#         print 'Mins',intMins       
         #Create the cubic mesh inside the irreducible BZ
         BZ.mesh = []
         BZ.weights = []
@@ -696,7 +638,6 @@ class meshConstruct():
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
-#                     print 'lvec',lvec, [i,j,k]
                     for site in sites:
                         ik+=1
                         kpoint = lvec + site
@@ -704,13 +645,11 @@ class meshConstruct():
 #                         print 'kpoint',i,k,j,kpoint
 #                         print 'ds',ds;print
                         if self.isAllInside(ds,eps):
-#                             print 'inside'
                             BZ.mesh.append(kpoint)
                             BZ.weights.append(self.IBZvolCut)
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif self.isInsideExpanded(ds,eps):
-#                             print 'inborder'
                             #change to d's from real cell, the borders of the BZ
                             dsBZ = [d + sqrt(2)*self.rpacking for d in ds]
 #                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
@@ -733,9 +672,10 @@ class meshConstruct():
                                     break
                             if len(cutMP.facets)>=4:
                                     cutMP.volume = convexH(cutMP.fpoints).volume
+                            
+                            Where do we decide if a point should be mapped onto another one?
                             if cutMP.volume > 0.0:
                                 BZ.mesh.append(kpoint)
-#                                 print 'kpoint, vol',kpoint, cutMP.volume*8.0
                                 weight = self.IBZvolCut*cutMP.volume/MP.volume; BZ.weights.append(weight)
                                 weightsCuts += weight
                                 nCut += 1
@@ -1001,6 +941,29 @@ class meshConstruct():
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
         return BZ      
 
+#     def boundStatus(self,ds,eps):
+#         '''allInside: the center is on the opposite side of the plane vs its normal vector, 
+#         and at least a distance of rpacking away from it.  
+#         
+#         mostInside: the center is inside or on the boundaries
+#         
+#         mostOutside: the center is outside some boundary''' 
+#         allInside = zeros(len(ds),dtype = bool)
+#         inExpanded = zeros(len(ds),dtype = bool)
+#         mostInside = zeros(len(ds),dtype = bool)
+#         for i,d in enumerate(ds):
+#             if self.method == 0:
+#                 scale = sqrt(2.0) #finding if a voronoi cell edge is inside.  Does this work for bcc? 
+#             elif self.method == 1: 
+#                 scale = sqrt(1.0)
+#             if d < - eps:
+#                 inExpanded[i] = True
+#                 if abs(d)> (2*scale)*self.rpacking - eps: #point volume is all inside the true cell boundary
+#                     allInside[i] = True  
+#                 elif                
+#                     abs(d)> (1*scale)*self.rpacking - eps:
+#                 
+
     def isAllInside(self,ds,eps):
         '''AllInside means on opposite side of the plane vs its normal vector, 
         and at least a distance of rpacking away from it'''
@@ -1088,28 +1051,6 @@ class meshConstruct():
         showCommand += ']'
         print ';',
         print showCommand 
-
-    def test2MPVCs(self,BZ,MP,sites):
-        '''Put a mesh point VC spaced by primitive lattice vectors'''
-        self.facetsMathPrint(BZ,'s','True','Red'); #draw supecell voronoi cell
-        showCommand = ';Show[s,'  
-        print ';',
-        for isite, site in enumerate(sites):
-            tCell = cell()
-            tCell.facets = [[]]*len(MP.facets)
-            for ifac,facet in enumerate(MP.facets):
-                facet = list(trimSmall(array(facet)))
-                temp = []
-                for facetPoint in facet:
-                    temp.append(facetPoint + site)
-                tCell.facets[ifac] = temp
-            self.facetsMathPrint(tCell,'v{}'.format(isite),False,'RandomColor[]');print ';',
-
-            showCommand += 'v{},'.format(isite)
-        showCommand += ']'
-        print ';',
-        print showCommand 
-
     
     def mathPrintPoints(self,points):
         '''As spheres'''
