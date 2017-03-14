@@ -46,7 +46,7 @@ meshc = meshConstruct5.meshConstruct() #instance
 testfile = 'POSCAR'
 # Nkppra = 10000#*10  
 
-Nkppra = 660#*10 
+Nkppra = 66#*10 
 
 #reallatt = zeros((3,3))
 os.chdir(maindir)

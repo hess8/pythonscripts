@@ -617,7 +617,7 @@ class meshConstruct():
                 projs.append(dot(cubicLVs[:,i],point)/aKcubConv**2)
 #             print 'projs',i,projs
             intMaxs.append(int(ceil(max(projs)))+1)
-            intMins.append(int(floor(min(projs)))-1)
+            intMins.append(int(floor(min(projs))))
 #         print 'Maxes',intMaxs
 #         print 'Mins',intMins       
         #Create the cubic mesh inside the irreducible BZ
@@ -650,21 +650,24 @@ class meshConstruct():
                         ik+=1
                         kpoint = lvec + site
                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
-#                         print 'kpoint',i,k,j,kpoint
+                        print 'kpoint',ik,i,k,j,kpoint
 #                         print 'ds',ds;print
-                        inExpanded,centerInside,allInside = self.boundStatus(kpoint,eps)
+                        inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
                         if allInside:
+                            print 'allInside'
                             IBZ.mesh.append(kpoint)
                             IBZ.weights.append(self.IBZvolCut)
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif inExpanded:
+                            print 'inExpanded'
+                            if centerInside: print 'centerInside'
                             #change to d's from real cell, the borders of the IBZ
-                            dsIBZ = [d + sqrt(2)*self.rpacking for d in ds]
+#                             dsIBZ = [d + sqrt(2)*self.rpacking for d in ds]
 #                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
 #                             print 'ds',dsIBZ                           
                             cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
-#                             print;print;print 'ik',ik
+#                             print;print 'ik',ik
 #                             if ik == 115:
 #                                 'pause'
                             for iplane, uvec in enumerate(IBZ.bounds[0]):
@@ -689,9 +692,8 @@ class meshConstruct():
                                 weightsCuts += weight
                                 nCut += 1
                                 #####MP facet printing loop line                                
-                                showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
+#                                 showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
                                 #####end MP facet printing loop entry
-
         if showCommand[-1] == ',': showCommand = showCommand[:-1]
         showCommand += ']' 
         print ';', 
@@ -700,11 +702,12 @@ class meshConstruct():
         #redistribute or reassign low-volume weights
         if  0 > len(kptsRed) <= nInside:
             weightRed = sum(wgtsRed)
-            print 'Weights redistributed or add', nRed,weightRed, 'Average per red l[pomt', weightRed/float(nRed)        
+            print 'Weights redistributed', nRed,weightRed, 'Average per point', weightRed/float(nRed)        
             IBZ = self.redistrib(kptsRed,wgtsRed,dsRed,IBZ)
         elif len(kptsRed)>0:
             print 'Too few inside kpoints to redistribute: keeping all border points'
             IBZ = self.addToKpts(kptsRed,wgtsRed,IBZ)
+            nCut += len(kptsRed)
         print 'Weights inside pts', nInside, weightsInside
         print 'Volume inside pts', weightsInside*MP.volume
         if nOnePlane>0: print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
@@ -1051,10 +1054,10 @@ class meshConstruct():
                 scale = sqrt(1.0)
             if d < -eps:
                 inExpanded[i] = True
-                if abs(d) > (2*scale)*self.rpacking - eps: #point volume is all inside the true cell boundary
+                if abs(d) > (2*scale)*self.rpacking + eps: #point volume is all inside the true cell boundary
                     allInside[i] = True 
                     centerInside[i] = True 
-                elif abs(d) >= (1*scale)*self.rpacking - eps:
+                elif abs(d) >= (1*scale)*self.rpacking + eps:
                     centerInside[i] = True
         return all(inExpanded), all(centerInside), all(allInside)
         
