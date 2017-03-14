@@ -618,8 +618,8 @@ class meshConstruct():
 #             print 'projs',i,projs
             intMaxs.append(int(ceil(max(projs)))+1)
             intMins.append(int(floor(min(projs))))
-#         print 'Maxes',intMaxs
-#         print 'Mins',intMins       
+        print 'Maxes',intMaxs
+        print 'Mins',intMins       
         #Create the cubic mesh inside the irreducible BZ
         IBZ.mesh = []
         IBZ.weights = []
