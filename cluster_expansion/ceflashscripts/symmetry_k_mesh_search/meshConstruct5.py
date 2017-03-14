@@ -301,7 +301,7 @@ def getVorCell(LVs,cell,eps):
     '''Boundaries and vertices of Voronoi cell'''
     braggVecs = getBraggVecs(LVs)
     igroup = 1
-    mathPrintPoints(braggVecs[:]['vec'])
+#     mathPrintPoints(braggVecs[:]['vec'])
     checkNext = True
     gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
     boundsLabels = range(ng)
@@ -454,12 +454,13 @@ class meshConstruct():
         BZ = cell() #instance
         BZ.volume = vol
         BZ = getVorCell(self.B,BZ,eps)
+        print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ  
-#         self.meshCubic(IBZ,'bcc',eps)       
+        self.meshCubic(IBZ,'bcc',eps)       
 #         self.meshCubic(IBZ,'fcc',eps)
-        self.meshCubic(IBZ,'cub',eps)
+#         self.meshCubic(IBZ,'cub',eps)
 #         self.triFaces()
 #         self.meshCubic('bcc')
 
@@ -586,6 +587,7 @@ class meshConstruct():
         elif type == 'cub':
             volKcubConv = det(self.B)/self.nTarget
             aKcubConv = volKcubConv**(1/3.0)
+            cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0])]
             primLVs = cubicLVs*aKcubConv
             self.rpacking = aKcubConv/2
@@ -650,13 +652,13 @@ class meshConstruct():
                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
 #                         print 'kpoint',i,k,j,kpoint
 #                         print 'ds',ds;print
-                        inExpanded, centerInside, allInside = boundStatus(kpoint,eps)
-                        if isAllInside(ds,eps):
+                        inExpanded,centerInside,allInside = self.boundStatus(kpoint,eps)
+                        if allInside:
                             IBZ.mesh.append(kpoint)
                             IBZ.weights.append(self.IBZvolCut)
                             weightsInside += self.IBZvolCut
                             nInside += 1
-                        elif inExpanded(ds,eps):
+                        elif inExpanded:
                             #change to d's from real cell, the borders of the IBZ
                             dsIBZ = [d + sqrt(2)*self.rpacking for d in ds]
 #                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
@@ -1043,17 +1045,18 @@ class meshConstruct():
         centerInside = zeros(len(ds),dtype = bool)
         allInside = zeros(len(ds),dtype = bool)
         for i,d in enumerate(ds):
-            if self.method == 0:
+            if self.method < 1:
                 scale = sqrt(2.0) #finding if a voronoi cell edge is inside.  Does this work for bcc? 
             elif self.method == 1: 
                 scale = sqrt(1.0)
             if d < -eps:
                 inExpanded[i] = True
                 if abs(d) > (2*scale)*self.rpacking - eps: #point volume is all inside the true cell boundary
-                    allInside[i] = True  
+                    allInside[i] = True 
+                    centerInside[i] = True 
                 elif abs(d) >= (1*scale)*self.rpacking - eps:
                     centerInside[i] = True
-        return inExpanded, centerInside, allInside
+        return all(inExpanded), all(centerInside), all(allInside)
         
         
 
