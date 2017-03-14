@@ -1103,8 +1103,8 @@ def intoVoronoi(position, cell, inverse=None):
             Optional. The *inverse* of the cell defining the periodicity. It is
             computed if not given on input.
     """
-    from numpy import dot, floor
-    from numpy.linalg import inv, norm
+#     from numpy import dot, floor
+#     from numpy.linalg import inv, norm
     if inverse is None:
         inverse = inv(cell)
     center = dot(inverse, position)

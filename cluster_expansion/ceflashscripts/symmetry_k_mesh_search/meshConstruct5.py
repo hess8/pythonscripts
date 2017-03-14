@@ -454,6 +454,7 @@ class meshConstruct():
         BZ = cell() #instance
         BZ.volume = vol
         BZ = getVorCell(self.B,BZ,eps)
+        self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ  
 #         self.meshCubic(IBZ,'bcc',eps)       
@@ -738,13 +739,24 @@ class meshConstruct():
                     IBZ.weights[neighLbls[iN]] += wgtsRed[ik] * neighWgts[iN]/totNsWeights
         return IBZ
     
-    def intoIBZ(self,kpoint,ds,IBZ):   
+    def intoIBZ(self,kpoint,ds,IBZ,eps):   
         '''For a point inside the Voronoi cell, use point symmetry to get into IBZ.
-        If a point is just outside the Voronoi cell, then translate it by -2*(plane vector) of the plane
+        If a point is just outside the Voronoi cell, then translate it by -2*(plane vector) of the bragg plane
         that it is closest to. Then use point symmetry to get into IBZ. This should turn out to be
-        equivalent to a reflection about the plane, or a reflection and translation along the plane.'''
+        equivalent to a reflection about the plane, or a reflection and translation along the plane.
         
-        if not isInside(kpoint,IBZ):
+        At least one bragg plane must be part of the IBZ bounds.  These do not pass through
+        the origin'''
+        
+        ds = array(ds)
+        if not isInside(kpoint,self.vorCell):
+            kpoint = intoVoronoi(kpoint,self.B)
+        for op in self.symops:
+            kpoint = dot(op,kpoint)
+            if isInside(kpoint,IBZ):
+                return kpoint
+        else:
+            sys.exit("Stop. intoIBZ: symm ops don't return a kpoint inside the IBZ")
               
 
                     
