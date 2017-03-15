@@ -647,14 +647,15 @@ class meshConstruct():
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
-                    
+#                     if i==j==k==-1:
+#                         'pause'
                     for iS, site in enumerate(sites):
                         ik+=1
                         kpoint = lvec + site
-                        print 'test',[i,j,k],iS,kpoint
+#                         print 'test',[i,j,k],iS,kpoint
                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
-                        if allclose(kpoint, array([-0.27809788 ,-0.27809788 ,-0.27809788])):
-                            'pause'
+#                         if allclose(kpoint, array([-0.27809788 ,-0.27809788 ,-0.27809788])):
+#                             'pause'
 #                         print 'kpoint',ik,i,k,j,kpoint
 #                         print 'ds',ds;print
                         inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
@@ -679,30 +680,31 @@ class meshConstruct():
                                 ro = IBZ.bounds[1][iplane]                                      
                                 cutMP = self.cutCell(uvec,ro,cutMP,eps) # we always keep the part that is "inside", opposite u
 #                                 self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
-                            if len(cutMP.facets) <4:
-                                cutMP.volume = 0.0
-                            if cutMP.volume == 0.0: #(outside IBZ. happens in oblique corners of expanded cell)
-                                    break
-                            if len(cutMP.facets)>=4:
-                                    cutMP.volume = convexH(cutMP.fpoints).volume
-                            weight = self.IBZvolCut*cutMP.volume/MP.volume
-                            if self.method > 0  and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume
-                                nDummy +=1
-                                nRed += 1
-                                kptsRed.append(kpoint)
-                                wgtsRed.append(weight)
-                                dsRed.append(ds)
-                                print 'kpoint',ik,iS,'cut',nDummy,i,k,j,kpoint
-                            else:   
-                                IBZ.mesh.append(kpoint)
-                                IBZ.weights.append(weight)   
-                                weightsCuts += weight
-                                nCut += 1
-                                nDummy +=1
-                                print 'kpoint',ik,iS,'ndum',nDummy,i,k,j,kpoint
-                                #####MP facet printing loop line                                
-#                                 showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
-                                #####end MP facet printing loop entry
+                                if len(cutMP.facets) <4:
+                                    cutMP.volume = 0.0
+                                if cutMP.volume == 0.0: #(outside IBZ. happens in oblique corners of expanded cell)
+                                        break
+                                if len(cutMP.facets)>=4:
+                                        cutMP.volume = convexH(cutMP.fpoints).volume
+                            if cutMP.volume > eps**3:
+                                weight = self.IBZvolCut*cutMP.volume/MP.volume
+                                if self.method > 0  and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume
+                                    nDummy +=1
+                                    nRed += 1
+                                    kptsRed.append(kpoint)
+                                    wgtsRed.append(weight)
+                                    dsRed.append(ds)
+                                    print 'kpoint',ik,iS,'cut',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
+                                else:   
+                                    IBZ.mesh.append(kpoint)
+                                    IBZ.weights.append(weight)   
+                                    weightsCuts += weight
+                                    nCut += 1
+                                    nDummy +=1
+                                    print 'kpoint',ik,iS,'ndum',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
+                                    #####MP facet printing loop line                                
+    #                                 showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
+                                    #####end MP facet printing loop entry
         if showCommand[-1] == ',': showCommand = showCommand[:-1]
         showCommand += ']' 
         print ';', 
@@ -717,6 +719,7 @@ class meshConstruct():
             print 'Too few inside kpoints to redistribute: keeping all border points'
             IBZ = self.addToKpts(kptsRed,wgtsRed,IBZ)
             nCut += len(kptsRed)
+            weightsCuts += sum(wgtsRed)
         print 'Weights inside pts', nInside, weightsInside
         print 'Volume inside pts', weightsInside*MP.volume
         if nOnePlane>0: print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
