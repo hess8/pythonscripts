@@ -582,8 +582,8 @@ class meshConstruct():
             primLVs = [array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
                         array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
                         array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]
-            self.rpacking = sqrt(3)/4*aKcubConv
-            pf = 2*4/3.0*pi*(sqrt(3)/4)**3 #0.68
+            self.rpacking = sqrt(3)/4.0*aKcubConv
+            pf = 2*4/3.0*pi*(sqrt(3)/4.0)**3 #0.68
         elif type == 'cub':
             volKcubConv = det(self.B)/self.nTarget
             aKcubConv = volKcubConv**(1/3.0)
@@ -610,7 +610,7 @@ class meshConstruct():
         intMaxs = [] #factors of aKcubConv
         intMins = []
         for i in range(3):
-#             print 'cubic',i,cubicLVs[:,i]
+            print 'cubic',i,cubicLVs[:,i]
             projs = []
             for point in points:
                 
