@@ -633,6 +633,7 @@ class meshConstruct():
         nOnePlane = 0
         weightsCuts = 0
         nCut = 0
+        nDummy = 0
 #         offset = array([0.5,0.5,0.5])*aKcubConv
 #         print 'bounds'
 #         for i in range(len(IBZ.bounds[0])):
@@ -646,22 +647,26 @@ class meshConstruct():
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
+                    
                     for site in sites:
                         ik+=1
                         kpoint = lvec + site
+                        print 'test',i,j,k,kpoint
                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
-                        print 'kpoint',ik,i,k,j,kpoint
+                        if allclose(kpoint, array([-0.27809788 ,-0.27809788 ,-0.27809788])):
+                            'pause'
+#                         print 'kpoint',ik,i,k,j,kpoint
 #                         print 'ds',ds;print
                         inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
                         if allInside:
-                            print 'allInside'
+#                             print 'allInside'
                             IBZ.mesh.append(kpoint)
                             IBZ.weights.append(self.IBZvolCut)
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif inExpanded:
-                            print 'inExpanded'
-                            if centerInside: print 'centerInside'
+#                             print 'inExpanded'
+#                             if centerInside: print 'centerInside'
                             #change to d's from real cell, the borders of the IBZ
 #                             dsIBZ = [d + sqrt(2)*self.rpacking for d in ds]
 #                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
@@ -682,15 +687,19 @@ class meshConstruct():
                                     cutMP.volume = convexH(cutMP.fpoints).volume
                             weight = self.IBZvolCut*cutMP.volume/MP.volume
                             if self.method > 0  and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume
+                                nDummy +=1
                                 nRed += 1
                                 kptsRed.append(kpoint)
                                 wgtsRed.append(weight)
                                 dsRed.append(ds)
+                                print 'kpoint',ik,'cut',nDummy,i,k,j,kpoint
                             else:   
                                 IBZ.mesh.append(kpoint)
                                 IBZ.weights.append(weight)   
                                 weightsCuts += weight
                                 nCut += 1
+                                nDummy +=1
+                                print 'kpoint',ik,'ndum',nDummy,i,k,j,kpoint
                                 #####MP facet printing loop line                                
 #                                 showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
                                 #####end MP facet printing loop entry
