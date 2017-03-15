@@ -648,10 +648,10 @@ class meshConstruct():
                 for k in range(intMins[2],intMaxs[2]):
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     
-                    for site in sites:
+                    for iS, site in enumerate(sites):
                         ik+=1
                         kpoint = lvec + site
-                        print 'test',i,j,k,kpoint
+                        print 'test',[i,j,k],iS,kpoint
                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
                         if allclose(kpoint, array([-0.27809788 ,-0.27809788 ,-0.27809788])):
                             'pause'
@@ -692,14 +692,14 @@ class meshConstruct():
                                 kptsRed.append(kpoint)
                                 wgtsRed.append(weight)
                                 dsRed.append(ds)
-                                print 'kpoint',ik,'cut',nDummy,i,k,j,kpoint
+                                print 'kpoint',ik,iS,'cut',nDummy,i,k,j,kpoint
                             else:   
                                 IBZ.mesh.append(kpoint)
                                 IBZ.weights.append(weight)   
                                 weightsCuts += weight
                                 nCut += 1
                                 nDummy +=1
-                                print 'kpoint',ik,'ndum',nDummy,i,k,j,kpoint
+                                print 'kpoint',ik,iS,'ndum',nDummy,i,k,j,kpoint
                                 #####MP facet printing loop line                                
 #                                 showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
                                 #####end MP facet printing loop entry
