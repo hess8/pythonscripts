@@ -307,14 +307,12 @@ def getVorCell(LVs,cell,eps):
     for i in boundsLabels:
         vec = braggVecs[i]['vec']; mag = norm(vec)
         cell.bounds[0].append(vec/mag); cell.bounds[1].append(mag)
-    
     #get any intersections between these planes
     cell.fpoints = getInterscPoints(cell.bounds,eps)
     while checkNext:
         igroup += 1
         gstart,ng = magGroup(braggVecs,igroup,eps)
         nextGroup = range(gstart,gstart+ng)
-        
 #         checkNext,cell = newBoundsifInside(braggVecs,nextGroup,cell,eps)
         checkNext,boundsLabels,cell = newBoundsifNewVertInside(braggVecs,boundsLabels,nextGroup,cell,eps)
 #     interscPoints = getInterscPoints(cell.bounds,eps)
@@ -338,8 +336,8 @@ def getBraggVecs(LVs):
     for i in range(-2,3):
         for j in range(-2,3):
             for k in range(-2,3):
-                if not (i==0 and j==0 and k==0):
-                    vec = trimSmall(0.5*(i*LVs[0] + j*LVs[1] + k*LVs[2]))
+                if not (i==j==k==0):
+                    vec = trimSmall(0.5*(i*LVs[:,0] + j*LVs[:,1] + k*LVs[:,2]))
 #                     vec = trimSmall(0.5*dot(LVs,array([i,j,k])))
                     braggVecs[ipoint]['vec'] = vec
                     braggVecs[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
@@ -366,8 +364,8 @@ def getBraggVecs(LVs):
 #             return False, None    
 
 def intsPlLinSeg(u,ro,r1,r2,eps):
-    '''Intersection between a plane through the origin and a line.
-    A plane through the origin is given by dot(r,u) = ro.  
+    '''Intersection between a plane and a line.
+    A plane is given by dot(r,u) = ro.  
     A line segment between r1 and r2 is given by vectors r = r1+t(r2-r1), for t in (0,1) 
     Combining these:  r1u = dot(r1,u).  r2u = dot(r2,u).  Then t = (ro-r1u)/(r2u-r1u).
     So if t is in (0,1), then we have an intersection'''
@@ -422,7 +420,7 @@ class meshConstruct():
         #1. nCoarse random points in the cell parallelpiped.  
 #         nCoarseMax = 200
         self.B = B
-        print '\nB',B
+        print '\nB (Recip lattice vectors as columns',B
         [self.symops,self.nops] = getGroup(self.B)
 #         [self.symops,self.nops] = getGroup(A)
 #         [self.symops,self.nops] = getGroup(transpose(A))
@@ -449,7 +447,7 @@ class meshConstruct():
         self.edgeFactor = 3.0
         self.rmin = 0.8*self.ravg #
         self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
-        eps = self.ravg/1000
+        eps = self.ravg/10000
         BZ = cell() #instance
         BZ.volume = vol
         BZ = getVorCell(self.B,BZ,eps)
@@ -569,7 +567,7 @@ class meshConstruct():
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
                      1/2.0*(cubicLVs[:,0]+cubicLVs[:,2]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1])]
-            primLVs = sites[1:]
+            primLVs = transpose(array(sites[1:]))
             self.rpacking = 1/2.0/sqrt(2)*aKcubConv
             pf = 4*4/3.0*pi*(1/2.0/sqrt(2))**3  #0.74
 #             fccFacets = 
@@ -578,9 +576,9 @@ class meshConstruct():
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
-            primLVs = [array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
+            primLVs = transpose(array([array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
                         array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
-                        array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]
+                        array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]))
             self.rpacking = sqrt(3)/4.0*aKcubConv
             pf = 2*4/3.0*pi*(sqrt(3)/4.0)**3 #0.68
         elif type == 'cub':
@@ -653,9 +651,9 @@ class meshConstruct():
                         kpoint = lvec + site
 #                         print 'test',[i,j,k],iS,kpoint
                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
-#                         if allclose(kpoint, array([-0.27809788 ,-0.27809788 ,-0.27809788])):
-#                             'pause'
+
 #                         print 'kpoint',ik,i,k,j,kpoint
+
 #                         print 'ds',ds;print
                         inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
                         if allInside:
@@ -678,13 +676,13 @@ class meshConstruct():
                             for iplane, uvec in enumerate(IBZ.bounds[0]):
                                 ro = IBZ.bounds[1][iplane]                                      
                                 cutMP = self.cutCell(uvec,ro,cutMP,eps) # we always keep the part that is "inside", opposite u
-#                                 self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
+                                self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
                                 if len(cutMP.facets) <4:
                                     cutMP.volume = 0.0
                                 if cutMP.volume == 0.0: #(outside IBZ. happens in oblique corners of expanded cell)
                                         break
-                                if len(cutMP.facets)>=4:
-                                        cutMP.volume = convexH(cutMP.fpoints).volume
+                            if len(cutMP.facets)>=4:
+                                cutMP.volume = convexH(cutMP.fpoints).volume
                             if cutMP.volume > eps**3:
                                 weight = self.IBZvolCut*cutMP.volume/MP.volume
                                 if self.method > 0  and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume
@@ -693,14 +691,14 @@ class meshConstruct():
                                     kptsRed.append(kpoint)
                                     wgtsRed.append(weight)
                                     dsRed.append(ds)
-                                    print 'kpoint',ik,iS,'cut',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
+#                                     print 'kpoint',ik,iS,'cut',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
                                 else:   
                                     IBZ.mesh.append(kpoint)
                                     IBZ.weights.append(weight)   
                                     weightsCuts += weight
                                     nCut += 1
                                     nDummy +=1
-                                    print 'kpoint',ik,iS,'ndum',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
+#                                     print 'kpoint',ik,iS,'ndum',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
                                     #####MP facet printing loop line                                
     #                                 showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
                                     #####end MP facet printing loop entry
@@ -857,7 +855,7 @@ class meshConstruct():
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the points of cut facets      
         ftemp = deepcopy(cell.facets)       
-        print 'u',u,ro
+#         print 'u',u,ro
 #         if allclose(u,array([-0.57735042,  0.21442248 ,-0.7878385]),atol=eps):
 #             'pause'
         for ifac, facet in enumerate(cell.facets):
@@ -940,7 +938,7 @@ class meshConstruct():
                 cell.volume = 0
             else:
                 cell.center = sum(cell.fpoints)/len(cell.fpoints)
-            self.facetsMathPrint(cell,'p',True,'Red');print ';Show[p]\n'              
+#             self.facetsMathPrint(cell,'p',True,'Red');print ';Show[p]\n'              
         return cell      
 
     def getIBZ(self,BZ,eps):
@@ -990,7 +988,7 @@ class meshConstruct():
         inversion = False
         for iop in range(self.nops):
             op = self.symops[:,:,iop] 
-            print 'symop',iop;print op ;print          
+#             print 'symop',iop;print op ;print          
             if abs(trace(op))< 3.0-eps: #skip E and inverse
                 evals,evecs = eig(op)
                 evecs = array([evec for evec in evecs])
@@ -1031,7 +1029,6 @@ class meshConstruct():
                         evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
                         u1 = self.choose111(evec,eps) 
                         BZ = self.cutCell(u1,0.0,BZ,eps)
-                    BZ.volume = convexH(BZ.fpoints).volume
 #                     self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'   
             elif areEqual(det(op),-1.0,eps):
                 inversion = True
