@@ -82,7 +82,6 @@ def threePlaneIntersect(rRows):
         [x1,y1,z1]
         [x2,y2,z3]] }  (ro^2,r1^2,r2^2) has a solution
     '''
-#     rRows = array(vecs3)
     rSq = array([dot(rRows[0],rRows[0]),dot(rRows[1],rRows[1]),dot(rRows[2],rRows[2])])
     try:
         invrRows = inv(rRows)
@@ -301,7 +300,7 @@ def getVorCell(LVs,cell,eps):
     '''Boundaries and vertices of Voronoi cell'''
     braggVecs = getBraggVecs(LVs)
     igroup = 1
-#     mathPrintPoints(braggVecs[:]['vec'])
+    mathPrintPoints(braggVecs[:]['vec'])
     checkNext = True
     gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
     boundsLabels = range(ng)
@@ -858,7 +857,7 @@ class meshConstruct():
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the points of cut facets      
         ftemp = deepcopy(cell.facets)       
-#         print 'u',u,ro
+        print 'u',u,ro
 #         if allclose(u,array([-0.57735042,  0.21442248 ,-0.7878385]),atol=eps):
 #             'pause'
         for ifac, facet in enumerate(cell.facets):
@@ -941,7 +940,7 @@ class meshConstruct():
                 cell.volume = 0
             else:
                 cell.center = sum(cell.fpoints)/len(cell.fpoints)
-#             self.facetsMathPrint(cell,'p',True,'Red');print ';Show[p]\n'              
+            self.facetsMathPrint(cell,'p',True,'Red');print ';Show[p]\n'              
         return cell      
 
     def getIBZ(self,BZ,eps):
@@ -990,7 +989,8 @@ class meshConstruct():
          
         inversion = False
         for iop in range(self.nops):
-            op = self.symops[:,:,iop]            
+            op = self.symops[:,:,iop] 
+            print 'symop',iop;print op ;print          
             if abs(trace(op))< 3.0-eps: #skip E and inverse
                 evals,evecs = eig(op)
                 evecs = array([evec for evec in evecs])
@@ -1043,10 +1043,10 @@ class meshConstruct():
         BZ.volume = convexH(BZ.fpoints).volume
         self.IBZvolCut = det(self.B)/BZ.volume
         getBoundsFacets(BZ,eps)
-        BZ.fpoints = flatVecsList(BZ.facets,eps) 
+        BZ.fpoints = flatVecsList(BZ.facets,eps)
         BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
-        return BZ      
+        return BZ
 
     def boundStatus(self,ds,eps):
         '''The d's are from the expanded boundary
@@ -1054,8 +1054,6 @@ class meshConstruct():
         and at least a distance of rpacking*scale away from it.  
         centerInside: the center is inside or on the boundaries
         inExpanded: the center is inside the expanded boundaries'''
-
-        
         inExpanded = zeros(len(ds),dtype = bool)
         centerInside = zeros(len(ds),dtype = bool)
         allInside = zeros(len(ds),dtype = bool)
