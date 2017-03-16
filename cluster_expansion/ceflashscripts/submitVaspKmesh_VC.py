@@ -60,10 +60,10 @@ def createdir(path,n,type):
 
 ################# script #######################
 
-maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
 type = 'cubic'
 testfile = 'POSCAR'
-vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/vaspinput/'
+vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
 # Nkppra = 10000
 
 reallatt = zeros((3,3))
