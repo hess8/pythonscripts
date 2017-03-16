@@ -224,7 +224,7 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     if len(cell.fpoints) >= 3:
 #         mathPrintPoints(newVerts)
 #         print 'Show[r,s]'
-        print 'new Vol vs',convexH(newVerts).volume,cell.volume
+#         print 'new Vol vs',convexH(newVerts).volume,cell.volume
         checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) #should be some power greater than 1
     else:
         checkNext = True
@@ -613,9 +613,7 @@ class meshConstruct():
             print 'cubic',i,cubicLVs[:,i]
             projs = []
             for point in points:
-                
                 projs.append(dot(cubicLVs[:,i],point)/aKcubConv**2)
-#             print 'projs',i,projs
             intMaxs.append(int(ceil(max(projs)))+1)
             intMins.append(int(floor(min(projs))))
         print 'Maxes',intMaxs
@@ -652,7 +650,7 @@ class meshConstruct():
                     for iS, site in enumerate(sites):
                         ik+=1
                         kpoint = lvec + site
-                        print 'ik',ik
+#                         print 'ik',ik
 #                         print 'test',[i,j,k],iS,kpoint
                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
 
@@ -712,10 +710,10 @@ class meshConstruct():
         print showCommand 
         #end MP facets printing
         #redistribute or reassign low-volume weights
-        if  0 > len(kptsRed) <= nInside:
+        if  len(kptsRed) <= len(IBZ.mesh) and len(kptsRed)>0:
             weightRed = sum(wgtsRed)
             print 'Weights redistributed', nRed,weightRed, 'Average per point', weightRed/float(nRed)        
-            IBZ = self.redistrib(kptsRed,wgtsRed,dsRed,IBZ)
+            IBZ = self.redistrib(kptsRed,wgtsRed,dsRed,IBZ,eps)
         elif len(kptsRed)>0:
             print 'Too few inside kpoints to redistribute: keeping all border points'
             IBZ = self.addToKpts(kptsRed,wgtsRed,IBZ)
@@ -731,29 +729,34 @@ class meshConstruct():
 #         self.facetsMeshVCMathPrint(IBZ,MP)
         return
     
-    def redistrib(self,kptsRed,wgtsRed,dsRed,IBZ):
+    def redistrib(self,kptsRed,wgtsRed,dsRed,IBZ,eps):
         ''' 0.5 approx  If the kpoint is outside, distribute the portion of its Vornoi cell weight that is inside to neighbors of equivalent points
             if point is outside of Voronoi cell (first BZ), then translate by G vector to get it inside.  Points inside the Voronoi cell but not in IBZ
             use point symmetries to get in the IBZ.   
          '''  
         for ik,kpoint in enumerate(kptsRed):
+            print;print 'kpoint',ik, kpoint
             dists = []
             neighWgts = []
-            neigh, neighLbls = self.getNeighbors(kpoint,dsRed[ik],IBZ)
+            ds = dsRed[ik]
+            if ik == 3:
+                'pause'
+            neighs, neighLbls = self.getNeighbors(kpoint,ds,IBZ,eps)         
+            print 'neighs',neighs,neighLbls
             totNsWeights = 0
             onTop = False 
             for iN, neigh in enumerate(neighs):
                 d = norm(kpoint-neigh)
-                if areEqual(d,0.0): #kpoint lies on top of a neighbor which gets all the weight
+                if areEqual(d,0.0,eps): #kpoint lies on top of a neighbor which gets all the weight
                     IBZ.weights[neighLbls[iN]] += wgtsRed[ik]
                     onTop = True
                     break
-                dist.append(d)
+                dists.append(d)
                 neighWgt = 1/d
                 neighWgts.append(neighWgt)
                 totNsWeights += neighWgt
             if not onTop:
-                for iN, neigh in enumerate(neighs): #weights are 1/d
+                for iN, neigh in enumerate(neighs): 
                     IBZ.weights[neighLbls[iN]] += wgtsRed[ik] * neighWgts[iN]/totNsWeights
         return IBZ
     
@@ -766,33 +769,38 @@ class meshConstruct():
         At least one bragg plane must be part of the IBZ bounds.  These do not pass through
         the origin'''
         
-        ds = array(ds)
-        if not isInside(kpoint,self.vorCell):
+#         ds = array(ds)
+        if not isInside(kpoint,self.vorCell.bounds,eps):
             kpoint = intoVoronoi(kpoint,self.B)
-        for op in self.symops:
+        for iop in range(self.nops):
+            op = self.symops[:,:,iop]
             kpoint = dot(op,kpoint)
-            if isInside(kpoint,IBZ):
+            if isInside(kpoint,IBZ.bounds,eps):
                 return kpoint
         else:
             sys.exit("Stop. intoIBZ: symm ops don't return a kpoint inside the IBZ")
               
 
                     
-    def getNeighbors(self,kpoint,ds,IBZ):
+    def getNeighbors(self,kpoint,ds,IBZ,eps):
         '''This is for a kpoint just outside the IBZ. 
         Search a sphere around the kpoint and collect neighbors.
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
         Return the closest three neighbors
         '''
         neighR = 1.5*self.rpacking
-        kpSymm = self.intoIBZ(kpoint,ds,IBZ)
+        kpSymm = self.intoIBZ(kpoint,ds,IBZ,eps)
         neighs,neighLbls = self.searchSpheres([kpoint,kpSymm],IBZ,neighR)
+        return neighs,neighLbls 
     
     def searchSpheres(self,klist,IBZ,R):
         neighs = []
         neighLbls = []
-        for ip,meshPt in IBZ.mesh:
+        for ip,meshPt in enumerate(IBZ.mesh):
+#             print 'ip',ip
             for kpoint in klist:
+#                 print 'kpoint',kpoint
+#                 print norm(meshPt-kpoint),R
                 if norm(meshPt-kpoint) <= R:
                     neighs.append(meshPt)
                     neighLbls.append(ip)
