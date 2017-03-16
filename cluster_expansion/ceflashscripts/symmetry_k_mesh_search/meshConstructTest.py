@@ -47,8 +47,8 @@ testfile = 'POSCAR'
 # Nkppra = 10000#*10  
 
 
-Nkppra = 12000
-
+Nkppra = 120
+meshtype = 'bcc'  #cub, fcc, bcc  
 
 #reallatt = zeros((3,3))
 os.chdir(maindir)
@@ -74,11 +74,6 @@ for dir in dirs:
 #        print 'reciprocal lattice vectors (rows)';print reciplatt
         totatoms = sum(natoms)
         targetNmesh = Nkppra/totatoms
-#RESTORE THIS        [meshvecs, Nmesh, targetNmesh, lattype, pfB, pf_orth, pf_orth2fcc, pf_maxpf, pf_pf2fcc, pfmax, meshtype, fcctype,cbest, status] = bestmeshIter(reciplatt,Nmesh)
- 
-# for trials where we want to vary pf for testing       
-#         meshesfile = open('meshesfile','w')
-#         meshesfile.write(dir+' ============\n')
         atype = 1
         aTypes = []
         for natom in natoms:
@@ -87,7 +82,7 @@ for dir in dirs:
             atype += 1
         aTypes = array(aTypes)
 
-        meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,path,method)
+        meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,path,method)
         sys.exit('stop')
 #         [meshvecs, Nmesh, lattype, pfB, pf, status] = meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,path,method)
 #        bestmeshIter_vary_N(reciplatt,Nmesh,path)

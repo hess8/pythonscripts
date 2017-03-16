@@ -224,8 +224,8 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     if len(cell.fpoints) >= 3:
 #         mathPrintPoints(newVerts)
 #         print 'Show[r,s]'
-#         print 'new Vol vs',convexH(newVerts).volume,cell.volume
-        checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps**2) #should be some power greater than 1
+        print 'new Vol vs',convexH(newVerts).volume,cell.volume
+        checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) #should be some power greater than 1
     else:
         checkNext = True
     return checkNext,bndsLabels,cell
@@ -300,7 +300,7 @@ def getVorCell(LVs,cell,eps):
     '''Boundaries and vertices of Voronoi cell'''
     braggVecs = getBraggVecs(LVs)
     igroup = 1
-    mathPrintPoints(braggVecs[:]['vec'])
+#     mathPrintPoints(braggVecs[:]['vec'])
     checkNext = True
     gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
     boundsLabels = range(ng)
@@ -311,10 +311,13 @@ def getVorCell(LVs,cell,eps):
     cell.fpoints = getInterscPoints(cell.bounds,eps)
     while checkNext:
         igroup += 1
+#         print 'igroup',igroup
         gstart,ng = magGroup(braggVecs,igroup,eps)
         nextGroup = range(gstart,gstart+ng)
 #         checkNext,cell = newBoundsifInside(braggVecs,nextGroup,cell,eps)
         checkNext,boundsLabels,cell = newBoundsifNewVertInside(braggVecs,boundsLabels,nextGroup,cell,eps)
+        if igroup > 10:
+            sys.exit('Stop. getVorCell igroup >10.  This seems to be an infinite while loop.  Try reducing eps ')
 #     interscPoints = getInterscPoints(cell.bounds,eps)
     #check to see if an
     #write plane equations for Mathematica:
@@ -416,7 +419,7 @@ class meshConstruct():
 #         cell.facets = [] #facet points for BZ Voronoi cell or IBZ
 #         self.MPfacets = [] #facet points for mesh point Voronoi cell
         
-    def meshSym(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,path,method):
+    def meshSym(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,method):
         #1. nCoarse random points in the cell parallelpiped.  
 #         nCoarseMax = 200
         self.B = B
@@ -447,15 +450,15 @@ class meshConstruct():
         self.edgeFactor = 3.0
         self.rmin = 0.8*self.ravg #
         self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
-        eps = self.ravg/10000
+        eps = self.ravg/2000
         BZ = cell() #instance
         BZ.volume = vol
         BZ = getVorCell(self.B,BZ,eps)
-        print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
+#         print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ  
-        self.meshCubic(IBZ,'bcc',eps)       
+        self.meshCubic(IBZ,meshtype,eps) #cub, fcc, bcc   
 #         self.meshCubic(IBZ,'fcc',eps)
 #         self.meshCubic(IBZ,'cub',eps)
 #         self.triFaces()
@@ -602,7 +605,7 @@ class meshConstruct():
         MP.volume = volKcubConv/len(sites)
         MP = getVorCell(primLVs,MP,eps)
         MP.volume = convexH(MP.fpoints).volume
-        print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
+#         print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -637,7 +640,7 @@ class meshConstruct():
 #             print IBZ.bounds[0][i],IBZ.bounds[1][i]               
         ik = 0 
         #begin MP facets printing
-        self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell
+#         self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell
         showCommand = 'Show[s,' 
         #end start of MP facets printing
         for i in range(intMins[0],intMaxs[0]):
@@ -649,6 +652,7 @@ class meshConstruct():
                     for iS, site in enumerate(sites):
                         ik+=1
                         kpoint = lvec + site
+                        print 'ik',ik
 #                         print 'test',[i,j,k],iS,kpoint
                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
 
@@ -676,7 +680,7 @@ class meshConstruct():
                             for iplane, uvec in enumerate(IBZ.bounds[0]):
                                 ro = IBZ.bounds[1][iplane]                                      
                                 cutMP = self.cutCell(uvec,ro,cutMP,eps) # we always keep the part that is "inside", opposite u
-                                self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
+#                                 self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
                                 if len(cutMP.facets) <4:
                                     cutMP.volume = 0.0
                                 if cutMP.volume == 0.0: #(outside IBZ. happens in oblique corners of expanded cell)
@@ -724,7 +728,7 @@ class meshConstruct():
         print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
         print 'BZ volume:', det(self.B),'\n'
 #         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
-        self.facetsMeshVCMathPrint(IBZ,MP)
+#         self.facetsMeshVCMathPrint(IBZ,MP)
         return
     
     def redistrib(self,kptsRed,wgtsRed,dsRed,IBZ):

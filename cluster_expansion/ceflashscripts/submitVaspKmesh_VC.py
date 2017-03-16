@@ -14,7 +14,7 @@ sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/s
 from kmeshroutines import nstrip, readposcar,create_poscar
 import meshConstruct5
 
-def getVCmesh(dir,targetNmesh):
+def getVCmesh(dir,targetNmesh,meshtype):
     lastDir = os.getcwd()
     method = 0  #0, for now.
             #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
@@ -32,7 +32,7 @@ def getVCmesh(dir,targetNmesh):
             aTypes.append(atype)
         atype += 1
     aTypes = array(aTypes)
-    meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,dir,method)
+    meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
     os.chdir(lastDir)
     
 def writejobfile(path,n,type):
@@ -94,10 +94,10 @@ for dir in dirs:
 #            subprocess.call(['sbatch', 'vaspjob'])
             
             # Now create new dirs with different characteristics
-            type = 'vc'    
+            type = 'bcc'    
             for n in range(1,11): #was 15:
                 newdir = createdir(currdir,n,type) 
-                getVCmesh(newdir,4*n**3) 
+                getVCmesh(newdir,4*n**3,type) 
         newdirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
         for newdir in newdirs:
             os.chdir(newdir)
