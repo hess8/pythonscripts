@@ -676,7 +676,7 @@ class meshConstruct():
                             for iplane, uvec in enumerate(IBZ.bounds[0]):
                                 ro = IBZ.bounds[1][iplane]                                      
                                 cutMP = self.cutCell(uvec,ro,cutMP,eps) # we always keep the part that is "inside", opposite u
-#                                 self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
+                                self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
                                 if len(cutMP.facets) <4:
                                     cutMP.volume = 0.0
                                 if cutMP.volume == 0.0: #(outside IBZ. happens in oblique corners of expanded cell)
