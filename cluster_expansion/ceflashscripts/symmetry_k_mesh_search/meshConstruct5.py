@@ -774,9 +774,9 @@ class meshConstruct():
             kpoint = intoVoronoi(kpoint,self.B)
         for iop in range(self.nops):
             op = self.symops[:,:,iop]
-            kpoint = dot(op,kpoint)
-            if isInside(kpoint,IBZ.bounds,eps):
-                return kpoint
+            kpoint2 = dot(op,kpoint)
+            if isInside(kpoint2,IBZ.bounds,eps):
+                return kpoint2
         else:
             sys.exit("Stop. intoIBZ: symm ops don't return a kpoint inside the IBZ")
               
