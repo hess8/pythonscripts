@@ -676,7 +676,7 @@ class meshConstruct():
                             for iplane, uvec in enumerate(IBZ.bounds[0]):
                                 ro = IBZ.bounds[1][iplane]                                      
                                 cutMP = self.cutCell(uvec,ro,cutMP,eps) # we always keep the part that is "inside", opposite u
-                                self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
+#                                 self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
                                 if len(cutMP.facets) <4:
                                     cutMP.volume = 0.0
                                 if cutMP.volume == 0.0: #(outside IBZ. happens in oblique corners of expanded cell)
@@ -723,7 +723,7 @@ class meshConstruct():
         print 'Weights in IBZ cuts', nCut,weightsCuts, 'Average per cut VC', weightsCuts/float(nCut)
         print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
         print 'BZ volume:', det(self.B),'\n'
-        self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
+#         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
         self.facetsMeshVCMathPrint(IBZ,MP)
         return
     
@@ -1061,10 +1061,10 @@ class meshConstruct():
                 scale = sqrt(1.0)
             if d < -eps:
                 inExpanded[i] = True
-                if abs(d) > (2*scale)*self.rpacking + eps: #point volume is all inside the true cell boundary
+                if abs(d) >= (2*scale)*self.rpacking - eps: #point volume is all inside the true cell boundary
                     allInside[i] = True 
                     centerInside[i] = True 
-                elif abs(d) >= (1*scale)*self.rpacking + eps:
+                elif abs(d) >= (1*scale)*self.rpacking - eps:
                     centerInside[i] = True
         return all(inExpanded), all(centerInside), all(allInside)
         
@@ -1120,8 +1120,28 @@ class meshConstruct():
         else:
             print ']',   
         return    
+    
+    def facetsMathToStr(self,strOut,cell,label,axes = False, color = 'Red'):
+        ''' Mathematica'''
+        strOut += '{}'.format(label)+' = Graphics3D[{'+'{}'.format(color)+', Thick,{'
+        for ifac, facet in enumerate(cell.facets):
+            facet = list(trimSmall(array(facet)))
+            strOut += 'Line[{'
+            for point in facet:
+                strOut += '{'+'{},{},{}'.format(point[0],point[1],point[2])+'},'
+            strOut += '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}' #back to first
+            strOut += '}]'
+            if ifac < len(cell.facets)-1:
+                strOut += ','
+        strOut += '}}'
+        if axes:
+            strOut += ',Axes -> True,AxesLabel -> {"x", "y", "z"}]'
+        else:
+            strOut += ']'  
+        return strOut
             
     def facetsMeshMathPrint(self,cell):
+        '''Writes spheres for Mathematica drawing'''
         self.facetsMathPrint(cell,'p',True,'Red'); 
         print ';'
         print 'q=Graphics3D[{',
@@ -1134,9 +1154,12 @@ class meshConstruct():
    
     def facetsMeshVCMathPrint(self,BZ,MP):
         '''Put a mesh point VC at each mesh point'''
+        mathOut = open('mathOut','w') #both prints and writes string to file 
+        strOut = ''
         self.facetsMathPrint(BZ,'s','True','Red'); #draw supecell voronoi cell
+        strOut = self.facetsMathToStr(strOut,BZ,'s','True','Red'); #draw supecell voronoi cell
         showCommand = ';Show[s,'  
-        print ';',
+        print ';',;strOut+=';'
         for ipoint,point in enumerate(BZ.mesh):
             tCell = cell()
             tCell.facets = [[]]*len(MP.facets)
@@ -1146,17 +1169,17 @@ class meshConstruct():
                 for facetPoint in facet:
                     temp.append(facetPoint + point)
                 tCell.facets[ifac] = temp
-#             self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,\
-#                                  'discreteColors[{}][[{}]]'.format(len(BZ.mesh),ipoint));print ';',
-            self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,'RandomColor[]');print ';',
-
+            self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,'RandomColor[]')
+            strOut = self.facetsMathToStr(strOut,tCell,'v{}'.format(ipoint),False,'RandomColor[]')
+            print ';',; strOut+=';'
             showCommand += 'v{}'.format(ipoint)
             if ipoint < len(BZ.mesh)-1:
                 showCommand += ','
-#                 print ',', 
         showCommand += ']'
-        print ';',
-        print showCommand 
+        print ';',;strOut+=';'
+        print showCommand ;strOut+=showCommand
+        mathOut.write(strOut)
+        mathOut.close()
     
     def mathPrintPoints(self,points):
         '''As spheres'''
@@ -1172,3 +1195,35 @@ class meshConstruct():
         for iplane, pvec in enumerate(planes):
             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)), #write plane equations for mathematica
         print ']\n'
+        
+        
+#     def facetsMeshVCMathWrite(self,BZ,MP):
+#         '''Put a mesh point VC at each mesh point'''
+#         mathOut = open('mathOuts',w)
+#         self.facetsMathPrint(BZ,'s','True','Red'); #draw supecell voronoi cell
+#         showCommand = ';Show[s,'  
+#         print ';',
+#         for ipoint,point in enumerate(BZ.mesh):
+#             tCell = cell()
+#             tCell.facets = [[]]*len(MP.facets)
+#             for ifac,facet in enumerate(MP.facets):
+#                 facet = list(trimSmall(array(facet)))
+#                 temp = []
+#                 for facetPoint in facet:
+#                     temp.append(facetPoint + point)
+#                 tCell.facets[ifac] = temp
+# #             self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,\
+# #                                  'discreteColors[{}][[{}]]'.format(len(BZ.mesh),ipoint));print ';',
+#             self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,'RandomColor[]');print ';',
+# 
+#             showCommand += 'v{}'.format(ipoint)
+#             if ipoint < len(BZ.mesh)-1:
+#                 showCommand += ','
+# #                 print ',', 
+#         showCommand += ']'
+#         print ';',
+#         print showCommand 
+        
+        
+        
+        
