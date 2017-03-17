@@ -299,6 +299,7 @@ def makesDups(op,cell,eps):
 def getVorCell(LVs,cell,eps):
     '''Boundaries and vertices of Voronoi cell'''
     braggVecs = getBraggVecs(LVs)
+    
     igroup = 1
 #     mathPrintPoints(braggVecs[:]['vec'])
     checkNext = True
@@ -342,11 +343,14 @@ def getBraggVecs(LVs):
                 if not (i==j==k==0):
                     vec = trimSmall(0.5*(i*LVs[:,0] + j*LVs[:,1] + k*LVs[:,2]))
 #                     vec = trimSmall(0.5*dot(LVs,array([i,j,k])))
+                    
                     braggVecs[ipoint]['vec'] = vec
                     braggVecs[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
                     braggVecs[ipoint]['mag'] = norm(vec)
                     ipoint+=1
     braggVecs.sort(order = 'mag')
+#     for vec in braggVecs['vec']:
+#         print 'bragg vector', vec
     return braggVecs
 
 # def intsPlLinSeg(u,ro,r1,r2,eps):
@@ -540,7 +544,7 @@ class meshConstruct():
         #Define basis vectors for cubic lattice:
         Lsum= [] #length of vectors in pair or triplet
         if len(triples)>0:
-            print 'At least one triplet of orthogonal point vectors found:',triples[0]
+            print 'At least one triplet of orthogonal vertex vectors found:',triples[0]
             if len(triples)>1: #find the one with most total vector length
                 sums = zeros(len(triples))
                 for it, triple in enumerate(triples):
@@ -551,7 +555,7 @@ class meshConstruct():
                 vec = triples[-1][i]
                 cubicLVs[:,i] = vec/norm(vec)
         elif len(pairs)>0:
-            print 'At least one pair of orthogonal point vectors found:', pairs[0]
+            print 'At least one pair of orthogonal vertex vectors found:', pairs[0]
             if len(pairs)>1:
                 sums = zeros(len(pairs))
                 for ip, pair in enumerate(pairs):
@@ -563,7 +567,7 @@ class meshConstruct():
                 cubicLVs[:,i] = vec/norm(vec)
             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
         else:
-            print 'no orthogonal point vectors pairs found.'
+            print 'no orthogonal vertex vectors pairs found.'
         if type == 'fcc':
             volKcubConv = det(self.B)/self.nTarget*4
             aKcubConv = volKcubConv**(1/3.0)
@@ -739,7 +743,7 @@ class meshConstruct():
             dists = []
             neighWgts = []
             ds = dsRed[ik]
-            if ik == 3:
+            if ik == 4:
                 'pause'
             neighs, neighLbls = self.getNeighbors(kpoint,ds,IBZ,eps)         
             print 'neighs',neighs,neighLbls
@@ -769,18 +773,19 @@ class meshConstruct():
         At least one bragg plane must be part of the IBZ bounds.  These do not pass through
         the origin'''
         
-#         ds = array(ds)
-        if not isInside(kpoint,self.vorCell.bounds,eps):
+        sympoints = []
+        if isOutside(kpoint,self.vorCell.bounds,eps):
             kpoint = intoVoronoi(kpoint,self.B)
+            print'intoVor',kpoint
         for iop in range(self.nops):
             op = self.symops[:,:,iop]
             kpoint2 = dot(op,kpoint)
-            if isInside(kpoint2,IBZ.bounds,eps):
+            sympoints.append(kpoint2)
+            if not isOutside(kpoint2,IBZ.bounds,eps):
                 return kpoint2
         else:
+            self.mathPrintPoints(sympoints)
             sys.exit("Stop. intoIBZ: symm ops don't return a kpoint inside the IBZ")
-              
-
                     
     def getNeighbors(self,kpoint,ds,IBZ,eps):
         '''This is for a kpoint just outside the IBZ. 
@@ -1048,7 +1053,7 @@ class meshConstruct():
             if makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
                 #can cut along any plane
                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
-#         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
+        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         BZ.volume = convexH(BZ.fpoints).volume
         self.IBZvolCut = det(self.B)/BZ.volume
         getBoundsFacets(BZ,eps)

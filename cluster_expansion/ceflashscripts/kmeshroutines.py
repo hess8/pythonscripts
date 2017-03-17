@@ -1085,12 +1085,15 @@ def poscar2super(path1,path2,M):
 #    print 'Inverse of S';print inv(S)
     create_poscar('POSCAR',descriptor+' Superlattice ', scale, S, detM*natoms, postype, pos2, path2)      
       
-def isInVoronoi(position, cell,to):
+def isInVoronoi(position, cell,tol):
     newpos = intoVoronoi(position, cell)
     return norm(newpos - position) < tol
 
 def intoVoronoi(position, cell, inverse=None):
-    """ From pylada_light: 
+    """ From pylada_light 
+    
+    (But I had to correct it!!!!): 
+    
     Folds vector into first Brillouin zone of the input cell
 
         Returns the periodic image with the smallest possible norm.
@@ -1109,16 +1112,15 @@ def intoVoronoi(position, cell, inverse=None):
         inverse = inv(cell)
     center = dot(inverse, position)
     center -= floor(center)
-
     result = center
-    n = norm(center)
+    nLow = norm(dot(cell,center)) #this line was wrong: "nLow = norm(center)
     for i in range(-1, 2, 1):
         for j in range(-1, 2, 1):
             for k in range(-1, 2, 1):
-                translated = [i, j, k] + center
+                translated = [i, j, k] + center           
                 n2 = norm(dot(cell, translated))
-                if n2 < n:
-                    n = n2
+                if n2 < nLow:
+                    nLow = n2
                     result = translated
     return dot(cell, result)
 
