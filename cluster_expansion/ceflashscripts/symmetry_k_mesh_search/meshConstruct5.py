@@ -508,15 +508,7 @@ class meshConstruct():
         In practice, if a mesh point is within a distance of the packing sphere 
         radius from a plane, we use that plane to slice the VC of the point.   The distance is ro-dot(r,u).  Then use spatial.ConvexHull
         to get the volume
-        
-        # We need to make our cubic mesh extend one layer beyond any IBZ borders
-        # A mesh *point* is either outside, inside, on surface, on segment beween verticies, or is a vertex.
-        # A point's volume may be inside, partially inside.   
-        # If a point's sphere is cut by one plane, use the sphere's inside volume ratio to weight the 
-        # point compared to a wholly inside point. This is fast.
-        # If a point's sphere is cut by wtwo or three planes (only a relatively few points),
-        # use the VC cutting routines to find the volume inside.
-        # This automatically gives us all the symmetry weights!'''
+'''
         
         a = 1.0
         cubicLVs = identity(3)
@@ -614,7 +606,7 @@ class meshConstruct():
         intMaxs = [] #factors of aKcubConv
         intMins = []
         for i in range(3):
-            print 'cubic',i,cubicLVs[:,i]
+#             print 'cubic',i,cubicLVs[:,i]
             projs = []
             for point in points:
                 projs.append(dot(cubicLVs[:,i],point)/aKcubConv**2)
@@ -739,14 +731,14 @@ class meshConstruct():
             use point symmetries to get in the IBZ.   
          '''  
         for ik,kpoint in enumerate(kptsRed):
-            print;print 'kpoint',ik, kpoint
+#             print;print 'kpoint',ik, kpoint
             dists = []
             neighWgts = []
             ds = dsRed[ik]
             if ik == 4:
                 'pause'
             neighs, neighLbls = self.getNeighbors(kpoint,ds,IBZ,eps)         
-            print 'neighs',neighs,neighLbls
+#             print 'neighs',neighs,neighLbls
             totNsWeights = 0
             onTop = False 
             for iN, neigh in enumerate(neighs):
@@ -776,7 +768,6 @@ class meshConstruct():
         sympoints = []
         if isOutside(kpoint,self.vorCell.bounds,eps):
             kpoint = intoVoronoi(kpoint,self.B)
-            print'intoVor',kpoint
         for iop in range(self.nops):
             op = self.symops[:,:,iop]
             kpoint2 = dot(op,kpoint)
@@ -793,7 +784,7 @@ class meshConstruct():
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
         Return the closest three neighbors
         '''
-        neighR = 1.5*self.rpacking
+        neighR = 3.0*self.rpacking
         kpSymm = self.intoIBZ(kpoint,ds,IBZ,eps)
         neighs,neighLbls = self.searchSpheres([kpoint,kpSymm],IBZ,neighR)
         return neighs,neighLbls 
@@ -802,10 +793,7 @@ class meshConstruct():
         neighs = []
         neighLbls = []
         for ip,meshPt in enumerate(IBZ.mesh):
-#             print 'ip',ip
             for kpoint in klist:
-#                 print 'kpoint',kpoint
-#                 print norm(meshPt-kpoint),R
                 if norm(meshPt-kpoint) <= R:
                     neighs.append(meshPt)
                     neighLbls.append(ip)
@@ -819,7 +807,6 @@ class meshConstruct():
         return IBZ
         
     def prepCutMP(self,MP,kpoint):
-#         cutMP = deepcopy(MP)
         cutMP = cell()
         cutMP.facets = [[]]*len(MP.facets)
         for ifac, facet in enumerate(MP.facets):
@@ -1053,7 +1040,7 @@ class meshConstruct():
             if makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
                 #can cut along any plane
                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
-        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
+#         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         BZ.volume = convexH(BZ.fpoints).volume
         self.IBZvolCut = det(self.B)/BZ.volume
         getBoundsFacets(BZ,eps)

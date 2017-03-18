@@ -17,6 +17,7 @@ import meshConstruct5
 def getVCmesh(dir,targetNmesh,meshtype):
     lastDir = os.getcwd()
     method = 0  #0, for now.
+#     method = 0.5
             #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
             #         from the IBZ center origin to check if the point's volume is cut. 
             #         Cut the VC to determine the volume contribution      
@@ -51,7 +52,6 @@ def createdir(path,n,type):
     newdir = path + '%s_%i/' % (type,n)
     if not os.path.isdir(newdir):
         os.system('mkdir %s' % newdir)
-#    os.chdir(newdir)
     os.system ('cp %s* %s' % (vaspinputdir,newdir))
     os.system ('cp %sPOSCAR %s' % (path,newdir))  
     writejobfile(newdir,n,type)  
@@ -61,6 +61,7 @@ def createdir(path,n,type):
 ################# script #######################
 
 maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAnRedistr/Cu_pvPt/'
 type = 'cubic'
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
@@ -105,6 +106,3 @@ for dir in dirs:
             os.chdir(currdir)
         os.chdir(maindir)                 
 print 'Done'
-
-
-

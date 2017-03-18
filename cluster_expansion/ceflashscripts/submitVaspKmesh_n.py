@@ -104,9 +104,9 @@ for dir in dirs:
             type = 'cubic'
             for n in range(4,24,2):
                 createdir(currdir,n,type)
-            type = 'fcc'
-            for n in range(1,15):
-                createdir(currdir,n,type)  
+#             type = 'fcc'
+#             for n in range(1,15):
+#                 createdir(currdir,n,type)  
 #            type = 'bcc'
 #            for n in range(1,18):
 #                createdir(currdir,n,type)                       
