@@ -14,13 +14,8 @@ sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/s
 from kmeshroutines import nstrip, readposcar,create_poscar
 import meshConstruct5
 
-def getVCmesh(dir,targetNmesh,meshtype):
-    lastDir = os.getcwd()
-    method = 0  #0, for now.
-#     method = 0.5
-            #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
-            #         from the IBZ center origin to check if the point's volume is cut. 
-            #         Cut the VC to determine the volume contribution      
+def getVCmesh(dir,method,targetNmesh,meshtype):
+    lastDir = os.getcwd()   
     meshc = meshConstruct5.meshConstruct()
     [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
 #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
@@ -60,12 +55,16 @@ def createdir(path,n,type):
 
 ################# script #######################
 
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAnRedistr/Cu_pvPt/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAnRedistr/Cu_pvPt/'
 type = 'cubic'
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
-# Nkppra = 10000
+# method = 0  #0, for now.
+method = 0.5
+        #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
+        #         from the IBZ center origin to check if the point's volume is cut. 
+        #         Cut the VC to determine the volume contribution  
 
 reallatt = zeros((3,3))
 os.chdir(maindir)
@@ -98,7 +97,7 @@ for dir in dirs:
             type = 'bcc'    
             for n in range(1,11): #was 15:
                 newdir = createdir(currdir,n,type) 
-                getVCmesh(newdir,4*n**3,type) 
+                getVCmesh(newdir,method,4*n**3,type) 
         newdirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
         for newdir in newdirs:
             os.chdir(newdir)

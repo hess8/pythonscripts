@@ -224,7 +224,7 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     if len(cell.fpoints) >= 3:
 #         mathPrintPoints(newVerts)
 #         print 'Show[r,s]'
-#         print 'new Vol vs',convexH(newVerts).volume,cell.volume
+        print 'new Vol vs',convexH(newVerts).volume,cell.volume
         checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) #should be some power greater than 1
     else:
         checkNext = True
@@ -329,6 +329,10 @@ def getVorCell(LVs,cell,eps):
     cell.fpoints = flatVecsList(cell.facets,eps)
     cell.center = sum(cell.fpoints)/len(cell.fpoints)
     cell.volume = convexH(cell.fpoints).volume
+    
+    for point in cell.fpoints:
+        print 'fpoint {:20.17f} {:20.17f} {:20.17f}'.format(point[0],point[1],point[2])
+        
     return cell
              
 def getBraggVecs(LVs):
@@ -429,6 +433,11 @@ class meshConstruct():
         self.B = B
         print '\nB (Recip lattice vectors as columns',B
         [self.symops,self.nops] = getGroup(self.B)
+        for iop in range(self.nops):
+            print 'iop',iop
+            for i in range(3):
+                for j in range(3):
+                    print '{:20.17f}'.format(self.symops[i,j,iop])
 #         [self.symops,self.nops] = getGroup(A)
 #         [self.symops,self.nops] = getGroup(transpose(A))
 #         [self.symops,self.nops] = testFor(A,aTypes,aPos)
@@ -715,8 +724,8 @@ class meshConstruct():
             IBZ = self.addToKpts(kptsRed,wgtsRed,IBZ)
             nCut += len(kptsRed)
             weightsCuts += sum(wgtsRed)
-        print 'Weights inside pts', nInside, weightsInside
-        print 'Volume inside pts', weightsInside*MP.volume
+        print 'Weights allinside pts', nInside, weightsInside
+#         print 'Volume inside pts', weightsInside*MP.volume
         if nOnePlane>0: print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
         print 'Weights in IBZ cuts', nCut,weightsCuts, 'Average per cut VC', weightsCuts/float(nCut)
         print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'

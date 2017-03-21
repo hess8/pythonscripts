@@ -4,120 +4,128 @@ Comparison plot for different k mesh methods
 '''
 
 import sys,os,subprocess
-from numpy import zeros,transpose,array,sum,float64,rint,mean
+from numpy import zeros,transpose,array,sum,float64,rint,mean,sort,argsort
 from numpy.linalg import norm
-from analysisToolsVasp import writeEnergiesOszicar, writedirnames, nstrip, writeNk, writeNkIBZ, \
-  writeElConverge, writeElSteps, writeCPUtime, enerparts, getdata, readfile, writefile, \
-  writefermi, removezeros
+from analysisToolsVasp import getEnergy, getNkIBZ, readfile, writefile,electronicConvergeFinish
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
 from plotTools import plotxy
 from pylab import *
 from copy import deepcopy
-fprec=float64
+
+def areEqual(x,y,eps):
+    return abs(x-y)<eps
 
 testfile = 'POSCAR'
 
-def getibest(dirs):
-#    mrange = []
-    mmax = 0
-    for i,dir in enumerate(dirs):
-        if dir[1]=='1' and dir[2]=='_':
-            m = int(dir.split('_')[-1])
-#            print dir, m
-#            if m > mmax:
-#                ibest = i
-#                mmax = m
-            if m == 24:
-                ibest = i
-                mmax = m
-#            mrange.append(m)
-    return mmax, ibest
-
-################# script #######################
-################# script #######################v
-################# script #######################
-
-paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt']
-summaryPath = ['/fslhome/bch/cluster_expansion/vcmesh/']
+# paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt',\
+#          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt']
+paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt',\
+         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAnRedistr/Cu_pvPt']
+summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
 iplot = 0
 maxCalcs = 0
-#count the number of total runs:
+#count the number of plots:
 for ipath,maindir in enumerate(paths):
     os.chdir(maindir)
     structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
-    for struct in struct:
+    for struct in structs:
+        os.chdir(struct)
         iplot += 1
         calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
         if len(calcs)>maxCalcs: maxCalcs = len(calcs)
-        for calc in calcs:
-            ncalcs += 1   
+        os.chdir(maindir)
 nplots = iplot       
-data = zeros((nplots,),dtype = [('ID', 'S15'),('nDone','int8'),('eners', '{}*float'.format(maxCalcs)),\
-                ('errs', '{}*float'.format(maxCalcs)),('nKs', '{}*int8'.format(maxCalcs))])
+data = zeros(nplots,dtype = [('ID', 'S15'),('nDone','int8'),('eners', '{}float'.format(maxCalcs)),\
+                ('errs', '{}float'.format(maxCalcs)),('nKs', '{}int16'.format(maxCalcs))])
 #read all the data            
-iplot = 0
+iplot = -1
 for ipath ,maindir in enumerate(paths):
-    titles.append(maindir.split('/')[-3][0].upper()+path.split('/')[-3][1].lower())
-    meshMethod = maindirsplit('/')[-4]
+    meshMethod = maindir.split('/')[-4]
     os.chdir(maindir)
     structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
     nStructs = len(structs)
     print structs
-    for struct in struct:
+    for struct in structs:
         iplot += 1
         os.chdir(struct)
-        runs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
+        calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
         energies = []
         nKs = []
         nDone = 0
-        for run in runs:  
-            if finished(run):
-                nDone +=1
-                ener = getEnergy(run) #in energy/atom
-                if notEquals(ener,0):
+        for calc in calcs:  
+            if electronicConvergeFinish(calc):
+                ener = getEnergy(calc) #in energy/atom
+                if not areEqual(ener,0,1e-5):
+                    nDone +=1
                     energies.append(ener)
-                    nKs.append(getNk(run))
+                    if 'vc' in maindir:
+                        nK = getNkIBZ(calc,'KPOINTS')
+                    else:
+                        nK = getNkIBZ(calc,'IBZKPT')
+                    nKs.append(nK)
+        
+        #sort by increasing number of kpoints
+        nKs = array(nKs)
         energies = array(energies)
-        eref = energies[-1] #the last energy of each struct should be the most kpoints
-        errs = (energies-eref)*1000 + 1e-16 #now in meV, with 
-        plotErrs()
+        order = argsort(nKs)
+        energies = energies[order]
+        nKs = sort(nKs)       
+        eref = energies[-1] #the last energy of each struct is that of the most kpoints
+        errs = abs(energies-eref)*1000 + 1e-6 #now in meV 
+#         plotErrs()
         data[iplot]['ID'] = '{} {}'.format(struct,meshMethod)
         data[iplot]['nDone'] = nDone
-        data[iplot]['eners'][:len(runs)] = energies
-        data[iplot]['errs'][:len(runs)] = errs
-        data[iplot]['nKs'][:len(runs)] = nKs           
+        data[iplot]['eners'][:nDone] = energies
+        data[iplot]['errs'][:nDone] = errs
+        data[iplot]['nKs'][:nDone] = nKs
         os.chdir(maindir)
-    
-#     #log(err) vs NkIBZ
-#     fig = figure()
-#     semilogy(NkIBZ,err,'ro')
-#     title(titleadd + ' Error vs Nk in IBZKPT')
-#     xlabel('Nk')
-#     ylabel('error')   
-#     fig.savefig('nk_log_err')  
-#     
-#     #log(err) vs log(NkIBZ)
-#     fig = figure()
-#     loglog(NkIBZ,err,'ro')
-#     title(titleadd + ' Error vs Nk in IBZKPT')
-#     xlabel('Nk')
-#     ylabel('error')   
-#     fig.savefig('nk_loglog_err') 
-
+        
+fig = figure()
+ax1 = fig.add_subplot(111)
+#    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
+xlabel('N kpoints')
+ylabel('Vasp energy/atom (eV)') 
+title('Convergence vs mesh method')
+#ylim((1e-12,1e0))
+for iplot in range(nplots):
+    n = data[iplot]['nDone']  
+    plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],\
+      label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots)), marker = 'o') 
+plt.legend(loc='upper right',prop={'size':14});
+show()
+fig.savefig('{}/energy_vs_n'.format(summaryPath))         
+        
 fig = figure()
 ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
 xlabel('N kpoints')
 ylabel('Error (meV)') 
 title('Convergence vs mesh method')
-
 #ylim((1e-12,1e0))
 for iplot in range(nplots):
     n = data[iplot]['nDone']  
-    ax1.semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
+    semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
       label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots)), marker = 'o') 
 plt.legend(loc='upper right',prop={'size':14});
 show()
-fig.savefig('{}/log_err_vs_n'.format(summaryPath,string)) 
+fig.savefig('{}/log_err_vs_n'.format(summaryPath)) 
+
+#log-log
+fig = figure()
+ax1 = fig.add_subplot(111)
+#    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
+xlabel('N kpoints')
+ylabel('Error (meV)') 
+title('Convergence vs mesh method')
+#ylim((1e-12,1e0))
+for iplot in range(nplots):
+    n = data[iplot]['nDone']  
+    ax1.loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
+      label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots)), marker = 'o') 
+plt.legend(loc='upper right',prop={'size':14});
+show()
+fig.savefig('{}/loglog_err_vs_n'.format(summaryPath)) 
+
+
 print 'Done'
 

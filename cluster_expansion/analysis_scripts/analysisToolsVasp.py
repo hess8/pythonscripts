@@ -39,25 +39,93 @@ def checkFolders(toCheckList,dirslist,run):
         if path.split('/')[-2] == run:
             dirslist.append(path)
     return dirslist            
-            
 
+def electronicConvergeFinish(dir): 
+    '''Test requires electronic convergence AND vasp finishing'''
+    #get NELM, the max electronic steps allowed in the run.  
+    proc = subprocess.Popen(['grep','-i','NELM',dir+'/INCAR'],stdout=subprocess.PIPE)
+    result =  proc.communicate()[0].strip()
+    try:
+        NELM = int(result.split('=')[1])
+        return elConvergeCheck(dir,NELM) and finishCheck(dir)   
+    except: 
+        subprocess.call(['echo','\tDid not read NELM from INCAR of {}'.format(dir)])
+        return False
+
+def elConvergeCheck(folder,NELM):  
+    """Tests electronic convergence is done by whether the electronic step is less than NELM."""
+    value = getElSteps(folder)
+#     print 'struct',folder.split('/')[-1], value, NELM
+    return value < NELM #True/False
+#    except:
+#        return False #True/False
+
+def getElSteps(folder): 
+    '''number of electronic steps.'''
+    lastDir = os.getcwd()
+    os.chdir(folder)
+    try:
+        oszicar = open('OSZICAR','r') 
+        laststep = oszicar.readlines()[-2].split()[1] # Next to last line, 2nd entry
+        oszicar.close()
+        os.chdir(lastDir) 
+        value = int(laststep)
+        return value         
+    except:
+        os.chdir(lastDir)         
+        return 9999 
+    
+def finishCheck(folder):
+    """ Tests whether VASP is done by finding "Voluntary" in last line of OUTCAR, 
+    and that "F=" is in the last line of OSZICAR. Checks time of Contcar creation"""   
+    lastDir = os.getcwd()
+    if os.path.exists(folder+'/OSZICAR'):
+        oszilines = readfile(folder +'/OSZICAR') 
+    else: 
+        return False
+    if os.path.exists(folder+'/OUTCAR') and os.path.exists(folder+'/POSCAR') and os.path.exists(folder+'/CONTCAR'):         
+        os.chdir(folder)
+        proc = subprocess.Popen(['grep', 'Voluntary', 'OUTCAR'], stdout=subprocess.PIPE)
+        newstring = proc.communicate()
+        os.chdir(lastDir) 
+        return 'Voluntary' in newstring[0] and 'F=' in oszilines[-1]
+    else:
+        return False
+
+def getNatoms(poscarFile):
+    '''returns the number of atoms in POSCAR'''
+    pfile = readfile(poscarFile)
+    if pfile[5][0].isdigit():
+        return sum([int(i) for i in pfile[5].strip().split()])
+    else:
+        return sum([int(i) for i in pfile[6].strip().split()])
+    
 def writedirnames(list):    
     namesfile = open('names','w')
     for name in list:
         namesfile.write(name +'\n')
     namesfile.close()
     
-def getEnergy(dir):
+def getEnergy(dir): #PER ATOM
     lines = readfile(dir+'/OSZICAR')
-#    print lines
-#            print 'Oszicar last line length',len(lines[-1].split())
-#            print lines[-1].split()
     if len(lines[-1].split())>1:
-        energy = lines[-1].split()[2]  #Free energy
+        energy = float(lines[-1].split()[2]) #Free energy
+        natoms = getNatoms(dir+'/POSCAR')
+        energy = energy/natoms
 #        energy = lines[-1].split()[4] #E0 (lim sigma ->zero)
     else: 
-        energy = '0'
+        energy = 0.0
     return energy
+
+# def getEnergy(dir): 
+#     lines = readfile(dir+'/OSZICAR')
+#     if len(lines[-1].split())>1:
+#         energy = float(lines[-1].split()[2])  #Free energy
+#     else: 
+#         energy = 0.00 #for structs that failed reading
+#         subprocess.call(['echo', '\ngetEnergy failed for struct {}\n'\
+#                          .format(dir.split('/')[0])])
+#     return energy
 
 def writeEnergiesOszicar(list):           
     enerfile = open('energies','w')
@@ -71,6 +139,7 @@ def writeEnergiesOszicar(list):
 #        print energy
         enerfile.write(energy + '\n') #energy in last line
     enerfile.close()
+
 
      
 def enerparts(list):
@@ -101,29 +170,27 @@ def enerparts(list):
         except:
             'go on' # can't read them
     return enerparts
-    
-    
+
+def getNkIBZ(dir,file):    
+    try:
+        ibzkpt = open(dir+'/{}'.format(file),'r') #If kpoints gives points explicitly, then we should read KPOINTS not IBZKPT.
+        nk = int(ibzkpt.readlines()[1].split()[0])
+        ibzkpt.close()
+    except:
+        nk = 0 
+    return nk
+   
 def writeNkIBZ(list):     
     '''number of K points extracted from IBZKPT'''
     lastfolder = os.getcwd()
     file = open('NkIBZ','w')
     for i in list:
-#        print i
-#        os.chdir(i)
-#        print os.getcwd()
-#        print os.listdir(os.getcwd())
-        try:
-            ibzkpt = open(i+'/IBZKPT','r')
-#            print ibzkpt.readlines()[1].split()
-            nk = ibzkpt.readlines()[1].split()[0]
-            ibzkpt.close()
-        except:
-            nk = '0'
-#        print nk
+        getNkIBZ(i)
         file.write(nk + '\n')  
         os.chdir(lastfolder)
     file.close()
     os.chdir(lastfolder) 
+    
     
 def writeNk(list):     
     '''number of K points intended,from comment in KPOINTS'''
