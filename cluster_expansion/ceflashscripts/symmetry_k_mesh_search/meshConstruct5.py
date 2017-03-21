@@ -420,8 +420,7 @@ class meshConstruct():
     from comMethods import readfile,writefile,trimSmall,areEqual,directFromCart,cartFromDirect
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
-    def __init__(self):
-        self.icut = -1
+#     def __init__(self):
 #         self.BZboundaries = [[],[]] #for BZ Voronoi cell or IBZ.  written as [u's] , [ro's]
 #         self.MPboundaries = [[],[]] #for mesh point Voronoi cell
 #         cell.facets = [] #facet points for BZ Voronoi cell or IBZ
@@ -467,10 +466,12 @@ class meshConstruct():
         BZ = cell() #instance
         BZ.volume = vol
         BZ = getVorCell(self.B,BZ,eps)
-#         print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
+        print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
-        IBZ = self.getIBZ(BZ,eps) #now irreducible BZ  
+#         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ  
+        IBZ = self.vorCell #temp code!!! no symmetry reduction
+        self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
         self.meshCubic(IBZ,meshtype,eps) #cub, fcc, bcc   
 #         self.meshCubic(IBZ,'fcc',eps)
 #         self.meshCubic(IBZ,'cub',eps)
@@ -610,7 +611,7 @@ class meshConstruct():
         MP.volume = volKcubConv/len(sites)
         MP = getVorCell(primLVs,MP,eps)
         MP.volume = convexH(MP.fpoints).volume
-#         print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
+        print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -643,7 +644,7 @@ class meshConstruct():
 #             print IBZ.bounds[0][i],IBZ.bounds[1][i]               
         ik = 0 
         #begin MP facets printing
-#         self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell
+        self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell before loop
         showCommand = 'Show[s,' 
         #end start of MP facets printing
         for i in range(intMins[0],intMaxs[0]):
@@ -707,7 +708,7 @@ class meshConstruct():
                                     nDummy +=1
 #                                     print 'kpoint',ik,iS,'ndum',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
                                     #####MP facet printing loop line                                
-    #                                 showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
+                                    showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
                                     #####end MP facet printing loop entry
         if showCommand[-1] == ',': showCommand = showCommand[:-1]
         showCommand += ']' 
@@ -731,7 +732,7 @@ class meshConstruct():
         print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
         print 'BZ volume:', det(self.B),'\n'
 #         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
-#         self.facetsMeshVCMathPrint(IBZ,MP)
+        self.facetsMeshVCMathPrint(IBZ,MP)
         return
     
     def redistrib(self,kptsRed,wgtsRed,dsRed,IBZ,eps):
@@ -868,7 +869,7 @@ class meshConstruct():
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the points of cut facets      
         ftemp = deepcopy(cell.facets)       
-#         print 'u',u,ro
+#         print;print 'u',u,ro
 #         if allclose(u,array([-0.57735042,  0.21442248 ,-0.7878385]),atol=eps):
 #             'pause'
         for ifac, facet in enumerate(cell.facets):
@@ -883,7 +884,7 @@ class meshConstruct():
                 pu = dot(u,point)
                 if pu > ro + eps:
                     signs.append(1.0)
-                elif areEqual(pu,0.0,eps):
+                elif areEqual(pu,ro,eps):
                     signs.append(0.0)
                 else:
                     signs.append(-1.0)
@@ -920,7 +921,6 @@ class meshConstruct():
                     elif sgn == 0.0:
                         bordersFacet = addVec(facet[i],bordersFacet,eps)         
         if len(allRemoved)>0:
-            self.icut += 1
             ftemp2 = deepcopy(ftemp)
             for i2, facet in enumerate(ftemp):
                 nextbreak = False
@@ -977,7 +977,7 @@ class meshConstruct():
            into proper ones before applying. 
         
         All rotations with angle not 0 or  pi have complex eigenvalues.  So an improper rotation
-        has complex eigenvalues and a determinate less than 1. 
+        has complex eigenvalues and a determinate .... 
            
         Cutting: 
         Rotation: a plane through the origin has dot(r,u) = 0, for the normal u.  
