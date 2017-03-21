@@ -177,6 +177,8 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
     pairs = list(combinations(bndsLabels,2))
     iInt = 0
     for ig in grp:
+        if ig ==5:
+            'pause'
         for pair in pairs:
             planes3 = [braggVecs[ig]['vec']]
             if not (ig in pair):# or ig in keepLabels):
@@ -212,8 +214,6 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
             for ip,plane in enumerate(tryPlanes):
                 if areEqual(dot(vert,plane),dot(plane,plane),eps):
                     addVec(plane,newPlanes,eps)
-                    tryPlanes.pop(ip)    
-                    break
         cell.bounds = [[],[]]
         for plane in newPlanes:
             normPlane = norm(plane)
@@ -221,6 +221,8 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
             cell.bounds[1].append(normPlane)
         cell.fpoints = newVerts
 #     mathPrintPlanes(allPlanes)
+    if mod(len(cell.bounds[0]),2)!=0:
+        sys.exit('Stop. Error in newBoundsifNewVertInside. BZ must have even number of planes')
     if len(cell.fpoints) >= 3:
 #         mathPrintPoints(newVerts)
 #         print 'Show[r,s]'
@@ -664,6 +666,7 @@ class meshConstruct():
 
 #                         print 'ds',ds;print
                         inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
+#                         print 'inExpanded,centerInside,allInside', inExpanded,centerInside,allInside
                         if allInside:
 #                             print 'allInside'
                             IBZ.mesh.append(kpoint)
@@ -691,6 +694,7 @@ class meshConstruct():
                                         break
                             if len(cutMP.facets)>=4:
                                 cutMP.volume = convexH(cutMP.fpoints).volume
+#                             print 'volume cut',cutMP.volume, cutMP.volume > eps**3
                             if cutMP.volume > eps**3:
                                 weight = self.IBZvolCut*cutMP.volume/MP.volume
                                 if self.method > 0  and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume
@@ -707,9 +711,9 @@ class meshConstruct():
                                     nCut += 1
                                     nDummy +=1
 #                                     print 'kpoint',ik,iS,'ndum',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
-                                    #####MP facet printing loop line                                
-                                    showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
-                                    #####end MP facet printing loop entry
+                                #####MP facet printing loop line                                
+                                showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
+                                #####end MP facet printing loop entry
         if showCommand[-1] == ',': showCommand = showCommand[:-1]
         showCommand += ']' 
         print ';', 
@@ -870,6 +874,8 @@ class meshConstruct():
         bordersFacet = [] #new facet from the points of cut facets      
         ftemp = deepcopy(cell.facets)       
 #         print;print 'u',u,ro
+#         if u[0] <0 and u[1]<0 and u[2]>0:
+#             print;print 'u',u,ro
 #         if allclose(u,array([-0.57735042,  0.21442248 ,-0.7878385]),atol=eps):
 #             'pause'
         for ifac, facet in enumerate(cell.facets):
@@ -951,7 +957,9 @@ class meshConstruct():
                 cell.volume = 0
             else:
                 cell.center = sum(cell.fpoints)/len(cell.fpoints)
-#             self.facetsMathPrint(cell,'p',True,'Red');print ';Show[p]\n'              
+#                 print'center',cell.center
+#             self.facetsMathPrint(cell,'p',True,'Red');print ';Show[p]\n' 
+                     
         return cell      
 
     def getIBZ(self,BZ,eps):
