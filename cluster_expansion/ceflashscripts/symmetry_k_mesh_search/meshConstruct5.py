@@ -671,16 +671,16 @@ class meshConstruct():
 #                         print 'ds',ds;print
 #                         inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
                         cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
-                        self.dotsVsRos = zeros(len(MP.fpoints),len(IBZ.bounds[0]))#Where each fpoint lies vs the plane: 0 on the plane >0 outside
-                        inExpanded,centerInside,allInside = self.boundStatusExact(cutMP,IBZ,eps)
+#                         inExpanded,centerInside,allInside = self.boundStatusExact(cutMP,IBZ,eps)
+                        boundStatus,centerInside = self.boundStatusExact(cutMP,IBZ,eps)
 #                         print 'inExpanded,centerInside,allInside', inExpanded,centerInside,allInside
-                        if allInside:
+                        if boundStatus == 'allInside':
 #                             print 'allInside'
                             IBZ.mesh.append(kpoint)
                             IBZ.weights.append(self.IBZvolCut)
                             weightsInside += self.IBZvolCut
                             nInside += 1
-                        elif inExpanded:
+                        elif boundStatus == 'toCut':
 #                             print 'inExpanded'
 #                             if centerInside: print 'centerInside'
                             #change to d's from real cell, the borders of the IBZ
@@ -705,7 +705,6 @@ class meshConstruct():
                             if cutMP.volume > eps**3:
                                 weight = self.IBZvolCut*cutMP.volume/MP.volume
                                 if self.method > 0  and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume
-                                    nDummy +=1
                                     nRed += 1
 #                                     kptsRed.append(kpoint)
                                     kptsRed.append(cutMP.center) #If the mech VC is cut, may as well use its center.  
@@ -718,7 +717,6 @@ class meshConstruct():
                                     IBZ.weights.append(weight)   
                                     weightsCuts += weight
                                     nCut += 1
-                                    nDummy +=1
 #                                     print 'kpoint',ik,iS,'ndum',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
                                 #####MP facet printing loop line                                
 #                                 showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
@@ -741,7 +739,8 @@ class meshConstruct():
         print 'Weights allinside pts', nInside, weightsInside
 #         print 'Volume inside pts', weightsInside*MP.volume
         if nOnePlane>0: print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
-        print 'Weights in IBZ cuts', nCut,weightsCuts, 'Average per cut VC', weightsCuts/float(nCut)
+        if nCut>0:
+            print 'Weights in IBZ cuts', nCut,weightsCuts, 'Average per cut VC', weightsCuts/float(nCut)
         print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
         print 'BZ volume:', det(self.B),'\n'
         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
@@ -1080,37 +1079,26 @@ class meshConstruct():
 #         inExpanded = zeros(nbounds,dtype = bool)
 #         centerInside = zeros(nbounds,dtype = bool)
 #         allInside = zeros(nbounds,dtype = bool)
-        for ipoint,point in enumerate(MP.fpoints):
-            for iu,uvec in enumerate(IBZ.bounds[0]):
-                ro = IBZ.bounds[0][iu]
-                pu = dot(u,point)
-                self.dotsVsRos[ipoint,iu] = pu - ro
-#                     if pu > ro + eps:
-#                         dots.append(1.0)
-#                     elif areEqual(pu,ro,eps):
-#                         dots.append(0.0)
-#                     else:
-#                         dots.append(-1.0)
-#                     maxsign = max(signs); minsign = min(signs)
-#                     if maxsign == 1.0:
-#                 if max(dots)
-#                     allInside[i] = True 
-#                     
-#                 inExpanded[i] = True
-#                 if abs(d) >= (2*scale)*self.rpacking - eps: #point volume is all inside the true cell boundary
-#                     allInside[i] = True 
-#                     centerInside[i] = True 
-#                 elif abs(d) >= (1*scale)*self.rpacking - eps:
-#                     centerInside[i] = True
+        dotsVsRos = zeros((len(MP.fpoints),len(IBZ.bounds[0])),dtype=float)#Where each fpoint lies vs the plane: 0 on the plane >0 outside
+        centerdots = []
+        for iu,uvec in enumerate(IBZ.bounds[0]):
+            ro = IBZ.bounds[1][iu]
+            centerdots.append(dot(MP.center,uvec))
+            for ipoint,point in enumerate(MP.fpoints): 
+                pu = dot(point,uvec)
+                dotsVsRos[ipoint,iu] = pu - ro
         mindots = amin(dotsVsRos)
         maxdots = amax(dotsVsRos)
-        toCut = False; centerInside = False; allInside = False
+        centerInside = False
+        if max(centerdots <= 0 + eps): centerInside = True #MP point center is inside or on boundary
         if mindots >= 0-eps: #all of MP is outside of IBZ or at most touching boundary
-            return 'outside'
+            return 'outside',centerInside
         elif maxdots > 0 + eps and mindots < 0 -eps:
-            return 'cut'
-        elif maxdots < 0 - eps:
-            return 'allInside' 
+            return 'toCut',centerInside
+        elif maxdots <= 0 + eps:
+            return 'allInside',centerInside
+        else:
+            sys.exit('stop. Error in boundStatusExact')
 
 #     def boundStatus(self,ds,eps):
 #         '''The d's are from the expanded boundary
