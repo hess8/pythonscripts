@@ -37,8 +37,7 @@ def writekpts_vasp_n(path,n,type):
     file1.writelines(kpointsfile) 
     file1.close()
     return 
-
-#
+ 
 def writejobfile(path,n,type):
     '''read from a template in maindir, and put dir in job name'''
     file1 = open(path +'vaspjob','r')

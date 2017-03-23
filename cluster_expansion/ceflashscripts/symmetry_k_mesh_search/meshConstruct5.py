@@ -159,7 +159,7 @@ def magGroup(arr, igroup,eps):
                 return newMags[ngroups-2],newMags[ngroups-1]-newMags[ngroups-2]
     return 0,len(arr)   
 
-def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
+def newBounds(braggVecs,bndsLabels,grp,cell,eps):
     '''Find intersections planes:  newBraggs+current taken 2 at a time with e
     each newBragg, excluding duplicates in the triplet. 
     If any of these intersections are inside the current boundaries, then they 
@@ -210,10 +210,11 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
         #remove planes that don't host a vertex.
         newPlanes = []
         tryPlanes = deepcopy(allPlanes)
-        for vert in newVerts:
-            for ip,plane in enumerate(tryPlanes):
+        for ip,plane in enumerate(tryPlanes):
+            for vert in newVerts:
                 if areEqual(dot(vert,plane),dot(plane,plane),eps):
                     addVec(plane,newPlanes,eps)
+                    break
         cell.bounds = [[],[]]
         for plane in newPlanes:
             normPlane = norm(plane)
@@ -222,7 +223,7 @@ def newBoundsifNewVertInside(braggVecs,bndsLabels,grp,cell,eps):
         cell.fpoints = newVerts
 #     mathPrintPlanes(allPlanes)
     if mod(len(cell.bounds[0]),2)!=0:
-        sys.exit('Stop. Error in newBoundsifNewVertInside. BZ must have even number of planes')
+        sys.exit('Stop. Error in newBounds. BZ must have even number of planes')
     if len(cell.fpoints) >= 3:
 #         mathPrintPoints(newVerts)
 #         print 'Show[r,s]'
@@ -318,7 +319,7 @@ def getVorCell(LVs,cell,eps):
         gstart,ng = magGroup(braggVecs,igroup,eps)
         nextGroup = range(gstart,gstart+ng)
 #         checkNext,cell = newBoundsifInside(braggVecs,nextGroup,cell,eps)
-        checkNext,boundsLabels,cell = newBoundsifNewVertInside(braggVecs,boundsLabels,nextGroup,cell,eps)
+        checkNext,boundsLabels,cell = newBounds(braggVecs,boundsLabels,nextGroup,cell,eps)
         if igroup > 10:
             sys.exit('Stop. getVorCell igroup >10.  This seems to be an infinite while loop.  Try reducing eps ')
 #     interscPoints = getInterscPoints(cell.bounds,eps)
@@ -331,10 +332,8 @@ def getVorCell(LVs,cell,eps):
     cell.fpoints = flatVecsList(cell.facets,eps)
     cell.center = sum(cell.fpoints)/len(cell.fpoints)
     cell.volume = convexH(cell.fpoints).volume
-    
-    for point in cell.fpoints:
-        print 'fpoint {:20.17f} {:20.17f} {:20.17f}'.format(point[0],point[1],point[2])
-        
+#     for point in cell.fpoints:
+#         print 'fpoint {:20.17f} {:20.17f} {:20.17f}'.format(point[0],point[1],point[2])  
     return cell
              
 def getBraggVecs(LVs):
@@ -433,12 +432,13 @@ class meshConstruct():
 #         nCoarseMax = 200
         self.B = B
         print '\nB (Recip lattice vectors as columns',B
+        print 'method',method
         [self.symops,self.nops] = getGroup(self.B)
-        for iop in range(self.nops):
-            print 'iop',iop
-            for i in range(3):
-                for j in range(3):
-                    print '{:20.17f}'.format(self.symops[i,j,iop])
+#         for iop in range(self.nops):
+#             print 'iop',iop
+#             for i in range(3):
+#                 for j in range(3):
+#                     print '{:20.17f}'.format(self.symops[i,j,iop])
 #         [self.symops,self.nops] = getGroup(A)
 #         [self.symops,self.nops] = getGroup(transpose(A))
 #         [self.symops,self.nops] = testFor(A,aTypes,aPos)
@@ -468,12 +468,12 @@ class meshConstruct():
         BZ = cell() #instance
         BZ.volume = vol
         BZ = getVorCell(self.B,BZ,eps)
-        print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
+#         print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
-#         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ  
-        IBZ = self.vorCell #temp code!!! no symmetry reduction
-        self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
+        IBZ = self.getIBZ(BZ,eps) #now irreducible BZ  
+#         IBZ = self.vorCell #temp code!!! no symmetry reduction
+#         self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
         self.meshCubic(IBZ,meshtype,eps) #cub, fcc, bcc   
 #         self.meshCubic(IBZ,'fcc',eps)
 #         self.meshCubic(IBZ,'cub',eps)
@@ -493,7 +493,7 @@ class meshConstruct():
         lines.append('Cartesian\n')
         for ik,kpoint in enumerate(cell.mesh):
             lines.append('{:15.12f}  {:15.12f}  {:15.12f}  {:15.12f}\n'\
-                         .format(kpoint[0],kpoint[1],kpoint[2],cell.weights[ik]))
+                         .format(kpoint[0],kpoint[1],kpoint[2],cell.weights[ik]*1e6))
         self.writefile(lines,'KPOINTS')         
    
     def meshCubic(self,IBZ,type,eps):
@@ -613,7 +613,7 @@ class meshConstruct():
         MP.volume = volKcubConv/len(sites)
         MP = getVorCell(primLVs,MP,eps)
         MP.volume = convexH(MP.fpoints).volume
-        print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
+#         print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -646,7 +646,7 @@ class meshConstruct():
 #             print IBZ.bounds[0][i],IBZ.bounds[1][i]               
         ik = 0 
         #begin MP facets printing
-        self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell before loop
+#         self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell before loop
         showCommand = 'Show[s,' 
         #end start of MP facets printing
         for i in range(intMins[0],intMaxs[0]):
@@ -700,19 +700,21 @@ class meshConstruct():
                                 if self.method > 0  and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume
                                     nDummy +=1
                                     nRed += 1
-                                    kptsRed.append(kpoint)
+#                                     kptsRed.append(kpoint)
+                                    kptsRed.append(cutMP.center) #If the mech VC is cut, may as well use its center.  
                                     wgtsRed.append(weight)
                                     dsRed.append(ds)
 #                                     print 'kpoint',ik,iS,'cut',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
                                 else:   
-                                    IBZ.mesh.append(kpoint)
+#                                     IBZ.mesh.append(kpoint)
+                                    IBZ.mesh.append(cutMP.center) #If the mesh VC is cut, may as well use its center.  
                                     IBZ.weights.append(weight)   
                                     weightsCuts += weight
                                     nCut += 1
                                     nDummy +=1
 #                                     print 'kpoint',ik,iS,'ndum',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
                                 #####MP facet printing loop line                                
-                                showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
+#                                 showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
                                 #####end MP facet printing loop entry
         if showCommand[-1] == ',': showCommand = showCommand[:-1]
         showCommand += ']' 
@@ -723,7 +725,7 @@ class meshConstruct():
         if  len(kptsRed) <= len(IBZ.mesh) and len(kptsRed)>0:
             weightRed = sum(wgtsRed)
             print 'Weights redistributed', nRed,weightRed, 'Average per point', weightRed/float(nRed)        
-            IBZ = self.redistrib(kptsRed,wgtsRed,dsRed,IBZ,eps)
+            IBZ = self.redistribWgt(kptsRed,wgtsRed,dsRed,IBZ,eps)
         elif len(kptsRed)>0:
             print 'Too few inside kpoints to redistribute: keeping all border points'
             IBZ = self.addToKpts(kptsRed,wgtsRed,IBZ)
@@ -736,10 +738,10 @@ class meshConstruct():
         print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
         print 'BZ volume:', det(self.B),'\n'
 #         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
-        self.facetsMeshVCMathPrint(IBZ,MP)
+#         self.facetsMeshVCMathPrint(IBZ,MP)
         return
     
-    def redistrib(self,kptsRed,wgtsRed,dsRed,IBZ,eps):
+    def redistribWgt(self,kptsRed,wgtsRed,dsRed,IBZ,eps):
         ''' 0.5 approx  If the kpoint is outside, distribute the portion of its Vornoi cell weight that is inside to neighbors of equivalent points
             if point is outside of Voronoi cell (first BZ), then translate by G vector to get it inside.  Points inside the Voronoi cell but not in IBZ
             use point symmetries to get in the IBZ.   

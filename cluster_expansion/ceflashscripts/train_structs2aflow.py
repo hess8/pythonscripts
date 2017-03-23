@@ -19,17 +19,22 @@ def aflowCreateJobs(structs,atomic,finalDir):
             sublist = structs[i*nsubmit:(i+1)*nsubmit]
         else:
             sublist = structs[i*nsubmit:]
-        strucstr = ''
         for struc in sublist:
-# strucstr += 'f%s,'% struc
-            strucstr += 'f%s,'% struc
-        try:
-            commstr= 'aconvasp --aflow_proto ' + strucstr+ ':%s' % atomic
-            os.system(commstr)
-        except:
-            print 'Error in executing %s' % commstr
-    os.system('cp -r AFLOWDATA/* %s' % finalDir)
-    os.system('rm -r AFLOWDATA/')
+            strucstr = 'f%s'% struc
+            try:
+    #             commstr= 'aconvasp --aflow_proto ' + strucstr+ ':%s' % atomic
+                commstr = 'aconvasp --proto={} {} | aconvasp --poscar>POSCAR'.format(strucstr,atomic)   #for POSCAR creation 
+                print commstr
+                os.system(commstr)
+            except:
+                print 'Error in executing %s' % commstr
+            structDir = '{}/{}'.format(finalDir,strucstr)
+            if not os.path.isdir(structDir):
+                os.mkdir(structDir)
+            os.system('mv POSCAR {}'.format(structDir))
+#     print 'cd',os.getcwd()
+#     os.system('cp -r AFLOWDATA/* %s' % finalDir)
+#     os.system('rm -r AFLOWDATA/')
 
 def otherPrep():
 # os.system("perl -pi -e 's/KPPRA=6000/KPPRA=10000/' */*/*/aflow.in")
@@ -39,8 +44,9 @@ def otherPrep():
 ################# script #######################
 #filename='training_set_structures.dat'
 #filename='f11000.dat'
-filename='training_set_structures2.dat'
+filename='/zhome/bch/cluster_expansion/vcmesh/trainingStructs/fcc/training_set_structures12.dat'
 mainDir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
+os.chdir(mainDir)
 #finalDir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/'
 finalDir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/'
 if not os.path.isdir(finalDir):
@@ -52,4 +58,4 @@ print structs
 aflowCreateJobs(structs,atomic,finalDir)
 otherPrep()
 #os.chdir(mainDir)
-#print 'Done'
+print 'Done'

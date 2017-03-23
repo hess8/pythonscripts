@@ -57,10 +57,10 @@ def createdir(path,n,type):
 
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
 maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAnRedistr/Cu_pvPt/'
-type = 'cubic'
+type = 'bcc' 
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
-# method = 0  #0, for now.
+# method = 0
 method = 0.5
         #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
         #         from the IBZ center origin to check if the point's volume is cut. 
@@ -93,9 +93,8 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
             
-            # Now create new dirs with different characteristics
-            type = 'bcc'    
-            for n in range(1,11): #was 15:
+            # Now create new dirs with different characteristics  
+            for n in range(1,13): #was 15:
                 newdir = createdir(currdir,n,type) 
                 getVCmesh(newdir,method,4*n**3,type) 
         newdirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 

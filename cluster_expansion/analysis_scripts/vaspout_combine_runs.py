@@ -90,7 +90,7 @@ title('Convergence vs mesh method')
 for iplot in range(nplots):
     n = data[iplot]['nDone']  
     plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],\
-      label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots)), marker = 'o') 
+      label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots)), marker = 'o',markeredgewidth=0.0) 
 plt.legend(loc='upper right',prop={'size':14});
 show()
 fig.savefig('{}/energy_vs_n'.format(summaryPath))         
@@ -105,7 +105,7 @@ title('Convergence vs mesh method')
 for iplot in range(nplots):
     n = data[iplot]['nDone']  
     semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
-      label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots)), marker = 'o') 
+      label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots)), marker = 'o',markeredgewidth=0.0) 
 plt.legend(loc='upper right',prop={'size':14});
 show()
 fig.savefig('{}/log_err_vs_n'.format(summaryPath)) 
@@ -121,7 +121,7 @@ title('Convergence vs mesh method')
 for iplot in range(nplots):
     n = data[iplot]['nDone']  
     ax1.loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
-      label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots)), marker = 'o') 
+      label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots)), marker = 'o',markeredgewidth=0.0) 
 plt.legend(loc='upper right',prop={'size':14});
 show()
 fig.savefig('{}/loglog_err_vs_n'.format(summaryPath)) 

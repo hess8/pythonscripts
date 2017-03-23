@@ -8,7 +8,6 @@ sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/'
 import meshConstruct5
 from kmeshroutines import nstrip, readposcar,create_poscar
 
-
 ################# script #######################
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA11000/test101x/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATA500/AlIr/'
@@ -47,7 +46,7 @@ testfile = 'POSCAR'
 # Nkppra = 10000#*10  
 
 
-Nkppra = 16
+Nkppra = 1200
 meshtype = 'bcc'  #cub, fcc, bcc  
 
 #reallatt = zeros((3,3))
