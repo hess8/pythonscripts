@@ -471,9 +471,10 @@ class meshConstruct():
 #         print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
-        IBZ = self.getIBZ(BZ,eps) #now irreducible BZ  
-#         IBZ = self.vorCell #temp code!!! no symmetry reduction
-#         self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
+#         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ  
+        print 'Temporary: no symmetry reduction'
+        IBZ = self.vorCell #temp code!!! no symmetry reduction
+        self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
         self.meshCubic(IBZ,meshtype,eps) #cub, fcc, bcc   
 #         self.meshCubic(IBZ,'fcc',eps)
 #         self.meshCubic(IBZ,'cub',eps)
@@ -498,7 +499,7 @@ class meshConstruct():
    
     def meshCubic(self,IBZ,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
-        orthogonal, align the cubic mesh with them.       
+        orthogonal, align the cubic mesh with their normals.       
         Weighting of each point:
         Volume of IBZ:  http://scipy.github.io/devdocs/generated/scipy.spatial.ConvexHull.html
 
@@ -528,27 +529,27 @@ class meshConstruct():
         rs = []
         pairs = []
         triples = []
-        points = IBZ.fpoints
-        for i in range(len(points)):
-            if areEqual(norm(points[i]),0.0,eps): break
-            rs.append(norm(points[i]))
-            for j in range(i,len(points)):
-                if areEqual(norm(points[j]),0.0,eps): break
-                if areEqual(dot(points[i],points[j]),0.0,eps):
-                    pairs.append([points[i],points[j]])
+        uvecs = IBZ.bounds[0]
+        for i in range(len(uvecs)):
+            if areEqual(norm(uvecs[i]),0.0,eps): break
+            rs.append(norm(uvecs[i]))
+            for j in range(i,len(uvecs)):
+                if areEqual(norm(uvecs[j]),0.0,eps): break
+                if areEqual(dot(uvecs[i],uvecs[j]),0.0,eps):
+                    pairs.append([uvecs[i],uvecs[j]])
 
         for ip,pair in enumerate(pairs):
-            for i in range(len(points)):
-                if areEqual(norm(points[i]),0.0,eps): break
-                if areEqual(dot(pair[0],points[i]),0.0,eps) and areEqual(dot(pair[1],points[i]),0.0,eps):
+            for i in range(len(uvecs)):
+                if areEqual(norm(uvecs[i]),0.0,eps): break
+                if areEqual(dot(pair[0],uvecs[i]),0.0,eps) and areEqual(dot(pair[1],uvecs[i]),0.0,eps):
                     triple = deepcopy(pair)
-                    triple.append(points[i])
+                    triple.append(uvecs[i])
                     triples.append(triple)
                     break
         #Define basis vectors for cubic lattice:
         Lsum= [] #length of vectors in pair or triplet
         if len(triples)>0:
-            print 'At least one triplet of orthogonal vertex vectors found:',triples[0]
+            print 'At least one triplet of orthogonal plane normals found:',triples[0]
             if len(triples)>1: #find the one with most total vector length
                 sums = zeros(len(triples))
                 for it, triple in enumerate(triples):
@@ -559,7 +560,7 @@ class meshConstruct():
                 vec = triples[-1][i]
                 cubicLVs[:,i] = vec/norm(vec)
         elif len(pairs)>0:
-            print 'At least one pair of orthogonal vertex vectors found:', pairs[0]
+            print 'At least one pair of orthogonal plane normals found:', pairs[0]
             if len(pairs)>1:
                 sums = zeros(len(pairs))
                 for ip, pair in enumerate(pairs):
@@ -571,7 +572,7 @@ class meshConstruct():
                 cubicLVs[:,i] = vec/norm(vec)
             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
         else:
-            print 'no orthogonal vertex vectors pairs found.'
+            print 'no orthogonal plane normals pairs found.'
         if type == 'fcc':
             volKcubConv = det(self.B)/self.nTarget*4
             aKcubConv = volKcubConv**(1/3.0)
@@ -597,7 +598,7 @@ class meshConstruct():
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0])]
-            primLVs = cubicLVs*aKcubConv
+            primLVs = cubicLVs
             self.rpacking = aKcubConv/2
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
@@ -620,7 +621,7 @@ class meshConstruct():
         for i in range(3):
 #             print 'cubic',i,cubicLVs[:,i]
             projs = []
-            for point in points:
+            for point in IBZ.fpoints:
                 projs.append(dot(cubicLVs[:,i],point)/aKcubConv**2)
             intMaxs.append(int(ceil(max(projs)))+1)
             intMins.append(int(floor(min(projs))))
@@ -648,7 +649,10 @@ class meshConstruct():
         #begin MP facets printing
 #         self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell before loop
         showCommand = 'Show[s,' 
-        #end start of MP facets printing
+        #done with start of MP facets printing
+        
+#         shift = aKcubConv*array([0,0,0])/2.0
+        shift = aKcubConv*array([1,1,1])/2.0
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
@@ -657,15 +661,18 @@ class meshConstruct():
 #                         'pause'
                     for iS, site in enumerate(sites):
                         ik+=1
-                        kpoint = lvec + site
+                        kpoint = lvec + site + shift
 #                         print 'ik',ik
 #                         print 'test',[i,j,k],iS,kpoint
-                        ds = self.dToPlanes(kpoint,IBZ.expBounds)
+#                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
 
 #                         print 'kpoint',ik,i,k,j,kpoint
 
 #                         print 'ds',ds;print
-                        inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
+#                         inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
+                        cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
+                        self.dotsVsRos = zeros(len(MP.fpoints),len(IBZ.bounds[0]))#Where each fpoint lies vs the plane: 0 on the plane >0 outside
+                        inExpanded,centerInside,allInside = self.boundStatusExact(cutMP,IBZ,eps)
 #                         print 'inExpanded,centerInside,allInside', inExpanded,centerInside,allInside
                         if allInside:
 #                             print 'allInside'
@@ -680,7 +687,7 @@ class meshConstruct():
 #                             dsIBZ = [d + sqrt(2)*self.rpacking for d in ds]
 #                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
 #                             print 'ds',dsIBZ                           
-                            cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
+#                             cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
 #                             print;print 'ik',ik
 #                             if ik == 115:
 #                                 'pause'
@@ -737,8 +744,8 @@ class meshConstruct():
         print 'Weights in IBZ cuts', nCut,weightsCuts, 'Average per cut VC', weightsCuts/float(nCut)
         print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
         print 'BZ volume:', det(self.B),'\n'
-#         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
-#         self.facetsMeshVCMathPrint(IBZ,MP)
+        self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
+        self.facetsMeshVCMathPrint(IBZ,MP)
         return
     
     def redistribWgt(self,kptsRed,wgtsRed,dsRed,IBZ,eps):
@@ -1068,30 +1075,67 @@ class meshConstruct():
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
         return BZ
 
-    def boundStatus(self,ds,eps):
-        '''The d's are from the expanded boundary
-        allInside: the center is on the opposite side of the plane vs its normal vector, 
-        and at least a distance of rpacking*scale away from it.  
-        centerInside: the center is inside or on the boundaries
-        inExpanded: the center is inside the expanded boundaries'''
-        inExpanded = zeros(len(ds),dtype = bool)
-        centerInside = zeros(len(ds),dtype = bool)
-        allInside = zeros(len(ds),dtype = bool)
-        for i,d in enumerate(ds):
-            if self.method < 1:
-                scale = sqrt(2.0) #finding if a voronoi cell edge is inside.  Does this work for bcc? 
-            elif self.method == 1: 
-                scale = sqrt(1.0)
-            if d < -eps:
-                inExpanded[i] = True
-                if abs(d) >= (2*scale)*self.rpacking - eps: #point volume is all inside the true cell boundary
-                    allInside[i] = True 
-                    centerInside[i] = True 
-                elif abs(d) >= (1*scale)*self.rpacking - eps:
-                    centerInside[i] = True
-        return all(inExpanded), all(centerInside), all(allInside)
-        
-        
+    def boundStatusExact(self,MP,IBZ,eps):
+        '''Check all the facets vs the IBZ bounds'''        
+#         inExpanded = zeros(nbounds,dtype = bool)
+#         centerInside = zeros(nbounds,dtype = bool)
+#         allInside = zeros(nbounds,dtype = bool)
+        for ipoint,point in enumerate(MP.fpoints):
+            for iu,uvec in enumerate(IBZ.bounds[0]):
+                ro = IBZ.bounds[0][iu]
+                pu = dot(u,point)
+                self.dotsVsRos[ipoint,iu] = pu - ro
+#                     if pu > ro + eps:
+#                         dots.append(1.0)
+#                     elif areEqual(pu,ro,eps):
+#                         dots.append(0.0)
+#                     else:
+#                         dots.append(-1.0)
+#                     maxsign = max(signs); minsign = min(signs)
+#                     if maxsign == 1.0:
+#                 if max(dots)
+#                     allInside[i] = True 
+#                     
+#                 inExpanded[i] = True
+#                 if abs(d) >= (2*scale)*self.rpacking - eps: #point volume is all inside the true cell boundary
+#                     allInside[i] = True 
+#                     centerInside[i] = True 
+#                 elif abs(d) >= (1*scale)*self.rpacking - eps:
+#                     centerInside[i] = True
+        mindots = amin(dotsVsRos)
+        maxdots = amax(dotsVsRos)
+        toCut = False; centerInside = False; allInside = False
+        if mindots >= 0-eps: #all of MP is outside of IBZ or at most touching boundary
+            return 'outside'
+        elif maxdots > 0 + eps and mindots < 0 -eps:
+            return 'cut'
+        elif maxdots < 0 - eps:
+            return 'allInside' 
+
+#     def boundStatus(self,ds,eps):
+#         '''The d's are from the expanded boundary
+#         allInside: the center is on the opposite side of the plane vs its normal vector, 
+#         and at least a distance of rpacking*scale away from it.  
+#         centerInside: the center is inside or on the boundaries
+#         inExpanded: the center is inside the expanded boundaries'''
+#         inExpanded = zeros(len(ds),dtype = bool)
+#         centerInside = zeros(len(ds),dtype = bool)
+#         allInside = zeros(len(ds),dtype = bool)
+#         for i,d in enumerate(ds):
+#             if self.method < 1:
+#                 scale = sqrt(2.0) #finding if a voronoi cell edge is inside.  Does this work for bcc? 
+#             elif self.method == 1: 
+#                 scale = sqrt(1.0)
+#             if d < -eps:
+#                 print 'd',abs(d),(1*scale)*self.rpacking - eps,(2*scale)*self.rpacking - eps
+#                 inExpanded[i] = True
+#                 if abs(d) >= (2*scale)*self.rpacking - eps: #point volume is all inside the true cell boundary
+#                     allInside[i] = True 
+#                     centerInside[i] = True 
+#                 elif abs(d) >= (1*scale)*self.rpacking - eps:
+#                     centerInside[i] = True
+#         return all(inExpanded), all(centerInside), all(allInside)        
+#         
 
 #     def isAllInside(self,ds,eps):
 #         '''AllInside means on opposite side of the plane vs its normal vector, 

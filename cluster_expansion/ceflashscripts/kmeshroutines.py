@@ -21,6 +21,19 @@ getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
 # get_spaceGrpPG = utilslib.symmetry_module_mp_find_site_equivalencies_
 # get_spaceGrpPG = utilslib.symmetry_module_mp_get_pointgroup_
 #bring_into_cell
+
+def readfile(filepath):
+    file1 = open(filepath,'r')
+    lines = file1.readlines()
+    file1.close()
+    return lines
+
+def writefile(lines,filepath): #need to have \n's inserted already
+    file1 = open(filepath,'w')
+    file1.writelines(lines) 
+    file1.close()
+    return
+
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 

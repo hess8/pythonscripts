@@ -64,7 +64,7 @@ def createdir(path,n,type):
 
 ################# script #######################
 
-maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
+maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/cubicTest/'
 type = 'cubic'
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/vaspinput/'

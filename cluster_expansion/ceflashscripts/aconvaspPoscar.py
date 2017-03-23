@@ -11,7 +11,7 @@ atomic = 'Cu:Pt'
 for dir in dirs:
     print dir
     os.chdir(dir)     
-    commstr2= 'aconvasp --proto=%s:%s | aconvasp --poscar>POSCAR' % (dir,atomic)   #for POSCAR creation         
+    commstr2= 'aconvasp --proto=%s:%s | aconvasp --poscar>POSCAR' % (dir,atomic)   #for POSCAR creation...but not scaled.         
     os.system(commstr2)
     os.chdir(maindir)
 
