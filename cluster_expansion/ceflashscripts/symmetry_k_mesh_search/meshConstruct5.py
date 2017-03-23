@@ -618,6 +618,8 @@ class meshConstruct():
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
+#         shift = aKcubConv*array([1,1,1])/2.0
+        shift = array([0,0,0])
         for i in range(3):
 #             print 'cubic',i,cubicLVs[:,i]
             projs = []
@@ -652,7 +654,7 @@ class meshConstruct():
         #done with start of MP facets printing
         
 #         shift = aKcubConv*array([0,0,0])/2.0
-        shift = aKcubConv*array([1,1,1])/2.0
+        
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
@@ -661,18 +663,19 @@ class meshConstruct():
 #                         'pause'
                     for iS, site in enumerate(sites):
                         ik+=1
-                        kpoint = lvec + site + shift
+                        kpoint = lvec + shift + site
 #                         print 'ik',ik
 #                         print 'test',[i,j,k],iS,kpoint
 #                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
 
-#                         print 'kpoint',ik,i,k,j,kpoint
+                        print 'kpoint',ik,i,k,j,kpoint
 
 #                         print 'ds',ds;print
 #                         inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
                         cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
 #                         inExpanded,centerInside,allInside = self.boundStatusExact(cutMP,IBZ,eps)
                         boundStatus,centerInside = self.boundStatusExact(cutMP,IBZ,eps)
+                        print 'centerinside',centerInside
 #                         print 'inExpanded,centerInside,allInside', inExpanded,centerInside,allInside
                         if boundStatus == 'allInside':
 #                             print 'allInside'
@@ -704,7 +707,7 @@ class meshConstruct():
 #                             print 'volume cut',cutMP.volume, cutMP.volume > eps**3
                             if cutMP.volume > eps**3:
                                 weight = self.IBZvolCut*cutMP.volume/MP.volume
-                                if self.method > 0  and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume
+                                if self.method > 0 and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume 
                                     nRed += 1
 #                                     kptsRed.append(kpoint)
                                     kptsRed.append(cutMP.center) #If the mech VC is cut, may as well use its center.  
@@ -743,8 +746,8 @@ class meshConstruct():
             print 'Weights in IBZ cuts', nCut,weightsCuts, 'Average per cut VC', weightsCuts/float(nCut)
         print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
         print 'BZ volume:', det(self.B),'\n'
-        self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
-        self.facetsMeshVCMathPrint(IBZ,MP)
+#         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
+#         self.facetsMeshVCMathPrint(IBZ,MP)
         return
     
     def redistribWgt(self,kptsRed,wgtsRed,dsRed,IBZ,eps):
@@ -1083,14 +1086,14 @@ class meshConstruct():
         centerdots = []
         for iu,uvec in enumerate(IBZ.bounds[0]):
             ro = IBZ.bounds[1][iu]
-            centerdots.append(dot(MP.center,uvec))
+            centerdots.append(dot(MP.center,uvec) - ro)
             for ipoint,point in enumerate(MP.fpoints): 
                 pu = dot(point,uvec)
                 dotsVsRos[ipoint,iu] = pu - ro
         mindots = amin(dotsVsRos)
         maxdots = amax(dotsVsRos)
         centerInside = False
-        if max(centerdots <= 0 + eps): centerInside = True #MP point center is inside or on boundary
+        if max(centerdots) <= 0 + eps: centerInside = True #MP point center is inside or on boundary
         if mindots >= 0-eps: #all of MP is outside of IBZ or at most touching boundary
             return 'outside',centerInside
         elif maxdots > 0 + eps and mindots < 0 -eps:

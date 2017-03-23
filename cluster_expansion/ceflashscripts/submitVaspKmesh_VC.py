@@ -56,8 +56,8 @@ def createdir(path,n,type):
 ################# script #######################
 
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAnRedistr/Cu_pvPt/'
-type = 'bcc' 
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistr/'
+type = 'cub' 
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
 # method = 0
@@ -94,9 +94,10 @@ for dir in dirs:
 #            subprocess.call(['sbatch', 'vaspjob'])
             
             # Now create new dirs with different characteristics  
-            for n in range(1,13): #was 15:
+            for n in range(1,7): #was 15:
                 newdir = createdir(currdir,n,type) 
-                getVCmesh(newdir,method,4*n**3,type) 
+#                 getVCmesh(newdir,method,4*n**3,type)
+                getVCmesh(newdir,method,n**3,type)
         newdirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
         for newdir in newdirs:
             os.chdir(newdir)

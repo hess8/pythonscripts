@@ -47,7 +47,7 @@ testfile = 'POSCAR'
 # Nkppra = 10000#*10  
 
 
-Nkppra = 9
+Nkppra = 35
 meshtype = 'cub'  #cub, fcc, bcc  
 
 #reallatt = zeros((3,3))

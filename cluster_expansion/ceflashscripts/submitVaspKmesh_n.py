@@ -33,7 +33,8 @@ def writekpts_vasp_n(path,n,type):
         kpointsfile.append('%12.8f %12.8f 0.0\n' % (b,b))
     else:
         sys.exit('Stop: type not found in writekpts_vasp_n')
-    kpointsfile.append('0.5 0.5 0.5\n' ) #shift
+#     kpointsfile.append('0.5 0.5 0.5\n' ) #shift
+    kpointsfile.append('0.0 0.0 0.0\n' ) #shift
     file1.writelines(kpointsfile) 
     file1.close()
     return 
@@ -67,7 +68,7 @@ def createdir(path,n,type):
 maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/cubicTest/'
 type = 'cubic'
 testfile = 'POSCAR'
-vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/vaspinput/'
+vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/vaspinputShort/'
 # Nkppra = 10000
 
 reallatt = np.zeros((3,3))
@@ -101,7 +102,7 @@ for dir in dirs:
             
             # Now create new dirs with different characteristics
             type = 'cubic'
-            for n in range(4,13,2):
+            for n in range(1,13,2):
                 createdir(currdir,n,type)
 #             type = 'fcc'
 #             for n in range(1,15):

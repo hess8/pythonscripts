@@ -19,9 +19,10 @@ testfile = 'POSCAR'
 
 # paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt',\
 #          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt']
-paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt',\
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAnRedistr/Cu_pvPt']
-summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
+paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/cubicTest',\
+         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTest']
+# summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
+summaryPath = paths[1]
 iplot = 0
 maxCalcs = 0
 #count the number of plots:
