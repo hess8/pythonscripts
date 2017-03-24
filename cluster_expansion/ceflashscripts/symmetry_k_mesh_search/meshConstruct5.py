@@ -56,6 +56,18 @@ def among(vec,list,eps):
             return True
     return False 
 
+def directFromCart(Lvs,cartvec):
+    '''Assumes lattice vectors are in **columns** in LVs.
+    Then D = inv(transpose(LV)) * C'''
+    return dot(inv((Lvs)), cartvec)
+    
+def cartFromDirect(self,Lvs,dirvec): 
+    '''Assumes lattice vectors are in **columns** in LVs.
+    Then C = transpose(LV) * D, because Cx = L1xD1 + L2xD2 + L3xD3, etc, 
+    which is top row of transpose(LV) dot D, or the first matrix multiplication 
+    operation'''
+    return dot(Lvs, transpose(dirvec))
+
 def mathPrintPoints(points):
     print 's=Graphics3D[{',
     for ipoint,point in enumerate(points):
@@ -181,13 +193,14 @@ def newBounds(braggVecs,bndsLabels,grp,cell,eps):
             'pause'
         for pair in pairs:
             planes3 = [braggVecs[ig]['vec']]
-            if not (ig in pair):# or ig in keepLabels):
+            if not ig in pair:# or ig in keepLabels):
                 planes3.append(braggVecs[pair[0]]['vec'])
                 planes3.append(braggVecs[pair[1]]['vec'])
                 intersPt = threePlaneIntersect(planes3)    
                 if not intersPt is None:
                     iInt+=1
-                    if not isOutside(intersPt,cell.bounds,eps)\
+#                     if not isOutside(intersPt,cell.bounds,eps)\
+                    if isInside(intersPt,cell.bounds,eps)\
                         and not among(intersPt,allVerts,eps):
                             addVec(intersPt,allVerts,eps)
                             addVec(planes3[0],allPlanes,eps)
@@ -304,7 +317,7 @@ def getVorCell(LVs,cell,eps):
     braggVecs = getBraggVecs(LVs)
     
     igroup = 1
-#     mathPrintPoints(braggVecs[:]['vec'])
+    mathPrintPoints(braggVecs[:]['vec'])
     checkNext = True
     gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
     boundsLabels = range(ng)
@@ -471,10 +484,13 @@ class meshConstruct():
 #         print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
-#         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ  
-        print 'Temporary: no symmetry reduction'
-        IBZ = self.vorCell #temp code!!! no symmetry reduction
-        self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
+
+        IBZ = self.getIBZ(BZ,eps) #now irreducible BZ 
+#         self.facetsMathPrint(BZ,'p',True,'Red') 
+#         print 'Temporary: no symmetry reduction'
+#         IBZ = self.vorCell #temp code!!! no symmetry reduction
+#         self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
+
         self.meshCubic(IBZ,meshtype,eps) #cub, fcc, bcc   
 #         self.meshCubic(IBZ,'fcc',eps)
 #         self.meshCubic(IBZ,'cub',eps)
@@ -482,7 +498,7 @@ class meshConstruct():
 #         self.meshCubic('bcc')
 
 #         self.meshCubic('cub')   
-        self.writeKpoints(IBZ)       
+        self.writeKpoints(IBZ)
         return
     
     def writeKpoints(self,cell):
@@ -491,10 +507,12 @@ class meshConstruct():
         lines = []
         lines.append('Vornoi cell tiling of IBZ (Bret Hess, BYU). Total weights: {:12.8f} (vs 1.0 per general point without symmetry\n'.format(totw))
         lines.append('{}\n'.format(nk))
-        lines.append('Cartesian\n')
+        lines.append('Reciprocal\n') #direct coordinates!...vasp doesn't read cartesian kpoints right
         for ik,kpoint in enumerate(cell.mesh):
+            #direct coordinates!...vasp doesn't read cartesian kpoints right
+            kpointDir = directFromCart(self.B,kpoint)
             lines.append('{:15.12f}  {:15.12f}  {:15.12f}  {:15.12f}\n'\
-                         .format(kpoint[0],kpoint[1],kpoint[2],cell.weights[ik]*1e6))
+                         .format(kpointDir[0],kpointDir[1],kpointDir[2],cell.weights[ik]*1e6))
         self.writefile(lines,'KPOINTS')         
    
     def meshCubic(self,IBZ,type,eps):
@@ -568,7 +586,7 @@ class meshConstruct():
                         sums[ip] += norm(pairs[i])
                 pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
             for i in range(2):        
-                vec = pair[-1][i]
+                vec = pairs[-1][i]
                 cubicLVs[:,i] = vec/norm(vec)
             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
         else:
@@ -634,7 +652,7 @@ class meshConstruct():
         IBZ.weights = []
         kptsRed = []
         wgtsRed = []
-        dsRed = []
+#         dsRed = []
         nRed = 0
         weightsInside = 0
         nInside = 0
@@ -642,7 +660,7 @@ class meshConstruct():
         nOnePlane = 0
         weightsCuts = 0
         nCut = 0
-        nDummy = 0
+        nCenterInside = 0 
 #         offset = array([0.5,0.5,0.5])*aKcubConv
 #         print 'bounds'
 #         for i in range(len(IBZ.bounds[0])):
@@ -668,14 +686,13 @@ class meshConstruct():
 #                         print 'test',[i,j,k],iS,kpoint
 #                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
 
-                        print 'kpoint',ik,i,k,j,kpoint
+#                         print 'kpoint',ik,i,k,j,kpoint
 
 #                         print 'ds',ds;print
 #                         inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
                         cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
 #                         inExpanded,centerInside,allInside = self.boundStatusExact(cutMP,IBZ,eps)
                         boundStatus,centerInside = self.boundStatusExact(cutMP,IBZ,eps)
-                        print 'centerinside',centerInside
 #                         print 'inExpanded,centerInside,allInside', inExpanded,centerInside,allInside
                         if boundStatus == 'allInside':
 #                             print 'allInside'
@@ -684,6 +701,7 @@ class meshConstruct():
                             weightsInside += self.IBZvolCut
                             nInside += 1
                         elif boundStatus == 'toCut':
+                            if centerInside: nCenterInside += 1
 #                             print 'inExpanded'
 #                             if centerInside: print 'centerInside'
                             #change to d's from real cell, the borders of the IBZ
@@ -712,7 +730,6 @@ class meshConstruct():
 #                                     kptsRed.append(kpoint)
                                     kptsRed.append(cutMP.center) #If the mech VC is cut, may as well use its center.  
                                     wgtsRed.append(weight)
-                                    dsRed.append(ds)
 #                                     print 'kpoint',ik,iS,'cut',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
                                 else:   
 #                                     IBZ.mesh.append(kpoint)
@@ -733,7 +750,7 @@ class meshConstruct():
         if  len(kptsRed) <= len(IBZ.mesh) and len(kptsRed)>0:
             weightRed = sum(wgtsRed)
             print 'Weights redistributed', nRed,weightRed, 'Average per point', weightRed/float(nRed)        
-            IBZ = self.redistribWgt(kptsRed,wgtsRed,dsRed,IBZ,eps)
+            IBZ = self.redistribWgt(kptsRed,wgtsRed,IBZ,eps)
         elif len(kptsRed)>0:
             print 'Too few inside kpoints to redistribute: keeping all border points'
             IBZ = self.addToKpts(kptsRed,wgtsRed,IBZ)
@@ -744,13 +761,14 @@ class meshConstruct():
         if nOnePlane>0: print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
         if nCut>0:
             print 'Weights in IBZ cuts', nCut,weightsCuts, 'Average per cut VC', weightsCuts/float(nCut)
+        print 'Cut points with center inside:', nCenterInside, '; outside:', nCut  - nCenterInside
         print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
         print 'BZ volume:', det(self.B),'\n'
 #         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
 #         self.facetsMeshVCMathPrint(IBZ,MP)
         return
     
-    def redistribWgt(self,kptsRed,wgtsRed,dsRed,IBZ,eps):
+    def redistribWgt(self,kptsRed,wgtsRed,IBZ,eps):
         ''' 0.5 approx  If the kpoint is outside, distribute the portion of its Vornoi cell weight that is inside to neighbors of equivalent points
             if point is outside of Voronoi cell (first BZ), then translate by G vector to get it inside.  Points inside the Voronoi cell but not in IBZ
             use point symmetries to get in the IBZ.   
@@ -759,10 +777,9 @@ class meshConstruct():
 #             print;print 'kpoint',ik, kpoint
             dists = []
             neighWgts = []
-            ds = dsRed[ik]
             if ik == 4:
                 'pause'
-            neighs, neighLbls = self.getNeighbors(kpoint,ds,IBZ,eps)         
+            neighs, neighLbls = self.getNeighbors(kpoint,IBZ,eps)         
 #             print 'neighs',neighs,neighLbls
             totNsWeights = 0
             onTop = False 
@@ -781,7 +798,7 @@ class meshConstruct():
                     IBZ.weights[neighLbls[iN]] += wgtsRed[ik] * neighWgts[iN]/totNsWeights
         return IBZ
     
-    def intoIBZ(self,kpoint,ds,IBZ,eps):   
+    def intoIBZ(self,kpoint,IBZ,eps):   
         '''For a point inside the Voronoi cell, use point symmetry to get into IBZ.
         If a point is just outside the Voronoi cell, then translate it by -2*(plane vector) of the bragg plane
         that it is closest to. Then use point symmetry to get into IBZ. This should turn out to be
@@ -803,14 +820,14 @@ class meshConstruct():
             self.mathPrintPoints(sympoints)
             sys.exit("Stop. intoIBZ: symm ops don't return a kpoint inside the IBZ")
                     
-    def getNeighbors(self,kpoint,ds,IBZ,eps):
+    def getNeighbors(self,kpoint,IBZ,eps):
         '''This is for a kpoint just outside the IBZ. 
         Search a sphere around the kpoint and collect neighbors.
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
         Return the closest three neighbors
         '''
         neighR = 3.0*self.rpacking
-        kpSymm = self.intoIBZ(kpoint,ds,IBZ,eps)
+        kpSymm = self.intoIBZ(kpoint,IBZ,eps)
         neighs,neighLbls = self.searchSpheres([kpoint,kpSymm],IBZ,neighR)
         return neighs,neighLbls 
     
