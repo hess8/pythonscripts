@@ -44,7 +44,7 @@ data = zeros(nplots,dtype = [('ID', 'S15'),('nDone','int8'),('eners', '{}float'.
                 ('errs', '{}float'.format(maxCalcs)),('nKs', '{}int16'.format(maxCalcs))])
 #read all the data            
 iplot = -1
-for ipath ,maindir in enumerate(paths):
+for ipath, maindir in enumerate(paths):
     meshMethod = maindir.split('/')[-3][:3]+maindir.split('/')[-1][-3:]
     os.chdir(maindir)
     structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])

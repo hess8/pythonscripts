@@ -94,10 +94,16 @@ for dir in dirs:
 #            subprocess.call(['sbatch', 'vaspjob'])
             
             # Now create new dirs with different characteristics  
-            for n in range(2,15): #was 15:
+#             for n in range(2,17): #was 15:
+#                 print 'n',n
+#                 newdir = createdir(currdir,n,type) 
+# #                 getVCmesh(newdir,method,n**3,type)
+#                 getVCmesh(newdir,method,4*n**3,type)
+            for n in range(2,100,2): #was 15:
+                print 'n',n
                 newdir = createdir(currdir,n,type) 
 #                 getVCmesh(newdir,method,n**3,type)
-                getVCmesh(newdir,method,4*n**3,type)
+                getVCmesh(newdir,method,n**2,type)
         newdirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
         for newdir in newdirs:
             os.chdir(newdir)

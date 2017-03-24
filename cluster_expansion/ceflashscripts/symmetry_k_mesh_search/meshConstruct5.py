@@ -317,7 +317,7 @@ def getVorCell(LVs,cell,eps):
     braggVecs = getBraggVecs(LVs)
     
     igroup = 1
-    mathPrintPoints(braggVecs[:]['vec'])
+#     mathPrintPoints(braggVecs[:]['vec'])
     checkNext = True
     gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
     boundsLabels = range(ng)
@@ -747,15 +747,17 @@ class meshConstruct():
         print showCommand 
         #end MP facets printing
         #redistribute or reassign low-volume weights
-        if  len(kptsRed) <= len(IBZ.mesh) and len(kptsRed)>0:
+        if len(kptsRed)>0:
+#         if  len(kptsRed) <= len(IBZ.mesh) and len(kptsRed)>0:
             weightRed = sum(wgtsRed)
             print 'Weights redistributed', nRed,weightRed, 'Average per point', weightRed/float(nRed)        
             IBZ = self.redistribWgt(kptsRed,wgtsRed,IBZ,eps)
-        elif len(kptsRed)>0:
-            print 'Too few inside kpoints to redistribute: keeping all border points'
-            IBZ = self.addToKpts(kptsRed,wgtsRed,IBZ)
-            nCut += len(kptsRed)
             weightsCuts += sum(wgtsRed)
+#         elif len(kptsRed)>0:
+#             print 'Too few inside kpoints to redistribute: keeping all border points'
+#             IBZ = self.addToKpts(kptsRed,wgtsRed,IBZ)
+#             nCut += len(kptsRed)
+#             weightsCuts += sum(wgtsRed)
         print 'Weights allinside pts', nInside, weightsInside
 #         print 'Volume inside pts', weightsInside*MP.volume
         if nOnePlane>0: print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
