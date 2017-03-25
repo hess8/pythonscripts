@@ -55,24 +55,28 @@ def createdir(path,n,type):
 
 ################# script #######################
 
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/AFLOWDATAn/Cu_pvPt/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestCUB'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestBCC'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestFCC'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTest/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistr/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'cub' 
 testfile = 'POSCAR'
-vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinputShort/'
-method = 0
+vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
+method = 0.5
         #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
         #         from the IBZ center origin to check if the point's volume is cut. 
         #         Cut the VC to determine the volume contribution  
-
 reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 for dir in dirs:
     if testfile in os.listdir(dir):
         print
-        currdir = maindir + dir+'/'
+        currdir = maindir + '/'+ dir+'/'
         print dir + "************"
         file1 = open(currdir+testfile,'r')
         poscar = file1.readlines()
@@ -99,11 +103,12 @@ for dir in dirs:
 #                 newdir = createdir(currdir,n,type) 
 # #                 getVCmesh(newdir,method,n**3,type)
 #                 getVCmesh(newdir,method,4*n**3,type)
-            for n in range(2,100,2): #was 15:
+#             for n in range(2,22,2): #was 15:
+            for n in range(2*48,100*48,2*48): #was 15:
                 print 'n',n
                 newdir = createdir(currdir,n,type) 
 #                 getVCmesh(newdir,method,n**3,type)
-                getVCmesh(newdir,method,n**2,type)
+                getVCmesh(newdir,method,n,type)
         newdirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
         for newdir in newdirs:
             os.chdir(newdir)

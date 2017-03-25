@@ -22,8 +22,8 @@ from kmeshroutines import nstrip, readposcar,create_poscar
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test10^3/'
 #maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/f3varyN/'
 # maindir = '/fslhome/bch/cluster_expansion/alir/AFLOWDATAf1_50e/test/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/AlAl'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTest/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/AlAl'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTest/'
 method = 0.5  #0,1 for now.
             #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
             #         from the IBZ center origin to check if the point's volume is cut. 
@@ -47,7 +47,7 @@ testfile = 'POSCAR'
 # Nkppra = 10000#*10  
 
 
-Nkppra = 38
+Nkppra = 2976
 meshtype = 'cub'  #cub, fcc, bcc  
 
 #reallatt = zeros((3,3))

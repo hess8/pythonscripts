@@ -112,6 +112,7 @@ def orderAngle(facet,eps):
         '''get the angle that each vector is, in the plane of the facet.'''
         if len(facet) == 3:
             return facet
+        
         uvec = plane3pts(facet,eps)[0] #normal of facet, not cut plane.  These are the same only for bordersfacet
         rcenter = sum(facet)/len(facet)
         xunitv =  (facet[0] - rcenter)/norm(facet[0] - rcenter)
@@ -199,8 +200,7 @@ def newBounds(braggVecs,bndsLabels,grp,cell,eps):
                 intersPt = threePlaneIntersect(planes3)    
                 if not intersPt is None:
                     iInt+=1
-#                     if not isOutside(intersPt,cell.bounds,eps)\
-                    if isInside(intersPt,cell.bounds,eps)\
+                    if not isOutside(intersPt,cell.bounds,eps)\
                         and not among(intersPt,allVerts,eps):
                             addVec(intersPt,allVerts,eps)
                             addVec(planes3[0],allPlanes,eps)
@@ -318,8 +318,12 @@ def getVorCell(LVs,cell,eps):
     
     igroup = 1
 #     mathPrintPoints(braggVecs[:]['vec'])
-    checkNext = True
+    
     gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
+    if ng == 6: 
+        checkNext = False
+    else:
+        checkNext = True
     boundsLabels = range(ng)
     for i in boundsLabels:
         vec = braggVecs[i]['vec']; mag = norm(vec)
@@ -637,7 +641,8 @@ class meshConstruct():
         intMaxs = [] #factors of aKcubConv
         intMins = []
 #         shift = aKcubConv*array([1,1,1])/2.0
-        shift = array([0,0,0])
+        shift = aKcubConv*array([1,1,1])/3.0
+#         shift = array([0,0,0])
         for i in range(3):
 #             print 'cubic',i,cubicLVs[:,i]
             projs = []
@@ -727,13 +732,13 @@ class meshConstruct():
                                 weight = self.IBZvolCut*cutMP.volume/MP.volume
                                 if self.method > 0 and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume 
                                     nRed += 1
-#                                     kptsRed.append(kpoint)
-                                    kptsRed.append(cutMP.center) #If the mech VC is cut, may as well use its center.  
+                                    kptsRed.append(kpoint)
+#                                     kptsRed.append(cutMP.center) #If the mech VC is cut, may as well use its center.  
                                     wgtsRed.append(weight)
 #                                     print 'kpoint',ik,iS,'cut',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
                                 else:   
-#                                     IBZ.mesh.append(kpoint)
-                                    IBZ.mesh.append(cutMP.center) #If the mesh VC is cut, may as well use its center.  
+                                    IBZ.mesh.append(kpoint)
+#                                     IBZ.mesh.append(cutMP.center) #If the mesh VC is cut, may as well use its center.  
                                     IBZ.weights.append(weight)   
                                     weightsCuts += weight
                                     nCut += 1
