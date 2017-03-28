@@ -489,11 +489,17 @@ class meshConstruct():
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
 
-        IBZ = self.getIBZ(BZ,eps) #now irreducible BZ 
-#         self.facetsMathPrint(BZ,'p',True,'Red') 
-#         print 'Temporary: no symmetry reduction'
-#         IBZ = self.vorCell #temp code!!! no symmetry reduction
-#         self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
+#         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ 
+        print 'Temporary: no symmetry reduction'
+        IBZ = self.vorCell #temp code!!! no symmetry reduction
+        self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
+        print 'Temp: shift depends on n'
+        if mod(int(rint(targetNmesh**(1./3.))),2)==0:
+            self.shift = array([1,1,1])/2.0
+        else:
+            self.shift = array([0,0,0])
+        print 'Shift', self.shift
+#         shift = aKcubConv*array([1,1,1])/3.0            
 
         self.meshCubic(IBZ,meshtype,eps) #cub, fcc, bcc   
 #         self.meshCubic(IBZ,'fcc',eps)
@@ -640,9 +646,6 @@ class meshConstruct():
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
-#         shift = aKcubConv*array([1,1,1])/2.0
-        shift = aKcubConv*array([1,1,1])/3.0
-#         shift = array([0,0,0])
         for i in range(3):
 #             print 'cubic',i,cubicLVs[:,i]
             projs = []
@@ -674,10 +677,7 @@ class meshConstruct():
         #begin MP facets printing
 #         self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell before loop
         showCommand = 'Show[s,' 
-        #done with start of MP facets printing
-        
-#         shift = aKcubConv*array([0,0,0])/2.0
-        
+        #done with start of MP facets printing        
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
@@ -686,7 +686,7 @@ class meshConstruct():
 #                         'pause'
                     for iS, site in enumerate(sites):
                         ik+=1
-                        kpoint = lvec + shift + site
+                        kpoint = lvec + aKcubConv*self.shift + site
 #                         print 'ik',ik
 #                         print 'test',[i,j,k],iS,kpoint
 #                         ds = self.dToPlanes(kpoint,IBZ.expBounds)

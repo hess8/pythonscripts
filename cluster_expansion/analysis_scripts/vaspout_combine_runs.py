@@ -29,11 +29,12 @@ testfile = 'POSCAR'
 #          ]
 # 
 paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/cubicTest',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTest',
+         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoRedistrMv',
+         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoRedistr',
          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC',
          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistr',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC']
+         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrCUB',
+         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoSymComm']
 
 summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
 # summaryPath = paths[1]
@@ -56,7 +57,8 @@ data = zeros(nplots,dtype = [('ID', 'S15'),('nDone','int8'),('eners', '{}float'.
 #read all the data            
 iplot = -1
 for ipath, maindir in enumerate(paths):
-    meshMethod = maindir.split('/')[-3][:3]+maindir.split('/')[-1][-3:]
+#     meshMethod = maindir.split('/')[-3][:3]+maindir.split('/')[-1][-3:]
+    meshMethod = maindir.split('/')[-1][-7:]
     os.chdir(maindir)
     structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 #     structs = ['f9292']; print'only struct 9292'
@@ -70,7 +72,7 @@ for ipath, maindir in enumerate(paths):
         nKs = []
         nDone = 0
         for calc in calcs:  
-            print 'calc',calc
+#             print 'calc',calc
             if electronicConvergeFinish(calc):
                 ener = getEnergy(calc) #in energy/atom
                 if not areEqual(ener,0,1e-5):
@@ -101,7 +103,13 @@ for ipath, maindir in enumerate(paths):
         data[iplot]['errs'][:nDone] = errs
         data[iplot]['nKs'][:nDone] = nKs
         os.chdir(maindir)
-        
+lines = [' ID , nKIBZ , ener , err \n']  
+for iplot in range(nplots):
+    n = data[iplot]['nDone']
+    for icalc in range(n):#data[iplot]['eners'][:n].tolist()
+        lines.append('{},{},{:15.12f},{:15.12f}\n'.format(data[iplot]['ID'], data[iplot]['nKs'][icalc],\
+             data[iplot]['eners'][icalc],data[iplot]['errs'][icalc]))   
+writefile(lines,'{}/summary.csv'.format(summaryPath))   
 fig = figure()
 ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])

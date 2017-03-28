@@ -59,14 +59,14 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestBCC'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestFCC'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTest/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoSymComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistr/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'cub' 
 testfile = 'POSCAR'
-vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
-method = 0.5
+vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinputShort/'
+method = 0
         #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
         #         from the IBZ center origin to check if the point's volume is cut. 
         #         Cut the VC to determine the volume contribution  
@@ -103,12 +103,14 @@ for dir in dirs:
 #                 newdir = createdir(currdir,n,type) 
 # #                 getVCmesh(newdir,method,n**3,type)
 #                 getVCmesh(newdir,method,4*n**3,type)
-#             for n in range(2,22,2): #was 15:
-            for n in range(2*48,100*48,2*48): #was 15:
+#             for n in range(2,22,2): 
+#             for n in range(2*48,100*48,2*48):
+            for n in range(1,8):  
                 print 'n',n
                 newdir = createdir(currdir,n,type) 
-#                 getVCmesh(newdir,method,n**3,type)
-                getVCmesh(newdir,method,n,type)
+                getVCmesh(newdir,method,n**3,type)
+#                 getVCmesh(newdir,method,n,type)
+#         sys.exit('stop')
         newdirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
         for newdir in newdirs:
             os.chdir(newdir)
