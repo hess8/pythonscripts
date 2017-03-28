@@ -489,15 +489,16 @@ class meshConstruct():
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
 
-#         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ 
-        print 'Temporary: no symmetry reduction'
-        IBZ = self.vorCell #temp code!!! no symmetry reduction
-        self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
+        IBZ = self.getIBZ(BZ,eps) #now irreducible BZ 
+#         print 'Temporary: no symmetry reduction'
+#         IBZ = self.vorCell #temp code!!! no symmetry reduction
+#         self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
         print 'Temp: shift depends on n'
         if mod(int(rint(targetNmesh**(1./3.))),2)==0:
             self.shift = array([1,1,1])/2.0
         else:
             self.shift = array([0,0,0])
+#         self.shift = array([0,0,0])
         print 'Shift', self.shift
 #         shift = aKcubConv*array([1,1,1])/3.0            
 
@@ -650,9 +651,10 @@ class meshConstruct():
 #             print 'cubic',i,cubicLVs[:,i]
             projs = []
             for point in IBZ.fpoints:
-                projs.append(dot(cubicLVs[:,i],point)/aKcubConv**2)
-            intMaxs.append(int(ceil(max(projs)))+1)
-            intMins.append(int(floor(min(projs))))
+                shifted = point + aKcubConv*self.shift
+                projs.append(dot(cubicLVs[:,i],shifted)/aKcubConv**2)
+            intMaxs.append(int(ceil(max(projs)))+2) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
+            intMins.append(int(floor(min(projs)))-1)#optimize: Is -1 required? 
         print 'Maxes',intMaxs
         print 'Mins',intMins       
         #Create the cubic mesh inside the irreducible BZ
@@ -668,7 +670,7 @@ class meshConstruct():
         nOnePlane = 0
         weightsCuts = 0
         nCut = 0
-        nCenterInside = 0 
+        nCenterInside = 0
 #         offset = array([0.5,0.5,0.5])*aKcubConv
 #         print 'bounds'
 #         for i in range(len(IBZ.bounds[0])):
@@ -688,7 +690,7 @@ class meshConstruct():
                         ik+=1
                         kpoint = lvec + aKcubConv*self.shift + site
 #                         print 'ik',ik
-#                         print 'test',[i,j,k],iS,kpoint
+                        print 'test',[i,j,k],iS,kpoint
 #                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
 
 #                         print 'kpoint',ik,i,k,j,kpoint
@@ -698,7 +700,7 @@ class meshConstruct():
                         cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
 #                         inExpanded,centerInside,allInside = self.boundStatusExact(cutMP,IBZ,eps)
                         boundStatus,centerInside = self.boundStatusExact(cutMP,IBZ,eps)
-#                         print 'inExpanded,centerInside,allInside', inExpanded,centerInside,allInside
+                        print 'boundStatus', boundStatus
                         if boundStatus == 'allInside':
 #                             print 'allInside'
                             IBZ.mesh.append(kpoint)
@@ -771,8 +773,8 @@ class meshConstruct():
         print 'Cut points with center inside:', nCenterInside, '; outside:', nCut  - nCenterInside
         print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
         print 'BZ volume:', det(self.B),'\n'
-#         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
-#         self.facetsMeshVCMathPrint(IBZ,MP)
+        self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
+        self.facetsMeshVCMathPrint(IBZ,MP)
         return
     
     def redistribWgt(self,kptsRed,wgtsRed,IBZ,eps):
@@ -1109,11 +1111,18 @@ class meshConstruct():
         dotsVsRos = zeros((len(MP.fpoints),len(IBZ.bounds[0])),dtype=float)#Where each fpoint lies vs the plane: 0 on the plane >0 outside
         centerdots = []
         for iu,uvec in enumerate(IBZ.bounds[0]):
+            outside = zeros(len(MP.fpoints),dtype=bool)
             ro = IBZ.bounds[1][iu]
             centerdots.append(dot(MP.center,uvec) - ro)
             for ipoint,point in enumerate(MP.fpoints): 
                 pu = dot(point,uvec)
                 dotsVsRos[ipoint,iu] = pu - ro
+                outside[ipoint] = pu - ro > eps
+            if all(outside):
+                return 'outside',False
+#             print 'where', where(dotsVsRos[:,iu]>eps)
+#             outside = dotsVsRos[where(dotsVsRos>eps),iu]  #evecs[:,where(areEqual(evals,1.0))[0][0]])
+#             print 'outside',outside
         mindots = amin(dotsVsRos)
         maxdots = amax(dotsVsRos)
         centerInside = False

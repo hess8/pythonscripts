@@ -102,7 +102,7 @@ for dir in dirs:
             
             # Now create new dirs with different characteristics
             type = 'cubic'
-            for n in range(2,24,1):
+            for n in range(2,13,2):
                 createdir(currdir,n,type)
 #             type = 'fcc'
 #             for n in range(1,15):

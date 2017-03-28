@@ -59,7 +59,7 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestBCC'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestFCC'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoSymComm/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistr/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
@@ -105,7 +105,7 @@ for dir in dirs:
 #                 getVCmesh(newdir,method,4*n**3,type)
 #             for n in range(2,22,2): 
 #             for n in range(2*48,100*48,2*48):
-            for n in range(1,8):  
+            for n in range(2,13,2):  
                 print 'n',n
                 newdir = createdir(currdir,n,type) 
                 getVCmesh(newdir,method,n**3,type)

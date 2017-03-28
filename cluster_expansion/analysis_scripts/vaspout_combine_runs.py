@@ -28,13 +28,16 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestFCC'
 #          ]
 # 
+# paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/cubicTest',
+#          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoRedistrMv',
+#          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoRedistr',
+#          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC',
+#          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC',
+#          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrCUB',
+#          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoSymComm']
+
 paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/cubicTest',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoRedistrMv',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoRedistr',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrCUB',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoSymComm']
+         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm']
 
 summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
 # summaryPath = paths[1]
