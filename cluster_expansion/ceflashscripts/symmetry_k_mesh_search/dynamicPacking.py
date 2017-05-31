@@ -1,11 +1,13 @@
 '''
-1. Find the  NL point symmetries of the lattice 
-2. Create the Latice iBZ: liBZ
-3. Find Voronoi BZ
-# 3.5. use any mirror planes to slice the VBZ
-4. Populate the BZ with Nops copies. 
-5. Find the NC symmetries of the crystal
-6. keep NC copies that are contiguous: LBZ
+1. Get IBZ
+2. Fill with an FCC mesh, with fewer than the desired number of points
+3. Begin relaxation with continuous feed.  Points repel each other with a tanh force
+of maximum 1 with radius df and width wf.  Walls repel points with tanh normal force of range radius df/2. 
+3. Choose the vertex with the smallest opening angle to be the "top". Feed points from the top.
+4. Gravity points away from the top with a force on.   During MD, add points at some interval to largest void until the pressure reaches a maximum value. 
+Volume assigned to point is a Vornoi cell made up by planes 
+
+
 All matrices store vectors as COLUMNS
 '''
 import os, subprocess,sys,re,time
@@ -92,7 +94,7 @@ def threePlaneIntersect(rRows):
       If they intersect, then 
         inv[[[xo,yo,zo]
         [x1,y1,z1]
-        [x2,y2,z3]] }  (ro^2,r1^2,r2^2) has a solution
+        [x2,y2,z2]] }  (ro^2,r1^2,r2^2) has a solution
     '''
     rSq = array([dot(rRows[0],rRows[0]),dot(rRows[1],rRows[1]),dot(rRows[2],rRows[2])])
     try:
@@ -433,39 +435,21 @@ class cell():
         self.mesh = None #centers of each voronoi cell, or kpoints
         self.weights = None
     
-class meshConstruct(): 
-    '''Compact mesh reduced by point symmetry operations'''
+class dynamicPack(): 
+    ''''''
     from comMethods import readfile,writefile,trimSmall,areEqual,directFromCart,cartFromDirect
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
-#     def __init__(self):
-#         self.BZboundaries = [[],[]] #for BZ Voronoi cell or IBZ.  written as [u's] , [ro's]
-#         self.MPboundaries = [[],[]] #for mesh point Voronoi cell
-#         cell.facets = [] #facet points for BZ Voronoi cell or IBZ
-#         self.MPfacets = [] #facet points for mesh point Voronoi cell
         
-    def meshSym(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,method):
+    def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,method):
         #1. nCoarse random points in the cell parallelpiped.  
 #         nCoarseMax = 200
         self.B = B
         print '\nB (Recip lattice vectors as columns',B
         print 'method',method
         [self.symops,self.nops] = getGroup(self.B)
-#         for iop in range(self.nops):
-#             print 'iop',iop
-#             for i in range(3):
-#                 for j in range(3):
-#                     print '{:20.17f}'.format(self.symops[i,j,iop])
-#         [self.symops,self.nops] = getGroup(A)
-#         [self.symops,self.nops] = getGroup(transpose(A))
-#         [self.symops,self.nops] = testFor(A,aTypes,aPos)
-#         if postype[0].lower() == 'd': #direct
-#             direct = True
-#         else:
-#             direct = False
-#         [self.symops,self.nops] = getSGpointGroup(A,totatoms,aTypes,aPos,direct)
-#         [self.symops,self.nops] = getSGpointGroup(transpose(A),aTypes,aPos)
-        self.nTarget = targetNmesh
+        self.initFactor = 0.9 #assign 90% of the point at the beginning based on an FCC or BCC mesh
+        self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
         self.method = method
             #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
@@ -477,10 +461,9 @@ class meshConstruct():
         print 'Number of desired points:', targetNmesh
         print 'Symmetry operations:', self.nops
         vol = abs(det(B))
-        self.ravg = (vol/targetNmesh)**(1/3.0)
-        self.edgeFactor = 3.0
-        self.rmin = 0.8*self.ravg #
-        self.rmax = self.edgeFactor*self.ravg #cutoff for forces, neighbors in other cells. 
+        self.ravg = (vol/targetNmesh)**(1/3.0) 
+        self.df = ravg #inter-point force scale distance
+        self.dw = self.df/2.0 #wall force scale distance
         eps = self.ravg/2000
         BZ = cell() #instance
         BZ.volume = vol
@@ -488,71 +471,17 @@ class meshConstruct():
 #         print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
-
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ 
-#         print 'Temporary: no symmetry reduction'
-#         IBZ = self.vorCell #temp code!!! no symmetry reduction
-#         self.IBZvolCut = 1.0 #temp code!!! no symmetry reduction
-#         print 'Temp: shift depends on n'
-#         if mod(int(rint(targetNmesh**(1./3.))),2)==0:
-#             self.shift = array([1,1,1])/2.0
-#         else:
-#             self.shift = array([0,0,0])
-#         self.shift = array([0,0,0])
-        self.shift = IBZ.center
-        print 'Shift', self.shift
-#         shift = aKcubConv*array([1,1,1])/3.0            
-
-        self.meshCubic(IBZ,meshtype,eps) #cub, fcc, bcc   
-#         self.meshCubic(IBZ,'fcc',eps)
-#         self.meshCubic(IBZ,'cub',eps)
-#         self.triFaces()
-#         self.meshCubic('bcc')
-
-#         self.meshCubic('cub')   
+        self.meshInitCubic(IBZ,'FCC',eps)
+        self.dynamic(IBZ,meshtype,eps)
         self.writeKpoints(IBZ)
         return
-    
-    def writeKpoints(self,cell):
-        nk = len(cell.mesh)
-        totw = sum(cell.weights)
-        lines = []
-        lines.append('Vornoi cell tiling of IBZ (Bret Hess, BYU). Total weights: {:12.8f} (vs 1.0 per general point without symmetry\n'.format(totw))
-        lines.append('{}\n'.format(nk))
-        lines.append('Reciprocal\n') #direct coordinates!...vasp doesn't read cartesian kpoints right
-        for ik,kpoint in enumerate(cell.mesh):
-            #direct coordinates!...vasp doesn't read cartesian kpoints right
-            kpointDir = directFromCart(self.B,kpoint)
-            lines.append('{:15.12f}  {:15.12f}  {:15.12f}  {:15.12f}\n'\
-                         .format(kpointDir[0],kpointDir[1],kpointDir[2],cell.weights[ik]*1e6))
-        self.writefile(lines,'KPOINTS')         
-   
-    def meshCubic(self,IBZ,type,eps):
+
+    def meshInitCubic(self,IBZ,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with their normals.       
-        Weighting of each point:
-        Volume of IBZ:  http://scipy.github.io/devdocs/generated/scipy.spatial.ConvexHull.html
-
-        An "unprojected" point on the surface of IBZ: apply all symmetry operators.  
-        Count how many new points it generates. 
-
-        A projected point.  apply all symmetry operators.  
-        Count how many new points it generates.  Its weight should then be 
-        devalued vs an unprojected point on the surface by how much volume belongs to it.  
-        We make a sphere for each point, which for normal packing is a given for a cell.  
-        We derate the weight by how much the projected point's sphere overlaps other spheres.
-        The volume of a sphere cut by a plane a distance d<R from the center is 
-        V = 1/3 Pi (R-d)^2(2R-d)
-        More accurate: each point inside and across the border has its own mesh (e.g. bcc or fcc) voronoi cell. 
-        If we keep (calculate) kpoints that have any of their facets inside the IBZ planes, 
-        we weight them by their volume that is inside the 1BZ, even though the center might be outside.
-        This can be done with machine precision.
-
-        In practice, if a mesh point is within a distance of the packing sphere 
-        radius from a plane, we use that plane to slice the VC of the point.   The distance is ro-dot(r,u).  Then use spatial.ConvexHull
-        to get the volume
-'''
-        
+        Remove any points within self.rw from any wall
+        '''
         a = 1.0
         cubicLVs = identity(3)
         #test facet points for orthogonality
@@ -633,10 +562,6 @@ class meshConstruct():
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubic.')
-#         primLVs = primLVs * aKcubConv
-#         cubicLVs = cubicLVs * aKcubConv
-#         sites = [site * aKcubConv for site in sites]
-#         self.rpacking = self.rpacking*aKcubConv
         self.Vsphere = 4/3.0*pi*self.rpacking**3
         print 'rpacking',self.rpacking
         IBZ = getBoundsFacets(IBZ,eps,self.rpacking) #adds expanded cell
@@ -649,10 +574,8 @@ class meshConstruct():
         intMaxs = [] #factors of aKcubConv
         intMins = []
         for i in range(3):
-#             print 'cubic',i,cubicLVs[:,i]
             projs = []
             for point in IBZ.fpoints:
-#                 shifted = point + aKcubConv*self.shift
                 shifted = point + self.shift
                 projs.append(dot(cubicLVs[:,i],shifted)/aKcubConv**2)
             intMaxs.append(int(ceil(max(projs)))+2) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
@@ -661,22 +584,8 @@ class meshConstruct():
         print 'Mins',intMins       
         #Create the cubic mesh inside the irreducible BZ
         IBZ.mesh = []
-        IBZ.weights = []
-        kptsRed = []
-        wgtsRed = []
-#         dsRed = []
-        nRed = 0
         weightsInside = 0
-        nInside = 0
-        weightsOnePlane = 0
-        nOnePlane = 0
-        weightsCuts = 0
-        nCut = 0
-        nCenterInside = 0
-#         offset = array([0.5,0.5,0.5])*aKcubConv
-#         print 'bounds'
-#         for i in range(len(IBZ.bounds[0])):
-#             print IBZ.bounds[0][i],IBZ.bounds[1][i]               
+        nInside = 0         
         ik = 0 
         #begin MP facets printing
 #         self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell before loop
@@ -686,129 +595,38 @@ class meshConstruct():
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
-#                     if i==j==k==-1:
-#                         'pause'
                     for iS, site in enumerate(sites):
                         ik+=1
                         kpoint = lvec + aKcubConv*self.shift + site
-#                         print 'ik',ik
-#                         print 'test',[i,j,k],iS,kpoint
-#                         ds = self.dToPlanes(kpoint,IBZ.expBounds)
-
-#                         print 'kpoint',ik,i,k,j,kpoint
-
-#                         print 'ds',ds;print
-#                         inExpanded,centerInside,allInside = self.boundStatus(ds,eps)
-                        cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
-#                         inExpanded,centerInside,allInside = self.boundStatusExact(cutMP,IBZ,eps)
-                        boundStatus,centerInside = self.boundStatusExact(cutMP,IBZ,eps)
-#                         print 'boundStatus', boundStatus
-                        if boundStatus == 'allInside':
-#                             print 'allInside'
-                            IBZ.mesh.append(kpoint)
-                            IBZ.weights.append(self.IBZvolCut)
-                            weightsInside += self.IBZvolCut
+                        if isInside(vec,IBZ.bounds,self.dw*self.wallClose):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
-                        elif boundStatus == 'toCut':
-                            if centerInside: nCenterInside += 1
-#                             print 'inExpanded'
-#                             if centerInside: print 'centerInside'
-                            #change to d's from real cell, the borders of the IBZ
-#                             dsIBZ = [d + sqrt(2)*self.rpacking for d in ds]
-#                             print '\n\nkpoint',kpoint, ik, [i,j,k]; sys.stdout.flush()
-#                             print 'ds',dsIBZ                           
-#                             cutMP = self.prepCutMP(MP,kpoint)  #cut MP is displaced by kpoint from MP
-#                             print;print 'ik',ik
-#                             if ik == 115:
-#                                 'pause'
-                            for iplane, uvec in enumerate(IBZ.bounds[0]):
-                                ro = IBZ.bounds[1][iplane]                                      
-                                cutMP = self.cutCell(uvec,ro,cutMP,eps) # we always keep the part that is "inside", opposite u
-#                                 self.facetsMathPrint(cutMP,'p',True,'Red'); print ';Show[p]\n' 
-                                if len(cutMP.facets) <4:
-                                    cutMP.volume = 0.0
-                                if cutMP.volume == 0.0: #(outside IBZ. happens in oblique corners of expanded cell)
-                                        break
-                            if len(cutMP.facets)>=4:
-                                cutMP.volume = convexH(cutMP.fpoints).volume
-#                             print 'volume cut',cutMP.volume, cutMP.volume > eps**3
-                            if cutMP.volume > eps**3:
-                                weight = self.IBZvolCut*cutMP.volume/MP.volume
-                                if self.method > 0 and not centerInside:  #kpoints outside of the IBZ have their weight redistributed.  Not necessary 0.0 < cutMP.volume < 0.5*MP.volume 
-                                    nRed += 1
-                                    kptsRed.append(kpoint)
-#                                     kptsRed.append(cutMP.center) #If the mech VC is cut, may as well use its center.  
-                                    wgtsRed.append(weight)
-#                                     print 'kpoint',ik,iS,'cut',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
-                                else:   
-                                    IBZ.mesh.append(kpoint)
-#                                     IBZ.mesh.append(cutMP.center) #If the mesh VC is cut, may as well use its center.  
-                                    IBZ.weights.append(weight)   
-                                    weightsCuts += weight
-                                    nCut += 1
-#                                     print 'kpoint',ik,iS,'ndum',nDummy,i,k,j,kpoint,'vol',weight*MP.volume
-                                #####MP facet printing loop line                                
-#                                 showCommand = self.cutMPCellMathPrint(IBZ,cutMP,kpoint,ik,showCommand)
-                                #####end MP facet printing loop entry
-        if showCommand[-1] == ',': showCommand = showCommand[:-1]
-        showCommand += ']' 
-        print ';', 
-        print showCommand 
-        #end MP facets printing
-        #redistribute or reassign low-volume weights
-        if len(kptsRed)>0:
-#         if  len(kptsRed) <= len(IBZ.mesh) and len(kptsRed)>0:
-            weightRed = sum(wgtsRed)
-            print 'Weights redistributed', nRed,weightRed, 'Average per point', weightRed/float(nRed)        
-            IBZ = self.redistribWgt(kptsRed,wgtsRed,IBZ,eps)
-            weightsCuts += sum(wgtsRed)
-#         elif len(kptsRed)>0:
-#             print 'Too few inside kpoints to redistribute: keeping all border points'
-#             IBZ = self.addToKpts(kptsRed,wgtsRed,IBZ)
-#             nCut += len(kptsRed)
-#             weightsCuts += sum(wgtsRed)
-        print 'Weights allinside pts', nInside, weightsInside
-#         print 'Volume inside pts', weightsInside*MP.volume
-        if nOnePlane>0: print 'Weights one plane',nOnePlane,weightsOnePlane, weightsOnePlane/float(nOnePlane)
-        if nCut>0:
-            print 'Weights in IBZ cuts', nCut,weightsCuts, 'Average per cut VC', weightsCuts/float(nCut)
-        print 'Cut points with center inside:', nCenterInside, '; outside:', nCut  - nCenterInside
-        print 'Total volume in weights:',  sum(IBZ.weights)*MP.volume, 'from ', (nCut + nOnePlane + nInside),'points'
+                            IBZ.mesh.append(kpoint)
+        print 'Points inside', nInside
         print 'BZ volume:', det(self.B),'\n'
-#         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
-#         self.facetsMeshVCMathPrint(IBZ,MP)
         return
+
+    def force(self,cell):
+        '''Returns an array with the force vectors for each point.'''
+        
     
-    def redistribWgt(self,kptsRed,wgtsRed,IBZ,eps):
-        ''' 0.5 approx  If the kpoint is outside, distribute the portion of its Vornoi cell weight that is inside to neighbors of equivalent points
-            if point is outside of Voronoi cell (first BZ), then translate by G vector to get it inside.  Points inside the Voronoi cell but not in IBZ
-            use point symmetries to get in the IBZ.   
-         '''  
-        for ik,kpoint in enumerate(kptsRed):
-#             print;print 'kpoint',ik, kpoint
-            dists = []
-            neighWgts = []
-            if ik == 4:
-                'pause'
-            neighs, neighLbls = self.getNeighbors(kpoint,IBZ,eps)         
-#             print 'neighs',neighs,neighLbls
-            totNsWeights = 0
-            onTop = False 
-            for iN, neigh in enumerate(neighs):
-                d = norm(kpoint-neigh)
-                if areEqual(d,0.0,eps): #kpoint lies on top of a neighbor which gets all the weight
-                    IBZ.weights[neighLbls[iN]] += wgtsRed[ik]
-                    onTop = True
-                    break
-                dists.append(d)
-                neighWgt = 1/d
-                neighWgts.append(neighWgt)
-                totNsWeights += neighWgt
-            if not onTop:
-                for iN, neigh in enumerate(neighs): 
-                    IBZ.weights[neighLbls[iN]] += wgtsRed[ik] * neighWgts[iN]/totNsWeights
-        return IBZ
-    
+    def writeKpoints(self,cell):
+        nk = len(cell.mesh)
+        totw = sum(cell.weights)
+        lines = []
+        lines.append('Packing of IBZ (Bret Hess, BYU). Total weights: {:12.8f} (vs 1.0 per general point without symmetry\n'.format(totw))
+        lines.append('{}\n'.format(nk))
+        lines.append('Reciprocal\n') #direct coordinates!...vasp doesn't read cartesian kpoints right
+        for ik,kpoint in enumerate(cell.mesh):
+            #direct coordinates!...vasp doesn't read cartesian kpoints right
+            kpointDir = directFromCart(self.B,kpoint)
+            lines.append('{:15.12f}  {:15.12f}  {:15.12f}  {:15.12f}\n'\
+                         .format(kpointDir[0],kpointDir[1],kpointDir[2],cell.weights[ik]*1e6))
+        self.writefile(lines,'KPOINTS')         
+   
+    def dynamic(self,IBZ,type,eps):
+        ''' '''
+        
+       
     def intoIBZ(self,kpoint,IBZ,eps):   
         '''For a point inside the Voronoi cell, use point symmetry to get into IBZ.
         If a point is just outside the Voronoi cell, then translate it by -2*(plane vector) of the bragg plane
@@ -875,14 +693,6 @@ class meshConstruct():
         
     def cutMPCellMathPrint(self,BZ,cellcut,point,ipoint,showCommand):
         '''For showing cut facets inside IBZ, loop work'''
-#         tCell = cell()
-#         tCell.facets = [[]]*len(cellcut.facets)
-#         for ifac,facet in enumerate(cellcut.facets):
-#             temp = []
-#             for facetPoint in facet:
-#                 temp.append(facetPoint + point)
-#             tCell.facets[ifac] = temp
-#         self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'Blue');print ';',
         ncolors = 100
 #         self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'discreteColors[{}][[{}]]'\
 #                              .format(ncolors,mod(ipoint,ncolors)));print ';',
@@ -912,15 +722,7 @@ class meshConstruct():
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the points of cut facets      
         ftemp = deepcopy(cell.facets)       
-#         print;print 'u',u,ro
-#         if u[0] <0 and u[1]<0 and u[2]>0:
-#             print;print 'u',u,ro
-#         if allclose(u,array([-0.57735042,  0.21442248 ,-0.7878385]),atol=eps):
-#             'pause'
         for ifac, facet in enumerate(cell.facets):
-#             print 'ifac',ifac
-#             if ifac == 7:
-#                 'pause'
             newfacet = []
             #first, determine if the plane intersects any facet points or 
             #line segments, by checking the change of sign of dot products
@@ -946,18 +748,11 @@ class meshConstruct():
                     if jp == len(facet): jp = 0 
                     if signs[ip]!=0 and signs[ip] == -signs[jp]: #will have intersection between point1 and next point on facet
                         pointj = facet[jp]
-#                         [intersect, rinters] = intsPlLinSeg(u,ro,pointi,pointj,eps) #         
-#                         if intersect:
-#                             newfacet.append(rinters)
-#                             bordersFacet = addVec(rinters,bordersFacet,eps)
-#                         else:
-#                             print'error in cutCell'
                         interscP = intsPlLinSeg(u,ro,pointi,pointj,eps) #         
                         newfacet.append(interscP)
                         bordersFacet = addVec(interscP,bordersFacet,eps)
 
                 if len(newfacet) >= 3:
-#                     print 'newfacet',newfacet
                     ftemp[ifac] = orderAngle(newfacet,eps)
             else: #mark for removal all points that are outside of the plane
                 for i, sgn in enumerate(signs):
@@ -995,10 +790,7 @@ class meshConstruct():
             if len(cell.fpoints)== 0:
                 cell.volume = 0
             else:
-                cell.center = sum(cell.fpoints)/len(cell.fpoints)
-#                 print'center',cell.center
-#             self.facetsMathPrint(cell,'p',True,'Red');print ';Show[p]\n' 
-                     
+                cell.center = sum(cell.fpoints)/len(cell.fpoints)                    
         return cell      
 
     def getIBZ(self,BZ,eps):
@@ -1057,10 +849,6 @@ class meshConstruct():
                     op = -op
                     evals,evecs = eig(op)
                     evecs = array([evec for evec in evecs])
-#                 if areEqual(det(op),1.0)  : #rotation
-#                     print 'Rotation',  real(evecs[:,where(areEqual(evals,1.0))[0][0]])
-#                 else:
-#                     print 'Reflection',real(evecs[:,where(areEqual(evals,-1.0))[0][0]])
                 if makesDups(op,BZ,eps): #does this operation cause current facet points to move to other facet points
                     if areEqual(det(op),1.0,eps)  : #rotation
                         evec = evecs[:,where(areEqual(evals,1.0,eps))[0][0]] #axis
@@ -1104,84 +892,6 @@ class meshConstruct():
         BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
         return BZ
-
-    def boundStatusExact(self,MP,IBZ,eps):
-        '''Check all the facets vs the IBZ bounds'''        
-#         inExpanded = zeros(nbounds,dtype = bool)
-#         centerInside = zeros(nbounds,dtype = bool)
-#         allInside = zeros(nbounds,dtype = bool)
-        dotsVsRos = zeros((len(MP.fpoints),len(IBZ.bounds[0])),dtype=float)#Where each fpoint lies vs the plane: 0 on the plane >0 outside
-        centerdots = []
-        for iu,uvec in enumerate(IBZ.bounds[0]):
-            outside = zeros(len(MP.fpoints),dtype=bool)
-            ro = IBZ.bounds[1][iu]
-            centerdots.append(dot(MP.center,uvec) - ro)
-            for ipoint,point in enumerate(MP.fpoints): 
-                pu = dot(point,uvec)
-                dotsVsRos[ipoint,iu] = pu - ro
-                outside[ipoint] = pu - ro > eps
-            if all(outside):
-                return 'outside',False
-#             print 'where', where(dotsVsRos[:,iu]>eps)
-#             outside = dotsVsRos[where(dotsVsRos>eps),iu]  #evecs[:,where(areEqual(evals,1.0))[0][0]])
-#             print 'outside',outside
-        mindots = amin(dotsVsRos)
-        maxdots = amax(dotsVsRos)
-        centerInside = False
-        if max(centerdots) <= 0 + eps: centerInside = True #MP point center is inside or on boundary
-        if mindots >= 0-eps: #all of MP is outside of IBZ or at most touching boundary
-            return 'outside',centerInside
-        elif maxdots > 0 + eps and mindots < 0 -eps:
-            return 'toCut',centerInside
-        elif maxdots <= 0 + eps:
-            return 'allInside',centerInside
-        else:
-            sys.exit('stop. Error in boundStatusExact')
-
-#     def boundStatus(self,ds,eps):
-#         '''The d's are from the expanded boundary
-#         allInside: the center is on the opposite side of the plane vs its normal vector, 
-#         and at least a distance of rpacking*scale away from it.  
-#         centerInside: the center is inside or on the boundaries
-#         inExpanded: the center is inside the expanded boundaries'''
-#         inExpanded = zeros(len(ds),dtype = bool)
-#         centerInside = zeros(len(ds),dtype = bool)
-#         allInside = zeros(len(ds),dtype = bool)
-#         for i,d in enumerate(ds):
-#             if self.method < 1:
-#                 scale = sqrt(2.0) #finding if a voronoi cell edge is inside.  Does this work for bcc? 
-#             elif self.method == 1: 
-#                 scale = sqrt(1.0)
-#             if d < -eps:
-#                 print 'd',abs(d),(1*scale)*self.rpacking - eps,(2*scale)*self.rpacking - eps
-#                 inExpanded[i] = True
-#                 if abs(d) >= (2*scale)*self.rpacking - eps: #point volume is all inside the true cell boundary
-#                     allInside[i] = True 
-#                     centerInside[i] = True 
-#                 elif abs(d) >= (1*scale)*self.rpacking - eps:
-#                     centerInside[i] = True
-#         return all(inExpanded), all(centerInside), all(allInside)        
-#         
-
-#     def isAllInside(self,ds,eps):
-#         '''AllInside means on opposite side of the plane vs its normal vector, 
-#         and at least a distance of rpacking away from it'''
-#         allInside = zeros(len(ds),dtype = bool)
-#         for i,d in enumerate(ds):
-#             if self.method == 0:
-#                 scale = sqrt(2.0)
-#             elif self.method == 1: 
-#                 scale = sqrt(1.0)
-#             if d < - eps and abs(d)> (2*scale)*self.rpacking - eps: #point volume is all inside the true cell boundary
-#                 allInside[i] = True
-#         return all(allInside)
-
-#     def isInsideExpanded(self,ds,eps):
-#         inside = zeros(len(ds),dtype = bool)
-#         for i,d in enumerate(ds):
-#             if d < - eps: #point is inside the expanded cell boundary
-#                 inside[i] = True
-#         return all(inside)
 
     def checkVertices(self,BZ,tMP,ds):
         nearPlanes = []
@@ -1288,35 +998,3 @@ class meshConstruct():
         for iplane, pvec in enumerate(planes):
             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)), #write plane equations for mathematica
         print ']\n'
-        
-        
-#     def facetsMeshVCMathWrite(self,BZ,MP):
-#         '''Put a mesh point VC at each mesh point'''
-#         mathOut = open('mathOuts',w)
-#         self.facetsMathPrint(BZ,'s','True','Red'); #draw supecell voronoi cell
-#         showCommand = ';Show[s,'  
-#         print ';',
-#         for ipoint,point in enumerate(BZ.mesh):
-#             tCell = cell()
-#             tCell.facets = [[]]*len(MP.facets)
-#             for ifac,facet in enumerate(MP.facets):
-#                 facet = list(trimSmall(array(facet)))
-#                 temp = []
-#                 for facetPoint in facet:
-#                     temp.append(facetPoint + point)
-#                 tCell.facets[ifac] = temp
-# #             self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,\
-# #                                  'discreteColors[{}][[{}]]'.format(len(BZ.mesh),ipoint));print ';',
-#             self.facetsMathPrint(tCell,'v{}'.format(ipoint),False,'RandomColor[]');print ';',
-# 
-#             showCommand += 'v{}'.format(ipoint)
-#             if ipoint < len(BZ.mesh)-1:
-#                 showCommand += ','
-# #                 print ',', 
-#         showCommand += ']'
-#         print ';',
-#         print showCommand 
-        
-        
-        
-        

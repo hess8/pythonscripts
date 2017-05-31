@@ -37,7 +37,9 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoSymComm']
 
 paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/cubicTest',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm']
+         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrCUB',
+         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrCUBNM']
+
 
 summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
 # summaryPath = paths[1]
