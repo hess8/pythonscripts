@@ -31,7 +31,7 @@ from pip._vendor.html5lib.constants import rcdataElements
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 sys.path.append('/fslhome/bch/graphener/graphener')
 
-from meshpy.tet import MeshInfo, build, Options
+# from meshpy.tet import MeshInfo, build, Options
 
 # from conjGradMin.optimize import fmin_cg
 
@@ -462,8 +462,10 @@ class dynamicPack():
         print 'Symmetry operations:', self.nops
         vol = abs(det(B))
         self.ravg = (vol/targetNmesh)**(1/3.0) 
-        self.df = ravg #inter-point force scale distance
+        self.df = self.ravg #inter-point force scale distance
         self.dw = self.df/2.0 #wall force scale distance
+        self.wallClose = 1.0 #to allow initial points closer to the wall set to less than 1. 
+        self.shift =  array([1,1,1])/10.0 #array([1/10,0,0])
         eps = self.ravg/2000
         BZ = cell() #instance
         BZ.volume = vol
@@ -472,8 +474,10 @@ class dynamicPack():
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ 
-        self.meshInitCubic(IBZ,'FCC',eps)
-        self.dynamic(IBZ,meshtype,eps)
+        self.facetsMathPrint(IBZ,'p',True,'Red');print ';Show[p]\n' 
+        self.meshInitCubic(IBZ,meshtype,eps)
+        sys.exit('stop')
+        self.dynamic(IBZ,eps)
         self.writeKpoints(IBZ)
         return
 
@@ -496,7 +500,6 @@ class dynamicPack():
                 if areEqual(norm(uvecs[j]),0.0,eps): break
                 if areEqual(dot(uvecs[i],uvecs[j]),0.0,eps):
                     pairs.append([uvecs[i],uvecs[j]])
-
         for ip,pair in enumerate(pairs):
             for i in range(len(uvecs)):
                 if areEqual(norm(uvecs[i]),0.0,eps): break
@@ -562,13 +565,13 @@ class dynamicPack():
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubic.')
-        self.Vsphere = 4/3.0*pi*self.rpacking**3
-        print 'rpacking',self.rpacking
-        IBZ = getBoundsFacets(IBZ,eps,self.rpacking) #adds expanded cell
-        MP = cell()
-        MP.volume = volKcubConv/len(sites)
-        MP = getVorCell(primLVs,MP,eps)
-        MP.volume = convexH(MP.fpoints).volume
+#         self.Vsphere = 4/3.0*pi*self.rpacking**3
+#         print 'rpacking',self.rpacking
+#         IBZ = getBoundsFacets(IBZ,eps,self.rpacking) #adds expanded cell
+#         MP = cell()
+#         MP.volume = volKcubConv/len(sites)
+#         MP = getVorCell(primLVs,MP,eps)
+#         MP.volume = convexH(MP.fpoints).volume
 #         print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
@@ -598,11 +601,16 @@ class dynamicPack():
                     for iS, site in enumerate(sites):
                         ik+=1
                         kpoint = lvec + aKcubConv*self.shift + site
-                        if isInside(vec,IBZ.bounds,self.dw*self.wallClose):  #Can't be closer than self.dw*self.wallClose to a wall
+#                         print 'kp',kpoint
+                        if isInside(kpoint,IBZ.bounds,self.dw*self.wallClose):  #Can't be closer than self.dw*self.wallClose to a wall
+#                         if i + j + k ==1:
+#                             'pause'
+#                         if not isOutside(kpoint,IBZ.bounds,eps):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
                             IBZ.mesh.append(kpoint)
         print 'Points inside', nInside
         print 'BZ volume:', det(self.B),'\n'
+        self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
         return
 
     def force(self,cell):
@@ -836,7 +844,7 @@ class dynamicPack():
             sys.exit('Stop.')
         print '\n\nReducing Brillouin zone by symmetry'
 #         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
-         
+#          
         inversion = False
         for iop in range(self.nops):
             op = self.symops[:,:,iop] 

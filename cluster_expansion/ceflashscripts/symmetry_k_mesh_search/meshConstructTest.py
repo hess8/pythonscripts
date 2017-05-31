@@ -5,7 +5,8 @@ import sys,os,subprocess
 from numpy import zeros,transpose,array,sum,float64,rint
 from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/')
-import meshConstruct5
+# import meshConstruct5
+import dynamicPacking
 from kmeshroutines import nstrip, readposcar,create_poscar
 
 ################# script #######################
@@ -41,15 +42,15 @@ method = 0  #0,1 for now.
 #maindir = '/fslhome/bch/cluster_expansion/sisi/test10^3/'
 #maindir = '/fslhome/bch/cluster_expansion/sisi/test10^4/'
 
-meshc = meshConstruct5.meshConstruct() #instance
+meshc = dynamicPacking.dynamicPack() #instance
 
 testfile = 'POSCAR'
 # Nkppra = 10000#*10  
 
 
-Nkppra = 64
+Nkppra = 10000
 
-meshtype = 'cub'  #cub, fcc, bcc  
+meshtype = 'fcc'  #cub, fcc, bcc  
 
 #reallatt = zeros((3,3))
 os.chdir(maindir)
@@ -83,7 +84,7 @@ for dir in dirs:
             atype += 1
         aTypes = array(aTypes)
 
-        meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,path,method)
+        meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,path,method)
         sys.exit('stop')
 #         [meshvecs, Nmesh, lattype, pfB, pf, status] = meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,path,method)
 #        bestmeshIter_vary_N(reciplatt,Nmesh,path)
