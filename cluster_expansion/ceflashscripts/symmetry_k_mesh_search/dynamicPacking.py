@@ -1,8 +1,8 @@
 '''
 1. Get IBZ
 2. Fill with an FCC mesh, with fewer than the desired number of points
-3. Begin relaxation with continuous feed.  Points repel each other with a tanh force
-of maximum 1 with radius df and width wf.  Walls repel points with tanh normal force of range radius df/2. 
+3. Begin relaxation with continuous feed.  Points repel each other with a force
+of which is 1.0 at distance df and width wf.  Walls repel points with tanh normal force of range radius df/2. 
 3. Choose the vertex with the smallest opening angle to be the "top". Feed points from the top.
 4. Gravity points away from the top with a force on.   During MD, add points at some interval to largest void until the pressure reaches a maximum value. 
 Volume assigned to point is a Vornoi cell made up by planes 
@@ -451,7 +451,7 @@ class dynamicPack():
         self.initFactor = 0.9 #assign 90% of the point at the beginning based on an FCC or BCC mesh
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
-        self.method = method
+        self.method = methodd
             #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
             #         from the IBZ center origin to check if the point's volume is cut. 
             #         Cut the VC to determine the volume contribution      
@@ -613,8 +613,26 @@ class dynamicPack():
         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
         return
 
-    def force(self,cell):
+    def getForces(self,cell):
         '''Returns an array with the force vectors for each point.'''
+        
+    def interForce(self,r1,r2): #force on 1 due to 2
+        #self.df = self.ravg #inter-point force scale distance
+        d = norm(r1-r2)
+        p = 6.0
+        return (d/self.df)**(-p)*(r1-r2)/d #vector
+        
+    def wallForce(self,r,bounds):
+        #self.dw wall-point force scale distance
+        f = zeros(3)
+        p = 6.0
+        for i, u in bounds[0]:
+            ro = bounds[1][i]
+            rp = - u * (1-dot(r,u))
+            d = norm(rp)
+        f += -u*(d/self.dw)**(-p)
+        
+        return f        
         
     
     def writeKpoints(self,cell):
