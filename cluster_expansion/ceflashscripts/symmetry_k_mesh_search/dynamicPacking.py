@@ -111,23 +111,30 @@ def threePlaneIntersect(rRows):
             return None
         
 def orderAngle(facet,eps):
-        '''get the angle that each vector is, in the plane of the facet.'''
-        if len(facet) == 3:
-            return facet
-        
-        uvec = plane3pts(facet,eps)[0] #normal of facet, not cut plane.  These are the same only for bordersfacet
-        rcenter = sum(facet)/len(facet)
-        xunitv =  (facet[0] - rcenter)/norm(facet[0] - rcenter)
-        crss = cross(xunitv, uvec)
-        yunitv = crss/norm(crss)
-        angles = []
-        for i, vec in enumerate(facet):
-            vc = vec - rcenter
-            vx = dot(vc,xunitv); vy = dot(vc,yunitv)
-            angle = arctan2(vy,vx)
-            if angle < 0-eps: angle += 2*pi
-            angles.append(angle)
-        return [point for (angle,point) in sorted(zip(angles,facet),key = lambda x: x[0])] 
+    '''get the angle that each vector is, in the plane of the facet.'''
+    if len(facet) == 3:
+        return facet
+    xy = planar3dTo2d(facet,eps)
+    angles = []
+    for i, vec in enumerate(facet):
+        angle = arctan2(xy[i,1],xy[i,0])
+        if angle < 0-eps: angle += 2*pi
+        angles.append(angle)
+    return [point for (angle,point) in sorted(zip(angles,facet),key = lambda x: x[0])] 
+
+def planar3dTo2d(points,eps):
+    '''Finds x,y coordinates of points in a plane'''
+    coords = zeros((len(points),2))
+    uvec = plane3pts(points,eps)[0] #plane normal
+    rcenter = sum(points)/len(points)
+    xunitv =  (points[0] - rcenter)/norm(points[0] - rcenter)
+    crss = cross(xunitv, uvec)
+    yunitv = crss/norm(crss)
+    for i, vec in enumerate(points):
+        vc = vec - rcenter
+        coords[i,0] = dot(vc,xunitv); coords[i,1] = dot(vc,yunitv)
+    return coords
+    
 
 def flatVecsList(vecsList,eps):
     '''Returns a flat list of vectors, from a list of lists that might have duplicates, 
@@ -410,7 +417,6 @@ def intsPlLinSeg(u,ro,r1,r2,eps):
 def getBoundsFacets(cell,eps,rpacking = None): 
     '''After cutting, we have new facets, and the facet planes are the boundaries'''
     cell.bounds = [[],[]] 
-    
     for ifac, facet in enumerate(cell.facets):
         facCenter = sum(facet)/len(facet)
         u,ro = plane3pts(facet,eps)
@@ -451,7 +457,7 @@ class dynamicPack():
         self.initFactor = 0.9 #assign 90% of the point at the beginning based on an FCC or BCC mesh
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
-        self.method = methodd
+        self.method = method
             #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
             #         from the IBZ center origin to check if the point's volume is cut. 
             #         Cut the VC to determine the volume contribution      
@@ -464,7 +470,7 @@ class dynamicPack():
         self.ravg = (vol/targetNmesh)**(1/3.0) 
         self.df = self.ravg #inter-point force scale distance
         self.dw = self.df/2.0 #wall force scale distance
-        self.wallClose = 1.0 #to allow initial points closer to the wall set to less than 1. 
+        self.wallClose = 0.5 #to allow initial points closer to the wall set to less than 1. 
         self.shift =  array([1,1,1])/10.0 #array([1/10,0,0])
         eps = self.ravg/2000
         BZ = cell() #instance
@@ -473,11 +479,11 @@ class dynamicPack():
 #         print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
-        IBZ = self.getIBZ(BZ,eps) #now irreducible BZ 
+        IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
         self.facetsMathPrint(IBZ,'p',True,'Red');print ';Show[p]\n' 
         self.meshInitCubic(IBZ,meshtype,eps)
-        sys.exit('stop')
         self.dynamic(IBZ,eps)
+        sys.exit('stop')
         self.writeKpoints(IBZ)
         return
 
@@ -613,25 +619,40 @@ class dynamicPack():
         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
         return
 
-    def getForces(self,cell):
+    def getForces(self,cell,eps):
         '''Returns an array with the force vectors for each point.'''
+        self.forceP = zeros((len(cell.mesh),3))
+        self.wallF = zeros(len(cell.facets))
+        self.wallPress = zeros(len(cell.facets))
         
+        for i,ri in enumerate(cell.mesh):
+            self.forceP[i] = self.wallsForce(ri,cell.bounds)
+            for j, rj in enumerate(cell.mesh):
+                if i!=j:
+                    self.forceP[i] += self.interForce(ri,rj)
+        for i,fac in enumerate(cell.facets):
+            area = convexH(planar3dTo2d(fac,eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
+            self.wallPress[i] = self.wallF[i]/area
+        return
+             
     def interForce(self,r1,r2): #force on 1 due to 2
         #self.df = self.ravg #inter-point force scale distance
         d = norm(r1-r2)
+        print 'd',d, r1,r2
         p = 6.0
         return (d/self.df)**(-p)*(r1-r2)/d #vector
         
-    def wallForce(self,r,bounds):
+    def wallsForce(self,r,bounds):
         #self.dw wall-point force scale distance
         f = zeros(3)
         p = 6.0
-        for i, u in bounds[0]:
+        for i, u in enumerate(bounds[0]):
             ro = bounds[1][i]
             rp = - u * (1-dot(r,u))
             d = norm(rp)
-        f += -u*(d/self.dw)**(-p)
-        
+            force = (d/self.dw)**(-p)
+            self.wallF[i] += force
+            f += -u*force
         return f        
         
     
@@ -649,9 +670,11 @@ class dynamicPack():
                          .format(kpointDir[0],kpointDir[1],kpointDir[2],cell.weights[ik]*1e6))
         self.writefile(lines,'KPOINTS')         
    
-    def dynamic(self,IBZ,type,eps):
+    def dynamic(self,IBZ,eps):
         ''' '''
-        
+        self.getForces(IBZ,eps)
+        print self.forceP
+        print self.wallPress
        
     def intoIBZ(self,kpoint,IBZ,eps):   
         '''For a point inside the Voronoi cell, use point symmetry to get into IBZ.
