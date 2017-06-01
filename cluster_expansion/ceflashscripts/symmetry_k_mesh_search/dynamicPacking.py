@@ -40,6 +40,8 @@ from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, la
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double,
     getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell,
     reverseStructured,isInVoronoi,areParallel, among, addVec, getSGpointGroup)
+def timestamp():
+    return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 
 def areEqual(x,y,eps):
     return abs(x-y)<eps
@@ -446,6 +448,8 @@ class dynamicPack():
     from comMethods import readfile,writefile,trimSmall,areEqual,directFromCart,cartFromDirect
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
+    from conjGradMin2 import (fmin_cg,minimize_cg,line_search_wolfe1,scalar_search_wolfe1)
+
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,method):
         #1. nCoarse random points in the cell parallelpiped.  
@@ -490,8 +494,7 @@ class dynamicPack():
     def meshInitCubic(self,IBZ,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with their normals.       
-        Remove any points within self.rw from any wall
-        '''
+        Remove any points within self.rw from any wall        '''
         a = 1.0
         cubicLVs = identity(3)
         #test facet points for orthogonality
@@ -571,14 +574,6 @@ class dynamicPack():
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubic.')
-#         self.Vsphere = 4/3.0*pi*self.rpacking**3
-#         print 'rpacking',self.rpacking
-#         IBZ = getBoundsFacets(IBZ,eps,self.rpacking) #adds expanded cell
-#         MP = cell()
-#         MP.volume = volKcubConv/len(sites)
-#         MP = getVorCell(primLVs,MP,eps)
-#         MP.volume = convexH(MP.fpoints).volume
-#         print 'Mesh Point Voronoi cell',MP.facets; self.facetsMathPrint(MP,'p',True,'Red');print ';Show[p]\n'        
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -618,42 +613,6 @@ class dynamicPack():
         print 'BZ volume:', det(self.B),'\n'
         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
         return
-    
-#     def getEnergy(self, cell, eps):
-#         '''Returns the to'''
-#         self.enerP = zeros((len(cell.mesh),3))
-#         self.wallE = zeros(len(cell.facets))
-#         self.wallPress = zeros(len(cell.facets))
-#         
-#         for i,ri in enumerate(cell.mesh):
-#             self.forceP[i] = self.wallsForce(ri,cell.bounds)
-#             for j, rj in enumerate(cell.mesh):
-#                 if i!=j:
-#                     self.forceP[i] += self.interForce(ri,rj)
-#         for i,fac in enumerate(cell.facets):
-#             area = convexH(planar3dTo2d(fac,eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
-#             self.wallPress[i] = self.wallF[i]/area
-#         return
-#              
-#     def interEnergy(self,r1,r2): #force on 1 due to 2
-#         #self.df = self.ravg #inter-point force scale distance
-#         d = norm(r1-r2)
-#         print 'd',d, r1,r2
-#         p = 6.0
-#         return (d/self.df)**(-p)*(r1-r2)/d #vector
-#         
-#     def wallsEnergy(self,r,bounds):
-#         #self.dw wall-point force scale distance
-#         f = zeros(3)
-#         p = 6.0
-#         for i, u in enumerate(bounds[0]):
-#             ro = bounds[1][i]
-#             rp = - u * (1-dot(r,u))
-#             d = norm(rp)
-#             force = (d/self.dw)**(-p)
-#             self.wallF[i] += force
-#             f += -u*force
-#         return f 
 
     def dynamic(self,IBZ,eps):
         ''' '''
@@ -661,10 +620,48 @@ class dynamicPack():
         self.forces = zeros((len(self.points),3))
         self.wallForce = zeros(len(IBZ.facets))
         self.wallPress = zeros(len(IBZ.facets))
-        self.bounds = IBZ.bounds         
+        self.bounds = IBZ.bounds 
+        self.facets = IBZ.facets
+        self.eps = eps
+        self.relax()
+             
 #         self.getForces(IBZ,eps)
 #         print self.forceP
 #         print self.wallPress
+
+    def relax(self):
+        '''Conjugate gradient relaxation of the potential energy.
+        See www.idi.ntnu.no/~elster/tdt24/tdt24-f09/cg.pdf 
+        fmin_cg(f, x0, options...)
+        f : callable, f(x, *args) Objective function to be minimized. Here x must be a 1-D array of the variables that are to be changed in the search for a minimum, and args are the other (fixed) parameters of f.
+        x0 : ndarray A user-supplied initial estimate of xopt, the optimal value of x. It must be a 1-D array of values.
+ 
+         >>> args = (2, 3, 7, 8, 9, 10)  # parameter values
+        >>> def f(x, *args):
+        ...     u, v = x
+        ...     a, b, c, d, e, f = args
+        ...     return a*u**2 + b*u*v + c*v**2 + d*u + e*v + f
+        >>> def gradf(x, *args):
+        ...     u, v = x
+        ...     a, b, c, d, e, f = args
+        ...     gu = 2*a*u + b*v + d     # u-component of the gradient
+        ...     gv = b*u + 2*c*v + e     # v-component of the gradient
+        ...     return np.asarray((gu, gv))
+        >>> x0 = np.asarray((0, 0))  # Initial guess.
+        >>> from scipy import optimize
+        >>> res1 = optimize.fmin_cg(f, x0, fprime=gradf, args=args)
+ 
+        The energy must be a function of 1-D inputs, so we flatten the points into components '''
+        initialGuess = array(self.points).flatten()
+        epsilon = self.ravg/100
+        out = self.fmin_cg(initialGuess,self.eps)
+        print out
+#         for i in range(27):
+#             print i ,self.indInComps[i]
+#         vectors = self.indInComps.reshape((self.npoints,3))
+#         for i in range(9):
+#             print i ,vectors[i,:]        
+        return
 
     def enerGrad(self,comps):
         '''Returns the total energy and the gradient (forces)'''
@@ -672,60 +669,30 @@ class dynamicPack():
         vecs = comps.reshape((len(self.points),3))
         p = 6.0
         etot = 0.0
+        wallfactor = 1.0
         for i,ri in enumerate(vecs):
             #wall forces
             for iw, u in enumerate(self.bounds[0]):
-                ro = bounds[1][i]
+                ro = self.bounds[1][iw]
                 d = ro-dot(ri,u) #distance from plane to ri
                 if d<0:
-                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(i))
-                fmag = (d/self.dw)**(-p)  #dimensionless
-                etot += ((d/self.dw)**(-p+1))/p #dimensionless
-                self.forces[i] += -u*fmag
-                self.wallForce[i] += fmag #since forces are normal to plane, we sum the magnitudes
+#                     print 'ri,ro,u, dot(ri,u),d'
+#                     print ri,ro,u, dot(ri,u), d 
+                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
+                fmag = wallfactor*(d/self.dw)**(-p)  #dimensionless
+                etot += wallfactor*((d/self.dw)**(-p+1))/p #dimensionless
+                self.forces[iw] += -u*fmag
+                self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudes
             #inter-point forces
-            for j, rj in enumerate(cell.mesh):
+            for j, rj in enumerate(vecs):
                 if i!=j:
                     d = norm(ri-rj)
-                    self.forces[i] += (d/self.df)**(-p)*(r1-r2)/d
-        for i,fac in enumerate(cell.facets):
-            area = convexH(planar3dTo2d(fac,eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
-            self.wallPress[i] = self.wallF[i]/area
+                    self.forces[i] += (d/self.df)**(-p)*(ri-rj)/d
+        for i,fac in enumerate(self.facets):
+            area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
+            self.wallPress[i] = self.wallForce[i]/area
         return etot, self.forces.flatten()
-     
-#     def getForces(self,cell,eps):
-#         '''Returns an array with the force vectors for each point.'''
-#         self.forceP = zeros((len(cell.mesh),3))
-#         self.wallF = zeros(len(cell.facets))
-#         self.wallPress = zeros(len(cell.facets))
-#         
-#         for i,ri in enumerate(cell.mesh):
-#             self.forceP[i] = self.wallsForce(ri,cell.bounds)
-#             for j, rj in enumerate(cell.mesh):
-#                 if i!=j:
-#                     self.forceP[i] += self.interForce(ri,rj)
-#         for i,fac in enumerate(cell.facets):
-#             area = convexH(planar3dTo2d(fac,eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
-#             self.wallPress[i] = self.wallF[i]/area
-#         return
-#              
-#     def interForceEnergy(self,r1,r2): #force on 1 due to 2
-#         #self.df = self.ravg #inter-point force scale distance
-#         d = norm(r1-r2)
-#         print 'd',d, r1,r2
-#         p = 6.0
-#         return (d/self.df)**(-p)*(r1-r2)/d #vector
-#         
-#     def wallsForceEnergy(self,r,bounds):
-#         #self.dw wall-point force scale distance
-#         f = zeros(3)
-#         ener = 0
-#         p = 6.0
-# 
-#         return ener,f  
-#           
-#         
-#     
+        
     def writeKpoints(self,cell):
         nk = len(cell.mesh)
         totw = sum(cell.weights)
@@ -1111,3 +1078,19 @@ class dynamicPack():
         for iplane, pvec in enumerate(planes):
             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)), #write plane equations for mathematica
         print ']\n'
+        
+    def plotPos(self,arr,npoints,step):
+        self.plot2dPts(arr,npoints,timestamp()+step,'x','y') 
+        self.plot2dPts(arr,npoints,timestamp()+step,'x','z')  
+        
+    def plot2dPts(self,arr,npoints,tag,ax0,ax1):
+#         fig = figure()
+        i0 = ('x','y','z').index(ax0)
+        i1 = ('x','y','z').index(ax1)
+        scatter(arr[:,i0],arr[:,i1])
+        xlabel('{}'.format(ax0))
+        ylabel('{}'.format(ax1))
+        name = '{}_{}-{}'.format(tag,ax0,ax1)
+        title(name)
+        savefig(self.path+'/'+ name+'.pdf');
+        os.system('cp {} {}'.format(self.path+'/'+ name+'.pdf',self.path+ '/latest{}-{}'.format(ax0,ax1)+'.pdf' ))

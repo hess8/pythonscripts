@@ -3,7 +3,7 @@ import sys
 # import numpy
 from scipy._lib.six import callable
 from numpy import (atleast_1d, eye, mgrid, argmin, zeros, shape, squeeze,
-                   vectorize, asarray, sqrt, Inf, asfarray, isinf, intc,
+                   vectorize, array,asarray, sqrt, Inf, asfarray, isinf, intc,
                    amax, amin, dot)
 from numpy.linalg import det, inv, eig
 from numpy.linalg import norm as npnorm
@@ -76,8 +76,8 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
     print 'Initial positions\n', x0
 
     # Sets the initial step guess to dx ~ 1
-    print 'Initial energy'
     old_fval,grad = self.enerGrad(xk)
+    print 'Initial energy',old_fval
     old_old_fval = old_fval + npnorm(grad) / 2
 
     if retall:
@@ -108,8 +108,7 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
             xk = xk + stp_k * self.pk
             print 'xk  ',k, xk
             fnew,grad = self.enerGrad(xk)
-            self.plotPos(self.points,self.npoints,'pos','{}_'.format(str(k)))
-
+            self.plotPos(array(self.points),len(self.points),'_{}'.format(str(k)))
             print 'grad', grad  
 #             print
             self.pk = -grad         
