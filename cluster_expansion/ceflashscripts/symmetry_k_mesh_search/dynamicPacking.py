@@ -618,44 +618,114 @@ class dynamicPack():
         print 'BZ volume:', det(self.B),'\n'
         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
         return
+    
+#     def getEnergy(self, cell, eps):
+#         '''Returns the to'''
+#         self.enerP = zeros((len(cell.mesh),3))
+#         self.wallE = zeros(len(cell.facets))
+#         self.wallPress = zeros(len(cell.facets))
+#         
+#         for i,ri in enumerate(cell.mesh):
+#             self.forceP[i] = self.wallsForce(ri,cell.bounds)
+#             for j, rj in enumerate(cell.mesh):
+#                 if i!=j:
+#                     self.forceP[i] += self.interForce(ri,rj)
+#         for i,fac in enumerate(cell.facets):
+#             area = convexH(planar3dTo2d(fac,eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
+#             self.wallPress[i] = self.wallF[i]/area
+#         return
+#              
+#     def interEnergy(self,r1,r2): #force on 1 due to 2
+#         #self.df = self.ravg #inter-point force scale distance
+#         d = norm(r1-r2)
+#         print 'd',d, r1,r2
+#         p = 6.0
+#         return (d/self.df)**(-p)*(r1-r2)/d #vector
+#         
+#     def wallsEnergy(self,r,bounds):
+#         #self.dw wall-point force scale distance
+#         f = zeros(3)
+#         p = 6.0
+#         for i, u in enumerate(bounds[0]):
+#             ro = bounds[1][i]
+#             rp = - u * (1-dot(r,u))
+#             d = norm(rp)
+#             force = (d/self.dw)**(-p)
+#             self.wallF[i] += force
+#             f += -u*force
+#         return f 
 
-    def getForces(self,cell,eps):
-        '''Returns an array with the force vectors for each point.'''
-        self.forceP = zeros((len(cell.mesh),3))
-        self.wallF = zeros(len(cell.facets))
-        self.wallPress = zeros(len(cell.facets))
-        
-        for i,ri in enumerate(cell.mesh):
-            self.forceP[i] = self.wallsForce(ri,cell.bounds)
+    def dynamic(self,IBZ,eps):
+        ''' '''
+        self.points = IBZ.mesh #initial mesh
+        self.forces = zeros((len(self.points),3))
+        self.wallForce = zeros(len(IBZ.facets))
+        self.wallPress = zeros(len(IBZ.facets))
+        self.bounds = IBZ.bounds         
+#         self.getForces(IBZ,eps)
+#         print self.forceP
+#         print self.wallPress
+
+    def enerGrad(self,comps):
+        '''Returns the total energy and the gradient (forces)'''
+#         print 'oldindvecs',self.oldindVecs
+        vecs = comps.reshape((len(self.points),3))
+        p = 6.0
+        etot = 0.0
+        for i,ri in enumerate(vecs):
+            #wall forces
+            for iw, u in enumerate(self.bounds[0]):
+                ro = bounds[1][i]
+                d = ro-dot(ri,u) #distance from plane to ri
+                if d<0:
+                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(i))
+                fmag = (d/self.dw)**(-p)  #dimensionless
+                etot += ((d/self.dw)**(-p+1))/p #dimensionless
+                self.forces[i] += -u*fmag
+                self.wallForce[i] += fmag #since forces are normal to plane, we sum the magnitudes
+            #inter-point forces
             for j, rj in enumerate(cell.mesh):
                 if i!=j:
-                    self.forceP[i] += self.interForce(ri,rj)
+                    d = norm(ri-rj)
+                    self.forces[i] += (d/self.df)**(-p)*(r1-r2)/d
         for i,fac in enumerate(cell.facets):
             area = convexH(planar3dTo2d(fac,eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
             self.wallPress[i] = self.wallF[i]/area
-        return
-             
-    def interForce(self,r1,r2): #force on 1 due to 2
-        #self.df = self.ravg #inter-point force scale distance
-        d = norm(r1-r2)
-        print 'd',d, r1,r2
-        p = 6.0
-        return (d/self.df)**(-p)*(r1-r2)/d #vector
-        
-    def wallsForce(self,r,bounds):
-        #self.dw wall-point force scale distance
-        f = zeros(3)
-        p = 6.0
-        for i, u in enumerate(bounds[0]):
-            ro = bounds[1][i]
-            rp = - u * (1-dot(r,u))
-            d = norm(rp)
-            force = (d/self.dw)**(-p)
-            self.wallF[i] += force
-            f += -u*force
-        return f        
-        
-    
+        return etot, self.forces.flatten()
+     
+#     def getForces(self,cell,eps):
+#         '''Returns an array with the force vectors for each point.'''
+#         self.forceP = zeros((len(cell.mesh),3))
+#         self.wallF = zeros(len(cell.facets))
+#         self.wallPress = zeros(len(cell.facets))
+#         
+#         for i,ri in enumerate(cell.mesh):
+#             self.forceP[i] = self.wallsForce(ri,cell.bounds)
+#             for j, rj in enumerate(cell.mesh):
+#                 if i!=j:
+#                     self.forceP[i] += self.interForce(ri,rj)
+#         for i,fac in enumerate(cell.facets):
+#             area = convexH(planar3dTo2d(fac,eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
+#             self.wallPress[i] = self.wallF[i]/area
+#         return
+#              
+#     def interForceEnergy(self,r1,r2): #force on 1 due to 2
+#         #self.df = self.ravg #inter-point force scale distance
+#         d = norm(r1-r2)
+#         print 'd',d, r1,r2
+#         p = 6.0
+#         return (d/self.df)**(-p)*(r1-r2)/d #vector
+#         
+#     def wallsForceEnergy(self,r,bounds):
+#         #self.dw wall-point force scale distance
+#         f = zeros(3)
+#         ener = 0
+#         p = 6.0
+# 
+#         return ener,f  
+#           
+#         
+#     
     def writeKpoints(self,cell):
         nk = len(cell.mesh)
         totw = sum(cell.weights)
@@ -669,12 +739,6 @@ class dynamicPack():
             lines.append('{:15.12f}  {:15.12f}  {:15.12f}  {:15.12f}\n'\
                          .format(kpointDir[0],kpointDir[1],kpointDir[2],cell.weights[ik]*1e6))
         self.writefile(lines,'KPOINTS')         
-   
-    def dynamic(self,IBZ,eps):
-        ''' '''
-        self.getForces(IBZ,eps)
-        print self.forceP
-        print self.wallPress
        
     def intoIBZ(self,kpoint,IBZ,eps):   
         '''For a point inside the Voronoi cell, use point symmetry to get into IBZ.
