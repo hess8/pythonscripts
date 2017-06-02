@@ -474,7 +474,7 @@ class dynamicPack():
         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.df = self.ravg #inter-point force scale distance
 #         self.dw = self.df/2.0 #wall force scale distance
-        self.dw = self.df/1.5 #wall force scale distance
+        self.dw = self.df/2 #wall force scale distance
         self.wallClose = 1.0#0.5 #to allow initial points closer to the wall set to less than 1. 
         self.shift =  array([1,1,1])/10.0 #array([1/10,0,0])
         eps = self.ravg/2000
@@ -655,7 +655,7 @@ class dynamicPack():
         p = 2.0
         etot = 0.0
         wallfactor = 1.0
-        interfactor = 0.0
+        interfactor = 1.0
         for i,ri in enumerate(vecs):
             #wall forces
             for iw, u in enumerate(self.bounds[0]):
