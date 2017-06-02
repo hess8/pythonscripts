@@ -385,11 +385,11 @@ def dcstep(stx, fx, dx, sty, fy, dy, stp, fp, dp, brackt, stpmin, stpmax):
     #     cubic step is taken, otherwise the average of the cubic and
     #     quadratic steps is taken.
 
-    print 'stx, fx, sty, fy,stp, fp at start of dcstep'
-    print stx, fx, sty, fy,stp, fp
+#     print 'stx, fx, sty, fy,stp, fp at start of dcstep'
+#     print stx, fx, sty, fy,stp, fp
     if fp > fx:
-        if stp==stx: #stp,stx: these should not be the same if their f()s are different
-            print 'stp,stx',stp,stx
+#         if stp==stx: #stp,stx: these should not be the same if their f()s are different
+#             print 'stp,stx',stp,stx
 # '''       On entry stx is the best step obtained so far and is an
 #             endpoint of the interval that contains the minimizer.
 #          On exit stx is the updated best step.'''

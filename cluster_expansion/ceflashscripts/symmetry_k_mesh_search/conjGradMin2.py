@@ -21,7 +21,7 @@ _status_message = {'success': 'Optimization terminated successfully.',
 # _epsilon = sqrt(finfo(float).eps)
 # _epsilon = rc
 
-def fmin_cg(self, x0, epsilon, fprime=None, args=(), gtol=1e-5, norm=Inf,
+def fmin_cg(self, x0, epsilon, fprime=None, args=(), gtol=1e-3, norm=Inf,
             maxiter=None, full_output=0, disp=1, retall=0, callback=None):
 
     opts = {'gtol': gtol,
@@ -62,40 +62,53 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
         Order of norm (Inf is max, -Inf is min).
     eps : float or ndarray
         If `jac` is approximated, use this value for the step size.
+        
+    BCH note:  in nonlinear CG minimization, -grad(f(x)) takes the place of the 
+    residual rk in en.wikipedia.org/wiki/Conjugate_gradient_method
     """
 
     retall = return_all
     x0 = asarray(x0).flatten()
     if maxiter is None:
-        maxiter = len(x0) * 200
+        maxiter = len(x0) * 3
+#     print 'Forcing maxiter to be maxiter = len(x0) * 20!!!!!!!!!!!!!!!!!!!!!!!!1'
+#     maxiter = len(x0) * 20
 #     func_calls, f = wrap_function(f, args)
 #     grad_calls, myfprime = approx_fprime, (f, epsilon))
 #     grad = self.approx_fprime(x0,epsilon)
+    print 'Start Minimization';self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
     k = 1
     xk = x0
-    print 'Initial positions\n', x0
+#     print 'Initial positions\n', x0
+    self.points = xk.reshape((len(self.points),3))
+#     self.plotPos(array(self.points),len(self.points),'_{}'.format(str(k)))
 
     # Sets the initial step guess to dx ~ 1
     old_fval,grad = self.enerGrad(xk)
-    print 'Initial energy',old_fval
+#     print 'Initial energy',old_fval
     old_old_fval = old_fval + npnorm(grad) / 2
 
     if retall:
         allvecs = [xk]
     warnflag = 0
-    self.pk = -grad
+    self.pk = -grad #intial search direction
     gnorm = vecnorm(grad, ord=norm)
-    methodMin = 'steepest'
+    methodMin = 'conjGrad'
     while (gnorm > gtol) and (k < maxiter):# and (abs(old_fval - old_old_fval)>0.01):
-#         print 'k,gnorm, energy',k,gnorm,old_fval
+        print '\nk,energy,gnorm,grad ',k,old_fval,gnorm,grad
+        if k==5:
+            'pause'
         if methodMin == 'conjGrad':       
             deltak = dot(grad, grad)
             stp_k, old_fval, old_old_fval, gradp1 = \
                          self.line_search_wolfe1(xk, epsilon, grad, old_fval,
-                                              old_old_fval, c2=0.4, amin=1e-100, amax=1e100)
-            print 'step',stp_k
-
+                                              old_old_fval, c2=0.4, amin=1e-100, amax=1e100)    
+#             if stp_k is None: #BCH
+#                 return
             xk = xk + stp_k * self.pk
+#             print 'delta_r', (stp_k * self.pk).reshape((len(self.points),3))
+            self.points = xk.reshape((len(self.points),3))
+            self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
             if retall:
                 allvecs.append(xk)
             yk = gradp1 - grad
@@ -106,10 +119,12 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
             stp_k = 0.0001
 #             print 'force step to be', stp_k
             xk = xk + stp_k * self.pk
-            print 'xk  ',k, xk
-            fnew,grad = self.enerGrad(xk)
-            self.plotPos(array(self.points),len(self.points),'_{}'.format(str(k)))
-            print 'grad', grad  
+#             print 'xk  ',k, xk
+            self.points = xk.reshape((len(self.points),3))
+            self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+#             self.plotPos(array(self.points),len(self.points),'_{}'.format(str(k)))
+            fnew,grad = self.enerGrad(xk)  
+#             print 'grad', grad  
 #             print
             self.pk = -grad         
         gnorm = vecnorm(grad, ord=norm)
@@ -266,6 +281,7 @@ def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0, grad,
 
 
     stp1 = min(1.0, 1.01*2*(f0 - old_f0)/derf0)
+    stp1 = min(0.2, 1.01*2*(f0 - old_f0)/derf0)
     if stp1 < 0:
         stp1 = 1.0
     f1 = f0
@@ -280,7 +296,8 @@ def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0, grad,
     for i in xrange(maxiter):
         stp, task, f1, derf1, isave, dsave  = dcsrch(stp1, f1, derf1,
                                                    c1, c2, xtol, task,
-                                                   amin, amax, isave, dsave)
+                                                   amin, amax, isave, dsave) #bch stp was stp1 in original
+        
 #def dcsrch(stp, f, g, ftol, gtol, xtol, task, stpmin, stpmax, isave, dsave):
 #return stp, task, isave, dsave
 #         stpA = stp
@@ -293,7 +310,10 @@ def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0, grad,
         
         if task[:2] == 'FG':
 #             stp1 = stp
+            print'Line search';
+            self.IBZ.mesh = (xk + stp*self.pk).reshape((len(self.points),3)); self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
             f1, grad = self.enerGrad(xk + stp*self.pk)
+#             print 'energy',f1, 'stp',stp,'grad',grad
             derf1 = dot(grad,self.pk)
 #             def f(self,xk,s):
 #     self.fc[0] += 1

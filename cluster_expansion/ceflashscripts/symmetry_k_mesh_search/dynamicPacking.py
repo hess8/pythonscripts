@@ -471,10 +471,11 @@ class dynamicPack():
         print 'Number of desired points:', targetNmesh
         print 'Symmetry operations:', self.nops
         vol = abs(det(B))
-        self.ravg = (vol/targetNmesh)**(1/3.0) 
+        self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.df = self.ravg #inter-point force scale distance
-        self.dw = self.df/2.0 #wall force scale distance
-        self.wallClose = 0.5 #to allow initial points closer to the wall set to less than 1. 
+#         self.dw = self.df/2.0 #wall force scale distance
+        self.dw = self.df/1.5 #wall force scale distance
+        self.wallClose = 1.0#0.5 #to allow initial points closer to the wall set to less than 1. 
         self.shift =  array([1,1,1])/10.0 #array([1/10,0,0])
         eps = self.ravg/2000
         BZ = cell() #instance
@@ -616,10 +617,8 @@ class dynamicPack():
 
     def dynamic(self,IBZ,eps):
         ''' '''
+        self.IBZ = IBZ
         self.points = IBZ.mesh #initial mesh
-        self.forces = zeros((len(self.points),3))
-        self.wallForce = zeros(len(IBZ.facets))
-        self.wallPress = zeros(len(IBZ.facets))
         self.bounds = IBZ.bounds 
         self.facets = IBZ.facets
         self.eps = eps
@@ -631,25 +630,8 @@ class dynamicPack():
 
     def relax(self):
         '''Conjugate gradient relaxation of the potential energy.
-        See www.idi.ntnu.no/~elster/tdt24/tdt24-f09/cg.pdf 
-        fmin_cg(f, x0, options...)
-        f : callable, f(x, *args) Objective function to be minimized. Here x must be a 1-D array of the variables that are to be changed in the search for a minimum, and args are the other (fixed) parameters of f.
-        x0 : ndarray A user-supplied initial estimate of xopt, the optimal value of x. It must be a 1-D array of values.
- 
-         >>> args = (2, 3, 7, 8, 9, 10)  # parameter values
-        >>> def f(x, *args):
-        ...     u, v = x
-        ...     a, b, c, d, e, f = args
-        ...     return a*u**2 + b*u*v + c*v**2 + d*u + e*v + f
-        >>> def gradf(x, *args):
-        ...     u, v = x
-        ...     a, b, c, d, e, f = args
-        ...     gu = 2*a*u + b*v + d     # u-component of the gradient
-        ...     gv = b*u + 2*c*v + e     # v-component of the gradient
-        ...     return np.asarray((gu, gv))
-        >>> x0 = np.asarray((0, 0))  # Initial guess.
-        >>> from scipy import optimize
-        >>> res1 = optimize.fmin_cg(f, x0, fprime=gradf, args=args)
+        
+        
  
         The energy must be a function of 1-D inputs, so we flatten the points into components '''
         initialGuess = array(self.points).flatten()
@@ -664,34 +646,49 @@ class dynamicPack():
         return
 
     def enerGrad(self,comps):
-        '''Returns the total energy and the gradient (forces)'''
+        '''Returns the total energy and the gradient (-forces).  '''
 #         print 'oldindvecs',self.oldindVecs
+        self.forces = zeros((len(self.points),3))
+        self.wallForce = zeros(len(self.IBZ.facets))
+        self.wallPress = zeros(len(self.IBZ.facets))
         vecs = comps.reshape((len(self.points),3))
-        p = 6.0
+        p = 2.0
         etot = 0.0
         wallfactor = 1.0
+        interfactor = 0.5
         for i,ri in enumerate(vecs):
+            print i,i
             #wall forces
             for iw, u in enumerate(self.bounds[0]):
                 ro = self.bounds[1][iw]
                 d = ro-dot(ri,u) #distance from plane to ri
                 if d<0:
+                    'pause'
+                    d = 2*self.dw
+#                 if d<0:
 #                     print 'ri,ro,u, dot(ri,u),d'
 #                     print ri,ro,u, dot(ri,u), d 
-                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
+#                     sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
                 fmag = wallfactor*(d/self.dw)**(-p)  #dimensionless
-                etot += wallfactor*((d/self.dw)**(-p+1))/p #dimensionless
-                self.forces[iw] += -u*fmag
+                etot += wallfactor*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+                print '\t wall',iw,d, u,ro
+                print '\t\tf',-u*fmag,'\te',wallfactor*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
+                self.forces[i] += -u*fmag
                 self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudes
-            #inter-point forces
+            print '\tfwtot',self.forces[i]
+#                 print 'Wall',iw,d,'force',-u*fmag,fmag
+#            inter-point forces
             for j, rj in enumerate(vecs):
                 if i!=j:
                     d = norm(ri-rj)
-                    self.forces[i] += (d/self.df)**(-p)*(ri-rj)/d
+                    print 'Inter d,f', d,interfactor*(d/self.df)**(-p)*(ri-rj)/d
+                    self.forces[i] += interfactor*(d/self.df)**(-p)*(ri-rj)/d
+                    etot += interfactor*self.df/abs(-p+1)*(d/self.df)**(-p+1)
         for i,fac in enumerate(self.facets):
             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
             self.wallPress[i] = self.wallForce[i]/area
-        return etot, self.forces.flatten()
+#         print '\tetot,norm',etot,norm(-self.forces.flatten())
+        return etot, -self.forces.flatten() #gradient is opposite the forces.
         
     def writeKpoints(self,cell):
         nk = len(cell.mesh)
@@ -1024,7 +1021,7 @@ class dynamicPack():
         return strOut
             
     def facetsMeshMathPrint(self,cell):
-        '''Writes spheres for Mathematica drawing'''
+        '''Writes facets and spheres for Mathematica drawing'''
         self.facetsMathPrint(cell,'p',True,'Red'); 
         print ';'
         print 'q=Graphics3D[{',
@@ -1039,7 +1036,7 @@ class dynamicPack():
         '''Put a mesh point VC at each mesh point'''
         mathOut = open('mathOut','w') #both prints and writes string to file 
         strOut = ''
-        self.facetsMathPrint(BZ,'s','True','Red'); #draw supecell voronoi cell
+        self.facetsMathPrint(BZ,'s','True','Red'); #draw supercell voronoi cell
         strOut = self.facetsMathToStr(strOut,BZ,'s','True','Red'); #draw supecell voronoi cell
         showCommand = ';Show[s,'  
         print ';',;strOut+=';'
@@ -1087,6 +1084,9 @@ class dynamicPack():
 #         fig = figure()
         i0 = ('x','y','z').index(ax0)
         i1 = ('x','y','z').index(ax1)
+        print 'arr0',arr[:,i0]
+        print 'arr1',arr[:,i1]
+        figure()
         scatter(arr[:,i0],arr[:,i1])
         xlabel('{}'.format(ax0))
         ylabel('{}'.format(ax1))
@@ -1094,3 +1094,4 @@ class dynamicPack():
         title(name)
         savefig(self.path+'/'+ name+'.pdf');
         os.system('cp {} {}'.format(self.path+'/'+ name+'.pdf',self.path+ '/latest{}-{}'.format(ax0,ax1)+'.pdf' ))
+        close()
