@@ -10,6 +10,7 @@ from numpy.linalg import norm as npnorm
 from scipy._lib._util import getargspec_no_self as _getargspec
 
 from dcsrch import dcsrch
+from test.test_threaded_import import task
 
 _status_message = {'success': 'Optimization terminated successfully.',
                    'maxfev': 'Maximum number of function evaluations has '
@@ -21,7 +22,7 @@ _status_message = {'success': 'Optimization terminated successfully.',
 # _epsilon = sqrt(finfo(float).eps)
 # _epsilon = rc
 
-def fmin_cg(self, x0, epsilon, fprime=None, args=(), gtol=1e-3, norm=Inf,
+def fmin_cg(self, x0, epsilon, fprime=None, args=(), gtol=1e-4, norm=Inf,
             maxiter=None, full_output=0, disp=1, retall=0, callback=None):
 
     opts = {'gtol': gtol,
@@ -68,70 +69,81 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
     """
 
     retall = return_all
-    x0 = asarray(x0).flatten()
+    xk = asarray(x0).flatten() #initial
     if maxiter is None:
-        maxiter = len(x0) * 3
+        maxiter = len(x0) * 20
+#         maxiter = 10
 #     print 'Forcing maxiter to be maxiter = len(x0) * 20!!!!!!!!!!!!!!!!!!!!!!!!1'
 #     maxiter = len(x0) * 20
 #     func_calls, f = wrap_function(f, args)
 #     grad_calls, myfprime = approx_fprime, (f, epsilon))
 #     grad = self.approx_fprime(x0,epsilon)
     print 'Start Minimization';self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-    k = 1
-    xk = x0
-#     print 'Initial positions\n', x0
-    self.points = xk.reshape((len(self.points),3))
-#     self.plotPos(array(self.points),len(self.points),'_{}'.format(str(k)))
-
-    # Sets the initial step guess to dx ~ 1
-    old_fval,grad = self.enerGrad(xk)
-#     print 'Initial energy',old_fval
-    old_old_fval = old_fval + npnorm(grad) / 2
-
-    if retall:
-        allvecs = [xk]
-    warnflag = 0
-    self.pk = -grad #intial search direction
-    gnorm = vecnorm(grad, ord=norm)
-    methodMin = 'conjGrad'
-    while (gnorm > gtol) and (k < maxiter):# and (abs(old_fval - old_old_fval)>0.01):
-        print '\nk,energy,gnorm,grad ',k,old_fval,gnorm,grad
-        if k==5:
-            'pause'
-        if methodMin == 'conjGrad':       
-            deltak = dot(grad, grad)
-            stp_k, old_fval, old_old_fval, gradp1 = \
-                         self.line_search_wolfe1(xk, epsilon, grad, old_fval,
-                                              old_old_fval, c2=0.4, amin=1e-100, amax=1e100)    
-#             if stp_k is None: #BCH
-#                 return
-            xk = xk + stp_k * self.pk
-#             print 'delta_r', (stp_k * self.pk).reshape((len(self.points),3))
-            self.points = xk.reshape((len(self.points),3))
-            self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-            if retall:
-                allvecs.append(xk)
-            yk = gradp1 - grad
-            beta_k = max(0, dot(yk, gradp1) / deltak)
-            self.pk = -gradp1 + beta_k * self.pk
-            grad = gradp1
-        elif methodMin == 'steepest':
-            stp_k = 0.0001
-#             print 'force step to be', stp_k
-            xk = xk + stp_k * self.pk
-#             print 'xk  ',k, xk
-            self.points = xk.reshape((len(self.points),3))
-            self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-#             self.plotPos(array(self.points),len(self.points),'_{}'.format(str(k)))
-            fnew,grad = self.enerGrad(xk)  
-#             print 'grad', grad  
-#             print
-            self.pk = -grad         
+    tryAgain = True
+    while tryAgain: #if error occurs, start again without any history
+        self.error = None
+        k = 1
+        self.points = xk.reshape((len(self.points),3))
+        old_fval,grad = self.enerGrad(xk)
+        old_old_fval = old_fval + npnorm(grad) / 2
+    
+        if retall:
+            allvecs = [xk]
+        warnflag = 0
+        self.pk = -grad #intial search direction
         gnorm = vecnorm(grad, ord=norm)
-        if callback is not None:
-            callback(xk)
-        k += 1
-
+        methodMin = 'conjGrad'
+        while (gnorm > gtol) and (k < maxiter) and self.error == None:# and (abs(old_fval - old_old_fval)>0.01):
+            if k==5:
+                'pause'
+            if methodMin == 'conjGrad':       
+                deltak = dot(grad, grad)
+                stp_k, old_fval, old_old_fval, gradp1 = \
+                             self.line_search_wolfe1(xk, epsilon, grad, old_fval,
+                                                  old_old_fval, c2=0.4, amin=1e-100, amax=1e100) 
+                print '\n++k,energy,gnorm,grad ',k,old_fval,npnorm(gradp1),gradp1
+   
+#                 if stp_k is None: #BCH
+#     #                 return
+                xk = xk + stp_k * self.pk
+    #             print 'delta_r', (stp_k * self.pk).reshape((len(self.points),3))
+                self.points = xk.reshape((len(self.points),3))
+                self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+                print 'new points',self.points
+                if retall:
+                    allvecs.append(xk)
+                yk = gradp1 - grad
+                beta_k = max(0, dot(yk, gradp1) / deltak)
+                self.pk = -gradp1 + beta_k * self.pk
+#                 print 'new pk',k, self.pk
+#                 N=100
+#                 for i in range(N):
+#                     step = i*stp_k/N
+#                     en1,gr1 = self.enerGrad(xk+step * self.pk)
+#                     print '\tstep',step,'energy',en1
+                    
+                grad = gradp1
+            elif methodMin == 'steepest':
+                stp_k = 0.0001
+    #             print 'force step to be', stp_k
+                xk = xk + stp_k * self.pk
+    #             print 'xk  ',k, xk
+                self.points = xk.reshape((len(self.points),3))
+                self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+    #             self.plotPos(array(self.points),len(self.points),'_{}'.format(str(k)))
+                fnew,grad = self.enerGrad(xk)  
+    #             print 'grad', grad  
+    #             print
+                self.pk = -grad         
+            gnorm = vecnorm(grad, ord=norm)
+            if callback is not None:
+                callback(xk)
+            k += 1
+        if self.error is None:
+            tryAgain = False
+            
+#         else:
+#             'pause'
     fval = old_fval
     if warnflag == 2:
         msg = _status_message['pr_loss']
@@ -235,6 +247,7 @@ def line_search_wolfe1(self,xk, epsilon, grad, old_fval, old_old_fval,
 #     else:
 #     newargs = args
     derf0 = dot(grad, self.pk)
+    print 'derf0',derf0
     stp, fval, old_fval, grad  = self.scalar_search_wolfe1(xk,epsilon,old_fval, 
                                                     old_old_fval, derf0, grad)
     return stp, fval, old_fval, grad
@@ -280,23 +293,26 @@ def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0, grad,
     """       
 
 
-    stp1 = min(1.0, 1.01*2*(f0 - old_f0)/derf0)
-    stp1 = min(0.2, 1.01*2*(f0 - old_f0)/derf0)
-    if stp1 < 0:
-        stp1 = 1.0
-    f1 = f0
-    derf1 = derf0
-#     isave = zeros((2,), intc)
-#     dsave = zeros((13,), float)
-    isave = zeros((3,), intc) #bch increase these by 1 over original because dcsrch starts counting at 1
-    dsave = zeros((14,), float)
-    task = 'START'
-
-    maxiter = 30
-    for i in xrange(maxiter):
-        stp, task, f1, derf1, isave, dsave  = dcsrch(stp1, f1, derf1,
-                                                   c1, c2, xtol, task,
-                                                   amin, amax, isave, dsave) #bch stp was stp1 in original
+    stpMin = 0.2 #was 1.0
+    lower = False
+    while not lower:
+        stp1 = min(stpMin, 1.01*2*(f0 - old_f0)/derf0)
+        if stp1 < 0:
+            stp1 = stpMin
+        print 'stp1',stp1
+        f1 = f0
+        derf1 = derf0
+    #     isave = zeros((2,), intc)
+    #     dsave = zeros((13,), float)
+        isave = zeros((3,), intc) #bch increase these by 1 over original because dcsrch starts counting at 1
+        dsave = zeros((14,), float)
+        task = 'START'
+    
+        maxiter = 30
+        for i in xrange(maxiter):
+            stp, task, f1, derf1, isave, dsave  = dcsrch(stp1, f1, derf1,
+                                                       c1, c2, xtol, task,
+                                                       amin, amax, isave, dsave) #bch stp was stp1 in original
         
 #def dcsrch(stp, f, g, ftol, gtol, xtol, task, stpmin, stpmax, isave, dsave):
 #return stp, task, isave, dsave
@@ -307,38 +323,32 @@ def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0, grad,
 #             stp  = stp*maxMove/move
 #             print'step too large',stpA, 'now',stp
 #             print
-        
-        if task[:2] == 'FG':
+            
+            if task[:2] == 'FG':
 #             stp1 = stp
-            print'Line search';
-            self.IBZ.mesh = (xk + stp*self.pk).reshape((len(self.points),3)); self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-            f1, grad = self.enerGrad(xk + stp*self.pk)
-#             print 'energy',f1, 'stp',stp,'grad',grad
-            derf1 = dot(grad,self.pk)
-#             def f(self,xk,s):
-#     self.fc[0] += 1
-#     ener = self.enerGrad(xk + s*self.pk)
-#     return ener
-# 
-# def derf(self,xk,epsilon,s):
-#     self.gval[0] = self.approx_fprime(xk + s*self.pk,epsilon)
-#     self.gc[0] += 1
-# #     else:
-# #         fc[0] += len(xk) + 1
-#     return dot(self.gval[0],self.pk)
-#             
-            
-            
-        else:
-            break
-    else: #no break was found
-        # maxiter reached, the line search did not converge
+                print'Line search',
+                f1, grad = self.enerGrad(xk + stp*self.pk)
+                print 'line energy',f1, 'stp',stp,'grad',grad
+                self.IBZ.mesh = (xk + stp*self.pk).reshape((len(self.points),3)); self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+    
+                derf1 = dot(grad,self.pk)
+                stpFG = stp
+            if task[:5] == 'ERROR' or task[:4] == 'WARN':
+                stp = None  # failed
+        print 'new E, old E',f1,f0
+        if f1 < f0:
+           lower = True
+        else:            
+           stpMin = stpMin/2 #do again with smaller step to make sure that it finds something lower in energy along this line.
+           print "-->new stpMin",stpMin
+           'continue'
+    if 'Error' in task:
+        print 'dcsrch:', task
+        self.error = task
+    if i == maxiter: #maxiter reached, the line search did not converge
         stp = None
 
-    if task[:5] == 'ERROR' or task[:4] == 'WARN':
-        stp = None  # failed
-
-    return stp, f1, f0, grad
+    return stpFG, f1, f0, grad
 
 
 class OptimizeResult(dict):

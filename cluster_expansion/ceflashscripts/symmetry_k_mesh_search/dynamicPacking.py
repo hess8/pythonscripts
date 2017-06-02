@@ -655,33 +655,33 @@ class dynamicPack():
         p = 2.0
         etot = 0.0
         wallfactor = 1.0
-        interfactor = 0.5
+        interfactor = 0.0
         for i,ri in enumerate(vecs):
-            print i,i
             #wall forces
             for iw, u in enumerate(self.bounds[0]):
                 ro = self.bounds[1][iw]
                 d = ro-dot(ri,u) #distance from plane to ri
                 if d<0:
                     'pause'
-                    d = 2*self.dw
+#                     print '** point {} crossed boundary'.format(i), iw, u,ro
+                    d = -d/10 #Have crossed boundary
 #                 if d<0:
 #                     print 'ri,ro,u, dot(ri,u),d'
 #                     print ri,ro,u, dot(ri,u), d 
 #                     sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
                 fmag = wallfactor*(d/self.dw)**(-p)  #dimensionless
                 etot += wallfactor*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
-                print '\t wall',iw,d, u,ro
-                print '\t\tf',-u*fmag,'\te',wallfactor*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
+#                 print '\t wall',iw,d, u,ro
+#                 print '\t\tf',-u*fmag,'\te',wallfactor*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
                 self.forces[i] += -u*fmag
                 self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudes
-            print '\tfwtot',self.forces[i]
+#             print '\tfwtot',self.forces[i]
 #                 print 'Wall',iw,d,'force',-u*fmag,fmag
 #            inter-point forces
             for j, rj in enumerate(vecs):
                 if i!=j:
                     d = norm(ri-rj)
-                    print 'Inter d,f', d,interfactor*(d/self.df)**(-p)*(ri-rj)/d
+#                     print 'Inter d,f', d,interfactor*(d/self.df)**(-p)*(ri-rj)/d
                     self.forces[i] += interfactor*(d/self.df)**(-p)*(ri-rj)/d
                     etot += interfactor*self.df/abs(-p+1)*(d/self.df)**(-p+1)
         for i,fac in enumerate(self.facets):
