@@ -476,7 +476,7 @@ class dynamicPack():
 #         self.dw = self.df/2.0 #wall force scale distance
         self.dw = self.df/2 #wall force scale distance
         self.wallClose = 1.0#0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.shift =  array([1,1,1])/10.0 #array([1/10,0,0])
+        self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/2000
         BZ = cell() #instance
         BZ.volume = vol
@@ -657,6 +657,7 @@ class dynamicPack():
         wallfactor = 1.0
         interfactor = 1.0
         for i,ri in enumerate(vecs):
+#             print 'point',i,ri
             #wall forces
             for iw, u in enumerate(self.bounds[0]):
                 ro = self.bounds[1][iw]
