@@ -49,7 +49,6 @@ testfile = 'POSCAR'
 
 
 Nkppra = 900
-
 meshtype = 'fcc'  #cub, fcc, bcc  
 
 #reallatt = zeros((3,3))
