@@ -662,14 +662,14 @@ class dynamicPack():
             for iw, u in enumerate(self.bounds[0]):
                 ro = self.bounds[1][iw]
                 d = ro-dot(ri,u) #distance from plane to ri
-                if d<0:
-                    'pause'
-#                     print '** point {} crossed boundary'.format(i), iw, u,ro
-                    d = -d/10 #Have crossed boundary
 #                 if d<0:
-#                     print 'ri,ro,u, dot(ri,u),d'
-#                     print ri,ro,u, dot(ri,u), d 
-#                     sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
+#                     'pause'
+# #                     print '** point {} crossed boundary'.format(i), iw, u,ro
+# #                     d = -d/10 #Have crossed boundary. Increase force by shortening effective d. 
+                if d<0:
+                    print 'ri,ro,u, dot(ri,u),d'
+                    print ri,ro,u, dot(ri,u), d 
+                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
                 fmag = wallfactor*(d/self.dw)**(-p)  #dimensionless
                 etot += wallfactor*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
 #                 print '\t wall',iw,d, u,ro
