@@ -101,7 +101,7 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
                 stp_k, old_fval, old_old_fval, gradp1 = \
                              self.line_search_wolfe1(xk, epsilon, grad, old_fval,
                                                   old_old_fval, c2=0.4, amin=1e-100, amax=1e100) 
-                print '\n++k,energy,gnorm,grad ',k,old_fval,npnorm(gradp1),gradp1
+                print '\n++k,energy/NN,gnorm,grad ',k,old_fval/len(self.points),npnorm(gradp1)#,gradp1
    
 #                 if stp_k is None: #BCH
 #     #                 return
@@ -109,7 +109,7 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
     #             print 'delta_r', (stp_k * self.pk).reshape((len(self.points),3))
                 self.points = xk.reshape((len(self.points),3))
                 self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-                print 'new points',self.points
+#                 print 'new points',self.points
                 if retall:
                     allvecs.append(xk)
                 yk = gradp1 - grad
@@ -120,7 +120,7 @@ def minimize_cg(self,x0, epsilon, args=(), jac=None, callback=None,
 #                 for i in range(N):
 #                     step = i*stp_k/N
 #                     en1,gr1 = self.enerGrad(xk+step * self.pk)
-#                     print '\tstep',step,'energy',en1
+#                     print '\tstep',step,'energy/N',en1/len(self.points)
                     
                 grad = gradp1
             elif methodMin == 'steepest':
@@ -247,7 +247,7 @@ def line_search_wolfe1(self,xk, epsilon, grad, old_fval, old_old_fval,
 #     else:
 #     newargs = args
     derf0 = dot(grad, self.pk)
-    print 'derf0',derf0
+    print 'derf0/N',derf0/len(self.points)
     stp, fval, old_fval, grad  = self.scalar_search_wolfe1(xk,epsilon,old_fval, 
                                                     old_old_fval, derf0, grad)
     return stp, fval, old_fval, grad
@@ -293,7 +293,7 @@ def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0, grad,
     """       
 
 
-    stpMin = 0.1 #was 1.0
+    stpMin = 1.0#was 1.0
     lower = False
 #     while not lower:
     stp1 = min(stpMin, 1.01*2*(f0 - old_f0)/derf0)
@@ -326,16 +326,15 @@ def scalar_search_wolfe1(self, xk,epsilon,f0, old_f0, derf0, grad,
         
         if task[:2] == 'FG':
 #             stp1 = stp
-            print'Line search',
             f1, grad = self.enerGrad(xk + stp*self.pk)
-            print 'line energy',f1, 'stp',stp,'grad',grad
+            print 'line search: energy/N',f1/len(self.points), 'stp',stp #'grad',grad
             self.IBZ.mesh = (xk + stp*self.pk).reshape((len(self.points),3)); self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-
+            print
             derf1 = dot(grad,self.pk)
             stpFG = stp
         if task[:5] == 'ERROR' or task[:4] == 'WARN':
             stp = None  # failed
-    print 'new E, old E',f1,f0
+    print 'new E/N, old E/N',f1/len(self.points),f0/len(self.points)
 #         if f1 < f0:
 #            lower = True
     #     else:            

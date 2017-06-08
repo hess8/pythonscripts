@@ -645,14 +645,14 @@ class dynamicPack():
 #             print i ,vectors[i,:]        
         return
 
-    def enerGrad(self,comps):
-        '''Returns the total energy and the gradient (-forces).  '''
+    def enerGrad(self,comps,hess=False):
+        '''Returns the total energy, gradient (-forces) and (optional) Hessian matrix.  '''
 #         print 'oldindvecs',self.oldindVecs
         self.forces = zeros((len(self.points),3))
         self.wallForce = zeros(len(self.IBZ.facets))
         self.wallPress = zeros(len(self.IBZ.facets))
         vecs = comps.reshape((len(self.points),3))
-        p = 2.0
+        p = 6.0
         etot = 0.0
         wallfactor = 1.0
         interfactor = 1.0
@@ -684,7 +684,8 @@ class dynamicPack():
                     d = norm(ri-rj)
 #                     print 'Inter d,f', d,interfactor*(d/self.df)**(-p)*(ri-rj)/d
                     self.forces[i] += interfactor*(d/self.df)**(-p)*(ri-rj)/d
-                    etot += interfactor*self.df/abs(-p+1)*(d/self.df)**(-p+1)
+                    if j>i: #don't overcount
+                        etot += interfactor*self.df/abs(-p+1)*(d/self.df)**(-p+1)
         for i,fac in enumerate(self.facets):
             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
             self.wallPress[i] = self.wallForce[i]/area
