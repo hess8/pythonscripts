@@ -449,6 +449,7 @@ class dynamicPack():
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
     from conjGradMin2 import (fmin_cg,minimize_cg,line_search_wolfe1,scalar_search_wolfe1)
+#     from newtonRaphsonMin import getHessian, newtRaph
 
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,method):
@@ -459,6 +460,9 @@ class dynamicPack():
         print 'method',method
         [self.symops,self.nops] = getGroup(self.B)
         self.initFactor = 0.9 #assign 90% of the point at the beginning based on an FCC or BCC mesh
+        self.power = 2.0
+        self.wallfactor = 1.0
+        self.interfactor = 1.0        
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
         self.method = method
@@ -634,9 +638,10 @@ class dynamicPack():
         
  
         The energy must be a function of 1-D inputs, so we flatten the points into components '''
-        initialGuess = array(self.points).flatten()
+        initialPos = array(self.points).flatten()
         epsilon = self.ravg/100
-        out = self.fmin_cg(initialGuess,self.eps)
+#         out = self.fmin_cg(initialPos,self.eps)
+        out = self.newtRaph(initialPos,self.eps)
         print out
 #         for i in range(27):
 #             print i ,self.indInComps[i]
@@ -652,10 +657,11 @@ class dynamicPack():
         self.wallForce = zeros(len(self.IBZ.facets))
         self.wallPress = zeros(len(self.IBZ.facets))
         vecs = comps.reshape((len(self.points),3))
-        p = 6.0
-        etot = 0.0
-        wallfactor = 1.0
-        interfactor = 1.0
+        p = self.power
+        wallfact = self.wallfactor
+        interfact = self.interfactor
+#         self.getHessian(wallfact,interfact,p)
+        etot = 0
         for i,ri in enumerate(vecs):
 #             print 'point',i,ri
             #wall forces
@@ -670,10 +676,10 @@ class dynamicPack():
                     print 'ri,ro,u, dot(ri,u),d'
                     print ri,ro,u, dot(ri,u), d 
                     sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
-                fmag = wallfactor*(d/self.dw)**(-p)  #dimensionless
-                etot += wallfactor*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+                fmag = wallfact*(d/self.dw)**(-p)  #dimensionless
+                etot += wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
 #                 print '\t wall',iw,d, u,ro
-#                 print '\t\tf',-u*fmag,'\te',wallfactor*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
+#                 print '\t\tf',-u*fmag,'\te',wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
                 self.forces[i] += -u*fmag
                 self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudes
 #             print '\tfwtot',self.forces[i]
@@ -682,10 +688,10 @@ class dynamicPack():
             for j, rj in enumerate(vecs):
                 if i!=j:
                     d = norm(ri-rj)
-#                     print 'Inter d,f', d,interfactor*(d/self.df)**(-p)*(ri-rj)/d
-                    self.forces[i] += interfactor*(d/self.df)**(-p)*(ri-rj)/d
+#                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
+                    self.forces[i] += interfact*(d/self.df)**(-p)*(ri-rj)/d
                     if j>i: #don't overcount
-                        etot += interfactor*self.df/abs(-p+1)*(d/self.df)**(-p+1)
+                        etot += interfact*self.df/abs(-p+1)*(d/self.df)**(-p+1)
         for i,fac in enumerate(self.facets):
             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
             self.wallPress[i] = self.wallForce[i]/area
@@ -1097,3 +1103,171 @@ class dynamicPack():
         savefig(self.path+'/'+ name+'.pdf');
         os.system('cp {} {}'.format(self.path+'/'+ name+'.pdf',self.path+ '/latest{}-{}'.format(ax0,ax1)+'.pdf' ))
         close()
+        
+    def newtRaph(self,x0,eps):
+        ''' See intro to P. Pulay, Chem. Phys. Lett. 73, 393 (1980).
+        When this fails, a steepest descent is tried (see en.wikipedia.org/wiki/Gradient_descent)'''
+        print 'Start Minimization';self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+        itermax = 100
+        gnormTol = 0.05
+        minstep = 0.0001
+        xold= x0
+        fold,gold = self.enerGrad(xold)
+        H = self.getHessian();Hinv = inv(H)         
+        gnormold = norm(gold)
+        xolder =  xold + dot(Hinv,gold) #go backwards
+        golder = dot(H,(xolder-xold))
+        folder = dot(gold,(xolder-xold))
+        print 'energy0',fold, 'gnorm',gnormold #,'grad', gold
+        iter = 0
+        while iter < itermax and gnormold > gnormTol:
+            method = 'newtRaph'
+            lower = False
+            step = 2.0
+            while not lower:
+                step /= 2
+                if step < minstep:
+                    if method == 'steepest':
+                        sys.exit('Step {} is still too small after "steepest" atempt: stop'.format(step))
+                    #try steepest descent
+                    method = 'steepest'
+                    step = dot(xold-xolder,gold-golder)/norm(gold-golder)  #barzilai-Borwein method
+                    if step < minstep:
+                        step = 1.0
+                    print 'try steepest'              
+                print 'step',step
+                if method == 'newtRaph':
+                    xnew = xold - step*dot(Hinv,gold)
+                elif method == 'steepest':
+                    xnew = xold - step*gold
+                self.points = xnew.reshape((len(self.points),3))
+                inside = True
+                for point in self.points:
+                    if not isInside(point,self.bounds,eps):
+                        'pause'
+                        print 'point is outside IBZ...reduce step size:',point
+                        inside = False
+                        break                   
+                if inside:
+                    fnew,gnew = self.enerGrad(xnew)
+                    gnormnew = norm(gnew)
+                    print '\nenergy',iter, fnew,'step',step,'gnorm',gnormnew #, 'grad', gnew
+                    if fnew<fold and gnormnew < gnormold:
+                        lower = True
+            xolder = xold
+            folder = folder
+            golder = gold
+            xold = xnew
+            fold = fnew
+            gold = gnew
+            gnormold = gnormnew
+            iter += 1
+            H = self.getHessian();Hinv = inv(H)                        
+#             self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+        if gnormnew <= gnormTol:
+            print '\nSuccess after {} iterations'.format(iter)
+        elif iter == itermax:
+            print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
+        sys.exit('stop')
+    
+    
+    def getHessian(self):
+        '''
+        For a wall force in the form: f = (d/dw)^(-p), 
+        D[en[d[x]], x, y] = -p ux uy (d/w)^(-1 - p)/w
+       
+        For an interparticle force in the form: f = (d/df)^(-p), the pair energy is 
+        of the form 
+        *Same type* component (x or y or z) on *different particles*:  Here x, y z represent any three components,
+        reordered here:
+          D[en[d[x1, x2, y1, y2]], x1, x2] =  
+            -(d/df)^-p/d^3 *(p(x1 - x2)^2 - y1^2 + 2 y1 y2 - y2^2 - z1^2 + 2 z1 z2 - z2^2)
+            For example, for particles a, b, c,  d^2E/dx_a dx_b
+            This applies to the one pair a-b
+        
+        Identical component on the *same* particle: D[en[d[x1, x2, y1, y2]], x1, x1] = -(above result)
+            For example, for particles a, b, c,  d^2E/(dx_a)^2
+            This applies to all pairs that include particle a
+        
+        *Different type* components (x vs y vs z) on same or different particles (x vs y vs z): 
+          D[en[d[x1, x2, y1, y2]], x1, y1] = (d/df)^-p/d^3 * (1 + p)(x1 - x2)(y1 - y2)
+            For example, for particles a, b, c,  d^2E/dx_a dy_b or d^2E/dx_a dy_a 
+            If comps are on the *same particle*, this applies to all pairs that include particle a 
+            If comps are on *different particles*, this applies to the one pair a-b.  But use y2-1'''
+        p = self.power
+        wallfact = self.wallfactor
+        interfact = self.interfactor
+        points = self.points
+        N = len(points)
+        self.hessian = zeros((3*N,3*N),dtype = float)
+        df = self.df
+        dw = self.dw 
+        for ipoint in range(N): #differentiation particle
+            for icomp in range(3): #differentiation comp
+                for jpoint in range(ipoint,N): #2nd differentiation particle (not pair!)
+                    for jcomp in range(3): #differentiation comp
+#                         print '\ndiff',ipoint,jpoint,'comps',icomp,jcomp
+                        if ipoint == jpoint:
+                            #wall forces: only same-particle contributes, but could be different comps
+                            for iw, u in enumerate(self.bounds[0]):
+                                ro = self.bounds[1][iw]
+                                d = ro-dot(points[ipoint],u) #distance from plane to ri
+                                
+                                if d<0:
+    #                                 d = -d/10 #Have crossed boundary. Increase force by shortening effective d. 
+                                    print 'ri,ro,u, dot(ri,u),d'
+                                    print ri,ro,u, dot(ri,u), d
+                                    sys.exit('Error. Point {} in getHessian is not in the IBZ.'.format(iw))
+#                                 print 'Wall',wallfact*(p*u[icomp]*u[jcomp]*(d/dw)**(-1 - p))/dw, u
+                                self.hessian[ipoint*3+icomp,ipoint*3+jcomp] += wallfact*(p*u[icomp]*u[jcomp]*(d/dw)**(-1 - p))/dw
+                            #differentiation coordinates on same particles
+                            for mpoint in range(ipoint+1,N):  #forming all energy pairs that contain ipoint
+                                comps = [0,1,2]
+                                d = norm(points[ipoint]-points[mpoint])
+                                x1 = points[ipoint][icomp]
+                                x2 = points[mpoint][icomp]
+                                comps.remove(icomp)
+                                if icomp == jcomp:
+                                    y1 = points[ipoint][comps[0]]
+                                    y2 = points[mpoint][comps[0]]                 
+                                    z1 = points[ipoint][comps[1]]
+                                    z2 = points[mpoint][comps[1]]
+#                                     print 'pair',ipoint,mpoint,interfact*((d/df)**-p)/d**3 *(p*(x1 - x2)**2 - y1**2 + 2*y1*y2 - y2**2 - z1**2 + 2*z1*z2 - z2**2)
+                                    self.hessian[ipoint*3+icomp,ipoint*3+icomp] += interfact*((d/df)**-p)/d**3 *(p*(x1 - x2)**2 - y1**2 + 2*y1*y2 - y2**2 - z1**2 + 2*z1*z2 - z2**2)
+                                else:
+                                    y1 = points[ipoint][jcomp]
+                                    y2 = points[mpoint][jcomp]
+                                    comps.remove(jcomp)
+                                    z1 = points[ipoint][comps[0]]
+                                    z2 = points[mpoint][comps[0]]
+#                                     print 'other mpoint',mpoint,interfact*((d/df)**-p)/d**3 * (1 + p)*(x1 - x2)*(y1 - y2)      
+                                    self.hessian[ipoint*3+icomp,ipoint*3+jcomp] += interfact*((d/df)**-p)/d**3 * (1 + p)*(x1 - x2)*(y1 - y2)                
+                        else: #different particles, which must be ipoint and jpoint
+                            comps = [0,1,2]
+                            d = norm(points[ipoint]-points[jpoint])
+                            x1 = points[ipoint][icomp]
+                            x2 = points[jpoint][icomp]
+                            comps.remove(icomp)
+                            if icomp == jcomp: #same comp type
+                                y1 = points[ipoint][comps[0]]
+                                y2 = points[jpoint][comps[0]]                 
+                                z1 = points[ipoint][comps[1]]
+                                z2 = points[jpoint][comps[1]]
+#                                 print 'i-j interpoint', -interfact*((d/df)**-p)/d**3 *(p*(x1 - x2)**2 - y1**2 + 2*y1*y2 - y2**2 - z1**2 + 2*z1*z2 - z2**2)
+                                self.hessian[ipoint*3+icomp,jpoint*3+jcomp] += -interfact*((d/df)**-p)/d**3 *(p*(x1 - x2)**2 - y1**2 + 2*y1*y2 - y2**2 - z1**2 + 2*z1*z2 - z2**2)
+                            else: #different comp type
+                                y1 = points[ipoint][jcomp]
+                                y2 = points[jpoint][jcomp]
+                                comps.remove(jcomp)
+                                z1 = points[ipoint][comps[0]]
+                                z2 = points[jpoint][comps[0]]
+#                                 print 'i-j interpoint', interfact*((d/df)**-p)/d**3 * (1 + p)*(x1 - x2)*(y2 - y1) 
+                                self.hessian[ipoint*3+icomp,jpoint*3+jcomp] += interfact*((d/df)**-p)/d**3 * (1 + p)*(x1 - x2)*(y2 - y1) 
+        for i in range(3*N):
+            for j in range(i,3*N):
+                self.hessian[j,i] = self.hessian[i,j]
+                                                        
+        return self.hessian   
+                    
+                    
+                    
