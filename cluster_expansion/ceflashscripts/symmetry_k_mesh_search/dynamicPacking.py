@@ -459,9 +459,9 @@ class dynamicPack():
         print '\nB (Recip lattice vectors as columns',B
         print 'method',method
         [self.symops,self.nops] = getGroup(self.B)
-        self.initFactor = 1.0 #assign 90% of the point at the beginning based on an FCC or BCC mesh
-        self.power = 2.0
-        self.wallfactor = 1.0
+        self.initFactor = 0.5 #assign 90% of the point at the beginning based on an FCC or BCC mesh
+        self.power = 6.0
+        self.wallfactor = 4.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.interfactor = 1.0        
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
@@ -1121,10 +1121,13 @@ class dynamicPack():
         golder = dot(H,(xolder-xold))
         folder = dot(gold,(xolder-xold))
         print 'energy0',fold, 'gnorm',gnormold #,'grad', gold
+        fstart = fold; gnormstart = gnormold
         iter = 0
         step = 1.0
         while iter < itermax and gnormold > gnormTol:
             method = 'steepest'
+#             if method == 'steepest':
+#                 step = max(step,dot(xold-xolder,gold-golder)/norm(gold-golder))  #barzilai-Borwein method                   
             lower = False
             while not lower:
                 if step < minstep:
@@ -1132,10 +1135,10 @@ class dynamicPack():
                         sys.exit('Step {} is still too small after "steepest" atempt: stop'.format(step))
                     #try steepest descent
                     method = 'newtRaph'
-                    if method == 'steepest':
-                        step = dot(xold-xolder,gold-golder)/norm(gold-golder)  #barzilai-Borwein method
-                        if step < minstep:
-                            step = 1.0
+#                     if method == 'steepest':
+#                         step = dot(xold-xolder,gold-golder)/norm(gold-golder)  #barzilai-Borwein method
+#                         if step < minstep:
+#                             step = 1.0
                     print 'try newtRaph'              
 #                 print 'step',step
                 if method == 'newtRaph':
@@ -1168,6 +1171,9 @@ class dynamicPack():
             iter += 1
             if method =='newtRaph': H = self.getHessian();Hinv = inv(H)                        
         self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+        print '\n for {} point in IBZ'.format(len(self.points))
+        print 'Starting energy',fstart, 'gnorm',gnormstart
+        print 'Ending energy',iter, fnew,'step',step,'gnorm',gnormnew #, 'grad', gnew
         if gnormnew <= gnormTol:
             print '\nSuccess after {} iterations'.format(iter)
         elif iter == itermax:
