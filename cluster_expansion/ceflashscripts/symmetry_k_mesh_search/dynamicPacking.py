@@ -1,12 +1,7 @@
 '''
 1. Get IBZ
-2. Fill with an FCC mesh, with fewer than the desired number of points
-3. Begin relaxation with continuous feed.  Points repel each other with a force
-of which is 1.0 at distance df and width wf.  Walls repel points with tanh normal force of range radius df/2. 
-3. Choose the vertex with the smallest opening angle to be the "top". Feed points from the top.
-4. Gravity points away from the top with a force on.   During MD, add points at some interval to largest void until the pressure reaches a maximum value. 
-Volume assigned to point is a Vornoi cell made up by planes 
-
+2. Fill with an FCC mesh, with the desired number of points
+3. Relax 100 steps with steepest descent
 
 All matrices store vectors as COLUMNS
 '''
@@ -30,10 +25,6 @@ from _ast import operator
 from pip._vendor.html5lib.constants import rcdataElements
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 sys.path.append('/fslhome/bch/graphener/graphener')
-
-# from meshpy.tet import MeshInfo, build, Options
-
-# from conjGradMin.optimize import fmin_cg
 
 from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, lattice, surfvol,
     orthdef, trimSmall, cosvecs,
@@ -449,8 +440,6 @@ class dynamicPack():
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
     from conjGradMin2 import (fmin_cg,minimize_cg,line_search_wolfe1,scalar_search_wolfe1)
-#     from newtonRaphsonMin import getHessian, newtRaph
-
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,method):
         #1. nCoarse random points in the cell parallelpiped.  
@@ -459,9 +448,9 @@ class dynamicPack():
         print '\nB (Recip lattice vectors as columns',B
         print 'method',method
         [self.symops,self.nops] = getGroup(self.B)
-        self.initFactor = 0.5 #assign 90% of the point at the beginning based on an FCC or BCC mesh
+        self.initFactor = 1.0 #assign 90% of the point at the beginning based on an FCC or BCC mesh
         self.power = 6.0
-        self.wallfactor = 4.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
+        self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.interfactor = 1.0        
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
@@ -633,25 +622,17 @@ class dynamicPack():
 #         print self.wallPress
 
     def relax(self):
-        '''Conjugate gradient relaxation of the potential energy.
-        
-        
- 
+        '''Minimization of the potential energy.
         The energy must be a function of 1-D inputs, so we flatten the points into components '''
         initialPos = array(self.points).flatten()
         epsilon = self.ravg/100
 #         out = self.fmin_cg(initialPos,self.eps)
-        out = self.newtRaph(initialPos,self.eps)
-        print out
-#         for i in range(27):
-#             print i ,self.indInComps[i]
-#         vectors = self.indInComps.reshape((self.npoints,3))
-#         for i in range(9):
-#             print i ,vectors[i,:]        
+        self.minNewtSteepest(initialPos,self.eps)    
         return
 
-    def enerGrad(self,comps,hess=False):
-        '''Returns the total energy, gradient (-forces) and (optional) Hessian matrix.  '''
+    def enerGrad(self,comps):
+        '''Returns the total energy, gradient (-forces) and (optional) Hessian matrix, 
+        using comps, which are the flattened components of the current positions  '''
 #         print 'oldindvecs',self.oldindVecs
         self.forces = zeros((len(self.points),3))
         self.wallForce = zeros(len(self.IBZ.facets))
@@ -1104,9 +1085,14 @@ class dynamicPack():
         os.system('cp {} {}'.format(self.path+'/'+ name+'.pdf',self.path+ '/latest{}-{}'.format(ax0,ax1)+'.pdf' ))
         close()
         
-    def newtRaph(self,x0,eps):
-        ''' See intro to P. Pulay, Chem. Phys. Lett. 73, 393 (1980).
-        When this fails, a steepest descent is tried (see en.wikipedia.org/wiki/Gradient_descent)'''
+    def minNewtSteepest(self,x0,eps):
+        ''' See intro to P. Pulay, Chem. Phys. Lett. 73, 393 (1980) for use of Hessian.  
+        But a steepest descent works better on first tests (see en.wikipedia.org/wiki/Gradient_descent). 
+        We move in the direction of -gradient, starting with a default step, and decreasing it by 2 until
+        a lower energy and lower norm(gradient) is found.   The default step is increased if the previous step succeeded without adjustment.
+        If the step must be lowered to find a lower energy and lower norm(gradient), the default is lowered. 
+        
+        '''
         print 'Start Minimization';self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
         itermax = 100
         gnormTol = 0.05
@@ -1115,35 +1101,41 @@ class dynamicPack():
         fold,gold = self.enerGrad(xold)
         method = 'steepest'
 #         if method =='newtRaph': H = self.getHessian();Hinv = inv(H)    
-        H = self.getHessian();Hinv = inv(H)    
+#         H = self.getHessian();Hinv = inv(H)    
         gnormold = norm(gold)
-        xolder =  xold + dot(Hinv,gold) #go backwards
-        golder = dot(H,(xolder-xold))
+#         xolder =  xold + dot(Hinv,gold) #go backwards
+        xolder =  xold + 0.01*gold #go backwards
+#         golder = dot(H,(xolder-xold))
         folder = dot(gold,(xolder-xold))
         print 'energy0',fold, 'gnorm',gnormold #,'grad', gold
         fstart = fold; gnormstart = gnormold
-        iter = 0
+        iIter = 0
         step = 1.0
-        while iter < itermax and gnormold > gnormTol:
+        atMinStep = False
+        while iIter < itermax and gnormold > gnormTol and not atMinStep:
             method = 'steepest'
 #             if method == 'steepest':
 #                 step = max(step,dot(xold-xolder,gold-golder)/norm(gold-golder))  #barzilai-Borwein method                   
             lower = False
             while not lower:
                 if step < minstep:
-                    if method == 'newtRaph':
-                        sys.exit('Step {} is still too small after "steepest" atempt: stop'.format(step))
-                    #try steepest descent
-                    method = 'newtRaph'
-#                     if method == 'steepest':
-#                         step = dot(xold-xolder,gold-golder)/norm(gold-golder)  #barzilai-Borwein method
-#                         if step < minstep:
-#                             step = 1.0
-                    print 'try newtRaph'              
+                    print 'minimum step reached'
+                    atMinStep = True
+                    break
+#                     if method == 'newtRaph':
+#                         self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+#                         sys.exit('Step {} is still too small after "steepest" atempt: stop'.format(step))
+#                     #try steepest descent
+#                     method = 'newtRaph'
+# #                     if method == 'steepest':
+# #                         step = dot(xold-xolder,gold-golder)/norm(gold-golder)  #barzilai-Borwein method
+# #                         if step < minstep:
+# #                             step = 1.0
+#                     print 'try newtRaph'              
 #                 print 'step',step
-                if method == 'newtRaph':
-                    xnew = xold - step*dot(Hinv,gold)
-                elif method == 'steepest':
+#                 if method == 'newtRaph':
+#                     xnew = xold - step*dot(Hinv,gold)
+                if method == 'steepest':
                     xnew = xold - step*gold
                 self.points = xnew.reshape((len(self.points),3))
                 inside = True
@@ -1156,7 +1148,7 @@ class dynamicPack():
                 if inside:
                     fnew,gnew = self.enerGrad(xnew)
                     gnormnew = norm(gnew)
-                    print '\nenergy',iter, fnew,'step',step,'gnorm',gnormnew #, 'grad', gnew
+#                     print '\nenergy',iIter, fnew,'step',step,'gnorm',gnormnew #, 'grad', gnew
                     if fnew<fold and gnormnew < gnormold:
                         lower = True
                 step /= 2
@@ -1168,15 +1160,15 @@ class dynamicPack():
             fold = fnew
             gold = gnew
             gnormold = gnormnew
-            iter += 1
-            if method =='newtRaph': H = self.getHessian();Hinv = inv(H)                        
+            iIter += 1
+#             if method =='newtRaph': H = self.getHessian();Hinv = inv(H)                        
         self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-        print '\n for {} point in IBZ'.format(len(self.points))
-        print 'Starting energy',fstart, 'gnorm',gnormstart
-        print 'Ending energy',iter, fnew,'step',step,'gnorm',gnormnew #, 'grad', gnew
+        print '\nFor {} points in IBZ'.format(len(self.points))
+        print '\tStarting energy',fstart, 'gnorm',gnormstart
+        print '\tEnding energy',iIter, fnew,'gnorm',gnormnew, 'step',step,#, 'grad', gnew
         if gnormnew <= gnormTol:
-            print '\nSuccess after {} iterations'.format(iter)
-        elif iter == itermax:
+            print '\nSuccess after {} iterations'.format(iIter)
+        elif iIter == itermax:
             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
         sys.exit('stop')
     
