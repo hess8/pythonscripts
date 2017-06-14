@@ -28,8 +28,10 @@ def getVCmesh(dir,method,targetNmesh,meshtype):
             aTypes.append(atype)
         atype += 1
     aTypes = array(aTypes)
-    meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
+    statusOK = meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
     os.chdir(lastDir)
+    return statusOK
+    
     
 def writejobfile(path,n,type):
     '''read from a template in maindir, and put dir in job name'''
@@ -63,7 +65,7 @@ def createdir(path,n,type):
 maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/dynamicTest1/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
-type = 'cub' 
+type = 'fcc' 
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinputShort/'
 method = 0.5
@@ -73,6 +75,7 @@ method = 0.5
 reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
+toRun = []
 for dir in dirs:
     if testfile in os.listdir(dir):
         print
@@ -105,14 +108,18 @@ for dir in dirs:
 #                 getVCmesh(newdir,method,4*n**3,type)
 #             for n in range(2,22,2): 
 #             for n in range(2*48,100*48,2*48):
-            for n in range(10,13,2):  
-                print 'n',n
+            for n in range(2,13,2):  
+                print;print 'Exponent n in submitVasp (target points n^3)',n
                 newdir = createdir(currdir,n,type) 
-                getVCmesh(newdir,method,n**3,type)
+                statusOK = getVCmesh(newdir,method,n**3,type)
+                if not statusOK: #no points in IBZ
+                    print 'Zero or too many points in IBZ...skip this n'
+                else:
+                    toRun.append(newdir)
 #                 getVCmesh(newdir,method,n,type)
 #         sys.exit('stop')
-        newdirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
-        for newdir in newdirs:
+#         newdirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
+        for newdir in toRun:
             os.chdir(newdir)
             subprocess.call(['sbatch', 'vaspjob'])
             os.chdir(currdir)

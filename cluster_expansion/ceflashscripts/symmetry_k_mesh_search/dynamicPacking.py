@@ -26,11 +26,13 @@ from pip._vendor.html5lib.constants import rcdataElements
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 sys.path.append('/fslhome/bch/graphener/graphener')
 
+from symmetry import get_lattice_pointGroup, get_spaceGroup #these have vectors as ROWS
+
 from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, lattice, surfvol,
     orthdef, trimSmall, cosvecs,
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double,
-    getGroup, checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell,
-    reverseStructured,isInVoronoi,areParallel, among, addVec, getSGpointGroup)
+    checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell,
+    reverseStructured,isInVoronoi,areParallel, among, addVec)
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 
@@ -446,8 +448,7 @@ class dynamicPack():
 #         nCoarseMax = 200
         self.B = B
         print '\nB (Recip lattice vectors as columns',B
-        print 'method',method
-        [self.symops,self.nops] = getGroup(self.B)
+#         print 'method',method
         self.initFactor = 1.0 #assign 90% of the point at the beginning based on an FCC or BCC mesh
         self.power = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
@@ -461,16 +462,41 @@ class dynamicPack():
             #0.5 approx  If cut volume is less than 50%, distribute weight to neighbors of equivalent points
             #         If point is outside of first BZ, then translate by G vector to get it inside.  Points inside but not in IBZ
             #        use point symmetries to get in.  This applies to kpoints in IBZ but near corners as well. 
-        print 'Number of desired points:', targetNmesh
-        print 'Symmetry operations:', self.nops
         vol = abs(det(B))
         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.df = self.ravg #inter-point force scale distance
 #         self.dw = self.df/2.0 #wall force scale distance
         self.dw = self.df/2 #wall force scale distance
-        self.wallClose = 1.0#0.5 #to allow initial points closer to the wall set to less than 1. 
+        self.wallClose = 0.25#0.5 #to allow initial points closer to the wall set to less than 1. 
         self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/2000
+#         self.symops = get_lattice_pointGroup(transpose(self.B),eps)
+#         self.nops = len(self.symops)
+        [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-8,postype.lower()[0] == 'd')
+        self.nops = len(symopsList)
+        self.symops = zeros((3,3,self.nops),dtype = float)
+        for iop in range(len(symopsList)):
+            self.symops[:,:,iop] = array(symopsList[iop])
+        
+#         get_spaceGroup(par_lat,atomType,bas_vecs,eps=1E-10,lattcoords = False):
+#           ...
+#         return(sg_ops,sg_fracts)
+#     Args:
+#         par_lat (array-like): A 2D integere array that contains the parent lattice vectors
+#         atomType (list of int): Integer array representing the type of each basis atom
+#         bas_vecs (array-like): A 2D integere array that contains the basis vectors for the cell
+#         eps (float, optional): Finite precisions tolerance
+# 
+#         lattcoords (bool, optional): True if vectors are in lattice coordinates 
+#           rather than cartesian
+# 
+#     Returns:
+#         sg_ops (array-like): The rotation and mirror operations of the space group.
+#         sg_fracts (array-like): The translation operations of the space group.
+        
+        print 'Number of desired points:', targetNmesh
+        print 'Symmetry operations:', self.nops
+
         BZ = cell() #instance
         BZ.volume = vol
         BZ = getVorCell(self.B,BZ,eps)
@@ -479,9 +505,16 @@ class dynamicPack():
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
         self.facetsMathPrint(IBZ,'p',True,'Red');print ';Show[p]\n' 
-        self.meshInitCubic(IBZ,meshtype,eps)
-        self.dynamic(IBZ,eps)
-        self.writeKpoints(IBZ)
+        IBZ = self.meshInitCubic(IBZ,meshtype,eps)
+        if 0 > len(IBZ.mesh) >= 1000:
+            OK = True
+            self.dynamic(IBZ,eps)
+            self.writeKpoints(IBZ)
+            return OK
+        else: 
+            OK = False
+            return OK
+            
 #         sys.exit('stop')
         return
 
@@ -606,10 +639,10 @@ class dynamicPack():
                             IBZ.mesh.append(kpoint)
                             IBZ.weights.append(1.0) 
         print 'Points inside', nInside
-        if nInside == 0: sys.exit('No points are inside the IBZ.  Increase the number of target points')
+#         if nInside == 0: sys.exit('No points are inside the IBZ.  Increase the number of target points')
         print 'BZ volume:', det(self.B),'\n'
         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
-        return
+        return IBZ
 
     def dynamic(self,IBZ,eps):
         ''' '''
@@ -905,7 +938,7 @@ class dynamicPack():
         inversion = False
         for iop in range(self.nops):
             op = self.symops[:,:,iop] 
-            print 'symop',iop;print op ;print          
+#             print 'symop',iop;print op ;print          
             if abs(trace(op))< 3.0-eps: #skip E and inverse
                 evals,evecs = eig(op)
                 evecs = array([evec for evec in evecs])
@@ -942,11 +975,24 @@ class dynamicPack():
                         evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
                         u1 = self.choose111(evec,eps) 
                         BZ = self.cutCell(u1,0.0,BZ,eps)
-                    self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'   
+#                     self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
+                    
+                    
+#                     BZ.volume = convexH(BZ.fpoints).volume
+#                     self.IBZvolCut = det(self.B)/BZ.volume
+#                     getBoundsFacets(BZ,eps)
+#                     BZ.fpoints = flatVecsList(BZ.facets,eps)
+#                     BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
+#                     print 'Vol BZ / Vol IBZ', self.IBZvolCut                    
+                    
+                    
+                    
+                    
+                      
             elif areEqual(det(op),-1.0,eps):
                 inversion = True
-#         if inversion: #apply last of all
-#             if makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
+        if inversion and self.nops==2: #apply last of all.  For now I think inversion acts on the IBZ only if it is alone with the id
+            if makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
                 #can cut along any plane
                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
@@ -956,6 +1002,8 @@ class dynamicPack():
         BZ.fpoints = flatVecsList(BZ.facets,eps)
         BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
+        if not areEqual(self.IBZvolCut,self.nops,eps):
+            sys.exit('Volume not reduced by factor equal to the number of symmetry operations')
         return BZ
 
     def checkVertices(self,BZ,tMP,ds):
@@ -1094,7 +1142,7 @@ class dynamicPack():
         '''
         print 'Start Minimization';self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
         itermax = 100
-        gnormTol = 0.05
+        gnormTol = 0.01
         minstep = 0.0001
         xold= x0
         fold,gold = self.enerGrad(xold)
@@ -1121,6 +1169,7 @@ class dynamicPack():
                 if step < minstep:
                     print 'minimum step reached'
                     atMinStep = True
+                    fnew = 0
                     break
 #                     if method == 'newtRaph':
 #                         self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
@@ -1163,9 +1212,9 @@ class dynamicPack():
             iIter += 1
 #             if method =='newtRaph': H = self.getHessian();Hinv = inv(H)                        
         print;self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-        print '\n\nFor {} points in IBZ'.format(len(self.points))
+        print '\n\nFor {} points in IBZ and {} steps'.format(len(self.points),iIter)
         print '\tStarting energy',fstart, 'gnorm',gnormstart
-        print '\tEnding energy',iIter, fnew,'gnorm',gnormnew, 'step',step,#, 'grad', gnew
+        print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step,#, 'grad', gnew
         if gnormnew <= gnormTol:
             print '\nSuccess after {} iterations'.format(iIter)
         elif iIter == itermax:

@@ -16,11 +16,8 @@ utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
 # utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
 #had to copy and rename Gus's routine to the one below because ctypes could never find the one with the right name
 getLatticePointGroup = utilslib.symmetry_module_mp_get_pointgroup_
-# get_spaceGrpPG = utilslib.symmetry_module_mp_get_sg_pointgroup_ #don't use cap letters in fortran name.  
-
-# get_spaceGrpPG = utilslib.symmetry_module_mp_find_site_equivalencies_
-# get_spaceGrpPG = utilslib.symmetry_module_mp_get_pointgroup_
-#bring_into_cell
+get_spaceGrpPG = utilslib.symmetry_module_mp_get_sg_pointgroup_ #don't use cap letters in fortran name.  
+#NOTE:  use symmetry.py from Gus' students instead for the Fortran wrapper. 
 
 def readfile(filepath):
     file1 = open(filepath,'r')
@@ -798,6 +795,7 @@ def getSGpointGroup(latt,totatoms,atomTypes,pos,direct):
     epsIN = c_double(eps)
     get_spaceGrpPG(byref(lattIN),byref(ntotIN),byref(aTypesIN), byref(aPosIN),byref(directIN),byref(opsOUT),byref(NopsOUT),byref(epsIN)) 
     nops = NopsOUT.value
+    print 'getSGpointGroup', opsOUT[:]
     symops = trimSmall(unload_ctypes_3x3xN_double(opsOUT,nops))
     return [symops,nops]
 
@@ -1074,7 +1072,7 @@ def poscar2super(path1,path2,M):
     detM = abs(int(rint(det(M)))) #should be same as latpts.shape[0]
     [descriptor, scale, A, reciplatt, natoms, postype, positions] = readposcar('POSCAR', path1)
     totatoms=sum(natoms)
-    if postype[0] == 'D' or postype == 'd': #Direct...convert to cartesian
+    if postype.lower()[0] == 'd': #Direct...convert to cartesian
         where = 0
         for natom in natoms:
             for i in range(natom):
