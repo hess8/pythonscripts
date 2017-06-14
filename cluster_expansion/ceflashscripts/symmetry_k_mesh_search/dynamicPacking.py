@@ -481,8 +481,8 @@ class dynamicPack():
         self.facetsMathPrint(IBZ,'p',True,'Red');print ';Show[p]\n' 
         self.meshInitCubic(IBZ,meshtype,eps)
         self.dynamic(IBZ,eps)
-        sys.exit('stop')
         self.writeKpoints(IBZ)
+#         sys.exit('stop')
         return
 
     def meshInitCubic(self,IBZ,type,eps):
@@ -582,6 +582,7 @@ class dynamicPack():
         print 'Mins',intMins       
         #Create the cubic mesh inside the irreducible BZ
         IBZ.mesh = []
+        IBZ.weights = []
         weightsInside = 0
         nInside = 0         
         ik = 0 
@@ -603,7 +604,9 @@ class dynamicPack():
 #                         if not isOutside(kpoint,IBZ.bounds,eps):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
                             IBZ.mesh.append(kpoint)
+                            IBZ.weights.append(1.0) 
         print 'Points inside', nInside
+        if nInside == 0: sys.exit('No points are inside the IBZ.  Increase the number of target points')
         print 'BZ volume:', det(self.B),'\n'
         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
         return
@@ -616,10 +619,6 @@ class dynamicPack():
         self.facets = IBZ.facets
         self.eps = eps
         self.relax()
-             
-#         self.getForces(IBZ,eps)
-#         print self.forceP
-#         print self.wallPress
 
     def relax(self):
         '''Minimization of the potential energy.
@@ -690,7 +689,7 @@ class dynamicPack():
             #direct coordinates!...vasp doesn't read cartesian kpoints right
             kpointDir = directFromCart(self.B,kpoint)
             lines.append('{:15.12f}  {:15.12f}  {:15.12f}  {:15.12f}\n'\
-                         .format(kpointDir[0],kpointDir[1],kpointDir[2],cell.weights[ik]*1e6))
+                         .format(kpointDir[0],kpointDir[1],kpointDir[2],cell.weights[ik]))
         self.writefile(lines,'KPOINTS')         
        
     def intoIBZ(self,kpoint,IBZ,eps):   
@@ -901,12 +900,12 @@ class dynamicPack():
             subprocess.call(['echo', '\nError: Voronoi cell volume {} is not equal to the parallelepiped volume {}'.format(BZ.volume,det(self.B))])
             sys.exit('Stop.')
         print '\n\nReducing Brillouin zone by symmetry'
-#         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
+        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
 #          
         inversion = False
         for iop in range(self.nops):
             op = self.symops[:,:,iop] 
-#             print 'symop',iop;print op ;print          
+            print 'symop',iop;print op ;print          
             if abs(trace(op))< 3.0-eps: #skip E and inverse
                 evals,evecs = eig(op)
                 evecs = array([evec for evec in evecs])
@@ -929,7 +928,7 @@ class dynamicPack():
                                 ds.append(norm(vec - evec*dot(evec,vec)))
                         allPoints = [point for (d,point) in sorted(zip(ds,allPoints),key = lambda x: x[0])]#sort by distance
                         pnto = allPoints[0]
-                        #the plane to cut is in the plane of O and axis, but perpendiular to vector O.                   )
+                        #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
                         tempvec = cross(evec,pnto)
                         u1 = self.choose111(tempvec/norm(tempvec),eps)
                         BZ = self.cutCell(u1,0.0,BZ,eps)
@@ -943,14 +942,14 @@ class dynamicPack():
                         evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
                         u1 = self.choose111(evec,eps) 
                         BZ = self.cutCell(u1,0.0,BZ,eps)
-#                     self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'   
+                    self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'   
             elif areEqual(det(op),-1.0,eps):
                 inversion = True
-        if inversion: #apply last of all
-            if makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
+#         if inversion: #apply last of all
+#             if makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
                 #can cut along any plane
                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
-#         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
+        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         BZ.volume = convexH(BZ.fpoints).volume
         self.IBZvolCut = det(self.B)/BZ.volume
         getBoundsFacets(BZ,eps)
@@ -1113,6 +1112,7 @@ class dynamicPack():
         step = 1.0
         atMinStep = False
         while iIter < itermax and gnormold > gnormTol and not atMinStep:
+            print iIter,
             method = 'steepest'
 #             if method == 'steepest':
 #                 step = max(step,dot(xold-xolder,gold-golder)/norm(gold-golder))  #barzilai-Borwein method                   
@@ -1162,16 +1162,14 @@ class dynamicPack():
             gnormold = gnormnew
             iIter += 1
 #             if method =='newtRaph': H = self.getHessian();Hinv = inv(H)                        
-        self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-        print '\nFor {} points in IBZ'.format(len(self.points))
+        print;self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+        print '\n\nFor {} points in IBZ'.format(len(self.points))
         print '\tStarting energy',fstart, 'gnorm',gnormstart
         print '\tEnding energy',iIter, fnew,'gnorm',gnormnew, 'step',step,#, 'grad', gnew
         if gnormnew <= gnormTol:
             print '\nSuccess after {} iterations'.format(iIter)
         elif iIter == itermax:
             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
-        sys.exit('stop')
-    
     
     def getHessian(self):
         '''

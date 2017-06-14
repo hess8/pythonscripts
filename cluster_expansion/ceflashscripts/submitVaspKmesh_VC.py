@@ -12,11 +12,11 @@ from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
 from kmeshroutines import nstrip, readposcar,create_poscar
-import meshConstruct5
+import dynamicPacking
 
 def getVCmesh(dir,method,targetNmesh,meshtype):
     lastDir = os.getcwd()   
-    meshc = meshConstruct5.meshConstruct()
+    meshc = dynamicPacking.dynamicPack() #instance
     [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
 #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
     os.chdir(dir)
@@ -28,7 +28,7 @@ def getVCmesh(dir,method,targetNmesh,meshtype):
             aTypes.append(atype)
         atype += 1
     aTypes = array(aTypes)
-    meshc.meshSym(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
+    meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
     os.chdir(lastDir)
     
 def writejobfile(path,n,type):
@@ -60,7 +60,7 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestFCC'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrCUBNM/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/dynamicTest1/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'cub' 
@@ -105,7 +105,7 @@ for dir in dirs:
 #                 getVCmesh(newdir,method,4*n**3,type)
 #             for n in range(2,22,2): 
 #             for n in range(2*48,100*48,2*48):
-            for n in range(2,13,2):  
+            for n in range(10,13,2):  
                 print 'n',n
                 newdir = createdir(currdir,n,type) 
                 getVCmesh(newdir,method,n**3,type)
