@@ -36,9 +36,8 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrCUB',
 #          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoSymComm']
 
-paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/cubicTest',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrCUB',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrCUBNM']
+paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/f1MP',
+         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP']
 
 
 summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
@@ -127,7 +126,7 @@ for iplot in range(nplots):
 #     print 'iplot',data[iplot]['eners'][:n], data[iplot]['nKs'][:n]
     plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],\
       label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots+1)), marker = 'o',markeredgewidth=0.0) 
-legend(loc='lower left',prop={'size':12});
+legend(loc='upper center',prop={'size':12});
 # show()
 fig.savefig('{}/energy_vs_n'.format(summaryPath))         
         

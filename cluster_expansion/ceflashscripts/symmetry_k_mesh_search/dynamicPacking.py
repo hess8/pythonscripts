@@ -244,7 +244,7 @@ def newBounds(braggVecs,bndsLabels,grp,cell,eps):
     if len(cell.fpoints) >= 3:
 #         mathPrintPoints(newVerts)
 #         print 'Show[r,s]'
-        print 'new Vol vs',convexH(newVerts).volume,cell.volume
+#         print 'new Vol vs',convexH(newVerts).volume,cell.volume
         checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) #should be some power greater than 1
     else:
         checkNext = True
@@ -447,11 +447,13 @@ class dynamicPack():
         #1. nCoarse random points in the cell parallelpiped.  
 #         nCoarseMax = 200
         self.B = B
-        print '\nB (Recip lattice vectors as columns',B
+#         print '\nB (Recip lattice vectors as columns',B
 #         print 'method',method
         self.initFactor = 1.0 #assign 90% of the point at the beginning based on an FCC or BCC mesh
         self.power = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
+        self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
+        self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.interfactor = 1.0        
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
@@ -467,7 +469,6 @@ class dynamicPack():
         self.df = self.ravg #inter-point force scale distance
 #         self.dw = self.df/2.0 #wall force scale distance
         self.dw = self.df/2 #wall force scale distance
-        self.wallClose = 0.25#0.5 #to allow initial points closer to the wall set to less than 1. 
         self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/2000
 #         self.symops = get_lattice_pointGroup(transpose(self.B),eps)
@@ -504,9 +505,9 @@ class dynamicPack():
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
-        self.facetsMathPrint(IBZ,'p',True,'Red');print ';Show[p]\n' 
+#         self.facetsMathPrint(IBZ,'p',True,'Red');print ';Show[p]\n' 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
-        if 0 > len(IBZ.mesh) >= 1000:
+        if 0 < len(IBZ.mesh) <= 1000:
             OK = True
             self.dynamic(IBZ,eps)
             self.writeKpoints(IBZ)
@@ -611,8 +612,8 @@ class dynamicPack():
                 projs.append(dot(cubicLVs[:,i],shifted)/aKcubConv**2)
             intMaxs.append(int(ceil(max(projs)))+2) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
             intMins.append(int(floor(min(projs)))-1)#optimize: Is -1 required? 
-        print 'Maxes',intMaxs
-        print 'Mins',intMins       
+#         print 'Maxes',intMaxs
+#         print 'Mins',intMins       
         #Create the cubic mesh inside the irreducible BZ
         IBZ.mesh = []
         IBZ.weights = []
@@ -640,8 +641,8 @@ class dynamicPack():
                             IBZ.weights.append(1.0) 
         print 'Points inside', nInside
 #         if nInside == 0: sys.exit('No points are inside the IBZ.  Increase the number of target points')
-        print 'BZ volume:', det(self.B),'\n'
-        self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
+#         print 'BZ volume:', det(self.B),'\n'
+#         self.facetsMeshMathPrint(IBZ); print ';Show[p,q]\n'
         return IBZ
 
     def dynamic(self,IBZ,eps):
@@ -676,11 +677,12 @@ class dynamicPack():
 #         self.getHessian(wallfact,interfact,p)
         etot = 0
         for i,ri in enumerate(vecs):
+#             print 'EG{}'.format(i),
 #             print 'point',i,ri
             #wall forces
             for iw, u in enumerate(self.bounds[0]):
                 ro = self.bounds[1][iw]
-                d = ro-dot(ri,u) #distance from plane to ri
+                d = ro-dot(ri,u)+ self.wallOffset*self.dw #distance from plane to ri offset factor allows points to move closer to walls. 
 #                 if d<0:
 #                     'pause'
 # #                     print '** point {} crossed boundary'.format(i), iw, u,ro
@@ -932,8 +934,8 @@ class dynamicPack():
         if not areEqual(det(self.B),BZ.volume,eps):
             subprocess.call(['echo', '\nError: Voronoi cell volume {} is not equal to the parallelepiped volume {}'.format(BZ.volume,det(self.B))])
             sys.exit('Stop.')
-        print '\n\nReducing Brillouin zone by symmetry'
-        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
+#         print '\n\nReducing Brillouin zone by symmetry'
+#         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
 #          
         inversion = False
         for iop in range(self.nops):
@@ -995,7 +997,7 @@ class dynamicPack():
             if makesDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
                 #can cut along any plane
                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
-        self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
+#         self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         BZ.volume = convexH(BZ.fpoints).volume
         self.IBZvolCut = det(self.B)/BZ.volume
         getBoundsFacets(BZ,eps)
@@ -1140,36 +1142,41 @@ class dynamicPack():
         If the step must be lowered to find a lower energy and lower norm(gradient), the default is lowered. 
         
         '''
-        print 'Start Minimization';self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+        self.IBZ.mesh = self.points
+#         self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+#         print 'Start Minimization';
+
         itermax = 100
         gnormTol = 0.01
         minstep = 0.0001
         xold= x0
         fold,gold = self.enerGrad(xold)
+        fnew = fold
+        gnormold = norm(gold)
+        fstart = fold; gstart = gold; gnormstart = gnormold
         method = 'steepest'
 #         if method =='newtRaph': H = self.getHessian();Hinv = inv(H)    
 #         H = self.getHessian();Hinv = inv(H)    
-        gnormold = norm(gold)
+        
 #         xolder =  xold + dot(Hinv,gold) #go backwards
         xolder =  xold + 0.01*gold #go backwards
 #         golder = dot(H,(xolder-xold))
         folder = dot(gold,(xolder-xold))
-        print 'energy0',fold, 'gnorm',gnormold #,'grad', gold
+        print 'energy_0',fold, 'gnorm',gnormold #,'grad', gold
         fstart = fold; gnormstart = gnormold
         iIter = 0
         step = 1.0
         atMinStep = False
         while iIter < itermax and gnormold > gnormTol and not atMinStep:
-            print iIter,
+            print iIter, #progress bar
             method = 'steepest'
 #             if method == 'steepest':
 #                 step = max(step,dot(xold-xolder,gold-golder)/norm(gold-golder))  #barzilai-Borwein method                   
             lower = False
             while not lower:
                 if step < minstep:
-                    print 'minimum step reached'
+                    print 'minimum step reached: {}'.format(step) 
                     atMinStep = True
-                    fnew = 0
                     break
 #                     if method == 'newtRaph':
 #                         self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
@@ -1190,7 +1197,6 @@ class dynamicPack():
                 inside = True
                 for point in self.points:
                     if not isInside(point,self.bounds,eps):
-                        'pause'
                         print 'point is outside IBZ...reduce step size:',point
                         inside = False
                         break                   
@@ -1211,15 +1217,20 @@ class dynamicPack():
             gnormold = gnormnew
             iIter += 1
 #             if method =='newtRaph': H = self.getHessian();Hinv = inv(H)                        
-        print;self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-        print '\n\nFor {} points in IBZ and {} steps'.format(len(self.points),iIter)
+        self.IBZ.mesh = self.points; 
+        print;self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+        print 'For {} points in IBZ and {} steps'.format(len(self.points),iIter)
         print '\tStarting energy',fstart, 'gnorm',gnormstart
         print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step,#, 'grad', gnew
         if gnormnew <= gnormTol:
             print '\nSuccess after {} iterations'.format(iIter)
         elif iIter == itermax:
             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
-    
+        if not (fnew < fstart and gnormnew < gnormstart):
+            sys.exit('Did not find a lower energy and force norm: stop')
+        print; print
+        
+        
     def getHessian(self):
         '''
         For a wall force in the form: f = (d/dw)^(-p), 

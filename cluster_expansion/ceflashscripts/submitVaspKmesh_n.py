@@ -8,9 +8,6 @@ Assumes we already have POSCAR from aconvaspPoscar.py (and before that train_str
     
 import sys,os
 import numpy as np
-#from kmeshroutines.py import *
-
-
 
 def writekpts_vasp_n(path,n,type):
     '''Write mesh vectors to kpoints file, using integer division for cubic and fcc meshes'''   
@@ -65,8 +62,8 @@ def createdir(path,n,type):
 
 ################# script #######################
 
-maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/cubicTest/'
-type = 'cubic'
+maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/f1MP/'
+type = 'fcc'
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/vaspinputShort/'
 # Nkppra = 10000
@@ -101,7 +98,6 @@ for dir in dirs:
 #            subprocess.call(['sbatch', 'vaspjob'])
             
             # Now create new dirs with different characteristics
-            type = 'cubic'
             for n in range(2,13,2):
                 createdir(currdir,n,type)
 #             type = 'fcc'

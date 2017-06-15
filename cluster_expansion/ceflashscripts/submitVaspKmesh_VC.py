@@ -62,7 +62,7 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestFCC'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/dynamicTest1/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'fcc' 
@@ -80,7 +80,10 @@ for dir in dirs:
     if testfile in os.listdir(dir):
         print
         currdir = maindir + '/'+ dir+'/'
-        print dir + "************"
+        print "*********************************************************************************************************"
+        print dir + "*********************************************************************************************************"
+        print "*********************************************************************************************************"
+
         file1 = open(currdir+testfile,'r')
         poscar = file1.readlines()
         file1.close()
@@ -108,20 +111,25 @@ for dir in dirs:
 #                 getVCmesh(newdir,method,4*n**3,type)
 #             for n in range(2,22,2): 
 #             for n in range(2*48,100*48,2*48):
-            for n in range(2,13,2):  
-                print;print 'Exponent n in submitVasp (target points n^3)',n
+            for n in range(2,25,2):
+                print 
+                print '==============================================' 
+                print 'Base {} in submitVasp (target = n^3)'.format(n)
+                print '==============================================' 
+                print
                 newdir = createdir(currdir,n,type) 
                 statusOK = getVCmesh(newdir,method,n**3,type)
-                if not statusOK: #no points in IBZ
+                if not statusOK: #no points or too many in IBZ
                     print 'Zero or too many points in IBZ...skip this n'
+                    os.system('rm -r {}'.format(newdir))
                 else:
                     toRun.append(newdir)
 #                 getVCmesh(newdir,method,n,type)
 #         sys.exit('stop')
 #         newdirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
-        for newdir in toRun:
-            os.chdir(newdir)
-            subprocess.call(['sbatch', 'vaspjob'])
-            os.chdir(currdir)
-        os.chdir(maindir)                 
+for newdir in toRun:
+    os.chdir(newdir)
+    subprocess.call(['sbatch', 'vaspjob'])
+#     os.chdir(currdir)
+os.chdir(maindir)                 
 print 'Done'
