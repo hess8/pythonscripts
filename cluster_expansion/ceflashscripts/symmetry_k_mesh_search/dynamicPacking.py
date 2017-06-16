@@ -174,9 +174,9 @@ def magGroup(arr, igroup,eps):
             ngroups += 1
             if ngroups > igroup:
                 return newMags[ngroups-2],newMags[ngroups-1]-newMags[ngroups-2]
-    return 0,len(arr)   
+    return -1,len(arr)   
 
-def newBounds(braggVecs,bndsLabels,grp,cell,eps):
+def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
     '''Find intersections planes:  newBraggs+current taken 2 at a time with e
     each newBragg, excluding duplicates in the triplet. 
     If any of these intersections are inside the current boundaries, then they 
@@ -194,13 +194,11 @@ def newBounds(braggVecs,bndsLabels,grp,cell,eps):
     pairs = list(combinations(bndsLabels,2))
     iInt = 0
     for ig in grp:
-        if ig ==5:
-            'pause'
         for pair in pairs:
-            planes3 = [braggVecs[ig]['vec']]
+            planes3 = [boundVecs[ig]['vec']]
             if not ig in pair:# or ig in keepLabels):
-                planes3.append(braggVecs[pair[0]]['vec'])
-                planes3.append(braggVecs[pair[1]]['vec'])
+                planes3.append(boundVecs[pair[0]]['vec'])
+                planes3.append(boundVecs[pair[1]]['vec'])
                 intersPt = threePlaneIntersect(planes3)    
                 if not intersPt is None:
                     iInt+=1
@@ -239,13 +237,17 @@ def newBounds(braggVecs,bndsLabels,grp,cell,eps):
             cell.bounds[1].append(normPlane)
         cell.fpoints = newVerts
 #     mathPrintPlanes(allPlanes)
-    if mod(len(cell.bounds[0]),2)!=0:
-        sys.exit('Stop. Error in newBounds. BZ must have even number of planes')
+#     if mod(len(cell.bounds[0]),2)!=0:
+#         sys.exit('Stop. Error in newBounds. BZ must have even number of planes')
     if len(cell.fpoints) >= 3:
 #         mathPrintPoints(newVerts)
 #         print 'Show[r,s]'
 #         print 'new Vol vs',convexH(newVerts).volume,cell.volume
-        checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) #should be some power greater than 1
+        if type == 'BZ':
+            checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) 
+            #this will only be useful for BZ vor cell.
+        else: #for point vorcell, we check all planes for now. 
+            checkNext = True
     else:
         checkNext = True
     return checkNext,bndsLabels,cell
@@ -316,33 +318,35 @@ def makesDups(op,cell,eps):
                 return True
     return False
 
-def getVorCell(LVs,cell,eps):
-    '''Boundaries and vertices of Voronoi cell'''
-    braggVecs = getBraggVecs(LVs)
-    
+def getVorCell(boundPlanesVecs,cell,type,eps):
+    '''Boundaries and vertices of Voronoi cell'''   
     igroup = 1
-#     mathPrintPoints(braggVecs[:]['vec'])
-    
-    gstart,ng = magGroup(braggVecs,1,eps) # group of smallest bragg plane vectors
-    if ng == 6: 
+#     mathPrintPoints(boundVecs[:]['vec'])
+    gstart,ng = magGroup(boundPlanesVecs,1,eps) # group of smallest bragg plane vectors
+    if gstart < 0:
         checkNext = False
     else:
         checkNext = True
     boundsLabels = range(ng)
     for i in boundsLabels:
-        vec = braggVecs[i]['vec']; mag = norm(vec)
+        vec = boundPlanesVecs[i]['vec']; mag = norm(vec)
         cell.bounds[0].append(vec/mag); cell.bounds[1].append(mag)
     #get any intersections between these planes
     cell.fpoints = getInterscPoints(cell.bounds,eps)
     while checkNext:
         igroup += 1
+        if igroup == 16:
+            'pause'
 #         print 'igroup',igroup
-        gstart,ng = magGroup(braggVecs,igroup,eps)
+        gstart,ng = magGroup(boundPlanesVecs,igroup,eps)
+        if gstart < 0:
+            break
         nextGroup = range(gstart,gstart+ng)
-#         checkNext,cell = newBoundsifInside(braggVecs,nextGroup,cell,eps)
-        checkNext,boundsLabels,cell = newBounds(braggVecs,boundsLabels,nextGroup,cell,eps)
-        if igroup > 10:
-            sys.exit('Stop. getVorCell igroup >10.  This seems to be an infinite while loop.  Try reducing eps ')
+#         checkNext,cell = newBoundsifInside(boundPlanesVecs,nextGroup,cell,eps)
+        checkNext,boundsLabels,cell = newBounds(boundPlanesVecs,boundsLabels,nextGroup,cell,type,eps)
+        igroupMax = 20
+        if igroup > igroupMax:
+            sys.exit('Stop. getVorCell igroup > {}.  This seems to be an infinite while loop.  Try reducing eps '.format(igroupMax))
 #     interscPoints = getInterscPoints(cell.bounds,eps)
     #check to see if an
     #write plane equations for Mathematica:
@@ -500,7 +504,8 @@ class dynamicPack():
 
         BZ = cell() #instance
         BZ.volume = vol
-        BZ = getVorCell(self.B,BZ,eps)
+        braggVecs = getBraggVecs(self.B)
+        BZ = getVorCell(braggVecs,BZ,'BZ',eps)
 #         print 'Vornonoi cell'; self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n'
         self.vorCell = BZ
 #         self.facetsMathPrint(BZ,'p',True,'Red') 
@@ -510,6 +515,7 @@ class dynamicPack():
         if 0 < len(IBZ.mesh) <= 1000:
             OK = True
             self.dynamic(IBZ,eps)
+            IBZ = self.weightPoints(IBZ,eps)
             self.writeKpoints(IBZ)
             return OK
         else: 
@@ -518,6 +524,41 @@ class dynamicPack():
             
 #         sys.exit('stop')
         return
+    
+    def weightPoints(self,IBZ,eps):
+        '''Find the volume of the Voronoi cell around each point, and use it to weight the point.
+        Search a sphere of radius a few df for neighbors.  Use the half vectors to these points 
+        and the vectors to the walls to define the bounding planes.
+        
+        Vectors need to be taken from each mesh point as the origin'''
+                
+        for ip,point in enumerate(IBZ.mesh):
+            pointCell = cell()
+            neighs,neighLbls = self.getNeighbors(point,IBZ,eps)
+            boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
+            for iw, u in enumerate(IBZ.bounds[0]):
+                ro = self.bounds[1][iw]
+                d = ro-dot(point,u) 
+                vec = d*u
+                boundVecs[iw]['vec'] = vec  #vector from point to wall
+                boundVecs[iw]['mag'] = norm(vec)
+            for j, jpoint in enumerate(neighs):
+                vec = (jpoint - point)/2
+                boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
+                boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
+            boundVecs.sort(order = 'mag')
+            pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+            print 'volume',pointCell.volume, 'number of these to fill IBZ', IBZ.volume/pointCell.volume
+#             IBZ.weights.append(pointCell.volume/self.ravg**3) 
+            IBZ.weights.append(pointCell.volume) 
+            print 'Point vor cell'; self.facetsMathPrint(pointCell,'p',True,'Red');print ';Show[p]\n'
+
+        wtot = sum(IBZ.weights)
+        print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
+        if not areEqual(wtot, IBZ.volume, eps):
+            sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
+        IBZ.weights /= self.ravg**3  #to scale them order(1).  
+        return IBZ
 
     def meshInitCubic(self,IBZ,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
@@ -638,7 +679,7 @@ class dynamicPack():
 #                         if not isOutside(kpoint,IBZ.bounds,eps):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
                             IBZ.mesh.append(kpoint)
-                            IBZ.weights.append(1.0) 
+#                             IBZ.weights.append(1.0) 
         print 'Points inside', nInside
 #         if nInside == 0: sys.exit('No points are inside the IBZ.  Increase the number of target points')
 #         print 'BZ volume:', det(self.B),'\n'
@@ -750,25 +791,22 @@ class dynamicPack():
             sys.exit("Stop. intoIBZ: symm ops don't return a kpoint inside the IBZ")
                     
     def getNeighbors(self,kpoint,IBZ,eps):
-        '''This is for a kpoint inside or outside . 
-        Search a sphere around the kpoint and collect neighbors.
+        '''Search a sphere around the kpoint and collect neighbors.
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
         Return the neighbors
         '''
-        neighR = 3.0*self.rpacking
-        kpSymm = self.intoIBZ(kpoint,IBZ,eps)
-        neighs,neighLbls = self.searchSpheres([kpoint,kpSymm],IBZ,neighR)
+        neighR = 4.0*self.rpacking
+        neighs,neighLbls = self.searchSphere(kpoint,IBZ,neighR,eps)
         return neighs,neighLbls 
     
-    def searchSpheres(self,klist,IBZ,R):
+    def searchSphere(self,kpoint,IBZ,R,eps):
         neighs = []
         neighLbls = []
         for ip,meshPt in enumerate(IBZ.mesh):
-            for kpoint in klist:
+            if not allclose(kpoint,meshPt,eps):
                 if norm(meshPt-kpoint) <= R:
                     neighs.append(meshPt)
                     neighLbls.append(ip)
-                    break
         return neighs,neighLbls
         
     def addToKpts(self,kptsRed,wgtsRed,IBZ):
