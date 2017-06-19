@@ -28,6 +28,11 @@ def writekpts_vasp_n(path,n,type):
         kpointsfile.append('0.0 %12.8f %12.8f\n' % (b,b))
         kpointsfile.append('%12.8f 0.0 %12.8f\n' % (b,b))
         kpointsfile.append('%12.8f %12.8f 0.0\n' % (b,b))
+    elif type == 'bcc':
+        b = 1.0/n/2.0
+        kpointsfile.append('0.0 %12.8f %12.8f\n' % (b,b))
+#         kpointsfile.append('%12.8f 0.0 %12.8f\n' % (b,b))
+#         kpointsfile.append('%12.8f %12.8f 0.0\n' % (b,b))
     else:
         sys.exit('Stop: type not found in writekpts_vasp_n')
     kpointsfile.append('0.5 0.5 0.5\n' ) #shift
@@ -62,8 +67,8 @@ def createdir(path,n,type):
 
 ################# script #######################
 
-maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/f1MP/'
-type = 'fcc'
+maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/f1cub/'
+type = 'cubic'
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/vaspinputShort/'
 # Nkppra = 10000

@@ -62,7 +62,7 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestFCC'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP.75offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'fcc' 
@@ -75,7 +75,7 @@ method = 0.5
 reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
-toRun = []
+# toRun = []
 for dir in dirs:
     if testfile in os.listdir(dir):
         print
@@ -111,7 +111,7 @@ for dir in dirs:
 #                 getVCmesh(newdir,method,4*n**3,type)
 #             for n in range(2,22,2): 
 #             for n in range(2*48,100*48,2*48):
-            for n in range(2,25,2):
+            for n in range(7,25,1):
                 print 
                 print '==============================================' 
                 print 'Base {} in submitVasp (target = n^3)'.format(n)
@@ -123,13 +123,16 @@ for dir in dirs:
                     print 'Zero or too many points in IBZ...skip this n'
                     os.system('rm -r {}'.format(newdir))
                 else:
-                    toRun.append(newdir)
+                    os.chdir(newdir)
+                    subprocess.call(['sbatch', 'vaspjob'])
+#                     toRun.append(newdir)
+                    
 #                 getVCmesh(newdir,method,n,type)
 #         sys.exit('stop')
 #         newdirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
-for newdir in toRun:
-    os.chdir(newdir)
-    subprocess.call(['sbatch', 'vaspjob'])
+# for newdir in toRun:
+#     os.chdir(newdir)
+#     subprocess.call(['sbatch', 'vaspjob'])
 #     os.chdir(currdir)
 os.chdir(maindir)                 
 print 'Done'

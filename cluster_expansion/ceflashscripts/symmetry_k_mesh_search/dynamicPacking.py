@@ -163,18 +163,19 @@ def plane3pts(points,eps):
         u = -u
     return u,dot(u,r0)
 
-def magGroup(arr, igroup,eps):
-    '''returns the ith group, numbered from 1, (starting index and length of group) of vectors in a structured array, 
-    which must be sorted beforehand by magnitude (in either direction), in field 'mag' '''
-    newMags = [0] # shows indices of new group starts
-    ngroups = 1
-    for i in range(1,len(arr)):
-        if abs(arr[i]['mag']-arr[i-1]['mag']) > eps:
-            newMags.append(i)
-            ngroups += 1
-            if ngroups > igroup:
-                return newMags[ngroups-2],newMags[ngroups-1]-newMags[ngroups-2]
-    return -1,len(arr)   
+def magGroup(arr,eps):
+    '''Return a list of lists of indices, grouped by magnitude'''
+    indsList = []
+    magsList = arr['mag'].tolist()
+    magsList.append(1000)
+    lastBorder = 0
+    for i,mag in enumerate(magsList):
+        if i>0:
+            if abs(magsList[i]-magsList[i-1]) > eps: #we have a border
+                indsList.append(range(lastBorder,i))
+                lastBorder = i
+    return indsList
+
 
 def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
     '''Find intersections planes:  newBraggs+current taken 2 at a time with e
@@ -239,15 +240,8 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
 #     mathPrintPlanes(allPlanes)
 #     if mod(len(cell.bounds[0]),2)!=0:
 #         sys.exit('Stop. Error in newBounds. BZ must have even number of planes')
-    if len(cell.fpoints) >= 3:
-#         mathPrintPoints(newVerts)
-#         print 'Show[r,s]'
-#         print 'new Vol vs',convexH(newVerts).volume,cell.volume
-        if type == 'BZ':
+    if len(cell.fpoints) >= 3 and type == 'BZ':
             checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) 
-            #this will only be useful for BZ vor cell.
-        else: #for point vorcell, we check all planes for now. 
-            checkNext = True
     else:
         checkNext = True
     return checkNext,bndsLabels,cell
@@ -320,39 +314,17 @@ def makesDups(op,cell,eps):
 
 def getVorCell(boundPlanesVecs,cell,type,eps):
     '''Boundaries and vertices of Voronoi cell'''   
-    igroup = 1
-#     mathPrintPoints(boundVecs[:]['vec'])
-    gstart,ng = magGroup(boundPlanesVecs,1,eps) # group of smallest bragg plane vectors
-    if gstart < 0:
-        checkNext = False
-    else:
-        checkNext = True
-    boundsLabels = range(ng)
-    for i in boundsLabels:
-        vec = boundPlanesVecs[i]['vec']; mag = norm(vec)
-        cell.bounds[0].append(vec/mag); cell.bounds[1].append(mag)
-    #get any intersections between these planes
-    cell.fpoints = getInterscPoints(cell.bounds,eps)
-    while checkNext:
-        igroup += 1
-        if igroup == 16:
-            'pause'
-#         print 'igroup',igroup
-        gstart,ng = magGroup(boundPlanesVecs,igroup,eps)
-        if gstart < 0:
-            break
-        nextGroup = range(gstart,gstart+ng)
-#         checkNext,cell = newBoundsifInside(boundPlanesVecs,nextGroup,cell,eps)
-        checkNext,boundsLabels,cell = newBounds(boundPlanesVecs,boundsLabels,nextGroup,cell,type,eps)
-        igroupMax = 20
-        if igroup > igroupMax:
-            sys.exit('Stop. getVorCell igroup > {}.  This seems to be an infinite while loop.  Try reducing eps '.format(igroupMax))
-#     interscPoints = getInterscPoints(cell.bounds,eps)
-    #check to see if an
-    #write plane equations for Mathematica:
-#         for iplane, uvec in enumerate(cell.bounds[0]):
-#             pvec = uvec*cell.bounds[1][iplane]
-#             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)) #write plane equations for mathematica
+    indsList = magGroup(boundPlanesVecs,eps)
+    checkNext = True
+    boundsLabels = []
+#     for i in indsList[0]:  #add the first group
+#         vec = boundPlanesVecs[i]['vec']; mag = norm(vec)
+#         cell.bounds[0].append(vec/mag); cell.bounds[1].append(mag)
+    for igroup, group in enumerate(indsList):
+        #get any intersections between these planes
+#         cell.fpoints = getInterscPoints(cell.bounds,eps)
+        checkNext,boundsLabels,cell = newBounds(boundPlanesVecs,boundsLabels,group,cell,type,eps)
+        if type == 'BZ' and not checkNext: break
     cell = getFacetsPoints(cell,eps)
     cell.fpoints = flatVecsList(cell.facets,eps)
     cell.center = sum(cell.fpoints)/len(cell.fpoints)
@@ -434,7 +406,7 @@ class cell():
         self.bounds = [[],[]] #planes, written as normals and distances from origin [u's] , [ro's]
         self.expBounds = None #planes pushed outward by rpacking
         self.facets = None #points arranged in facets
-        self.fpoints = None #points as a set (but a list)
+        self.fpoints = [] #points as a set (but a list)
         self.volume = None
         self.center = None #body center of cell
         self.mesh = None #centers of each voronoi cell, or kpoints
@@ -457,7 +429,7 @@ class dynamicPack():
         self.power = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.wallOffset = 0.75 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.interfactor = 1.0        
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
@@ -548,10 +520,10 @@ class dynamicPack():
                 boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
             boundVecs.sort(order = 'mag')
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
-            print 'volume',pointCell.volume, 'number of these to fill IBZ', IBZ.volume/pointCell.volume
+#             print 'volume',pointCell.volume, 'number of these to fill IBZ', IBZ.volume/pointCell.volume
 #             IBZ.weights.append(pointCell.volume/self.ravg**3) 
             IBZ.weights.append(pointCell.volume) 
-            print 'Point vor cell'; self.facetsMathPrint(pointCell,'p',True,'Red');print ';Show[p]\n'
+#             print 'Point vor cell'; self.facetsMathPrint(pointCell,'p',True,'Red');print ';Show[p]\n'
 
         wtot = sum(IBZ.weights)
         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
@@ -758,7 +730,7 @@ class dynamicPack():
         nk = len(cell.mesh)
         totw = sum(cell.weights)
         lines = []
-        lines.append('Packing of IBZ (Bret Hess, BYU). Total weights: {:12.8f} (vs 1.0 per general point without symmetry\n'.format(totw))
+        lines.append('Packing of IBZ (Bret Hess, BYU). Total weights: {:12.8f} \n'.format(totw))#(vs 1.0 per general point without symmetry\n'.format(totw))
         lines.append('{}\n'.format(nk))
         lines.append('Reciprocal\n') #direct coordinates!...vasp doesn't read cartesian kpoints right
         for ik,kpoint in enumerate(cell.mesh):
@@ -795,7 +767,7 @@ class dynamicPack():
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
         Return the neighbors
         '''
-        neighR = 4.0*self.rpacking
+        neighR = 8.0*self.rpacking
         neighs,neighLbls = self.searchSphere(kpoint,IBZ,neighR,eps)
         return neighs,neighLbls 
     
@@ -1266,7 +1238,7 @@ class dynamicPack():
             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
         if not (fnew < fstart and gnormnew < gnormstart):
             sys.exit('Did not find a lower energy and force norm: stop')
-        print; print
+#         print; print
         
         
     def getHessian(self):
