@@ -67,8 +67,8 @@ def createdir(path,n,type):
 
 ################# script #######################
 
-maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/f1cub/'
-type = 'cubic'
+maindir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstructs/'
+type = 'fcc'
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/vaspinputShort/'
 # Nkppra = 10000
@@ -103,7 +103,7 @@ for dir in dirs:
 #            subprocess.call(['sbatch', 'vaspjob'])
             
             # Now create new dirs with different characteristics
-            for n in range(2,13,2):
+            for n in range(2,15,1):
                 createdir(currdir,n,type)
 #             type = 'fcc'
 #             for n in range(1,15):

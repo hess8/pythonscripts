@@ -167,7 +167,7 @@ def magGroup(arr,eps):
     '''Return a list of lists of indices, grouped by magnitude'''
     indsList = []
     magsList = arr['mag'].tolist()
-    magsList.append(1000)
+    magsList.append(1000) #need to end the list with a final number to stop on. 
     lastBorder = 0
     for i,mag in enumerate(magsList):
         if i>0:
@@ -275,8 +275,9 @@ def getFacetsPoints(cell,eps):
         facetvecs = []
         for i, vec in  enumerate(cell.fpoints):
             if onPlane(vec,pvec,eps) and not isOutside(vec,cell.bounds,eps):
-                facetvecs = addVec(vec,facetvecs,eps)          
-        cell.facets[iplane] = orderAngle(facetvecs,eps)
+                facetvecs = addVec(vec,facetvecs,eps)
+        if len(facetvecs)>= 3:          
+            cell.facets[iplane] = orderAngle(facetvecs,eps)
     return cell
 
 def isInside(vec,bounds,eps):
@@ -323,6 +324,9 @@ def getVorCell(boundPlanesVecs,cell,type,eps):
     for igroup, group in enumerate(indsList):
         #get any intersections between these planes
 #         cell.fpoints = getInterscPoints(cell.bounds,eps)
+        print 'igroup',igroup
+        if igroup == 24:
+            'pause'
         checkNext,boundsLabels,cell = newBounds(boundPlanesVecs,boundsLabels,group,cell,type,eps)
         if type == 'BZ' and not checkNext: break
     cell = getFacetsPoints(cell,eps)
@@ -429,7 +433,7 @@ class dynamicPack():
         self.power = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = 0.75 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.interfactor = 1.0        
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
@@ -484,7 +488,7 @@ class dynamicPack():
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
 #         self.facetsMathPrint(IBZ,'p',True,'Red');print ';Show[p]\n' 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
-        if 0 < len(IBZ.mesh) <= 1000:
+        if 0 < len(IBZ.mesh) <= 200:
             OK = True
             self.dynamic(IBZ,eps)
             IBZ = self.weightPoints(IBZ,eps)
@@ -505,6 +509,7 @@ class dynamicPack():
         Vectors need to be taken from each mesh point as the origin'''
                 
         for ip,point in enumerate(IBZ.mesh):
+            print ip,
             pointCell = cell()
             neighs,neighLbls = self.getNeighbors(point,IBZ,eps)
             boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
@@ -519,15 +524,19 @@ class dynamicPack():
                 boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
                 boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
             boundVecs.sort(order = 'mag')
+            if ip == 66:
+                'pause'
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
 #             print 'volume',pointCell.volume, 'number of these to fill IBZ', IBZ.volume/pointCell.volume
 #             IBZ.weights.append(pointCell.volume/self.ravg**3) 
             IBZ.weights.append(pointCell.volume) 
 #             print 'Point vor cell'; self.facetsMathPrint(pointCell,'p',True,'Red');print ';Show[p]\n'
 
+        print
         wtot = sum(IBZ.weights)
-        print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
+
         if not areEqual(wtot, IBZ.volume, eps):
+            print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
         IBZ.weights /= self.ravg**3  #to scale them order(1).  
         return IBZ
@@ -767,7 +776,7 @@ class dynamicPack():
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
         Return the neighbors
         '''
-        neighR = 8.0*self.rpacking
+        neighR = 5.0*self.rpacking
         neighs,neighLbls = self.searchSphere(kpoint,IBZ,neighR,eps)
         return neighs,neighLbls 
     
@@ -1157,7 +1166,7 @@ class dynamicPack():
 #         print 'Start Minimization';
 
         itermax = 100
-        gnormTol = 0.01
+        gnormTol = 0.001
         minstep = 0.0001
         xold= x0
         fold,gold = self.enerGrad(xold)
@@ -1231,7 +1240,7 @@ class dynamicPack():
         print;self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
         print 'For {} points in IBZ and {} steps'.format(len(self.points),iIter)
         print '\tStarting energy',fstart, 'gnorm',gnormstart
-        print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step,#, 'grad', gnew
+        print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
         if gnormnew <= gnormTol:
             print '\nSuccess after {} iterations'.format(iIter)
         elif iIter == itermax:
