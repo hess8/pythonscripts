@@ -64,7 +64,7 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1026DP/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f229DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'fcc' 
@@ -86,7 +86,6 @@ for dir in dirs:
         print "*********************************************************************************************************"
         print dir + "*********************************************************************************************************"
         print "*********************************************************************************************************"
-
         file1 = open(currdir+testfile,'r')
         poscar = file1.readlines()
         file1.close()
@@ -105,16 +104,8 @@ for dir in dirs:
             subprocess.call(['rm', 'OUTCAR'])          
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
-            
-            # Now create new dirs with different characteristics  
-#             for n in range(2,17): #was 15:
-#                 print 'n',n
-#                 newdir = createdir(currdir,n,type) 
-# #                 getVCmesh(newdir,method,n**3,type)
-#                 getVCmesh(newdir,method,4*n**3,type)
-#             for n in range(2,22,2): 
-#             for n in range(2*48,100*48,2*48):
-            for n in range(5,6,1):
+
+            for n in range(2,23,1):
                 print 
                 print '==============================================' 
                 print 'Base {} in submitVasp (target = n^3)'.format(n)

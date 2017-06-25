@@ -42,9 +42,9 @@ testfile = 'POSCAR'
 #         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP.5offset',
 #         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP.75offset']
 
-paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstructs',
-         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP']
-
+# paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstructs',
+#          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP']
 
 summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
 # summaryPath = paths[1]
@@ -64,7 +64,7 @@ for ipath,maindir in enumerate(paths):
 nplots = iplot       
 data = zeros(nplots,dtype = [('ID', 'S15'),('nDone','int8'),('eners', '{}float'.format(maxCalcs)),\
                 ('errs', '{}float'.format(maxCalcs)),('nKs', '{}int16'.format(maxCalcs))])
-#read all the data            
+#read all the data 
 iplot = -1
 for ipath, maindir in enumerate(paths):
 #     meshMethod = maindir.split('/')[-3][:3]+maindir.split('/')[-1][-3:]
@@ -94,24 +94,29 @@ for ipath, maindir in enumerate(paths):
                         nK = getNkIBZ(calc,'IBZKPT')
                     nKs.append(nK)
         #sort by increasing number of kpoints
-        nKs = array(nKs)
-        energies = array(energies)
-        order = argsort(nKs)
-        energies = energies[order]
-        nKs = sort(nKs)
-#         print 'energies',  energies
-#         print 'NKs', nKs      
-#         eref = energies[-1] #the last energy of each struct is that of the most kpoints
-        if ipath == 0 and istruct == 0:
-            eref = energies[-1] #the last energy of each struct is that of the most kpoints
-#         eref = energies[-1] #the last energy of each struct is that of the most kpoints
-        errs = abs(energies-eref)*1000 + 1e-6 #now in meV 
-#         plotErrs()
-        data[iplot]['ID'] = '{} {}'.format(struct,meshMethod)
-        data[iplot]['nDone'] = nDone
-        data[iplot]['eners'][:nDone] = energies
-        data[iplot]['errs'][:nDone] = errs
-        data[iplot]['nKs'][:nDone] = nKs
+        if len(energies)>0:
+            nKs = array(nKs)
+            energies = array(energies)
+            order = argsort(nKs)
+    #         print 'struct',struct
+    #         print 'energies',energies
+            energies = energies[order]
+            eref = energies[-1]#the last energy of each struct is that of the most kpoints
+    #         print 'eref',eref
+    #         print 'energies sorted',energies, 'nKs', nKs
+    #         print
+            nKs = sort(nKs)
+    #         print 'NKs', nKs      
+    #         if ipath == 0 and istruct == 0: ******* useful if comparing methods on the same struct with a trusted first method*******
+    #             eref = energies[-1] #the last energy of each struct is that of the most kpoints
+    
+            errs = abs(energies-eref)*1000 + 1e-6 #now in meV 
+    #         plotErrs()
+            data[iplot]['ID'] = '{} {}'.format(struct,meshMethod)
+            data[iplot]['nDone'] = nDone
+            data[iplot]['eners'][:nDone] = energies
+            data[iplot]['errs'][:nDone] = errs
+            data[iplot]['nKs'][:nDone] = nKs
         os.chdir(maindir)
 lines = [' ID , nKIBZ , ener , err \n']  
 for iplot in range(nplots):

@@ -20,9 +20,9 @@ from itertools import chain, combinations, permutations
 from matplotlib.pyplot import (subplots,savefig,imshow,close,plot,title,xlabel,
                                ylabel,figure,show,scatter,triplot)
 import matplotlib.image as mpimg
-import datetime
-from _ast import operator
-from pip._vendor.html5lib.constants import rcdataElements
+# import datetime
+# from _ast import operator
+# from pip._vendor.html5lib.constants import rcdataElements
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 sys.path.append('/fslhome/bch/graphener/graphener')
 
@@ -33,8 +33,8 @@ from kmeshroutines import (svmesh,svmeshNoCheck,svmesh1freedir, lattice_vecs, la
     load_ctypes_3x3_double, unload_ctypes_3x3_double, unload_ctypes_3x3xN_double,
     checksymmetry, nonDegen, MT2mesh, matchDirection,intoVoronoi,intoCell,
     reverseStructured,isInVoronoi,areParallel, among, addVec)
-def timestamp():
-    return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
+# def timestamp():
+#     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 
 def areEqual(x,y,eps):
     return abs(x-y)<eps
@@ -324,9 +324,6 @@ def getVorCell(boundPlanesVecs,cell,type,eps):
     for igroup, group in enumerate(indsList):
         #get any intersections between these planes
 #         cell.fpoints = getInterscPoints(cell.bounds,eps)
-        print 'igroup',igroup
-        if igroup == 24:
-            'pause'
         checkNext,boundsLabels,cell = newBounds(boundPlanesVecs,boundsLabels,group,cell,type,eps)
         if type == 'BZ' and not checkNext: break
     cell = getFacetsPoints(cell,eps)
@@ -359,23 +356,6 @@ def getBraggVecs(LVs):
 #         print 'bragg vector', vec
     return braggVecs
 
-# def intsPlLinSeg(u,ro,r1,r2,eps):
-#     '''Intersection between a plane through the origin and a line.
-#     A plane through the origin is given by dot(r,u) = ro.  
-#     A line segment between r1 and r2 is given by vectors r = r1+t(r2-r1), for t in (0,1) 
-#     Combining these:  r1u = dot(r1,u).  r2u = dot(r2,u).  Then t = (ro-r1u)/(r2u-r1u).
-#     So if t is in (0,1), then we have an intersection'''
-#     r1u = dot(r1,u)
-#     r2u = dot(r2,u)
-#     if areEqual(r1u,r2u,eps):
-#         return False, None
-#     else:
-#         t = (ro-r1u)/(r2u-r1u)
-#         if 0 + eps < t < 1.0-eps:
-#             return True, trimSmall(r1 + t*(r2-r1)) 
-#         else:
-#             return False, None    
-
 def intsPlLinSeg(u,ro,r1,r2,eps):
     '''Intersection between a plane and a line.
     A plane is given by dot(r,u) = ro.  
@@ -384,8 +364,6 @@ def intsPlLinSeg(u,ro,r1,r2,eps):
     So if t is in (0,1), then we have an intersection'''
     r1u = dot(r1,u)
     r2u = dot(r2,u)
-#     if areEqual(r1u,r2u,eps):
-#         return False, None
     t = (ro-r1u)/(r2u-r1u)
     return r1 + t*(r2-r1) 
 
@@ -399,16 +377,11 @@ def getBoundsFacets(cell,eps,rpacking = None):
             u = -u
         cell.bounds[0].append(u)
         cell.bounds[1].append(ro)
-    if not rpacking is None:
-        cell.expBounds = [[],[]]
-        cell.expBounds[0] = cell.bounds[0]
-        cell.expBounds[1] = [ro+sqrt(2)*rpacking for ro in cell.bounds[1]] #sqrt(2) for vertices of Voronoi cell vs radius of sphere.
     return cell
 
 class cell():
     def __init__(self):
         self.bounds = [[],[]] #planes, written as normals and distances from origin [u's] , [ro's]
-        self.expBounds = None #planes pushed outward by rpacking
         self.facets = None #points arranged in facets
         self.fpoints = [] #points as a set (but a list)
         self.volume = None
@@ -429,7 +402,7 @@ class dynamicPack():
         self.B = B
 #         print '\nB (Recip lattice vectors as columns',B
 #         print 'method',method
-        self.initFactor = 1.0 #assign 90% of the point at the beginning based on an FCC or BCC mesh
+        self.initFactor = 1.0 #assign some portion of the point at the beginning based on an FCC or BCC mesh
         self.power = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
@@ -438,16 +411,9 @@ class dynamicPack():
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
         self.method = method
-            #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
-            #         from the IBZ center origin to check if the point's volume is cut. 
-            #         Cut the VC to determine the volume contribution      
-            #0.5 approx  If cut volume is less than 50%, distribute weight to neighbors of equivalent points
-            #         If point is outside of first BZ, then translate by G vector to get it inside.  Points inside but not in IBZ
-            #        use point symmetries to get in.  This applies to kpoints in IBZ but near corners as well. 
         vol = abs(det(B))
         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.df = self.ravg #inter-point force scale distance
-#         self.dw = self.df/2.0 #wall force scale distance
         self.dw = self.df/2 #wall force scale distance
         self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/2000
@@ -497,8 +463,6 @@ class dynamicPack():
         else: 
             OK = False
             return OK
-            
-#         sys.exit('stop')
         return
     
     def weightPoints(self,IBZ,eps):
@@ -506,10 +470,14 @@ class dynamicPack():
         Search a sphere of radius a few df for neighbors.  Use the half vectors to these points 
         and the vectors to the walls to define the bounding planes.
         
-        Vectors need to be taken from each mesh point as the origin'''
-                
+        Vectors are first taken from each mesh point as the origin, 
+        then displaced to their real positions in the cell for possible display'''
+        
+#       begin MP facets printing
+        self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell before loop
+        showCommand = 'Show[s,' 
         for ip,point in enumerate(IBZ.mesh):
-            print ip,
+#             print ip,
             pointCell = cell()
             neighs,neighLbls = self.getNeighbors(point,IBZ,eps)
             boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
@@ -524,17 +492,27 @@ class dynamicPack():
                 boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
                 boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
             boundVecs.sort(order = 'mag')
-            if ip == 66:
-                'pause'
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
-#             print 'volume',pointCell.volume, 'number of these to fill IBZ', IBZ.volume/pointCell.volume
-#             IBZ.weights.append(pointCell.volume/self.ravg**3) 
-            IBZ.weights.append(pointCell.volume) 
+            IBZ.weights.append(pointCell.volume)
+            ####MP facet printing loop line
+            #move center of pointCell to point.  For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
+            facets = []
+            for facet in pointCell.facets:   
+                temp = []
+                for fp in facet:
+                    temp.append(fp+point) 
+                facets.append(temp)  
+            pointCell.facets = facets
+            showCommand = self.mpVorCellMathPrint(IBZ,pointCell,point,ip,showCommand)
+            ####end MP facet printing loop entry
+        if showCommand[-1] == ',': showCommand = showCommand[:-1]
+        showCommand += ']' 
+        print ';', 
+        print showCommand 
+        #end MP facets printing 
 #             print 'Point vor cell'; self.facetsMathPrint(pointCell,'p',True,'Red');print ';Show[p]\n'
-
-        print
+#         print
         wtot = sum(IBZ.weights)
-
         if not areEqual(wtot, IBZ.volume, eps):
             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
@@ -544,7 +522,7 @@ class dynamicPack():
     def meshInitCubic(self,IBZ,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with their normals.       
-        Remove any points within self.rw from any wall        '''
+        Remove any points within self.dw*self.wallClose from any wall        '''
         a = 1.0
         cubicLVs = identity(3)
         #test facet points for orthogonality
@@ -776,7 +754,7 @@ class dynamicPack():
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
         Return the neighbors
         '''
-        neighR = 5.0*self.rpacking
+        neighR = 8.0*self.rpacking
         neighs,neighLbls = self.searchSphere(kpoint,IBZ,neighR,eps)
         return neighs,neighLbls 
     
@@ -810,12 +788,12 @@ class dynamicPack():
         cutMP.center = kpoint
         return cutMP
         
-    def cutMPCellMathPrint(self,BZ,cellcut,point,ipoint,showCommand):
+    def mpVorCellMathPrint(self,BZ,cell,point,ipoint,showCommand):
         '''For showing cut facets inside IBZ, loop work'''
         ncolors = 100
-#         self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'discreteColors[{}][[{}]]'\
+#         self.facetsMathPrint(cell,'v{}'.format(ipoint),False,'discreteColors[{}][[{}]]'\
 #                              .format(ncolors,mod(ipoint,ncolors)));print ';',
-        self.facetsMathPrint(cellcut,'v{}'.format(ipoint),False,'RandomColor[]');print ';',
+        self.facetsMathPrint(cell,'v{}'.format(ipoint),False,'RandomColor[]');print ';',
         showCommand += 'v{},'.format(ipoint)
         return showCommand
             
@@ -997,19 +975,7 @@ class dynamicPack():
                         u1 = self.choose111(evec,eps) 
                         BZ = self.cutCell(u1,0.0,BZ,eps)
 #                     self.facetsMathPrint(BZ,'p',True,'Red');print ';Show[p]\n' 
-                    
-                    
-#                     BZ.volume = convexH(BZ.fpoints).volume
-#                     self.IBZvolCut = det(self.B)/BZ.volume
-#                     getBoundsFacets(BZ,eps)
-#                     BZ.fpoints = flatVecsList(BZ.facets,eps)
-#                     BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
-#                     print 'Vol BZ / Vol IBZ', self.IBZvolCut                    
-                    
-                    
-                    
-                    
-                      
+                                      
             elif areEqual(det(op),-1.0,eps):
                 inversion = True
         if inversion and self.nops==2: #apply last of all.  For now I think inversion acts on the IBZ only if it is alone with the id
@@ -1094,7 +1060,7 @@ class dynamicPack():
         mathOut = open('mathOut','w') #both prints and writes string to file 
         strOut = ''
         self.facetsMathPrint(BZ,'s','True','Red'); #draw supercell voronoi cell
-        strOut = self.facetsMathToStr(strOut,BZ,'s','True','Red'); #draw supecell voronoi cell
+        strOut = self.facetsMathToStr(strOut,BZ,'s','True','Red');  
         showCommand = ';Show[s,'  
         print ';',;strOut+=';'
         for ipoint,point in enumerate(BZ.mesh):
