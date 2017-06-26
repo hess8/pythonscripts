@@ -64,7 +64,7 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f229DP/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'fcc' 
@@ -105,7 +105,7 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(3,23,1):
+            for n in range(6,7,1):#23
                 print 
                 print '==============================================' 
                 print 'Base {} in submitVasp (target = n^3)'.format(n)

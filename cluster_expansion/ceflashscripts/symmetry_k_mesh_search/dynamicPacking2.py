@@ -474,6 +474,7 @@ class dynamicPack():
         then displaced to their real positions in the cell for possible display'''
         
 #       begin MP facets printing
+        mpf = open('MPfacets.nb')
         self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell before loop
         showCommand = 'Show[s,' 
         for ip,point in enumerate(IBZ.mesh):
@@ -659,11 +660,88 @@ class dynamicPack():
         initialPos = array(self.points).flatten()
         epsilon = self.ravg/100
 #         out = self.fmin_cg(initialPos,self.eps)
-        self.minNewtSteepest(initialPos,self.eps)    
+        self.minSteepest(initialPos,self.eps)    
         return
 
+    def minSteepest(self,x0,eps):
+        ''' Steepest descent works better on tests than sophisticated methods such as 
+        conjugate gradient or using a Hessian method (see intro to P. Pulay, Chem. Phys. Lett. 73, 393 (1980)). 
+        We move in the direction of -gradient, starting with a default step, and decreasing it by 2 until
+        a lower energy and lower norm(gradient) is found.   The default step is increased if the previous step succeeded without adjustment.
+        If the step must be lowered to find a lower energy and lower norm(gradient), the default is lowered. This worked
+        better than the Barzilai-Borwein method that tries to predict an optimal step.    
+        
+        '''
+        self.IBZ.mesh = self.points
+#         self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+#         print 'Start Minimization';
+
+        itermax = 100
+        gnormTol = 0.001
+        minstep = 0.0001
+        xold= x0
+        fold,gold = self.enerGrad(xold)
+        fnew = fold
+        gnormold = norm(gold)
+        fstart = fold; gstart = gold; gnormstart = gnormold
+        method = 'steepest'
+#         xolder =  xold + 0.01*gold #go backwards
+#         golder = dot(H,(xolder-xold))
+#         folder = dot(gold,(xolder-xold))
+        print 'energy_0',fold, 'gnorm',gnormold #,'grad', gold
+        fstart = fold; gnormstart = gnormold
+        iIter = 0
+        step = 1.0
+        atMinStep = False
+        while iIter < itermax and gnormold > gnormTol and not atMinStep:
+            print iIter, #progress bar
+            method = 'steepest'
+            lower = False
+            while not lower:
+                if step < minstep:
+                    print 'minimum step reached: {}'.format(step) 
+                    atMinStep = True
+                    break
+                if method == 'steepest':
+                    xnew = xold - step*gold
+                self.points = xnew.reshape((len(self.points),3))
+                inside = True
+                for point in self.points:
+                    if not isInside(point,self.bounds,eps):
+                        print 'point is outside IBZ...reduce step size:',point
+                        inside = False
+                        break                   
+                if inside:
+                    fnew,gnew = self.enerGrad(xnew)
+                    gnormnew = norm(gnew)
+#                     print '\nenergy',iIter, fnew,'step',step,'gnorm',gnormnew #, 'grad', gnew
+                    if fnew<fold and gnormnew < gnormold:
+                        lower = True
+                step /= 2
+            step *= 4
+#             xolder = xold
+#             folder = folder
+#             golder = gold
+            xold = xnew
+            fold = fnew
+            gold = gnew
+            gnormold = gnormnew
+            iIter += 1                   
+        self.IBZ.mesh = self.points; 
+#         print;self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
+        print 'For {} points in IBZ and {} steps'.format(len(self.points),iIter)
+        print '\tStarting energy',fstart, 'gnorm',gnormstart
+        print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
+        if gnormnew <= gnormTol:
+            print '\nSuccess after {} iterations'.format(iIter)
+        elif iIter == itermax:
+            print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
+        if not (fnew < fstart and gnormnew < gnormstart):
+            sys.exit('Did not find a lower energy and force norm: stop')
+#         print; print
+
     def enerGrad(self,comps):
-        '''Returns the total energy, gradient (-forces) and (optional) Hessian matrix, 
+        '''Returns the total energy, gradient (-forces), 
         using comps, which are the flattened components of the current positions  '''
 #         print 'oldindvecs',self.oldindVecs
         self.forces = zeros((len(self.points),3))
@@ -673,7 +751,6 @@ class dynamicPack():
         p = self.power
         wallfact = self.wallfactor
         interfact = self.interfactor
-#         self.getHessian(wallfact,interfact,p)
         etot = 0
         for i,ri in enumerate(vecs):
 #             print 'EG{}'.format(i),
@@ -786,23 +863,7 @@ class dynamicPack():
             cutMP.fpoints.append(point + kpoint)
         cutMP.center = kpoint
         return cutMP
-        
-    def mpVorCellMathPrint(self,BZ,cell,point,ipoint,showCommand):
-        '''For showing cut facets inside IBZ, loop work'''
-        ncolors = 100
-#         self.facetsMathPrint(cell,'v{}'.format(ipoint),False,'discreteColors[{}][[{}]]'\
-#                              .format(ncolors,mod(ipoint,ncolors)));print ';',
-        self.facetsMathPrint(cell,'v{}'.format(ipoint),False,'RandomColor[]');print ';',
-        showCommand += 'v{},'.format(ipoint)
-        return showCommand
-            
-    def dToPlanes(self,vec,bounds):
-        ds = []
-        for iplane, uvec in enumerate(bounds[0]):   
-            d = dot(vec,uvec) - bounds[1][iplane] 
-            ds.append(d)
-        return array(ds)
-    
+           
     def choose111(self,uvec,eps):
         if dot(uvec,array([1,1,1]))> 0 + eps:
             return -trimSmall(real(uvec))
@@ -991,18 +1052,6 @@ class dynamicPack():
         if not areEqual(self.IBZvolCut,self.nops,eps):
             sys.exit('Volume not reduced by factor equal to the number of symmetry operations')
         return BZ
-
-    def checkVertices(self,BZ,tMP,ds):
-        nearPlanes = []
-        nearDs = []
-        for id, d in enumerate(ds):
-            if abs(d)<=sqrt(2)*self.rpacking:
-                for point in tMP.fpoints:
-                    if dot(point,BZ.bounds[0][id]) < BZ.bounds[1][id]:
-                        nearPlanes.append(id)
-                        nearDs.append(d)
-                        break
-        return nearPlanes,nearDs
                         
     def facetsMathPrint(self,cell,label,axes = False, color = 'Red'):
         ''' Mathematica'''
@@ -1098,220 +1147,14 @@ class dynamicPack():
             print '{}x+{}y+{}z<={}&&'.format(pvec[0],pvec[1],pvec[2],dot(pvec,pvec)), #write plane equations for mathematica
         print ']\n'
         
-    def plotPos(self,arr,npoints,step):
-        self.plot2dPts(arr,npoints,timestamp()+step,'x','y') 
-        self.plot2dPts(arr,npoints,timestamp()+step,'x','z')  
-        
-    def plot2dPts(self,arr,npoints,tag,ax0,ax1):
-#         fig = figure()
-        i0 = ('x','y','z').index(ax0)
-        i1 = ('x','y','z').index(ax1)
-        print 'arr0',arr[:,i0]
-        print 'arr1',arr[:,i1]
-        figure()
-        scatter(arr[:,i0],arr[:,i1])
-        xlabel('{}'.format(ax0))
-        ylabel('{}'.format(ax1))
-        name = '{}_{}-{}'.format(tag,ax0,ax1)
-        title(name)
-        savefig(self.path+'/'+ name+'.pdf');
-        os.system('cp {} {}'.format(self.path+'/'+ name+'.pdf',self.path+ '/latest{}-{}'.format(ax0,ax1)+'.pdf' ))
-        close()
-        
-    def minNewtSteepest(self,x0,eps):
-        ''' See intro to P. Pulay, Chem. Phys. Lett. 73, 393 (1980) for use of Hessian.  
-        But a steepest descent works better on first tests (see en.wikipedia.org/wiki/Gradient_descent). 
-        We move in the direction of -gradient, starting with a default step, and decreasing it by 2 until
-        a lower energy and lower norm(gradient) is found.   The default step is increased if the previous step succeeded without adjustment.
-        If the step must be lowered to find a lower energy and lower norm(gradient), the default is lowered. 
-        
-        '''
-        self.IBZ.mesh = self.points
-#         self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-#         print 'Start Minimization';
+    def mpVorCellMathPrint(self,BZ,cell,point,ipoint,showCommand):
+        '''For showing cut facets inside IBZ, loop work'''
+        ncolors = 100
+#         self.facetsMathPrint(cell,'v{}'.format(ipoint),False,'discreteColors[{}][[{}]]'\
+#                              .format(ncolors,mod(ipoint,ncolors)));print ';',
+        self.facetsMathPrint(cell,'v{}'.format(ipoint),False,'RandomColor[]');print ';',
+        showCommand += 'v{},'.format(ipoint)
+        return showCommand      
 
-        itermax = 100
-        gnormTol = 0.001
-        minstep = 0.0001
-        xold= x0
-        fold,gold = self.enerGrad(xold)
-        fnew = fold
-        gnormold = norm(gold)
-        fstart = fold; gstart = gold; gnormstart = gnormold
-        method = 'steepest'
-#         if method =='newtRaph': H = self.getHessian();Hinv = inv(H)    
-#         H = self.getHessian();Hinv = inv(H)    
-        
-#         xolder =  xold + dot(Hinv,gold) #go backwards
-        xolder =  xold + 0.01*gold #go backwards
-#         golder = dot(H,(xolder-xold))
-        folder = dot(gold,(xolder-xold))
-        print 'energy_0',fold, 'gnorm',gnormold #,'grad', gold
-        fstart = fold; gnormstart = gnormold
-        iIter = 0
-        step = 1.0
-        atMinStep = False
-        while iIter < itermax and gnormold > gnormTol and not atMinStep:
-            print iIter, #progress bar
-            method = 'steepest'
-#             if method == 'steepest':
-#                 step = max(step,dot(xold-xolder,gold-golder)/norm(gold-golder))  #barzilai-Borwein method                   
-            lower = False
-            while not lower:
-                if step < minstep:
-                    print 'minimum step reached: {}'.format(step) 
-                    atMinStep = True
-                    break
-#                     if method == 'newtRaph':
-#                         self.IBZ.mesh = self.points; self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-#                         sys.exit('Step {} is still too small after "steepest" atempt: stop'.format(step))
-#                     #try steepest descent
-#                     method = 'newtRaph'
-# #                     if method == 'steepest':
-# #                         step = dot(xold-xolder,gold-golder)/norm(gold-golder)  #barzilai-Borwein method
-# #                         if step < minstep:
-# #                             step = 1.0
-#                     print 'try newtRaph'              
-#                 print 'step',step
-#                 if method == 'newtRaph':
-#                     xnew = xold - step*dot(Hinv,gold)
-                if method == 'steepest':
-                    xnew = xold - step*gold
-                self.points = xnew.reshape((len(self.points),3))
-                inside = True
-                for point in self.points:
-                    if not isInside(point,self.bounds,eps):
-                        print 'point is outside IBZ...reduce step size:',point
-                        inside = False
-                        break                   
-                if inside:
-                    fnew,gnew = self.enerGrad(xnew)
-                    gnormnew = norm(gnew)
-#                     print '\nenergy',iIter, fnew,'step',step,'gnorm',gnormnew #, 'grad', gnew
-                    if fnew<fold and gnormnew < gnormold:
-                        lower = True
-                step /= 2
-            step *= 4
-            xolder = xold
-            folder = folder
-            golder = gold
-            xold = xnew
-            fold = fnew
-            gold = gnew
-            gnormold = gnormnew
-            iIter += 1
-#             if method =='newtRaph': H = self.getHessian();Hinv = inv(H)                        
-        self.IBZ.mesh = self.points; 
-#         print;self.facetsMeshMathPrint(self.IBZ); print ';Show[p,q]\n'
-        print 'For {} points in IBZ and {} steps'.format(len(self.points),iIter)
-        print '\tStarting energy',fstart, 'gnorm',gnormstart
-        print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
-        if gnormnew <= gnormTol:
-            print '\nSuccess after {} iterations'.format(iIter)
-        elif iIter == itermax:
-            print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
-        if not (fnew < fstart and gnormnew < gnormstart):
-            sys.exit('Did not find a lower energy and force norm: stop')
-#         print; print
-        
-        
-    def getHessian(self):
-        '''
-        For a wall force in the form: f = (d/dw)^(-p), 
-        D[en[d[x]], x, y] = -p ux uy (d/w)^(-1 - p)/w
-       
-        For an interparticle force in the form: f = (d/df)^(-p), the pair energy is 
-        of the form 
-        *Same type* component (x or y or z) on *different particles*:  Here x, y z represent any three components,
-        reordered here:
-          D[en[d[x1, x2, y1, y2]], x1, x2] =  
-            -(d/df)^-p/d^3 *(p(x1 - x2)^2 - y1^2 + 2 y1 y2 - y2^2 - z1^2 + 2 z1 z2 - z2^2)
-            For example, for particles a, b, c,  d^2E/dx_a dx_b
-            This applies to the one pair a-b
-        
-        Identical component on the *same* particle: D[en[d[x1, x2, y1, y2]], x1, x1] = -(above result)
-            For example, for particles a, b, c,  d^2E/(dx_a)^2
-            This applies to all pairs that include particle a
-        
-        *Different type* components (x vs y vs z) on same or different particles (x vs y vs z): 
-          D[en[d[x1, x2, y1, y2]], x1, y1] = (d/df)^-p/d^3 * (1 + p)(x1 - x2)(y1 - y2)
-            For example, for particles a, b, c,  d^2E/dx_a dy_b or d^2E/dx_a dy_a 
-            If comps are on the *same particle*, this applies to all pairs that include particle a 
-            If comps are on *different particles*, this applies to the one pair a-b.  But use y2-1'''
-        p = self.power
-        wallfact = self.wallfactor
-        interfact = self.interfactor
-        points = self.points
-        N = len(points)
-        self.hessian = zeros((3*N,3*N),dtype = float)
-        df = self.df
-        dw = self.dw 
-        for ipoint in range(N): #differentiation particle
-            for icomp in range(3): #differentiation comp
-                for jpoint in range(ipoint,N): #2nd differentiation particle (not pair!)
-                    for jcomp in range(3): #differentiation comp
-#                         print '\ndiff',ipoint,jpoint,'comps',icomp,jcomp
-                        if ipoint == jpoint:
-                            #wall forces: only same-particle contributes, but could be different comps
-                            for iw, u in enumerate(self.bounds[0]):
-                                ro = self.bounds[1][iw]
-                                d = ro-dot(points[ipoint],u) #distance from plane to ri
-                                
-                                if d<0:
-    #                                 d = -d/10 #Have crossed boundary. Increase force by shortening effective d. 
-                                    print 'ri,ro,u, dot(ri,u),d'
-                                    print ri,ro,u, dot(ri,u), d
-                                    sys.exit('Error. Point {} in getHessian is not in the IBZ.'.format(iw))
-#                                 print 'Wall',wallfact*(p*u[icomp]*u[jcomp]*(d/dw)**(-1 - p))/dw, u
-                                self.hessian[ipoint*3+icomp,ipoint*3+jcomp] += wallfact*(p*u[icomp]*u[jcomp]*(d/dw)**(-1 - p))/dw
-                            #differentiation coordinates on same particles
-                            for mpoint in range(ipoint+1,N):  #forming all energy pairs that contain ipoint
-                                comps = [0,1,2]
-                                d = norm(points[ipoint]-points[mpoint])
-                                x1 = points[ipoint][icomp]
-                                x2 = points[mpoint][icomp]
-                                comps.remove(icomp)
-                                if icomp == jcomp:
-                                    y1 = points[ipoint][comps[0]]
-                                    y2 = points[mpoint][comps[0]]                 
-                                    z1 = points[ipoint][comps[1]]
-                                    z2 = points[mpoint][comps[1]]
-#                                     print 'pair',ipoint,mpoint,interfact*((d/df)**-p)/d**3 *(p*(x1 - x2)**2 - y1**2 + 2*y1*y2 - y2**2 - z1**2 + 2*z1*z2 - z2**2)
-                                    self.hessian[ipoint*3+icomp,ipoint*3+icomp] += interfact*((d/df)**-p)/d**3 *(p*(x1 - x2)**2 - y1**2 + 2*y1*y2 - y2**2 - z1**2 + 2*z1*z2 - z2**2)
-                                else:
-                                    y1 = points[ipoint][jcomp]
-                                    y2 = points[mpoint][jcomp]
-                                    comps.remove(jcomp)
-                                    z1 = points[ipoint][comps[0]]
-                                    z2 = points[mpoint][comps[0]]
-#                                     print 'other mpoint',mpoint,interfact*((d/df)**-p)/d**3 * (1 + p)*(x1 - x2)*(y1 - y2)      
-                                    self.hessian[ipoint*3+icomp,ipoint*3+jcomp] += interfact*((d/df)**-p)/d**3 * (1 + p)*(x1 - x2)*(y1 - y2)                
-                        else: #different particles, which must be ipoint and jpoint
-                            comps = [0,1,2]
-                            d = norm(points[ipoint]-points[jpoint])
-                            x1 = points[ipoint][icomp]
-                            x2 = points[jpoint][icomp]
-                            comps.remove(icomp)
-                            if icomp == jcomp: #same comp type
-                                y1 = points[ipoint][comps[0]]
-                                y2 = points[jpoint][comps[0]]                 
-                                z1 = points[ipoint][comps[1]]
-                                z2 = points[jpoint][comps[1]]
-#                                 print 'i-j interpoint', -interfact*((d/df)**-p)/d**3 *(p*(x1 - x2)**2 - y1**2 + 2*y1*y2 - y2**2 - z1**2 + 2*z1*z2 - z2**2)
-                                self.hessian[ipoint*3+icomp,jpoint*3+jcomp] += -interfact*((d/df)**-p)/d**3 *(p*(x1 - x2)**2 - y1**2 + 2*y1*y2 - y2**2 - z1**2 + 2*z1*z2 - z2**2)
-                            else: #different comp type
-                                y1 = points[ipoint][jcomp]
-                                y2 = points[jpoint][jcomp]
-                                comps.remove(jcomp)
-                                z1 = points[ipoint][comps[0]]
-                                z2 = points[jpoint][comps[0]]
-#                                 print 'i-j interpoint', interfact*((d/df)**-p)/d**3 * (1 + p)*(x1 - x2)*(y2 - y1) 
-                                self.hessian[ipoint*3+icomp,jpoint*3+jcomp] += interfact*((d/df)**-p)/d**3 * (1 + p)*(x1 - x2)*(y2 - y1) 
-        for i in range(3*N):
-            for j in range(i,3*N):
-                self.hessian[j,i] = self.hessian[i,j]
-                                                        
-        return self.hessian   
-                    
                     
                     
