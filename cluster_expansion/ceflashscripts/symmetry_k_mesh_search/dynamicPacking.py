@@ -416,7 +416,7 @@ class dynamicPack():
         self.df = self.ravg #inter-point force scale distance
         self.dw = self.df/2 #wall force scale distance
         self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
-        eps = self.ravg/2000
+        eps = self.ravg/300
 #         self.symops = get_lattice_pointGroup(transpose(self.B),eps)
 #         self.nops = len(self.symops)
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-8,postype.lower()[0] == 'd')
@@ -477,7 +477,6 @@ class dynamicPack():
         self.facetsMathPrint(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell before loop
         showCommand = 'Show[s,' 
         for ip,point in enumerate(IBZ.mesh):
-#             print ip,
             pointCell = cell()
             neighs,neighLbls = self.getNeighbors(point,IBZ,eps)
             boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
@@ -754,7 +753,7 @@ class dynamicPack():
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
         Return the neighbors
         '''
-        neighR = 8.0*self.rpacking
+        neighR = 4.0*self.rpacking
         neighs,neighLbls = self.searchSphere(kpoint,IBZ,neighR,eps)
         return neighs,neighLbls 
     
