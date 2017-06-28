@@ -123,7 +123,6 @@ def planar3dTo2d(points,eps):
         coords[i,0] = dot(vc,xunitv); coords[i,1] = dot(vc,yunitv)
     return coords
     
-
 def flatVecsList(vecsList,eps):
     '''Returns a flat list of vectors, from a list of lists that might have duplicates, 
     as in the case of facets on a polyhedron'''
@@ -257,7 +256,7 @@ def getInterscPoints(planes,eps):
     return interscPoints
 
 def getFacetsPoints(cell,eps):
-    cell.facets = [[]]*len(cell.bounds[0])
+    cell.facets = []
 #     facetsPoints = []
 #     for point in interscPoints:
 #         if not isOutside(point,cell.bounds,eps):
@@ -266,11 +265,15 @@ def getFacetsPoints(cell,eps):
     for iplane, uvec in enumerate(cell.bounds[0]):
         pvec = uvec*cell.bounds[1][iplane]
         facetvecs = []
+        
         for i, vec in  enumerate(cell.fpoints):
             if onPlane(vec,pvec,eps) and not isOutside(vec,cell.bounds,eps):
                 facetvecs = addVec(vec,facetvecs,eps)
-        if len(facetvecs)>= 3:          
-            cell.facets[iplane] = orderAngle(facetvecs,eps)
+        if len(facetvecs)> 3:          
+            cell.facets.append(orderAngle(facetvecs,eps))
+        elif len(facetvecs)==3:
+            cell.facets.append(facetvecs)
+#             sys.exit('stop. Plane {} has less than three facetvecs')
     return cell
 
 def isInside(vec,bounds,eps):
@@ -440,10 +443,9 @@ class dynamicPack():
         BZ.volume = vol
         braggVecs = getBraggVecs(self.B)
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
-        print 'Voronoi cell'; self.facetsMathFile(BZ)#,'p',True,'Red');print ';Show[p]\n'
-#         self.facetsMathFile(BZ,'p',True,'Red') 
+#         self.facetsMathFile(BZ) 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
-#         self.facetsMathFile(IBZ,'p',True,'Red');print ';Show[p]\n' 
+#         self.facetsMathFile(IBZ) 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
         if 0 < len(IBZ.mesh) <= 200:
             OK = True
@@ -467,6 +469,7 @@ class dynamicPack():
 #       begin MP facets printing
         allMPfacets = []
         for ip,point in enumerate(IBZ.mesh):
+            print ip,
             pointCell = cell()
             neighs,neighLbls = self.getNeighbors(point,IBZ,eps)
             boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
@@ -483,19 +486,24 @@ class dynamicPack():
             boundVecs.sort(order = 'mag')
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
             IBZ.weights.append(pointCell.volume)
+            
             #move center of pointCell to point.  For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
-            facets = []
-            for facet in pointCell.facets:   
-                temp = []
-                for fp in facet:
-                    temp.append(fp+point) 
-                facets.append(temp)  
-            allMPfacets.append(facets)
+#             facets = []
+#             for facet in pointCell.facets:   
+#                 temp = []
+#                 for fp in facet:
+#                     temp.append(fp+point) 
+#                 facets.append(temp)  
+#             allMPfacets.append(facets)
+
+            allMPfacets.append(pointCell.facets)
+
+
 #             print 'Point vor cell'; self.facetsMathFile(pointCell,'p',True,'Red');print ';Show[p]\n'
-#         print
-        facetsMeshVCMathFile(self,IBZ,allMPfacets)
+        print
+        self.facetsMeshVCMathFile(IBZ,allMPfacets)
         wtot = sum(IBZ.weights)
-        if not areEqual(wtot, IBZ.volume, eps):
+        if not areEqual(wtot, IBZ.volume, 0.002*IBZ.volume):
             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
         IBZ.weights /= self.ravg**3  #to scale them order(1).  
@@ -624,7 +632,7 @@ class dynamicPack():
         print 'Points inside', nInside
 #         if nInside == 0: sys.exit('No points are inside the IBZ.  Increase the number of target points')
 #         print 'BZ volume:', det(self.B),'\n'
-        self.facetsMeshMathFile(IBZ)
+#         self.facetsMeshMathFile(IBZ)
         return IBZ
 
     def dynamic(self,IBZ,eps):
@@ -635,6 +643,8 @@ class dynamicPack():
         self.facets = IBZ.facets
         self.eps = eps
         self.relax()
+        self.facetsMeshMathFile(self.IBZ)
+        return
 
     def relax(self):
         '''Minimization of the potential energy.
@@ -804,26 +814,6 @@ class dynamicPack():
                     neighLbls.append(ip)
         return neighs,neighLbls
         
-    def addToKpts(self,kptsRed,wgtsRed,IBZ):
-        for ik,kpoint in enumerate(kptsRed):
-            IBZ.mesh.append(kpoint)
-            IBZ.weights.append(wgtsRed[ik])
-        return IBZ
-        
-    def prepCutMP(self,MP,kpoint):
-        cutMP = cell()
-        cutMP.facets = [[]]*len(MP.facets)
-        for ifac, facet in enumerate(MP.facets):
-            temp = []
-            for point in facet:
-                temp.append(point + kpoint)
-            cutMP.facets[ifac] = temp
-        cutMP.fpoints = []
-        for ipoint, point in enumerate(MP.fpoints):
-            cutMP.fpoints.append(point + kpoint)
-        cutMP.center = kpoint
-        return cutMP
-           
     def choose111(self,uvec,eps):
         if dot(uvec,array([1,1,1]))> 0 + eps:
             return -trimSmall(real(uvec))
@@ -1020,8 +1010,8 @@ class dynamicPack():
             facet = list(trimSmall(array(facet)))
             strOut += 'Line[{'
             for point in facet:
-                strOut += '{'+'{},{},{}'.format(point[0],point[1],point[2])+'},'
-            strOut += '{'+'{},{},{}'.format(facet[0][0],facet[0][1],facet[0][2])+'}' #back to first
+                strOut += '{'+'{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+'},'
+            strOut += '{'+'{:12.8f},{:12.8f},{:12.8f}'.format(facet[0][0],facet[0][1],facet[0][2])+'}' #back to first
             strOut += '}]'
             if ifac < len(cell.facets)-1:
                 strOut += ','
@@ -1047,7 +1037,7 @@ class dynamicPack():
         strOut += ';\n p=Graphics3D[{'
         cell.mesh = list(trimSmall(array(cell.mesh)))
         for ipoint,point in enumerate(cell.mesh):
-            strOut += 'Opacity[0.7],Sphere[{' + '{},{},{}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
+            strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
             if ipoint < len(cell.mesh) -1:
                 strOut += ','
         strOut += '}];\nShow[s,p]'
@@ -1056,13 +1046,14 @@ class dynamicPack():
     def facetsMeshVCMathFile(self,BZ,meshFacets):
         '''Output for Mathematica graphics drawing the facets of each mesh point
         cell, as well as the borders of the BZ'''
+        strOut = ''
         strOut = self.facetsMathToStr(strOut,BZ,'s','True','Red');  
-        showCommand = ';Show[s,'  
-        strOut += ';\n p=Graphics3D[{'
+        showCommand = 'Show[s,'  
+        strOut += ';\n'
         for ipoint,point in enumerate(BZ.mesh):
             tCell = cell()
-            tCell.facets = [[]]*len(MP.facets)
-            for ifac,facet in enumerate(meshFacets[ip]):
+            tCell.facets = [[]]*len(meshFacets[ipoint])
+            for ifac,facet in enumerate(meshFacets[ipoint]):
                 facet = list(trimSmall(array(facet)))
                 temp = []
                 for facetPoint in facet:
@@ -1074,40 +1065,9 @@ class dynamicPack():
             if ipoint < len(BZ.mesh)-1:
                 showCommand += ','
         showCommand += ']'
-        strOut+=';'
+#         strOut+=';'
         strOut+=showCommand
         writefile(strOut,'IBZmeshFacets.m')
-        
-#     def mpVorCellMathPrint(self,BZ,cell,point,ipoint,showCommand):
-# 
-#         
-#         mpf = open('MPfacets.nb')
-#         self.facetsMathFile(IBZ,'s','True','Red'); print ';', #draw BZ Voronoi cell before loop
-#         showCommand = 'Show[s,' 
-#         
-#         
-#         
-#         
-#         '''For showing cut facets inside IBZ, loop work'''
-#         ncolors = 100
-# #         self.facetsMathFile(cell,'v{}'.format(ipoint),False,'discreteColors[{}][[{}]]'\
-# #                              .format(ncolors,mod(ipoint,ncolors)));print ';',
-#         strOut = self.facetsMathToStr(strOut,cell,'v{}'.format(ipoint),False,'RandomColor[]'); 
-#         showCommand += 'v{},'.format(ipoint)
-#         return showCommand      
-# 
-# 
-#             ####end MP facet printing loop entry
-#         showCommand = self.mpVorCellMathPrint(IBZ,pointCell,point,ip,showCommand)
-# 
-#         if showCommand[-1] == ',': showCommand = showCommand[:-1]
-#         showCommand += ']' 
-#         print ';', 
-#         print showCommand 
-#         #end MP facets printing 
-
-
-
 
     def mathPrintPlanes(self,planes):
         print 'r=RegionPlot3D[',
