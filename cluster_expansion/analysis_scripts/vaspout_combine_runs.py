@@ -42,9 +42,9 @@ testfile = 'POSCAR'
 #         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP.5offset',
 #         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP.75offset']
 
-# paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstructs',
-#          '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP']
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP']
+# paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstrEK_fcc']
+#         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc']
 
 summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
 # summaryPath = paths[1]
@@ -137,7 +137,7 @@ for iplot in range(nplots):
 #     print 'iplot',data[iplot]['eners'][:n], data[iplot]['nKs'][:n]
     plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],\
       label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots+1)), marker = 'o',markeredgewidth=0.0) 
-legend(loc='upper right',prop={'size':12});
+legend(loc='lower left',prop={'size':12});
 # show()
 fig.savefig('{}/energy_vs_n'.format(summaryPath))         
         
@@ -152,7 +152,7 @@ for iplot in range(nplots):
     n = data[iplot]['nDone']  
     semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
       label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots+1)), marker = 'o',markeredgewidth=0.0) 
-legend(loc='upper right',prop={'size':12});
+legend(loc='lower left',prop={'size':12});
 # show()
 fig.savefig('{}/log_err_vs_n'.format(summaryPath)) 
 
@@ -168,7 +168,7 @@ for iplot in range(nplots):
     n = data[iplot]['nDone']  
     ax1.loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
       label=data[iplot]['ID'],linestyle='None',color=cm.jet(1.*(iplot+1)/float(nplots+1)), marker = 'o',markeredgewidth=0.0) 
-legend(loc='upper right',prop={'size':12});
+legend(loc='lower left',prop={'size':12});
 # show()
 fig.savefig('{}/loglog_err_vs_n'.format(summaryPath)) 
 
