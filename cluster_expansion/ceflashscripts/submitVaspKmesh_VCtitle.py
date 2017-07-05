@@ -4,7 +4,6 @@
 the element name in the POSCAR title (double the first atom).  copies vaspinput, creates kpoints file with correct mesh 
 (just relative to the recip lattice), reads a jobfile from the vaspinput,
 writes the structure tag etc to the job name, and submits a vasp job.  
-
 '''
     
 import sys,os,subprocess
@@ -13,11 +12,11 @@ from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
 from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile
-import dynamicPacking2
+import dynamicPacking3
 
 def getVCmesh(dir,method,targetNmesh,meshtype):
     lastDir = os.getcwd()   
-    meshc = dynamicPacking2.dynamicPack() #instance
+    meshc = dynamicPacking3.dynamicPack() #instance
     [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
 #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
     os.chdir(dir)
@@ -75,10 +74,13 @@ def createRunDir(path,n,type):
     newdir = path + '%s_%i/' % (type,n)
     if not os.path.isdir(newdir):
         os.system('mkdir %s' % newdir)
-    os.system('cp {}/* {}'.format(path,newdir))
+    os.system('cp {}/INCAR {}'.format(path,newdir))
+    os.system('cp {}/POSCAR {}'.format(path,newdir))
+    os.system('cp {}/POTCAR {}'.format(path,newdir))
+    os.system('cp {}/vaspjob {}'.format(path,newdir))
     writejobfile(newdir,n,type)  
     return newdir
-
+   
 
 ################# script #######################
 
