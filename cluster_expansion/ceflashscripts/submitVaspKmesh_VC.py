@@ -63,7 +63,7 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_bcc/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
@@ -115,7 +115,7 @@ for dir in dirs:
                 statusOK = getVCmesh(newdir,method,n**3,type)
                 if not statusOK: #no points or too many in IBZ
                     print 'Zero or too many points in IBZ...skip this n'
-                    os.system('rm -r {}'.format(newdir))
+#                     os.system('rm -r {}'.format(newdir))
                 else:
                     os.chdir(newdir)
                     subprocess.call(['sbatch', 'vaspjob'])

@@ -446,7 +446,7 @@ class dynamicPack():
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
 #         self.facetsMathFile(BZ) 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
-#         self.facetsMathFile(IBZ) 
+        self.facetsMathFile(IBZ,'IBZ') 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
         if 0 < len(IBZ.mesh) <= 200:
             OK = True
@@ -1043,13 +1043,13 @@ class dynamicPack():
             strOut += ']'  
         return strOut
     
-    def facetsMathFile(self,cell):
+    def facetsMathFile(self,cell,tag):
         '''Output for Mathematica graphics drawing BZ facets'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += '\nShow[s]' 
+        strOut += ';\nShow[s]' 
 #         strOut += '}];'
-        writefile(strOut,'IBZ.m')     
+        writefile(strOut,'cell_{}.m'.format(tag))     
             
     def facetsMeshMathFile(self,cell):
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point'''
