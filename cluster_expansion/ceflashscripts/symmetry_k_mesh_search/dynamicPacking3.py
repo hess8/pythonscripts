@@ -44,6 +44,9 @@ def writefile(lines,filepath): #need to have \n's inserted already
 def areEqual(x,y,eps):
     return abs(x-y)<eps
 
+def isinteger(x):
+    return areEqual(abs(rint(x)-x), 0)
+
 def icycle(i,change): #for cycling indices 0,1,2
     i = i+change
     if i>2:
