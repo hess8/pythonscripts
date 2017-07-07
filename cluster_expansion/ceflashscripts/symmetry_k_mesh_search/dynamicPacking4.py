@@ -1023,7 +1023,7 @@ class dynamicPack():
                     for iop2nd in range(self.nops):   
                         op2nd = self.symops[:,:,iop2nd]
                         op3 = dot(op,op2nd)
-                        if areEqual(abs(trace(op3)),3.0,eps):#skip E and inverse
+                        if areEqual(trace(op3),3.0,eps):#skip E and inverse
                             continue
                         print '\nsymops combined',iop,iop2nd;print op3 ;print
                         evals,evecs = eig(op3)
