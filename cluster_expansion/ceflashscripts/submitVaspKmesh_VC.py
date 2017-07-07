@@ -12,11 +12,11 @@ from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
 from kmeshroutines import nstrip, readposcar,create_poscar
-import dynamicPacking2
+import dynamicPacking4
 
 def getVCmesh(dir,method,targetNmesh,meshtype):
     lastDir = os.getcwd()   
-    meshc = dynamicPacking2.dynamicPack() #instance
+    meshc = dynamicPacking4.dynamicPack() #instance
     [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
 #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
     os.chdir(dir)
@@ -63,8 +63,8 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestCuts/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/test/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/test/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
