@@ -1018,12 +1018,12 @@ class dynamicPack():
                 op = self.symops[:,:,iop] 
     #             print '\nsymop',iop;print op ;print
                 iopDone = False 
-                iop2nd = 0
                 while not iopDone: 
                         for iop2nd in range(self.nops):   
                             op2nd = self.symops[:,:,iop2nd]
                             op = dot(op,op2nd)
-                            if areEqual(abs(trace(op)),3.0,eps):#skip E and inverse
+                            if areEqual(trace(op),3.0,eps):#skip E and inverse
+                                print 'skip',op
                                 continue
                             print '\nsymops combined',iop,iop2nd;print op ;print
                             evals,evecs = eig(op)
@@ -1106,7 +1106,7 @@ class dynamicPack():
                                 else:
                                     print 'Noninteger or no change: Skipping operator'
                                     BZ = oldBZ
-                                    break         
+                                    continue         
                             except:
                                 BZ = oldBZ
                                 print 'No volume results from cut. Skipping operator' 
