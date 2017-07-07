@@ -314,7 +314,7 @@ def makesDups(op,cell,eps):
     for i in range(len(points)):
         rpoint = dot(op,points[i])
         if allclose(points[i],rpoint,atol=eps):
-            print points[i],i,'on axis or mirror'
+#             print points[i],i,'on axis or mirror'
             break #no rotation effect
         otherLabels = range(len(points))
         otherLabels.pop(i)
@@ -326,16 +326,16 @@ def makesDups(op,cell,eps):
 #             print points[i],i,'no map'
     return False
 
-def findDups(op,cell,eps):
-    '''Applies symmetry operator to all facet points. Returns the first symmetry partner pair of points found'''
-    points = cell.fpoints
-    for i in range(len(points)):
-        rpoint = dot(op,points[i])
-        otherLabels = range(len(points))
-        otherLabels.pop(i)
-        for j in otherLabels:
-            if allclose(rpoint,points[j],atol=eps):
-                return  points[i],rpoint
+# def findDups(op,cell,eps):
+#     '''Applies symmetry operator to all facet points. Returns the first symmetry partner pair of points found'''
+#     points = cell.fpoints
+#     for i in range(len(points)):
+#         rpoint = dot(op,points[i])
+#         otherLabels = range(len(points))
+#         otherLabels.pop(i)
+#         for j in otherLabels:
+#             if allclose(rpoint,points[j],atol=eps):
+#                 return  points[i],rpoint
 
 # def makesAllDups(op,cell,eps):
 #     '''Applies symmetry operator to all facet points. If all facet points are 
@@ -465,12 +465,12 @@ class dynamicPack():
         eps = self.ravg/300
 #         self.symops = get_lattice_pointGroup(transpose(self.B),eps)
 #         self.nops = len(self.symops)
-        [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-8,postype.lower()[0] == 'd')
+        [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
             self.symops[:,:,iop] = array(symopsList[iop])
-            print 'iop', iop;print self.symops[:,:,iop]
+#             print 'iop', iop;print self.symops[:,:,iop]
         
 #         get_spaceGroup(par_lat,atomType,bas_vecs,eps=1E-10,lattcoords = False):
 #           ...
@@ -504,11 +504,11 @@ class dynamicPack():
 #             self.dynamic(IBZ,eps)
 #             IBZ = self.weightPoints(IBZ,eps)
 #             self.writeKpoints(IBZ)
-#             return OK
+#             return return OK,self.nops
 #         else: 
 #             OK = False
-#             return OK
-        return
+#             return OK,self.nops
+        return True,self.nops 
     
     def weightPoints(self,IBZ,eps):
         '''Find the volume of the Voronoi cell around each point, and use it to weight the point.
@@ -1028,7 +1028,7 @@ class dynamicPack():
             if areEqual(self.IBZvolCut,self.nops,eps):
                 break
             op = self.symops[:,:,iop] 
-#             print '\nsymop',iop;print op ;print
+            print '\nOriginal symop',iop;print op ;print
             iopDone = False 
             while not iopDone: 
                     for iop2nd in range(self.nops):   
@@ -1039,8 +1039,8 @@ class dynamicPack():
                         print '\nsymops combined',iop,iop2nd;print op3 ;print
                         evals,evecs = eig(op3)
                         evecs = array([evec for evec in evecs])
-#                         print '\tevecs as columns';print evecs
-#                         print '\tevals';print evals
+                        print '\tevecs as columns';print evecs
+                        print '\tevals';print evals
                         if areEqual(det(op3),-1.0,eps) and not allclose(imag(evecs),zeros((3,3)),atol=eps):
         #                   Change improper rotation to proper one'
                             op3 = -op3
@@ -1074,7 +1074,7 @@ class dynamicPack():
                                 #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
                                 tempvec = cross(evec,pnto)
                                 u1 = self.choose111(tempvec/norm(tempvec),eps)
-#                                 print 'u1',u1
+                                print 'u1',u1
                                 BZ = self.cutCell(u1,0.0,BZ,eps)
 #                                 getBoundsFacets(BZ,eps)
 #                                 BZ.fpoints = flatVecsList(BZ.facets,eps) 
@@ -1091,17 +1091,17 @@ class dynamicPack():
                                         u2 = -dot(op3,u1)
         #                             if iop == 3:
         #                                 u2 = -u2
-#                                     print 'u2',u2
-                                    self.mathPrintPlanes([[u1],[0]])
-                                    self.mathPrintPlanes([[u2],[0]])
-                                    self.mathPrintPlanes([[u1,u2],[0,0]])
+                                    print 'u2',u2
+#                                     self.mathPrintPlanes([[u1],[0]])
+#                                     self.mathPrintPlanes([[u2],[0]])
+#                                     self.mathPrintPlanes([[u1,u2],[0,0]])
                                     BZ = self.cutCell(u2,0.0,BZ,eps)
         
                             else: # -1: reflection/improper rotation
                                 if len(where(areEqual(evals,-1.0,eps)) )> 1: evals = -evals #improper rotation
                                 evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
                                 u1 = self.choose111(evec,eps) 
-#                                 print 'reflection u1',u1
+                                print 'reflection u1',u1
                                 BZ = self.cutCell(u1,0.0,BZ,eps)
                             getBoundsFacets(BZ,eps)
                             BZ.fpoints = flatVecsList(BZ.facets,eps) 
@@ -1138,8 +1138,8 @@ class dynamicPack():
         BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
         print 'Vol BZ / Vol IBZ', self.IBZvolCut
         if not areEqual(self.IBZvolCut,self.nops,eps):
-            print '!!!! Volume not reduced by factor equal to the number of symmetry operations'
-#             sys.exit('Volume not reduced by factor equal to the number of symmetry operations')
+#             print '!!!! Volume not reduced by factor equal to the number of symmetry operations'
+            sys.exit('Volume not reduced by factor equal to the number of symmetry operations')
         return BZ
    
     

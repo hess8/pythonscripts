@@ -12,11 +12,11 @@ from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
 from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile
-import dynamicPacking3
+import dynamicPacking2
 
 def getVCmesh(dir,method,targetNmesh,meshtype):
     lastDir = os.getcwd()   
-    meshc = dynamicPacking3.dynamicPack() #instance
+    meshc = dynamicPacking2.dynamicPack() #instance
     [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
 #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
     os.chdir(dir)
@@ -28,9 +28,9 @@ def getVCmesh(dir,method,targetNmesh,meshtype):
             aTypes.append(atype)
         atype += 1
     aTypes = array(aTypes)
-    statusOK = meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
+    statusOK,nops = meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
     os.chdir(lastDir)
-    return statusOK
+    return statusOK,nops
     
     
 def writejobfile(path,n,type):
@@ -103,10 +103,12 @@ method = 0.5
         #         from the IBZ center origin to check if the point's volume is cut. 
         #         Cut the VC to determine the volume contribution  
 reallatt = zeros((3,3))
-# createdirs(poscarsDir,maindir,vaspinputdir)
+createdirs(poscarsDir,maindir,vaspinputdir)
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 # toRun = []
+nopsTot = 0
+nstruct = 0
 for dir in dirs:
     os.chdir(maindir)
     if testfile in os.listdir(dir): 
@@ -141,7 +143,9 @@ for dir in dirs:
                 print '==============================================' 
                 print
                 newdir = createRunDir(currdir,n,type) 
-                statusOK = getVCmesh(newdir,method,n**3,type)
+                statusOK,nops = getVCmesh(newdir,method,n**3,type)
+                nopsTot += nops
+                nstruct += 1
                 if not statusOK: #no points or too many in IBZ
                     print 'Zero or too many points in IBZ...skip this n'
                     os.system('rm -r {}'.format(newdir))
@@ -158,5 +162,7 @@ for dir in dirs:
 #     os.chdir(newdir)
 #     subprocess.call(['sbatch', 'vaspjob'])
 #     os.chdir(currdir)
+nsymmAvg = nopsTot/float(nstruct)
+print 'Average number of symmetry operations:',nsymmAvg, 'for',nstruct,'structures'
 os.chdir(maindir)                 
 print 'Done'
