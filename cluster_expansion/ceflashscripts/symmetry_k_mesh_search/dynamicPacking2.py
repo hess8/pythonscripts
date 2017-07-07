@@ -486,16 +486,16 @@ class dynamicPack():
         self.facetsMathFile(BZ,'BZ') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
 #         self.facetsMathFile(IBZ) 
-        IBZ = self.meshInitCubic(IBZ,meshtype,eps)
-        if 0 < len(IBZ.mesh) <= 200:
-            OK = True
-            self.dynamic(IBZ,eps)
-            IBZ = self.weightPoints(IBZ,eps)
-            self.writeKpoints(IBZ)
-            return OK
-        else: 
-            OK = False
-            return OK
+#         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
+#         if 0 < len(IBZ.mesh) <= 200:
+#             OK = True
+#             self.dynamic(IBZ,eps)
+#             IBZ = self.weightPoints(IBZ,eps)
+#             self.writeKpoints(IBZ)
+#             return OK
+#         else: 
+#             OK = False
+#             return OK
         return
     
     def weightPoints(self,IBZ,eps):
@@ -1004,130 +1004,131 @@ class dynamicPack():
 #         print '\n\nReducing Brillouin zone by symmetry'
 #         self.facetsMathFile(BZ,'p',True,'Red');print ';Show[p]\n' 
 #          
-        inversion = True
+#         inversion = True
 #         #try inversion first:
 #         point1 = BZ.fpoints[0]
 #         u0 = self.choose111(point1/norm(point1),eps)
 #         BZ = self.cutCell(u0,0.0,BZ,eps)
-        self.IBZvolCut = 1.0 
-        oldIBZvolCut = 1.0
-        for iop in range(self.nops):
-            if areEqual(self.IBZvolCut,self.nops,eps):
-                break
-            op = self.symops[:,:,iop] 
-#             print '\nsymop',iop;print op ;print
-            iopDone = False 
-            iop2nd = 0
-            while not iopDone: 
-                    for iop2nd in range(self.nops):   
-                        op2nd = self.symops[:,:,iop2nd]
-                        op = dot(op,op2nd)
-                        if areEqual(abs(trace(op)),3.0,eps):#skip E and inverse
-                            continue
-                        print '\nsymops combined',iop,iop2nd;print op ;print
-                        evals,evecs = eig(op)
-                        evecs = array([evec for evec in evecs])
-                        print '\tevecs as columns';print evecs
-                        print '\tevals';print evals
-                        if areEqual(det(op),-1.0,eps) and not allclose(imag(evecs),zeros((3,3)),atol=eps):
-        #                   Change improper rotation to proper one'
-                            op = -op
+        if self.nops > 1: 
+            self.IBZvolCut = 1.0 
+            oldIBZvolCut = 1.0
+            for iop in range(self.nops):
+                if areEqual(self.IBZvolCut,self.nops,eps):
+                    break
+                op = self.symops[:,:,iop] 
+    #             print '\nsymop',iop;print op ;print
+                iopDone = False 
+                iop2nd = 0
+                while not iopDone: 
+                        for iop2nd in range(self.nops):   
+                            op2nd = self.symops[:,:,iop2nd]
+                            op = dot(op,op2nd)
+                            if areEqual(abs(trace(op)),3.0,eps):#skip E and inverse
+                                continue
+                            print '\nsymops combined',iop,iop2nd;print op ;print
                             evals,evecs = eig(op)
                             evecs = array([evec for evec in evecs])
-                        if makesDups(op,BZ,eps): #does this operation cause current facet points to move to other facet points
-                            oldBZ = deepcopy(BZ)
-                            print '\tCut'
-                            if areEqual(det(op),1.0,eps)  : #rotation
-                                ievec = where(areEqual(evals,1.0,eps))[0][0]
-                                evec = evecs[:,ievec] #axis
-                                #====orignal method:
-                                #choose a facet point that is close to the rotation axis to avoid unusual cutting planes
-                                ds = []
-                                allPoints = BZ.fpoints
-                                for vec in allPoints:
-                                    if areEqual(abs(dot(evec,vec)),norm(vec),eps): #axis and vec are parallel...don't want this one.
-                                         ds.append(100)
-                                    else:
-                                        ds.append(norm(vec - evec*dot(evec,vec)))
-                                allPoints = [point for (d,point) in sorted(zip(ds,allPoints),key = lambda x: x[0])]#sort by distance
-                                #pnto = allPoints[0] #old method
-                                for ip,pnto in enumerate(allPoints):#
-                                    pntp = dot(op,pnto)
+                            print '\tevecs as columns';print evecs
+                            print '\tevals';print evals
+                            if areEqual(det(op),-1.0,eps) and not allclose(imag(evecs),zeros((3,3)),atol=eps):
+            #                   Change improper rotation to proper one'
+                                op = -op
+                                evals,evecs = eig(op)
+                                evecs = array([evec for evec in evecs])
+                            if makesDups(op,BZ,eps): #does this operation cause current facet points to move to other facet points
+                                oldBZ = deepcopy(BZ)
+                                print '\tCut'
+                                if areEqual(det(op),1.0,eps)  : #rotation
+                                    ievec = where(areEqual(evals,1.0,eps))[0][0]
+                                    evec = evecs[:,ievec] #axis
+                                    #====orignal method:
+                                    #choose a facet point that is close to the rotation axis to avoid unusual cutting planes
+                                    ds = []
+                                    allPoints = BZ.fpoints
+                                    for vec in allPoints:
+                                        if areEqual(abs(dot(evec,vec)),norm(vec),eps): #axis and vec are parallel...don't want this one.
+                                             ds.append(100)
+                                        else:
+                                            ds.append(norm(vec - evec*dot(evec,vec)))
+                                    allPoints = [point for (d,point) in sorted(zip(ds,allPoints),key = lambda x: x[0])]#sort by distance
+                                    #pnto = allPoints[0] #old method
+                                    for ip,pnto in enumerate(allPoints):#
+                                        pntp = dot(op,pnto)
+                                        #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
+                                        tempvec0 = cross(evec,pnto)
+                                        u1 = self.choose111(tempvec0/norm(tempvec0),eps)                             
+                                        if among(pntp,allPoints,eps): #we have found a good pair 
+                                            break
+            
                                     #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
-                                    tempvec0 = cross(evec,pnto)
-                                    u1 = self.choose111(tempvec0/norm(tempvec0),eps)                             
-                                    if among(pntp,allPoints,eps): #we have found a good pair 
-                                        break
-        
-                                #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
-                                tempvec = cross(evec,pnto)
-                                u1 = self.choose111(tempvec/norm(tempvec),eps)
-                                print 'u1',u1
-                                if iop == 3:
-                                    'pause'
-                                BZ = self.cutCell(u1,0.0,BZ,eps)
-#                                 getBoundsFacets(BZ,eps)
-#                                 BZ.fpoints = flatVecsList(BZ.facets,eps) 
-#                                 self.facetsMathFile(BZ,'iop{}u1'.format(str(iop)))                   
-#                                 BZ.volume = convexH(BZ.fpoints).volume
-#                                 self.IBZvolCut = det(self.B)/BZ.volume
-#                                 print 'Cut vol BZ / Vol IBZ, u1', self.IBZvolCut                               
-        #                         pntp = dot(op,pnto) #oldmethod
-                                tempvec = cross(evec,pntp)/norm(cross(evec,pntp))#2nd cut plane for roation
-                                if not allclose(tempvec,-u1,atol=eps): #don't cut again if this is a Pi rotation
-                                    if abs(dot(tempvec, array([1,1,1])))>eps:
-                                        u2 = self.choose111(tempvec/norm(tempvec),eps)
-                                    else:
-                                        u2 = -dot(op,u1)
-        #                             if iop == 3:
-        #                                 u2 = -u2
-                                    print 'u2',u2
-                                    self.mathPrintPlanes([[u1],[0]])
-                                    self.mathPrintPlanes([[u2],[0]])
-                                    self.mathPrintPlanes([[u1,u2],[0,0]])
-                                    BZ = self.cutCell(u2,0.0,BZ,eps)
-        
-                            else: # -1: reflection/improper rotation
-                                if len(where(areEqual(evals,-1.0,eps)) )> 1: evals = -evals #improper rotation
-                                evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
-                                u1 = self.choose111(evec,eps) 
-                                print 'reflection u1',u1
-                                BZ = self.cutCell(u1,0.0,BZ,eps)
-                        getBoundsFacets(BZ,eps)
-                        BZ.fpoints = flatVecsList(BZ.facets,eps) 
-                        self.facetsMathFile(BZ,'iop{}'.format(str(iop)))                    
-                        try:
-                            BZ.volume = convexH(BZ.fpoints).volume
-                            self.IBZvolCut = det(self.B)/BZ.volume
-                            print 'Cut vol BZ / Vol IBZ', self.IBZvolCut 
-                            if self.IBZvolCut != oldIBZvolCut and isinteger(self.IBZvolCut,eps):
-                                iopDone = True
-                            else:
-                                print 'Noninteger or no change: Skipping operator'
+                                    tempvec = cross(evec,pnto)
+                                    u1 = self.choose111(tempvec/norm(tempvec),eps)
+                                    print 'u1',u1
+                                    if iop == 3:
+                                        'pause'
+                                    BZ = self.cutCell(u1,0.0,BZ,eps)
+    #                                 getBoundsFacets(BZ,eps)
+    #                                 BZ.fpoints = flatVecsList(BZ.facets,eps) 
+    #                                 self.facetsMathFile(BZ,'iop{}u1'.format(str(iop)))                   
+    #                                 BZ.volume = convexH(BZ.fpoints).volume
+    #                                 self.IBZvolCut = det(self.B)/BZ.volume
+    #                                 print 'Cut vol BZ / Vol IBZ, u1', self.IBZvolCut                               
+            #                         pntp = dot(op,pnto) #oldmethod
+                                    tempvec = cross(evec,pntp)/norm(cross(evec,pntp))#2nd cut plane for roation
+                                    if not allclose(tempvec,-u1,atol=eps): #don't cut again if this is a Pi rotation
+                                        if abs(dot(tempvec, array([1,1,1])))>eps:
+                                            u2 = self.choose111(tempvec/norm(tempvec),eps)
+                                        else:
+                                            u2 = -dot(op,u1)
+            #                             if iop == 3:
+            #                                 u2 = -u2
+                                        print 'u2',u2
+                                        self.mathPrintPlanes([[u1],[0]])
+                                        self.mathPrintPlanes([[u2],[0]])
+                                        self.mathPrintPlanes([[u1,u2],[0,0]])
+                                        BZ = self.cutCell(u2,0.0,BZ,eps)
+            
+                                else: # -1: reflection/improper rotation
+                                    if len(where(areEqual(evals,-1.0,eps)) )> 1: evals = -evals #improper rotation
+                                    evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
+                                    u1 = self.choose111(evec,eps) 
+                                    print 'reflection u1',u1
+                                    BZ = self.cutCell(u1,0.0,BZ,eps)
+                            getBoundsFacets(BZ,eps)
+                            BZ.fpoints = flatVecsList(BZ.facets,eps) 
+                            self.facetsMathFile(BZ,'iop{}'.format(str(iop)))                    
+                            try:
+                                BZ.volume = convexH(BZ.fpoints).volume
+                                self.IBZvolCut = det(self.B)/BZ.volume
+                                print 'Cut vol BZ / Vol IBZ', self.IBZvolCut 
+                                if self.IBZvolCut != oldIBZvolCut and isinteger(self.IBZvolCut,eps):
+                                    iopDone = True
+                                else:
+                                    print 'Noninteger or no change: Skipping operator'
+                                    BZ = oldBZ
+                                    break         
+                            except:
                                 BZ = oldBZ
-                                break         
-                        except:
-                            BZ = oldBZ
-                            print 'No volume results from cut. Skipping operator' 
-                    iopDone = True
-
-#             elif areEqual(det(op),-1.0,eps):
-#                 inversion = True
-#         if inversion and self.nops==2: #apply last of all.  For now I think inversion acts on the IBZ only if it is alone with the id
-#             if makesAllDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
-#                 #can cut along any plane
-#                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
-            oldIBZvolCut = self.IBZvolCut
-        
-        self.facetsMathFile(BZ,'IBZ')
-        BZ.volume = convexH(BZ.fpoints).volume
-        self.IBZvolCut = det(self.B)/BZ.volume
-        getBoundsFacets(BZ,eps)
-        BZ.fpoints = flatVecsList(BZ.facets,eps)
-        BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
-        print 'Vol BZ / Vol IBZ', self.IBZvolCut
-        if not areEqual(self.IBZvolCut,self.nops,eps):
-            sys.exit('Volume not reduced by factor equal to the number of symmetry operations')
+                                print 'No volume results from cut. Skipping operator' 
+                        iopDone = True
+    
+    #             elif areEqual(det(op),-1.0,eps):
+    #                 inversion = True
+    #         if inversion and self.nops==2: #apply last of all.  For now I think inversion acts on the IBZ only if it is alone with the id
+    #             if makesAllDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
+    #                 #can cut along any plane
+    #                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
+                oldIBZvolCut = self.IBZvolCut
+            
+            self.facetsMathFile(BZ,'IBZ')
+            BZ.volume = convexH(BZ.fpoints).volume
+            self.IBZvolCut = det(self.B)/BZ.volume
+            getBoundsFacets(BZ,eps)
+            BZ.fpoints = flatVecsList(BZ.facets,eps)
+            BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
+            print 'Vol BZ / Vol IBZ', self.IBZvolCut
+            if not areEqual(self.IBZvolCut,self.nops,eps):
+                sys.exit('Volume not reduced by factor equal to the number of symmetry operations')
         return BZ
    
     
