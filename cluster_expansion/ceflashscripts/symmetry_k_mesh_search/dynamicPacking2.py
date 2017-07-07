@@ -1105,7 +1105,7 @@ class dynamicPack():
                             else:
                                 print 'Noninteger or no change: Skipping operator'
                                 BZ = oldBZ
-                                break         
+                                continue         
                         except:
                             BZ = oldBZ
                             print 'No volume results from cut. Skipping operator' 
