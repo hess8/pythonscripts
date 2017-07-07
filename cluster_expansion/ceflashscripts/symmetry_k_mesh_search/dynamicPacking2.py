@@ -459,6 +459,7 @@ class dynamicPack():
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
             self.symops[:,:,iop] = array(symopsList[iop])
+            print 'iop', iop;print self.symops[:,:,iop]
         
 #         get_spaceGroup(par_lat,atomType,bas_vecs,eps=1E-10,lattcoords = False):
 #           ...
@@ -563,7 +564,8 @@ class dynamicPack():
         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
         if not areEqual(wtot, IBZ.volume, volCheck*IBZ.volume):
             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
-            sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
+            print '!!! point Voronoi cells do not sum to the IBZ volume.'
+#             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
         else:
             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
         IBZ.weights /= self.ravg**3  #to scale them order(1).  
@@ -1027,8 +1029,8 @@ class dynamicPack():
                         print '\nsymops combined',iop,iop2nd;print op ;print
                         evals,evecs = eig(op)
                         evecs = array([evec for evec in evecs])
-                        print '\tevecs as columns';print evecs
-                        print '\tevals';print evals
+#                         print '\tevecs as columns';print evecs
+#                         print '\tevals';print evals
                         if areEqual(det(op),-1.0,eps) and not allclose(imag(evecs),zeros((3,3)),atol=eps):
         #                   Change improper rotation to proper one'
                             op = -op
@@ -1062,9 +1064,7 @@ class dynamicPack():
                                 #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
                                 tempvec = cross(evec,pnto)
                                 u1 = self.choose111(tempvec/norm(tempvec),eps)
-                                print 'u1',u1
-                                if iop == 3:
-                                    'pause'
+#                                 print 'u1',u1
                                 BZ = self.cutCell(u1,0.0,BZ,eps)
 #                                 getBoundsFacets(BZ,eps)
 #                                 BZ.fpoints = flatVecsList(BZ.facets,eps) 
@@ -1081,7 +1081,7 @@ class dynamicPack():
                                         u2 = -dot(op,u1)
         #                             if iop == 3:
         #                                 u2 = -u2
-                                    print 'u2',u2
+#                                     print 'u2',u2
                                     self.mathPrintPlanes([[u1],[0]])
                                     self.mathPrintPlanes([[u2],[0]])
                                     self.mathPrintPlanes([[u1,u2],[0,0]])
@@ -1091,24 +1091,24 @@ class dynamicPack():
                                 if len(where(areEqual(evals,-1.0,eps)) )> 1: evals = -evals #improper rotation
                                 evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
                                 u1 = self.choose111(evec,eps) 
-                                print 'reflection u1',u1
+#                                 print 'reflection u1',u1
                                 BZ = self.cutCell(u1,0.0,BZ,eps)
-                        getBoundsFacets(BZ,eps)
-                        BZ.fpoints = flatVecsList(BZ.facets,eps) 
-                        self.facetsMathFile(BZ,'iop{}'.format(str(iop)))                    
-                        try:
-                            BZ.volume = convexH(BZ.fpoints).volume
-                            self.IBZvolCut = det(self.B)/BZ.volume
-                            print 'Cut vol BZ / Vol IBZ', self.IBZvolCut 
-                            if self.IBZvolCut != oldIBZvolCut and isinteger(self.IBZvolCut,eps):
-                                iopDone = True
-                            else:
-                                print 'Noninteger or no change: Skipping operator'
+                            getBoundsFacets(BZ,eps)
+                            BZ.fpoints = flatVecsList(BZ.facets,eps) 
+                            self.facetsMathFile(BZ,'iop{}'.format(str(iop)))                    
+                            try:
+                                BZ.volume = convexH(BZ.fpoints).volume
+                                self.IBZvolCut = det(self.B)/BZ.volume
+                                print 'Cut vol BZ / Vol IBZ', self.IBZvolCut 
+                                if self.IBZvolCut != oldIBZvolCut and isinteger(self.IBZvolCut,eps):
+                                    iopDone = True
+                                else:
+                                    print 'Noninteger or no change: Skipping operator'
+                                    BZ = oldBZ
+                                    break         
+                            except:
                                 BZ = oldBZ
-                                break         
-                        except:
-                            BZ = oldBZ
-                            print 'No volume results from cut. Skipping operator' 
+                                print 'No volume results from cut. Skipping operator' 
                     iopDone = True
 
 #             elif areEqual(det(op),-1.0,eps):
