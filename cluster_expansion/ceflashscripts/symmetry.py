@@ -2,6 +2,7 @@
 methods were adapted to python from their original fortran
 implementations which can be found at:
 https://github.com/msg-byu/symlib
+Jul 5 2017
 """
 
 from copy import deepcopy
@@ -347,5 +348,4 @@ def get_spaceGroup(par_lat,atomType,bas_vecs,eps=1E-10,lattcoords = False):
                 # loop over fractional translations and try next op
                 # By removing the preceding exit, we include fractional translations
                 # for non-primitive lattices. (GLWH 10/26/2009)
-                
     return(sg_ops,sg_fracts)
