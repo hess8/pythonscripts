@@ -497,7 +497,7 @@ class dynamicPack():
 #         else: 
 #             OK = False
 #             return OK
-        return
+
     
     def weightPoints(self,IBZ,eps):
         '''Find the volume of the Voronoi cell around each point, and use it to weight the point.
@@ -1088,7 +1088,7 @@ class dynamicPack():
                                 BZ = self.cutCell(u1,0.0,BZ,eps)
                         getBoundsFacets(BZ,eps)
                         BZ.fpoints = flatVecsList(BZ.facets,eps) 
-                        self.facetsMathFile(BZ,'iop{}'.format(str(iop)))                    
+                        self.facetsMathFile(BZ,'iop{},{}'.format(iop,iop2nd))                    
                         try:
                             BZ.volume = convexH(BZ.fpoints).volume
                             self.IBZvolCut = det(self.B)/BZ.volume
@@ -1098,31 +1098,23 @@ class dynamicPack():
                                 break
                             else:
                                 print 'Noninteger or no change: Skipping operator'
-                                BZ = oldBZ
-                                continue         
+                                BZ = oldBZ         
                         except:
                             BZ = oldBZ
-                            print 'No volume results from cut. Skipping operator' 
+                            print 'Zero volume results from cut. Skipping operator' 
                         iopDone = True
     
-    #             elif areEqual(det(op),-1.0,eps):
-    #                 inversion = True
-    #         if inversion and self.nops==2: #apply last of all.  For now I think inversion acts on the IBZ only if it is alone with the id
-    #             if makesAllDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
-    #                 #can cut along any plane
-    #                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
-                oldIBZvolCut = self.IBZvolCut
-            
-            self.facetsMathFile(BZ,'IBZ')
-            BZ.volume = convexH(BZ.fpoints).volume
-            self.IBZvolCut = det(self.B)/BZ.volume
-            getBoundsFacets(BZ,eps)
-            BZ.fpoints = flatVecsList(BZ.facets,eps)
-            BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
-            print 'Vol BZ / Vol IBZ', self.IBZvolCut
-            if not areEqual(self.IBZvolCut,self.nops,eps):
-#                 sys.exit('Volume not reduced by factor equal to the number of symmetry operations')
-                print ('Warning: Volume not reduced by factor equal to the number of symmetry operations')
+            oldIBZvolCut = self.IBZvolCut
+        
+        self.facetsMathFile(BZ,'IBZ')
+        BZ.volume = convexH(BZ.fpoints).volume
+        self.IBZvolCut = det(self.B)/BZ.volume
+        getBoundsFacets(BZ,eps)
+        BZ.fpoints = flatVecsList(BZ.facets,eps)
+        BZ.center = sum(BZ.fpoints)/len(BZ.fpoints)
+        print 'Vol BZ / Vol IBZ', self.IBZvolCut
+        if not areEqual(self.IBZvolCut,self.nops,eps):
+            sys.exit('Volume not reduced by factor equal to the number of symmetry operations')
         return BZ
    
     
