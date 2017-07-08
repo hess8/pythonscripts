@@ -12,11 +12,11 @@ from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
 from kmeshroutines import nstrip, readposcar,create_poscar
-import dynamicPackingtest
+import dynamicPacking6
 
 def getVCmesh(dir,method,targetNmesh,meshtype):
     lastDir = os.getcwd()   
-    meshc = dynamicPackingtest.dynamicPack() #instance
+    meshc = dynamicPackingtest6.dynamicPack() #instance
     [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
 #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
     os.chdir(dir)

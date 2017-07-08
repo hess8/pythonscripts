@@ -1064,8 +1064,6 @@ class dynamicPack():
                                     tempvec = cross(evec,pnto)
                                     u1 = self.choose111(tempvec/norm(tempvec),eps)
                                     print 'u1',u1
-                                    if iop == 3:
-                                        'pause'
                                     BZ = self.cutCell(u1,0.0,BZ,eps)
     #                                 getBoundsFacets(BZ,eps)
     #                                 BZ.fpoints = flatVecsList(BZ.facets,eps) 
@@ -1109,7 +1107,10 @@ class dynamicPack():
                                     continue         
                             except:
                                 BZ = oldBZ
-                                print 'No volume results from cut. Skipping operator' 
+                                print 'No volume results from cut. Skipping operator'
+                            if  areEqual(self.IBZvolCut,self.nops,eps):
+                                iopDone = True
+                                break
                         iopDone = True
     
     #             elif areEqual(det(op),-1.0,eps):
