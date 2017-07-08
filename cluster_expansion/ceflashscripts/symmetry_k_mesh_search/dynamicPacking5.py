@@ -1006,22 +1006,20 @@ class dynamicPack():
 #         point1 = BZ.fpoints[0]
 #         u0 = self.choose111(point1/norm(point1),eps)
 #         BZ = self.cutCell(u0,0.0,BZ,eps)
-        
-        if self.nops > 1: 
-            self.IBZvolCut = 1.0 
-            oldIBZvolCut = 1.0
-            pastOps = []
-            for iop in range(self.nops):
-                if areEqual(self.IBZvolCut,self.nops,eps):
-                    break
-                op = self.symops[:,:,iop] 
-                combs = [op] + [dot(op,p_op) for p_op in pastOps]
-    #             print '\nsymop',iop;print op ;print
-                iopDone = False 
-                while not iopDone: 
-                    for op3 in combs:
+        self.IBZvolCut = 1.0 
+        oldIBZvolCut = 1.0
+        for iop in range(self.nops):
+            if areEqual(self.IBZvolCut,self.nops,eps):
+                break
+            op = self.symops[:,:,iop] 
+#             print '\nsymop',iop;print op ;print
+            iopDone = False 
+            iop2nd = 0
+            while not iopDone: 
+                    for iop2nd in range(self.nops):   
+                        op2nd = self.symops[:,:,iop2nd]
+                        op3 = dot(op,op2nd)
                         if areEqual(trace(op3),3.0,eps):#skip E and inverse
-                            print 'skip',op3
                             continue
                         print '\nsymops combined',iop,iop2nd;print op3 ;print
                         evals,evecs = eig(op3)
@@ -1034,7 +1032,6 @@ class dynamicPack():
                             evals,evecs = eig(op3)
                             evecs = array([evec for evec in evecs])
                         if makesDups(op3,BZ,eps): #does this operation cause current facet points to move to other facet points
-                            oldBZ = deepcopy(BZ)
                             print '\tCut'
                             if areEqual(det(op3),1.0,eps)  : #rotation
                                 ievec = where(areEqual(evals,1.0,eps))[0][0]
@@ -1099,6 +1096,8 @@ class dynamicPack():
                             print 'Cut vol BZ / Vol IBZ', self.IBZvolCut 
                             if self.IBZvolCut != oldIBZvolCut and isinteger(self.IBZvolCut,eps):
                                 iopDone = True
+                                oldIBZvolCut = self.IBZvolCut
+                                oldBZ = BZ
                             else:
                                 print 'Noninteger or no change: Skipping operator'
                                 BZ = oldBZ
@@ -1115,7 +1114,7 @@ class dynamicPack():
     #             if makesAllDups(array([[-1.,  0.,  0.], [ 0., -1.,  0.], [ 0.,  0., -1.]]),BZ,eps):
     #                 #can cut along any plane
     #                 BZ = self.cutCell(array([1.0,0.0,0.0]),0.0,BZ,eps)
-                oldIBZvolCut = self.IBZvolCut
+                
             
             self.facetsMathFile(BZ,'IBZ')
             BZ.volume = convexH(BZ.fpoints).volume
