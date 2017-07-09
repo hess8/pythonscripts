@@ -64,8 +64,8 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestCuts/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/test/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/test/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
@@ -111,7 +111,7 @@ for dir in dirs:
             for n in range(2,3,1):#23
                 print 
                 print '==============================================' 
-                print 'Target npoints: {}^3)'.format(n)
+                print 'Target npoints: {}^3'.format(n)
                 print '==============================================' 
                 print
                 newdir = createdir(currdir,n,type) 
