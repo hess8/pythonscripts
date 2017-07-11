@@ -1103,8 +1103,8 @@ class dynamicPack():
                 anyDups,point1,point2 = makesDups(array([[-1,0,0],[0,-1,0],[0,0,-1]]),BZ,eps)
                 if anyDups:
                     u1 = self.choose111(point1/norm(point1),eps)
-                    BZ = self.cutCell(u2,0.0,BZ,eps)
-                    print 'Inversion'
+                    BZ = self.cutCell(u1,0.0,BZ,eps)
+                    print 'Inversion', u1
                     self.testCuts(BZ,oldBZ,oldIBZvolCut,'inv',eps)             
             if not areEqual(self.IBZvolCut,self.nops,eps):
                 print ('Fail: Volume not reduced by factor equal to the number of symmetry operations')
