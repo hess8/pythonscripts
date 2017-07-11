@@ -1079,7 +1079,7 @@ class dynamicPack():
                 #pnto = allPoints[0] #old method
                 for ip,pnto in enumerate(allPoints):#
                     print ip,
-                    pntp = dot(op3,pnto)
+                    pntp = dot(op,pnto)
                     if not among(pntp,allPoints,eps):
                         break
                     #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
@@ -1096,7 +1096,7 @@ class dynamicPack():
                             if abs(dot(tempvec, array([1,1,1])))>eps:
                                 u2 = self.choose111(tempvec/norm(tempvec),eps)
                             else:
-                                u2 = -dot(op3,u1)
+                                u2 = -dot(op,u1)
                             BZ = self.cutCell(u2,0.0,BZ,eps)                        
                         if self.testCuts(BZ,oldBZ,oldIBZvolCut,'refl_{}'.format(iop),eps):
                             break 
