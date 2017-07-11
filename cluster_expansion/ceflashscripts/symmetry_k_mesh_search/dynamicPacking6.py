@@ -1017,15 +1017,15 @@ class dynamicPack():
 #                     print 'skip',op3
                     continue
                 print '\nsymop',iop;print op3 ;print
-#                 if makesDups(op3,BZ,eps): #does this operation cause current facet points to move to other facet points
-                if True:
+                if makesDups(op3,BZ,eps): #does this operation cause current facet points to move to other facet points
+#                 if True:
                     for itry in range(1):
                         if itry == 1:
                             op3 = inv(op3)
                         evals,evecs = eig(op3)
                         evecs = array([evec for evec in evecs])
-#                         print '\tevecs as columns';print evecs
-#                         print '\tevals';print evals
+                        print '\tevecs as columns';print evecs
+                        print '\tevals';print evals
                         if areEqual(det(op3),-1.0,eps) and not allclose(imag(evecs),zeros((3,3)),atol=eps):
         #                   Change improper rotation to proper one'
                             op3 = -op3
@@ -1048,7 +1048,10 @@ class dynamicPack():
                             allPoints = [point for (d,point) in sorted(zip(ds,allPoints),key = lambda x: x[0])]#sort by distance
                             #pnto = allPoints[0] #old method
                             for ip,pnto in enumerate(allPoints):#
+                                print ip,
                                 pntp = dot(op3,pnto)
+                                if not among(pntp,allPoints,eps):
+                                    break
                                 #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
                                 tempvec0 = cross(evec,pnto)
                                 if not allclose(tempvec0,0.0,eps):
@@ -1089,9 +1092,7 @@ class dynamicPack():
                                     try:
                                         BZ.volume = convexH(BZ.fpoints).volume
                                         self.IBZvolCut = det(self.B)/BZ.volume
-                                        print 'Cut vol BZ / Vol IBZ', self.IBZvolCut 
-                                        if areEqual(self.IBZvolCut,8.0,eps):
-                                            'pause'   
+                                        print 'Cut vol BZ / Vol IBZ', self.IBZvolCut  
                                         if self.IBZvolCut != oldIBZvolCut and isinteger(self.IBZvolCut,eps) and self.IBZvolCut<=self.nops+eps:
                                             print 'OK'
                                             iopDone = True
@@ -1099,7 +1100,8 @@ class dynamicPack():
                                             oldIBZvolCut = copy(self.IBZvolCut)
                                             break
                                         elif self.IBZvolCut>self.nops+eps:
-                                            sys.exit('Stop.  Reduced by more than number of symmetry ops')
+                                            break
+#                                             sys.exit('Stop.  Reduced by more than number of symmetry ops')
                                         else:
                                             print 'Noninteger or no change.'
                                             BZ = deepcopy(oldBZ)
@@ -1108,11 +1110,7 @@ class dynamicPack():
                                         print 'Zero volume obtained.'
                                         BZ = deepcopy(oldBZ)
                                         self.IBZvolCut = copy(oldIBZvolCut)
-                            
-
-                                    
-                                    
-    
+                            print   
                         else: # -1: reflection/improper rotation
                             if len(where(areEqual(evals,-1.0,eps)) )> 1: evals = -evals #improper rotation
                             evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
@@ -1126,12 +1124,12 @@ class dynamicPack():
                                 BZ.volume = convexH(BZ.fpoints).volume
                                 self.IBZvolCut = det(self.B)/BZ.volume
                                 print 'Cut vol BZ / Vol IBZ', self.IBZvolCut 
-                                if self.IBZvolCut != oldIBZvolCut and isinteger(self.IBZvolCut,eps):
+                                if self.IBZvolCut != oldIBZvolCut and isinteger(self.IBZvolCut,eps) and self.IBZvolCut<=self.nops+eps:
                                     iopDone = True
                                     oldBZ = deepcopy(BZ)
                                     oldIBZvolCut = copy(self.IBZvolCut)
                                 else:
-                                    print 'Noninteger or no change.'
+                                    print 'Noninteger, too large cut, or no change.'
                                     BZ = deepcopy(oldBZ)
                                     self.IBZvolCut = copy(oldIBZvolCut )        
                             except:
