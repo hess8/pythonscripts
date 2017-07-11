@@ -452,30 +452,11 @@ class dynamicPack():
         self.dw = self.df/2 #wall force scale distance
         self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/300
-#         self.symops = get_lattice_pointGroup(transpose(self.B),eps)
-#         self.nops = len(self.symops)
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
             self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))
-        
-#         get_spaceGroup(par_lat,atomType,bas_vecs,eps=1E-10,lattcoords = False):
-#           ...
-#         return(sg_ops,sg_fracts)
-#     Args:
-#         par_lat (array-like): A 2D integere array that contains the parent lattice vectors
-#         atomType (list of int): Integer array representing the type of each basis atom
-#         bas_vecs (array-like): A 2D integere array that contains the basis vectors for the cell
-#         eps (float, optional): Finite precisions tolerance
-# 
-#         lattcoords (bool, optional): True if vectors are in lattice coordinates 
-#           rather than cartesian
-# 
-#     Returns:
-#         sg_ops (array-like): The rotation and mirror operations of the space group.
-#         sg_fracts (array-like): The translation operations of the space group.
-        
         print 'Number of desired points:', targetNmesh
         print 'Symmetry operations:', self.nops
 
@@ -485,19 +466,19 @@ class dynamicPack():
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
         self.facetsMathFile(BZ,'BZ') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
-#         self.facetsMathFile(IBZ) 
-#         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
-#         if 0 < len(IBZ.mesh) <= 200:
-#             OK = True
-#             self.dynamic(IBZ,eps)
-#             IBZ = self.weightPoints(IBZ,eps)
-#             self.writeKpoints(IBZ)
-#             return OK
-#         else: 
-#             OK = False
-#             return OK
-        OK = True
-        return OK,self.nops
+        self.facetsMathFile(IBZ,'IBZ') 
+        IBZ = self.meshInitCubic(IBZ,meshtype,eps)
+        if 0 < len(IBZ.mesh) <= 200:
+            OK = True
+            self.dynamic(IBZ,eps)
+            IBZ = self.weightPoints(IBZ,eps)
+            self.writeKpoints(IBZ)
+            return OK
+        else: 
+            OK = False
+            return OK
+#         OK = True
+#         return OK,self.nops
     
     def weightPoints(self,IBZ,eps):
         '''Find the volume of the Voronoi cell around each point, and use it to weight the point.
@@ -544,19 +525,10 @@ class dynamicPack():
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
             IBZ.weights.append(pointCell.volume)
             
-            #move center of pointCell to point.  For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
-#             facets = []
-#             for facet in pointCell.facets:   
-#                 temp = []
-#                 for fp in facet:
-#                     temp.append(fp+point) 
-#                 facets.append(temp)  
-#             allMPfacets.append(facets)
+            #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
 
             allMPfacets.append(pointCell.facets)
 
-
-#             print 'Point vor cell'; self.facetsMathFile(pointCell,'p',True,'Red');print ';Show[p]\n'
         print
         self.facetsMeshVCMathFile(IBZ,allMPfacets)
         wtot = sum(IBZ.weights)
@@ -632,7 +604,6 @@ class dynamicPack():
             primLVs = transpose(array(sites[1:]))
             self.rpacking = 1/2.0/sqrt(2)*aKcubConv
             pf = 4*4/3.0*pi*(1/2.0/sqrt(2))**3  #0.74
-#             fccFacets = 
         elif type == 'bcc':
             volKcubConv = det(self.B)/self.nTarget*2
             aKcubConv = volKcubConv**(1/3.0)
@@ -662,19 +633,13 @@ class dynamicPack():
                 shifted = point + self.shift
                 projs.append(dot(cubicLVs[:,i],shifted)/aKcubConv**2)
             intMaxs.append(int(ceil(max(projs)))+2) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
-            intMins.append(int(floor(min(projs)))-1)#optimize: Is -1 required? 
-#         print 'Maxes',intMaxs
-#         print 'Mins',intMins       
+            intMins.append(int(floor(min(projs)))-1)#optimize: Is -1 required?       
         #Create the cubic mesh inside the irreducible BZ
         IBZ.mesh = []
         IBZ.weights = []
         weightsInside = 0
         nInside = 0         
-        ik = 0 
-        #begin MP facets printing
-#         self.facetsMathFile(IBZ,'s','True','Red'); print ';', #draw supecell voronoi cell before loop
-        showCommand = 'Show[s,' 
-        #done with start of MP facets printing        
+        ik = 0       
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
@@ -682,18 +647,10 @@ class dynamicPack():
                     for iS, site in enumerate(sites):
                         ik+=1
                         kpoint = lvec + aKcubConv*self.shift + site
-#                         print 'kp',kpoint
                         if isInside(kpoint,IBZ.bounds,self.dw*self.wallClose):  #Can't be closer than self.dw*self.wallClose to a wall
-#                         if i + j + k ==1:
-#                             'pause'
-#                         if not isOutside(kpoint,IBZ.bounds,eps):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
-                            IBZ.mesh.append(kpoint)
-#                             IBZ.weights.append(1.0) 
+                            IBZ.mesh.append(kpoint) 
         print 'Points inside', nInside
-#         if nInside == 0: sys.exit('No points are inside the IBZ.  Increase the number of target points')
-#         print 'BZ volume:', det(self.B),'\n'
-#         self.facetsMeshMathFile(IBZ)
         return IBZ
 
     def dynamic(self,IBZ,eps):
@@ -1105,7 +1062,8 @@ class dynamicPack():
                     u1 = self.choose111(point1/norm(point1),eps)
                     BZ = self.cutCell(u1,0.0,BZ,eps)
                     print 'Inversion', u1
-                    self.testCuts(BZ,oldBZ,oldIBZvolCut,'inv',eps)             
+                    self.testCuts(BZ,oldBZ,oldIBZvolCut,'inv',eps)
+                return BZ           
             if not areEqual(self.IBZvolCut,self.nops,eps):
                 print ('Fail: Volume not reduced by factor equal to the number of symmetry operations')
                 return BZ  

@@ -151,7 +151,7 @@ for dir in dirs:
                     os.system('rm -r {}'.format(newdir))
                 else:
                     os.chdir(newdir)
-#                     subprocess.call(['sbatch', 'vaspjob'])
+                    subprocess.call(['sbatch', 'vaspjob'])
                     
 #                     toRun.append(newdir)
                     
