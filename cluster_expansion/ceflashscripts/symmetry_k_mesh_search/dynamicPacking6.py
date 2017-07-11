@@ -321,10 +321,10 @@ def makesDups(op,cell,eps):
         for j in otherLabels:
             if allclose(rpoint,points[j],atol=eps):
 #                 print points[i],i,'maps to',j,rpoint
-                return True
+                return True,rpoint,points[j] 
 #         else:
 #             print points[i],i,'no map'
-    return False
+    return False,'',''
 
 # def makesAllDups(op,cell,eps):
 #     '''Applies symmetry operator to all facet points. If all facet points are 
@@ -1015,8 +1015,8 @@ class dynamicPack():
             rotReflOps = []
             for iop in range(self.nops):
                 op = self.symops[:,:,iop]
-                if areEqual(trace(op),-3.0,eps):
-                    inversion = True 
+#                 if areEqual(trace(op),-3.0,eps):
+                inversion = True #for all simple lattices
                 if areEqual(abs(trace(op)),3.0,eps):#skip identity
                     continue
                 evals,evecs = eig(op)
@@ -1043,7 +1043,7 @@ class dynamicPack():
                 print 'reflection u1',u1
                 BZ = self.cutCell(u1,0.0,BZ,eps)
                 self.testCuts(BZ,oldBZ,oldIBZvolCut,'refl_{}'.format(iop),eps)
-                if areEqual(self.IBZvolCut,self.nops,eps): return BZ
+                if areEqual(self.IBZvolCut,self.nops,1e-2): return BZ
 #             print '\nRotation * Reflection ops:'
 #             for iop, op in enumerate(rotReflOps):
 #                 
@@ -1098,8 +1098,15 @@ class dynamicPack():
                             BZ = self.cutCell(u2,0.0,BZ,eps)                        
                         if self.testCuts(BZ,oldBZ,oldIBZvolCut,'rot_{}'.format(iop),eps):
                             break 
-                if areEqual(self.IBZvolCut,self.nops,eps): return BZ   
-            else:
+                if areEqual(self.IBZvolCut,self.nops,1e-2): return BZ 
+            if inversion and not areEqual(self.IBZvolCut,self.nops,eps):
+                anyDups,point1,point2 = makesDups(array([[-1,0,0],[0,-1,0],[0,0,-1]]),BZ,eps)
+                if anyDups:
+                    u1 = self.choose111(point1/norm(point1),eps)
+                    BZ = self.cutCell(u2,0.0,BZ,eps)
+                    print 'Inversion'
+                    self.testCuts(BZ,oldBZ,oldIBZvolCut,'inv',eps)             
+            if not areEqual(self.IBZvolCut,self.nops,eps):
                 print ('Fail: Volume not reduced by factor equal to the number of symmetry operations')
                 return BZ  
    
@@ -1112,7 +1119,7 @@ class dynamicPack():
             BZ.volume = convexH(BZ.fpoints).volume
             self.IBZvolCut = det(self.B)/BZ.volume
             print 'Cut vol BZ / Vol IBZ', self.IBZvolCut  
-            if self.IBZvolCut != oldIBZvolCut and isinteger(self.IBZvolCut,eps) and self.IBZvolCut<=self.nops+eps:
+            if self.IBZvolCut != oldIBZvolCut and isinteger(self.IBZvolCut,1e-2) and self.IBZvolCut<=self.nops+eps:
                 print 'OK'
                 iopDone = True
                 oldBZ = deepcopy(BZ)
