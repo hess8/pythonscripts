@@ -183,8 +183,7 @@ def magGroup(arr,eps):
 
 
 def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
-    '''Find intersections planes:  newBraggs+current taken 2 at a time with e
-    each newBragg, excluding duplicates in the triplet. 
+    '''Find intersection points:  
     If any of these intersections are inside the current boundaries, then they 
     become new vertices, and the planes are added to boundaries. 
     
@@ -192,33 +191,41 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
     '''
     keepLabels = []
     checkNext = True
-    nCurr = len(cell.bounds[0])
+#     nCurr = len(cell.bounds[0])
     allPlanes = [cell.bounds[0][i]*cell.bounds[1][i] for i in range(len(cell.bounds[0]))]
     allVerts = deepcopy(cell.fpoints)
     for ig  in grp:
         bndsLabels.append(ig)
     pairs = list(combinations(bndsLabels,2))
-    iInt = 0
+#     iInt = 0
     for ig in grp:
         for pair in pairs:
             planes3 = [boundVecs[ig]['vec']]
             if not ig in pair:# or ig in keepLabels):
                 planes3.append(boundVecs[pair[0]]['vec'])
                 planes3.append(boundVecs[pair[1]]['vec'])
-                intersPt = threePlaneIntersect(planes3)    
+                intersPt = threePlaneIntersect(planes3)   
                 if not intersPt is None:
-                    iInt+=1
+                    if norm(intersPt)>30:
+                        'pause' 
+#                     iInt+=1
                     if not isOutside(intersPt,cell.bounds,eps)\
                         and not among(intersPt,allVerts,eps):
                             addVec(intersPt,allVerts,eps)
                             addVec(planes3[0],allPlanes,eps)
-                            keepLabels.append(ig)
-                            if pair[0]>=nCurr: 
-                                keepLabels.append(pair[0])
-                                addVec(planes3[1],allPlanes,eps)
-                            if pair[1]>=nCurr: 
-                                keepLabels.append(pair[1])
-                                addVec(planes3[2],allPlanes,eps)           
+#                             if pair[0]>=nCurr: 
+# #                                 keepLabels.append(pair[0])
+#                                 addVec(planes3[1],allPlanes,eps)
+#                             if pair[1]>=nCurr: 
+# #                                 keepLabels.append(pair[1])
+#                                 addVec(planes3[2],allPlanes,eps)  
+#                             if pair[0]>=nCurr: 
+                            addVec(planes3[1],allPlanes,eps)
+#                             if pair[1]>=nCurr: 
+                            addVec(planes3[2],allPlanes,eps)                                
+                                
+                                
+                                         
     if len(allVerts)>0:
         #keep only the vertices that can be reached without crossing any plane
         newVerts = []
@@ -227,14 +234,16 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
                 if dot(vert,plane)>dot(plane,plane)+eps:
                     break
             else: 
+                if norm(vert)>30:
+                    'pause'
                 newVerts.append(vert)
-        #remove planes that don't host a vertex.
+        #Start new to remove planes that don't host a vertex.
         newPlanes = []
         tryPlanes = deepcopy(allPlanes)
         for ip,plane in enumerate(tryPlanes):
             for vert in newVerts:
                 if areEqual(dot(vert,plane),dot(plane,plane),eps):
-                    addVec(plane,newPlanes,eps)
+                    addVec(plane,newPlanes,eps)              
                     break
         cell.bounds = [[],[]]
         for plane in newPlanes:
@@ -243,8 +252,6 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
             cell.bounds[1].append(normPlane)
         cell.fpoints = newVerts
 #     self.mathPrintPlanes(allPlanes)
-#     if mod(len(cell.bounds[0]),2)!=0:
-#         sys.exit('Stop. Error in newBounds. BZ must have even number of planes')
     if len(cell.fpoints) >= 3 and type == 'BZ':
             checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) 
     else:
@@ -473,10 +480,10 @@ class dynamicPack():
             self.dynamic(IBZ,eps)
             IBZ = self.weightPoints(IBZ,eps)
             self.writeKpoints(IBZ)
-            return OK
+            return OK,self.nops
         else: 
             OK = False
-            return OK
+            return OK,self.nops
 #         OK = True
 #         return OK,self.nops
     
@@ -507,21 +514,28 @@ class dynamicPack():
 #         print 'end scipy Vor'
         allMPfacets = []
         for ip,point in enumerate(IBZ.mesh):
+            print '\npoint',ip,point
             print ip,
             pointCell = cell()
             neighs,neighLbls = self.getNeighbors(point,IBZ,eps)
+            print 'neighLbls',neighLbls
             boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
             for iw, u in enumerate(IBZ.bounds[0]):
+                
                 ro = self.bounds[1][iw]
                 d = ro-dot(point,u) 
                 vec = d*u
                 boundVecs[iw]['vec'] = vec  #vector from point to wall
                 boundVecs[iw]['mag'] = norm(vec)
+                print 'wall',iw,u, vec, norm(vec)
             for j, jpoint in enumerate(neighs):
                 vec = (jpoint - point)/2
                 boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
                 boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
+                print 'neighs',j,jpoint, vec, norm(vec)
             boundVecs.sort(order = 'mag')
+            if ip == 30:
+                'pause'
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
             IBZ.weights.append(pointCell.volume)
             

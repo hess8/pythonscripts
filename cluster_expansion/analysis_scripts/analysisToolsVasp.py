@@ -95,7 +95,7 @@ def finishCheck(folder):
 def getNatoms(poscarFile):
     '''returns the number of atoms in POSCAR'''
     pfile = readfile(poscarFile)
-    if pfile[5][0].isdigit():
+    if pfile[5].split()[0][0].isdigit():
         return sum([int(i) for i in pfile[5].strip().split()])
     else:
         return sum([int(i) for i in pfile[6].strip().split()])

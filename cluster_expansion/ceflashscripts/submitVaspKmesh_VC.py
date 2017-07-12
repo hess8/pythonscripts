@@ -109,7 +109,7 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(2,3,1):#23
+            for n in range(7,8,1):#23
                 print 
                 print '==============================================' 
                 print 'Target npoints: {}^3'.format(n)

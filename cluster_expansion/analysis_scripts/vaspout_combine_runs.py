@@ -42,11 +42,13 @@ testfile = 'POSCAR'
 #         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP.5offset',
 #         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP.75offset']
 
-# paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstrEK_fcc']
-#         '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP']
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc']
+# paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstrEK_fcc'
+#         ,'/fslhome/bch/cluster_expansion/vcmesh/the99']
 
-summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/'
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc']
+
+summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
 # summaryPath = paths[1]
 iplot = 0
 maxCalcs = 0
