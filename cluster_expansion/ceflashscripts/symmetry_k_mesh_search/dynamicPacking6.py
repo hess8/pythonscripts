@@ -191,13 +191,11 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
     '''
     keepLabels = []
     checkNext = True
-#     nCurr = len(cell.bounds[0])
     allPlanes = [cell.bounds[0][i]*cell.bounds[1][i] for i in range(len(cell.bounds[0]))]
     allVerts = deepcopy(cell.fpoints)
     for ig  in grp:
         bndsLabels.append(ig)
     pairs = list(combinations(bndsLabels,2))
-#     iInt = 0
     for ig in grp:
         for pair in pairs:
             planes3 = [boundVecs[ig]['vec']]
@@ -206,26 +204,13 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
                 planes3.append(boundVecs[pair[1]]['vec'])
                 intersPt = threePlaneIntersect(planes3)   
                 if not intersPt is None:
-                    if norm(intersPt)>30:
-                        'pause' 
-#                     iInt+=1
                     if not isOutside(intersPt,cell.bounds,eps)\
                         and not among(intersPt,allVerts,eps):
                             addVec(intersPt,allVerts,eps)
                             addVec(planes3[0],allPlanes,eps)
-#                             if pair[0]>=nCurr: 
-# #                                 keepLabels.append(pair[0])
-#                                 addVec(planes3[1],allPlanes,eps)
-#                             if pair[1]>=nCurr: 
-# #                                 keepLabels.append(pair[1])
-#                                 addVec(planes3[2],allPlanes,eps)  
-#                             if pair[0]>=nCurr: 
                             addVec(planes3[1],allPlanes,eps)
-#                             if pair[1]>=nCurr: 
                             addVec(planes3[2],allPlanes,eps)                                
-                                
-                                
-                                         
+                                     
     if len(allVerts)>0:
         #keep only the vertices that can be reached without crossing any plane
         newVerts = []
@@ -514,11 +499,10 @@ class dynamicPack():
 #         print 'end scipy Vor'
         allMPfacets = []
         for ip,point in enumerate(IBZ.mesh):
-            print '\npoint',ip,point
             print ip,
             pointCell = cell()
             neighs,neighLbls = self.getNeighbors(point,IBZ,eps)
-            print 'neighLbls',neighLbls
+#             print 'neighLbls',neighLbls
             boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
             for iw, u in enumerate(IBZ.bounds[0]):
                 
@@ -527,15 +511,13 @@ class dynamicPack():
                 vec = d*u
                 boundVecs[iw]['vec'] = vec  #vector from point to wall
                 boundVecs[iw]['mag'] = norm(vec)
-                print 'wall',iw,u, vec, norm(vec)
+#                 print 'wall',iw,u, vec, norm(vec)
             for j, jpoint in enumerate(neighs):
                 vec = (jpoint - point)/2
                 boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
                 boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
-                print 'neighs',j,jpoint, vec, norm(vec)
+#                 print 'neighs',j,jpoint, vec, norm(vec)
             boundVecs.sort(order = 'mag')
-            if ip == 30:
-                'pause'
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
             IBZ.weights.append(pointCell.volume)
             
