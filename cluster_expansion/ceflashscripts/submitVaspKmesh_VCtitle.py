@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-'''For each POSCAR in poscarsDir in maindir: makes a directory, copies POSCAR, makes a POTCAR from 
+'''Dynamic packing method. For each POSCAR in poscarsDir in maindir: makes a directory, copies POSCAR, makes a POTCAR from 
 the element name in the POSCAR title (double the first atom).  copies vaspinput, creates kpoints file with correct mesh 
 (just relative to the recip lattice), reads a jobfile from the vaspinput,
 writes the structure tag etc to the job name, and submits a vasp job.  
@@ -103,12 +103,13 @@ method = 0.5
         #         from the IBZ center origin to check if the point's volume is cut. 
         #         Cut the VC to determine the volume contribution  
 reallatt = zeros((3,3))
-createdirs(poscarsDir,maindir,vaspinputdir)
+# createdirs(poscarsDir,maindir,vaspinputdir)
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 # toRun = []
 nopsTot = 0
 nstruct = 0
+print 'Dynamic packing method'
 for dir in dirs:
     os.chdir(maindir)
     if testfile in os.listdir(dir): 

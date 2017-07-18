@@ -449,9 +449,7 @@ class dynamicPack():
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
             self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))
-        print 'Number of desired points:', targetNmesh
-        print 'Symmetry operations:', self.nops
-
+        print 'Number of desired points in full BZ:', targetNmesh
         BZ = cell() #instance
         BZ.volume = vol
         braggVecs = getBraggVecs(self.B)
@@ -528,10 +526,15 @@ class dynamicPack():
         print
         self.facetsMeshVCMathFile(IBZ,allMPfacets)
         wtot = sum(IBZ.weights)
-        volCheck = 0.002
+        stdev = std(IBZ.weights)
+        volCheck = 0.01
+        volErr = wtot - IBZ.volume        
+        volErrRel = volErr/IBZ.volume
+        
         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
+        print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev',stdev
         if not areEqual(wtot, IBZ.volume, volCheck*IBZ.volume):
-            print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
+#             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
         else:
             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
@@ -812,8 +815,7 @@ class dynamicPack():
     def getNeighbors(self,kpoint,IBZ,eps):
         '''Search a sphere around the kpoint and collect neighbors.
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
-        Return the neighbors
-        '''
+        Return the neighbors        '''
         neighR = 5.0*self.rpacking
         neighs,neighLbls = self.searchSphere(kpoint,IBZ,neighR,eps)
         return neighs,neighLbls 
@@ -917,9 +919,8 @@ class dynamicPack():
     def getIBZ(self,BZ,eps):
         '''
         Apply symmetry operators to a facet point O:, to get point P.
-        as a convention, choose points and volumes 
-        that have vertices with the highest sum of components
-        Define the point O as the vertex with the highest sum of components (or one of them if degenerate).
+        As a convention, choose to keep points and volumes that are closest to the 111 direction. 
+        
         1. Inversion: slice half the volume away about any plane through the center.
            Choice: define plane O-InvO-P, where P is any neighboring point to O on a fact.
         2. Reflection: slice through reflection plane
@@ -955,114 +956,106 @@ class dynamicPack():
         if not areEqual(det(self.B),BZ.volume,eps):
             subprocess.call(['echo', '\nError: Voronoi cell volume {} is not equal to the parallelepiped volume {}'.format(BZ.volume,det(self.B))])
             sys.exit('Stop.')
-            
-        origBZ = deepcopy(BZ)
-
-
-        if self.nops > 1: 
-            self.IBZvolCut = 1.0 
-            oldBZ = deepcopy(BZ)
-            oldIBZvolCut = copy(self.IBZvolCut)
-            reflOps = []
-            rotOps = []
-            rotReflOps = []
-            for iop in range(self.nops):
-                op = self.symops[:,:,iop]
-#                 if areEqual(trace(op),-3.0,eps):
+ 
+        self.IBZvolCut = 1.0 
+        oldBZ = deepcopy(BZ)
+        oldIBZvolCut = copy(self.IBZvolCut)
+        reflOps = []
+        rotOps = []
+        rotReflOps = []
+        inversion = False
+        for iop in range(self.nops):
+            op = self.symops[:,:,iop]
+            if areEqual(trace(op),-3.0,eps):
                 inversion = True #for all simple lattices
-                if areEqual(abs(trace(op)),3.0,eps):#skip identity
-                    continue
-                evals,evecs = eig(op)
-                evecs = array([evec for evec in evecs])
-                if areEqual(det(op),-1.0,eps) and not allclose(imag(evecs),zeros((3,3)),atol=eps): #improper rotation
-                    rotOps.append(-op)
-                elif areEqual(det(op),1.0,eps)  : #rotation
-                    rotOps.append(op)
-                else: #includes
-                    reflOps.append(op)
-            for op1 in rotOps: 
-                for op2 in reflOps:
-                    rotReflOps.append(dot(op1,op2))
-            print '\nReflection ops:'
-            for iop, op in enumerate(reflOps):    
-                print '\nsymop',iop; print op; print                
-                evals,evecs = eig(op)
-                evecs = array([evec for evec in evecs])                          
-                if len(where(areEqual(evals,-1.0,eps))[0] )> 1: 
-                    evals = -evals 
-                    print 'Improper reflection'
-                evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
-                u1 = self.choose111(evec,eps) 
-                print 'reflection u1',u1
-                BZ = self.cutCell(u1,0.0,BZ,eps)
-                self.testCuts(BZ,oldBZ,oldIBZvolCut,'refl_{}'.format(iop),eps)
-                if areEqual(self.IBZvolCut,self.nops,1e-2): return BZ
-#             print '\nRotation * Reflection ops:'
-#             for iop, op in enumerate(rotReflOps):
-#                 
-#                 print '\nsymop',iop;print op ;print                
-#                 evals,evecs = eig(op)
-#                 evecs = array([evec for evec in evecs])                          
-#                 if len(where(areEqual(evals,-1.0,eps)) )> 1: 
-#                     evals = -evals #improper rotation
-#                     print 'Improper reflection'
-#                 evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
-#                 u1 = self.choose111(evec,eps) 
-#                 print 'reflection u1',u1
-#                 BZ = self.cutCell(u1,0.0,BZ,eps)
-#                 self.testCuts(BZ,oldBZ,oldIBZvolCut,'rtrf_{}'.format(iop),eps)
-#                 if areEqual(self.IBZvolCut,self.nops,eps): return BZ
-            print '\nRotation ops:'
-            for iop, op in enumerate(rotOps):
-                print '\nsymop',iop;print op ;print                
-                evals,evecs = eig(op)
-                evecs = array([evec for evec in evecs])                          
-                ievec = where(areEqual(evals,1.0,eps))[0][0]
-                evec = evecs[:,ievec] #axis
-                ds = []
-                allPoints = BZ.fpoints
-                for vec in allPoints:
-                    if areEqual(abs(dot(evec,vec)),norm(vec),eps): #axis and vec are parallel...don't want this one.
-                         ds.append(100)
-                    else:
-                        ds.append(norm(vec - evec*dot(evec,vec)))
-                allPoints = [point for (d,point) in sorted(zip(ds,allPoints),key = lambda x: x[0])]#sort by distance
-                #pnto = allPoints[0] #old method
-                for ip,pnto in enumerate(allPoints):#
-                    print ip,
-                    pntp = dot(op,pnto)
-                    if not among(pntp,allPoints,eps):
-                        break
-                    #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
-                    tempvec0 = cross(evec,pnto)
-                    if not allclose(tempvec0,0.0,eps):
-                        u1 = self.choose111(tempvec0/norm(tempvec0),eps)                             
-                             #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
-                        tempvec = cross(evec,pnto)
-                        u1 = self.choose111(tempvec/norm(tempvec),eps)
+            if areEqual(abs(trace(op)),3.0,eps):#skip identity
+                continue
+            evals,evecs = eig(op)
+            evecs = array([evec for evec in evecs])
+            if areEqual(det(op),-1.0,eps) and not allclose(imag(evecs),zeros((3,3)),atol=eps): #improper rotation
+                rotOps.append(-op)
+            elif areEqual(det(op),1.0,eps)  : #rotation
+                rotOps.append(op)
+            else: #includes
+                reflOps.append(op)
+        for op1 in rotOps: 
+            for op2 in reflOps:
+                rotReflOps.append(dot(op1,op2))
+        #add inversion if needed:
+#         if not inversion:
+#             self.nops+=1
+#             print 'Symmetry operations (inversion added):', self.nops
+#             inversion = True
+#         else:
+#             print 'Symmetry operations:', self.nops 
+        print 'Symmetry operations (no inversion added):', self.nops
+        print '\nReflection ops:'
+        for iop, op in enumerate(reflOps):    
+            print '\nsymop',iop; print op; print                
+            evals,evecs = eig(op)
+            evecs = array([evec for evec in evecs])                          
+            if len(where(areEqual(evals,-1.0,eps))[0] )> 1: 
+                evals = -evals 
+                print 'Improper reflection'
+            evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
+            u1 = self.choose111(evec,eps) 
+            print 'reflection u1',u1
+            BZ = self.cutCell(u1,0.0,BZ,eps)
+            self.testCuts(BZ,oldBZ,oldIBZvolCut,'refl_{}'.format(iop),eps)
+            if areEqual(self.IBZvolCut,self.nops,1e-2): return BZ
+        print '\nRotation ops:'
+        for iop, op in enumerate(rotOps):
+            print '\nsymop',iop;print op ;print                
+            evals,evecs = eig(op)
+            evecs = array([evec for evec in evecs])                          
+            ievec = where(areEqual(evals,1.0,eps))[0][0]
+            evec = evecs[:,ievec] #axis
+            ds = []
+            allPoints = BZ.fpoints
+            for vec in allPoints:
+                if areEqual(abs(dot(evec,vec)),norm(vec),eps): #axis and vec are parallel...don't want this one.
+                     ds.append(100)
+                else:
+                    ds.append(norm(vec - evec*dot(evec,vec)))
+            allPoints = [point for (d,point) in sorted(zip(ds,allPoints),key = lambda x: x[0])]#sort by distance
+            #pnto = allPoints[0] #old method
+            for ip,pnto in enumerate(allPoints):#
+                print ip,
+                pntp = dot(op,pnto)
+                if not among(pntp,allPoints,eps):
+                    break
+                #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
+                tempvec0 = cross(evec,pnto)
+                if not allclose(tempvec0,0.0,eps):
+                    u1 = self.choose111(tempvec0/norm(tempvec0),eps)                             
+                         #the plane to cut is the plane of O and axis, so take normal perpendicular to vector O.                   )
+                    tempvec = cross(evec,pnto)
+                    u1 = self.choose111(tempvec/norm(tempvec),eps)
 #                         print 'u1',u1
-                        BZ = self.cutCell(u1,0.0,BZ,eps)
-                        tempvec = cross(evec,pntp)/norm(cross(evec,pntp))#2nd cut plane for roation
-                        if not allclose(tempvec,-u1,atol=eps): #don't cut again if this is a Pi rotation
-                            if abs(dot(tempvec, array([1,1,1])))>eps:
-                                u2 = self.choose111(tempvec/norm(tempvec),eps)
-                            else:
-                                u2 = -dot(op,u1)
-                            BZ = self.cutCell(u2,0.0,BZ,eps)                        
-                        if self.testCuts(BZ,oldBZ,oldIBZvolCut,'rot_{}'.format(iop),eps):
-                            break 
-                if areEqual(self.IBZvolCut,self.nops,1e-2): return BZ 
-            if inversion and not areEqual(self.IBZvolCut,self.nops,eps):
-                anyDups,point1,point2 = makesDups(array([[-1,0,0],[0,-1,0],[0,0,-1]]),BZ,eps)
-                if anyDups:
-                    u1 = self.choose111(point1/norm(point1),eps)
                     BZ = self.cutCell(u1,0.0,BZ,eps)
-                    print 'Inversion', u1
-                    self.testCuts(BZ,oldBZ,oldIBZvolCut,'inv',eps)
-                return BZ           
-            if not areEqual(self.IBZvolCut,self.nops,eps):
-                print ('Fail: Volume not reduced by factor equal to the number of symmetry operations')
-                return BZ  
+                    tempvec = cross(evec,pntp)/norm(cross(evec,pntp))#2nd cut plane for roation
+                    if not allclose(tempvec,-u1,atol=eps): #don't cut again if this is a Pi rotation
+                        if abs(dot(tempvec, array([1,1,1])))>eps:
+                            u2 = self.choose111(tempvec/norm(tempvec),eps)
+                        else:
+                            u2 = -dot(op,u1)
+                        BZ = self.cutCell(u2,0.0,BZ,eps)                        
+                    if self.testCuts(BZ,oldBZ,oldIBZvolCut,'rot_{}'.format(iop),eps):
+                        break 
+            if areEqual(self.IBZvolCut,self.nops,1e-2): return BZ 
+        if inversion and not areEqual(self.IBZvolCut,self.nops,eps):
+            anyDups,point1,point2 = makesDups(array([[-1,0,0],[0,-1,0],[0,0,-1]]),BZ,eps)
+            if anyDups:
+                u1 = self.choose111(point1/norm(point1),eps)
+                BZ = self.cutCell(u1,0.0,BZ,eps)
+                print 'Inversion', u1
+                self.testCuts(BZ,oldBZ,oldIBZvolCut,'inv',eps)
+            return BZ           
+        if not areEqual(self.IBZvolCut,self.nops,eps):
+            print ('Fail: Volume not reduced by factor equal to the number of symmetry operations')
+            return BZ
+        else:
+            return BZ
    
     def testCuts(self,BZ,oldBZ,oldIBZvolCut,tag,eps):
         getBoundsFacets(BZ,eps)

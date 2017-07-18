@@ -1,9 +1,9 @@
 #!/usr/bin/python
 
-'''For each dir in maindir: copies vaspinput, creates kpoints file with correct mesh 
-(just relative to the recip lattice),reads a jobfile from the vaspinput,
-writes the structure number etc to the job name, and submits a vasp job.  
-Assumes we already have POSCAR from aconvaspPoscar.py
+'''Monkhorst Pack method.  For each POSCAR in poscarsDir in maindir: makes a directory, copies POSCAR, makes a POTCAR from 
+the element name in the POSCAR title (double the first atom).  copies vaspinput, creates kpoints file with correct mesh 
+(just relative to the recip lattice), reads a jobfile from the vaspinput,
+writes the structure tag etc to the job name, and submits a vasp job.  
 '''
     
 import sys,os,subprocess
@@ -11,8 +11,7 @@ from numpy import zeros,transpose,array,sum,float64,rint
 from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
-from kmeshroutines import nstrip, readposcar,create_poscar
-
+from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile
 import dynamicPacking6
 
 def getVCmesh(dir,method,targetNmesh,meshtype):
@@ -29,11 +28,26 @@ def getVCmesh(dir,method,targetNmesh,meshtype):
             aTypes.append(atype)
         atype += 1
     aTypes = array(aTypes)
-    statusOK = meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
+    statusOK,nops = meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
     os.chdir(lastDir)
-    return statusOK
+    return statusOK,nops
     
     
+def writekpts_vasp_n(path,n,type):
+    '''Write mesh vectors to kpoints file, using integer division for cubic and fcc meshes
+    (equivalent k method)'''   
+    file1 = open(path +'KPOINTS','w')
+    kpointsfile = []
+    kpointsfile.append('%i kpoints for cubic MP n=%i\n' %(n**3,n))
+    kpointsfile.append('0 \n') 
+    kpointsfile.append('Gamma \n')
+    kpointsfile.append('{} {} {}\n'.format(n,n,n))  
+    kpointsfile.append('0.5 0.5 0.5\n' ) #shift
+#     kpointsfile.append('0.0 0.0 0.0\n' ) #shift
+    file1.writelines(kpointsfile) 
+    file1.close()
+    return 
+
 def writejobfile(path,n,type):
     '''read from a template in maindir, and put dir in job name'''
     file1 = open(path +'vaspjob','r')
@@ -46,42 +60,69 @@ def writejobfile(path,n,type):
     file2.close()
     return 
 
-def createdir(path,n,type):
+def createdirs(poscarsDir,maindir,vaspinputdir):
+    '''makes dir in maindir for each structure in poscarsDir'''
+    potcarDir = "/fslhome/bch/vaspfiles/src/potpaw_PBE"
+    for file in os.listdir(poscarsDir):
+        info = file.split('_')
+        struct = '_'.join(info[1:3])
+        structDir = '{}/{}'.format(maindir,struct)
+        atom = info[1]
+        if not os.path.isdir(structDir):
+            os.system('mkdir {}'.format(structDir)) #structure is in 
+        os.system('cp {}/{} {}/POSCAR'.format(poscarsDir,file,structDir))
+        print 'atom',atom
+        try:
+            potcar = readfile('{}/{}/POTCAR'.format(potcarDir,atom))
+        except:
+            try:
+                potcar = readfile('{}/{}_pv/POTCAR'.format(potcarDir,atom))
+            except:
+                potcar = readfile('{}/{}_sv/POTCAR'.format(potcarDir,atom))
+        potcar += potcar #multiple atoms in POSCAR have only one POTCAR, so they are really all pure cases    
+        writefile(potcar,'{}/POTCAR'.format(structDir))
+        os.system ('cp {}/INCAR {}'.format(vaspinputdir,structDir))  
+        os.system ('cp {}/vaspjob {}'.format(vaspinputdir,structDir))  
+    return
+
+def createRunDir(path,n,type):
     newdir = path + '%s_%i/' % (type,n)
     if not os.path.isdir(newdir):
         os.system('mkdir %s' % newdir)
-    os.system ('cp %s* %s' % (vaspinputdir,newdir))
-    os.system ('cp %sPOSCAR %s' % (path,newdir))  
+    os.system('cp {}/INCAR {}'.format(path,newdir))
+    os.system('cp {}/POSCAR {}'.format(path,newdir))
+    os.system('cp {}/POTCAR {}'.format(path,newdir))
+    os.system('cp {}/vaspjob {}'.format(path,newdir))
+    writekpts_vasp_n(newdir,n,type)
     writejobfile(newdir,n,type)  
     return newdir
-
+   
 
 ################# script #######################
 
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestCuts'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestCUB'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestBCC'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cuptTestFCC'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestCuts/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/test/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/test2/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc/'
+maindir = '/fslhome/bch/cluster_expansion/ekmesh/ekPure'
+poscarsDir = '/fslhome/bch/cluster_expansion/ekmesh/pureCubicPoscars/POSCARS'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'fcc' 
 testfile = 'POSCAR'
-vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
-method = 0.5
+vaspinputdir = '/fslhome/bch/cluster_expansion/ekmesh/pureCubicPoscars/vaspinput/'
         #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
         #         from the IBZ center origin to check if the point's volume is cut. 
         #         Cut the VC to determine the volume contribution  
 reallatt = zeros((3,3))
+createdirs(poscarsDir,maindir,vaspinputdir)
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
-# toRun = []
+
+print 'Equivalent k method'
 for dir in dirs:
     os.chdir(maindir)
     if testfile in os.listdir(dir): 
@@ -109,20 +150,15 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(6,12,1):#23
+            for n in range(2,23,1):#23
                 print 
                 print '==============================================' 
-                print 'Target npoints: {}^3'.format(n)
+                print 'Base {} in equiv k submitVasp (target = n^3)'.format(n)
                 print '==============================================' 
                 print
-                newdir = createdir(currdir,n,type) 
-                statusOK = getVCmesh(newdir,method,n**3,type)
-                if not statusOK: #no points or too many in IBZ
-                    print 'Zero or too many points in IBZ...skip this n'
-#                     os.system('rm -r {}'.format(newdir))
-                else:
-                    os.chdir(newdir)
-#                     subprocess.call(['sbatch', 'vaspjob'])
+                newdir = createRunDir(currdir,n,type) 
+                os.chdir(newdir)
+                subprocess.call(['sbatch', 'vaspjob'])
                     
 #                     toRun.append(newdir)
                     

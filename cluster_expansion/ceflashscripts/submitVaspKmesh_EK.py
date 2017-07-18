@@ -10,7 +10,8 @@ import sys,os
 import numpy as np
 
 def writekpts_vasp_n(path,n,type):
-    '''Write mesh vectors to kpoints file, using integer division for cubic and fcc meshes'''   
+    '''Write mesh vectors to kpoints file, using integer division for cubic and fcc meshes
+    (equivalent k method)'''   
     file1 = open(path +'KPOINTS','w')
     kpointsfile = []
     if type == 'cubic': kpointsfile.append('%i kpoints for cubic integer n=%i\n' %(n**3,n))
