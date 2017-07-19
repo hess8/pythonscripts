@@ -106,14 +106,15 @@ def createRunDir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
-maindir = '/fslhome/bch/cluster_expansion/ekmesh/ekPure'
-poscarsDir = '/fslhome/bch/cluster_expansion/ekmesh/pureCubicPoscars/POSCARS'
+maindir = '/fslhome/bch/cluster_expansion/mpmesh/semicond'
+poscarsDir = '/fslhome/bch/cluster_expansion/mpmesh/semicondPoscars/POSCARS'
+vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/semicondPoscars/vaspinput/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'fcc' 
 testfile = 'POSCAR'
-vaspinputdir = '/fslhome/bch/cluster_expansion/ekmesh/pureCubicPoscars/vaspinput/'
+
         #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
         #         from the IBZ center origin to check if the point's volume is cut. 
         #         Cut the VC to determine the volume contribution  
@@ -122,7 +123,7 @@ createdirs(poscarsDir,maindir,vaspinputdir)
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 
-print 'Equivalent k method'
+print 'MP method'
 for dir in dirs:
     os.chdir(maindir)
     if testfile in os.listdir(dir): 
@@ -153,7 +154,7 @@ for dir in dirs:
             for n in range(2,23,1):#23
                 print 
                 print '==============================================' 
-                print 'Base {} in equiv k submitVasp (target = n^3)'.format(n)
+                print 'Base {} in Monkhorst Pack k submitVasp (target = n^3)'.format(n)
                 print '==============================================' 
                 print
                 newdir = createRunDir(currdir,n,type) 

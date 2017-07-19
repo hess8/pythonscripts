@@ -173,9 +173,9 @@ def enerparts(list):
 
 def getNkIBZ(dir,file):    
     try:
-        ibzkpt = open(dir+'/{}'.format(file),'r') #If kpoints gives points explicitly, then we should read KPOINTS not IBZKPT.
-        nk = int(ibzkpt.readlines()[1].split()[0])
-        ibzkpt.close()
+        ibzkpt = readfile(dir+'/{}'.format(file)) #If kpoints gives points explicitly, then we should read KPOINTS not IBZKPT.
+        
+        nk = int(ibzkpt[1].split()[0])
     except:
         nk = 0 
     return nk

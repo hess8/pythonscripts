@@ -11,7 +11,7 @@ from numpy import zeros,transpose,array,sum,float64,rint
 from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
-from kmeshroutines import nstrip, readposcar,create_poscar
+from kmeshroutines import readposcar
 
 import dynamicPacking6
 

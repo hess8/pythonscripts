@@ -8,6 +8,7 @@ writes the structure tag etc to the job name, and submits a vasp job.
     
 import sys,os,subprocess
 from numpy import zeros,transpose,array,sum,float64,rint
+from copy import copy, deepcopy
 from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
@@ -70,6 +71,20 @@ def createdirs(poscarsDir,maindir,vaspinputdir):
         os.system ('cp {}/vaspjob {}'.format(vaspinputdir,structDir))  
     return
 
+def modIncar(newdir):
+    lines = readfile('{}/INCAR'.format(newdir))
+    plines = readfile('{}/POTCAR'.format(newdir))
+    for line in plines:
+        if 'ENMAX' in line:
+            enmax = 1.4*float(line.split()[2].replace(';',''))
+            break
+    for i,line in enumerate(deepcopy(lines)):
+        if 'ENMAX' in line:
+            lines[i] = 'ENMAX = {}\n'.format(enmax)
+            break
+    writefile(lines,'{}/INCAR'.format(newdir))     
+    return
+
 def createRunDir(path,n,type):
     newdir = path + '%s_%i/' % (type,n)
     if not os.path.isdir(newdir):
@@ -78,7 +93,8 @@ def createRunDir(path,n,type):
     os.system('cp {}/POSCAR {}'.format(path,newdir))
     os.system('cp {}/POTCAR {}'.format(path,newdir))
     os.system('cp {}/vaspjob {}'.format(path,newdir))
-    writejobfile(newdir,n,type)  
+    writejobfile(newdir,n,type)
+    modIncar(newdir)
     return newdir
    
 
@@ -90,15 +106,16 @@ def createRunDir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99'
-poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/poscars99/POSCARS'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/test'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semicond'
+poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/semicondPoscars/POSCARS'
+vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/semicondPoscars/vaspinput/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'fcc' 
 testfile = 'POSCAR'
-vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/poscars99/vaspinput/'
-method = 0.5
+method = 0
         #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
         #         from the IBZ center origin to check if the point's volume is cut. 
         #         Cut the VC to determine the volume contribution  
@@ -137,7 +154,7 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(2,23,1):#23
+            for n in range(2,25,1):#23
                 print 
                 print '==============================================' 
                 print 'Base {} in submitVasp (target = n^3)'.format(n)

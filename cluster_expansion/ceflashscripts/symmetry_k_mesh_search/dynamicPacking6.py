@@ -449,6 +449,17 @@ class dynamicPack():
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
             self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))
+
+
+        ###temp code
+#         self.nops = 2
+#         print 'Ignoring symmetry operators other than inversion'
+#         self.symops = zeros((3,3,self.nops),dtype = float)
+#         self.symops[:,:,0] = array([[-1,0,0],[0,-1,0],[0,0,-1]])
+#         self.symops[:,:,1] = array([[1,0,0],[0,1,0],[0,0,1]])
+        ###temp code
+        
+        
         print 'Number of desired points in full BZ:', targetNmesh
         BZ = cell() #instance
         BZ.volume = vol
@@ -458,11 +469,12 @@ class dynamicPack():
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
         self.facetsMathFile(IBZ,'IBZ') 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
-        if 0 < len(IBZ.mesh) <= 200:
+        if 0 < len(IBZ.mesh) <= 500:
             OK = True
             self.dynamic(IBZ,eps)
             IBZ = self.weightPoints(IBZ,eps)
             self.writeKpoints(IBZ)
+            self.writeSym()
             return OK,self.nops
         else: 
             OK = False
@@ -470,6 +482,9 @@ class dynamicPack():
 #         OK = True
 #         return OK,self.nops
     
+    def writeSym(self):
+        writefile(['nops: {}\n'.format(self.nops),'IBZvolCut: {}\n'.format(self.IBZvolCut)],'sym.out')
+
     def weightPoints(self,IBZ,eps):
         '''Find the volume of the Voronoi cell around each point, and use it to weight the point.
         Search a sphere of radius a few df for neighbors.  Use the half vectors to these points 
@@ -496,6 +511,7 @@ class dynamicPack():
 #         print 'volume',voltest
 #         print 'end scipy Vor'
         allMPfacets = []
+        skews = []
         for ip,point in enumerate(IBZ.mesh):
             print ip,
             pointCell = cell()
@@ -517,6 +533,9 @@ class dynamicPack():
 #                 print 'neighs',j,jpoint, vec, norm(vec)
             boundVecs.sort(order = 'mag')
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+#             skew = norm(pointCell.center)/self.ravg
+#             skews.append(skew)
+#             print 'Skew: Distance from point to center,normalized',norm(pointCell.center)/self.ravg
             IBZ.weights.append(pointCell.volume)
             
             #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
@@ -527,7 +546,7 @@ class dynamicPack():
         self.facetsMeshVCMathFile(IBZ,allMPfacets)
         wtot = sum(IBZ.weights)
         stdev = std(IBZ.weights)
-        volCheck = 0.01
+        volCheck = 0.1
         volErr = wtot - IBZ.volume        
         volErrRel = volErr/IBZ.volume
         
@@ -538,7 +557,12 @@ class dynamicPack():
             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
         else:
             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
-        IBZ.weights /= self.ravg**3  #to scale them order(1).  
+#         print 'Adjusting weights by skew'
+#         temp = []
+#         for i,skew in enumerate(skews):
+#             temp.append(IBZ.weights[i]*(skew)**(1/4.0))    
+#         IBZ.weights = temp/self.ravg**3   
+        IBZ.weights = IBZ.weights/self.ravg**3 #to scale them to order(1).  
         return IBZ
 
     def meshInitCubic(self,IBZ,type,eps):
@@ -595,6 +619,7 @@ class dynamicPack():
         else:
             print 'no orthogonal plane normals pairs found.'
         if type == 'fcc':
+            
             volKcubConv = det(self.B)/self.nTarget*4
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
@@ -816,7 +841,7 @@ class dynamicPack():
         '''Search a sphere around the kpoint and collect neighbors.
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
         Return the neighbors        '''
-        neighR = 5.0*self.rpacking
+        neighR = 8.0*self.rpacking
         neighs,neighLbls = self.searchSphere(kpoint,IBZ,neighR,eps)
         return neighs,neighLbls 
     
