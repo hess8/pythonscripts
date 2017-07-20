@@ -15,36 +15,34 @@ sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/s
 from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile
 import dynamicPacking6
 
-def getVCmesh(dir,method,targetNmesh,meshtype):
-    lastDir = os.getcwd()   
-    meshc = dynamicPacking6.dynamicPack() #instance
-    [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
-#         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
-    os.chdir(dir)
-    totatoms = sum(natoms)
-    atype = 1
-    aTypes = []
-    for natom in natoms:
-        for i in range(natom):
-            aTypes.append(atype)
-        atype += 1
-    aTypes = array(aTypes)
-    statusOK,nops = meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
-    os.chdir(lastDir)
-    return statusOK,nops
+def writeJob(path,ntarget,type):
+    """ Creates a standard job file for submitting a VASP job on the supercomputer. 
+    The job file calls python for mesh definition.
+    Writes name and and ntarget."""  
+    dir = os.getcwd()
+    runFolder = dir.split('/')[-1] 
+    jobName = '{}.{}'.format(path[-12:],runFolder)
+    jobFile = open('{}/job'.format(path),'w')   
+    jobFile.write("#!/bin/bash\n\n")
+    jobFile.write('#SBATCH --time=5:00:02\n')
+    jobFile.write("#SBATCH --ntasks=4\n")
+    jobFile.write("#SBATCH --mem-per-cpu=2G\n")
+    jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
+    jobFile.write('module unload mpi\n')
+    jobFile.write('module load mpi/openmpi-1.6.5_intel-13.0.1\n')
+    jobFile.write('module unload mkl\n')
+    jobFile.write('module load mkl/11/2\n')
+    jobFile.write('module unload python\n')
+    jobFile.write('module load python/2/7\n')
     
-    
-def writejobfile(path,n,type):
-    '''read from a template in maindir, and put dir in job name'''
-    file1 = open(path +'vaspjob','r')
-    jobfile = file1.readlines()
-    file1.close
-    for i in range(len(jobfile)):
-        jobfile[i]=jobfile[i].replace('myjob', dir+'_%i_%s' %(n,type))
-    file2 = open(path+'/'+'vaspjob','w')
-    file2.writelines(jobfile) 
-    file2.close()
-    return 
+    jobFile.write('python ~/pythonscripts/cluster_expansion/ceflashscripts/poscar2meshVC.py {} {} > out\n'.format(ntarget,type))
+
+    jobFile.write('if [ -e "OK" ]\n')
+    jobFile.write('then\n')
+    jobFile.write('mpiexec ./vasp.x > vasp.out\n')
+    jobFile.write('fi\n')
+    jobFile.close()
+    return
 
 def createdirs(poscarsDir,maindir,vaspinputdir):
     '''makes dir in maindir for each structure in poscarsDir'''
@@ -68,7 +66,8 @@ def createdirs(poscarsDir,maindir,vaspinputdir):
         potcar += potcar #multiple atoms in POSCAR have only one POTCAR, so they are really all pure cases    
         writefile(potcar,'{}/POTCAR'.format(structDir))
         os.system ('cp {}/INCAR {}'.format(vaspinputdir,structDir))  
-        os.system ('cp {}/vaspjob {}'.format(vaspinputdir,structDir))  
+        modIncar(structDir)  
+        os.system ('cp -P {}/vasp.x {}'.format(vaspinputdir,structDir)) 
     return
 
 def modIncar(newdir):
@@ -92,9 +91,8 @@ def createRunDir(path,n,type):
     os.system('cp {}/INCAR {}'.format(path,newdir))
     os.system('cp {}/POSCAR {}'.format(path,newdir))
     os.system('cp {}/POTCAR {}'.format(path,newdir))
-    os.system('cp {}/vaspjob {}'.format(path,newdir))
-    writejobfile(newdir,n,type)
-    modIncar(newdir)
+    os.system ('cp -P {}/vasp.x {}'.format(path,newdir))
+    writeJob(newdir,n**3,type)
     return newdir
    
 
@@ -108,27 +106,26 @@ def createRunDir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/test'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semicond'
-# poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/semicondPoscars/POSCARS'
-# vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/semicondPoscars/vaspinput/'
+# poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/semicondPoscars/POSCARS'
+# vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/semicondPoscars/vaspinput/'
 maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym'
-poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/poscars99/POSCARS'
-vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/poscars99/vaspinput'
+poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym/0_info/POSCARS'
+vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym/0_info/vaspinput'
+
+
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/test2'
+# poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/test2/info/POSCARS'
+# vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/test2/info/vaspinput'
+
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
 type = 'fcc' 
-testfile = 'POSCAR'
-method = 0
-        #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
-        #         from the IBZ center origin to check if the point's volume is cut. 
-        #         Cut the VC to determine the volume contribution  
+testfile = 'POSCAR' 
 reallatt = zeros((3,3))
-# createdirs(poscarsDir,maindir,vaspinputdir)
+createdirs(poscarsDir,maindir,vaspinputdir)
 os.chdir(maindir)
-dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
-# toRun = []
-nopsTot = 0
-nstruct = 0
+dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
 print 'Dynamic packing method'
 for dir in dirs:
     os.chdir(maindir)
@@ -142,7 +139,7 @@ for dir in dirs:
         poscar = file1.readlines()
         file1.close()
         if len(poscar) > 0:
-            os.chdir(currdir)
+#             os.chdir(currdir)
 #            scale = sum(array(float(poscar[1])))
 #            N = rint(Nkppra/sum(array(poscar[5].split(),dtype=int16))).astype(int) # number of kpts desired
 #            reallatt[0,:] = array(poscar[2].split())
@@ -151,9 +148,9 @@ for dir in dirs:
 #            reallatt = scale*reallatt.astype(float)        
 #            reciplatt = 2*pi*transpose(linalg.inv(reallatt))
 
-            os.system('rm slurm*')
-            subprocess.call(['rm', 'vasp.out'])
-            subprocess.call(['rm', 'OUTCAR'])          
+#             os.system('rm slurm*')
+#             subprocess.call(['rm', 'vasp.out'])
+#             subprocess.call(['rm', 'OUTCAR'])          
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
@@ -164,26 +161,7 @@ for dir in dirs:
                 print '==============================================' 
                 print
                 newdir = createRunDir(currdir,n,type) 
-                statusOK,nops = getVCmesh(newdir,method,n**3,type)
-                nopsTot += nops
-                nstruct += 1
-                if not statusOK: #no points or too many in IBZ
-                    print 'Zero or too many points in IBZ...skip this n'
-                    os.system('rm -r {}'.format(newdir))
-                else:
-                    os.chdir(newdir)
-                    subprocess.call(['sbatch', 'vaspjob'])
+                subprocess.call(['sbatch', '{}/job'.format(newdir)])
                     
-#                     toRun.append(newdir)
-                    
-#                 getVCmesh(newdir,method,n,type)
-#         sys.exit('stop')
-#         newdirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
-# for newdir in toRun:
-#     os.chdir(newdir)
-#     subprocess.call(['sbatch', 'vaspjob'])
-#     os.chdir(currdir)
-nsymmAvg = nopsTot/float(nstruct)
-print 'Average number of symmetry operations:',nsymmAvg, 'for',nstruct,'structures'
-os.chdir(maindir)                 
+               
 print 'Done'
