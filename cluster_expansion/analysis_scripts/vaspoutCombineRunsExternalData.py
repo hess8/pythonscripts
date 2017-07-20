@@ -13,7 +13,7 @@ from symmetry import get_lattice_pointGroup, get_spaceGroup #these have vectors 
 from kmeshroutines import readposcar
 
 # from plotTools import plotxy
-from pylab import figure,cm,plot,xlabel,ylabel,title,loglog,semilogy,legend,rcParams,style
+from pylab import figure,cm,plot,xlabel,ylabel,title,loglog,semilogy,legend,rcParams,style,rc
 from copy import deepcopy
 
 def areEqual(x,y,eps):
@@ -24,12 +24,13 @@ testfile = 'POSCAR'
 # paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstrEK_fcc'
 #         ,'/fslhome/bch/cluster_expansion/vcmesh/the99']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_IR','/fslhome/bch/cluster_expansion/mpmesh/mpPure_MPbch']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod','/fslhome/bch/cluster_expansion/mpmesh/mpPure_MPbch']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/semicond','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
 
-filter = 'W' #string must be in dir name to be included
+filter = 'Cu' #string must be in dir name to be included
+filter2 = 'Cu_1' #for single structures.  set to None if using filter1 only
 summaryPath = paths[0]
 # summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu17Jul17/'
 # summaryPath = paths[1]
@@ -38,7 +39,10 @@ maxCalcs = 0
 #count the number of plots:
 for ipath,path in enumerate(paths):
     os.chdir(path)
-    structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and filter in d])
+    if filter2 == None:
+        structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and filter in d])
+    else:
+        structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and d==filter2])
     for struct in structs:
         os.chdir(struct)
         iplot += 1
@@ -52,10 +56,14 @@ atoms_methods = sorted([d for d in os.listdir(extpath) if os.path.isdir(d) and f
 for atom_method in atoms_methods:
     os.chdir(atom_method)
     os.system('rm -r .*lock*')
-    for struct in os.listdir(os.getcwd()):
+    if filter2 == None:
+        structfiles = os.listdir(os.getcwd())
+    else:
+        structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2])
+    for structfile in structfiles:
         iplot += 1
-        #count number of points in this struct
-        lines = readfile(struct)
+        #count number of points in this structfile
+        lines = readfile(structfile)
         if len(lines)>maxCalcs: maxCalcs = len(lines)     
     os.chdir(extpath)
 
@@ -63,18 +71,67 @@ nplots = iplot
 if nplots < len(paths): sys.exit('Stop.  Not enough structures match filter')      
 data = zeros(nplots,dtype = [('ID', 'S15'),('color', 'S15'),('method', 'S15'),('nDone','int8'),('nAtoms','int8'),('nops','int8'),('eners', '{}float'.format(maxCalcs)),\
                 ('errs', '{}float'.format(maxCalcs)),('nKs', '{}int16'.format(maxCalcs))])
-#read all the data 
-iplot = -1
-style.use('ggplot')
+style.use('fivethirtyeight')
 colors = []
 for i, item in enumerate(rcParams['axes.prop_cycle']):
     colors.append(item['color'])
+# font = {'family' : 'Bitstream Vera Sans',
+#         'weight' : 'normal',
+#         'size'   : 9}
+# rc('font', **font)
+# rcParams.update({'font.size': 12})    
+rcParams.update({'figure.autolayout': True})   
+    
+#read all the data 
+iplot = -1
+os.chdir(extpath)
+print; print atoms_methods
+for atom_method in atoms_methods:
+    os.chdir(atom_method)
+    if 'MP' in atom_method: 
+        color = colors[len(paths)]
+        method = 'MP'
+    elif 'Mueller' in atom_method:
+        color = colors[len(paths)+1]
+        method = 'Mueller'
+    if filter2 == None:
+        structfiles = os.listdir(os.getcwd())
+    else:
+        structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2])
+    for structfile in structfiles:
+        iplot += 1
+        energies = []
+        nKs = []
+        lines = readfile(structfile)
+        for line in lines:
+            nKs.append(int(line.split('\t')[0]))
+            energies.append(-float(line.split('\t')[1].split('\r')[0]))
+        nKs = array(nKs)
+        energies = array(energies)
+        nDone = len(energies)
+        order = argsort(nKs)
+        energies = energies[order]
+        eref = energies[-1]#the last energy of each struct is that of the most kpoints
+        nKs = sort(nKs)
+        errs = abs(energies-eref)*1000 + 1e-6 #now in meV 
+        struct = structfile.split('_')[0]
+        data[iplot]['ID'] = atom_method + struct
+        data[iplot]['nAtoms'] = 0
+        data[iplot]['nDone'] = len(energies)
+        data[iplot]['eners'][:nDone] = energies
+        data[iplot]['errs'][:nDone] = errs
+        data[iplot]['nKs'][:nDone] = nKs
+        data[iplot]['color'] = color
+        data[iplot]['method'] = method
+    os.chdir(extpath)
 for ipath, path in enumerate(paths):
 #     meshMethod = path.split('/')[-3][:3]+path.split('/')[-1][-3:]
     meshMethod = path.split('/')[-1][-7:]
     os.chdir(path)
-    structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and filter in d])
-#     structs = ['f9292']; print'only struct 9292'
+    if filter2 == None:
+        structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and filter in d])
+    else:
+        structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and d==filter2])
     nStructs = len(structs)
     print;print structs,path
     for istruct,struct in enumerate(structs):
@@ -128,43 +185,9 @@ for ipath, path in enumerate(paths):
             method = path.split('_')[-1]
             data[iplot]['method'] = method
         os.chdir(path)
-os.chdir(extpath)
+# os.chdir(extpath)
 
-print; print atoms_methods
-for atom_method in atoms_methods:
-    os.chdir(atom_method)
-    if 'MP' in atom_method: 
-        color = colors[len(paths)]
-        method = 'MP'
-    elif 'Mueller' in atom_method:
-        color = colors[len(paths)+1]
-        method = 'Mueller'
-    for structfile in os.listdir(os.getcwd()):
-        iplot += 1
-        energies = []
-        nKs = []
-        lines = readfile(structfile)
-        for line in lines:
-            nKs.append(int(line.split('\t')[0]))
-            energies.append(-float(line.split('\t')[1].split('\r')[0]))
-        nKs = array(nKs)
-        energies = array(energies)
-        nDone = len(energies)
-        order = argsort(nKs)
-        energies = energies[order]
-        eref = energies[-1]#the last energy of each struct is that of the most kpoints
-        nKs = sort(nKs)
-        errs = abs(energies-eref)*1000 + 1e-6 #now in meV 
-        struct = structfile.split('_')[0]
-        data[iplot]['ID'] = atom_method + struct
-        data[iplot]['nAtoms'] = 0
-        data[iplot]['nDone'] = len(energies)
-        data[iplot]['eners'][:nDone] = energies
-        data[iplot]['errs'][:nDone] = errs
-        data[iplot]['nKs'][:nDone] = nKs
-        data[iplot]['color'] = color
-        data[iplot]['method'] = method
-    os.chdir(extpath)
+
 
 lines = [' ID , nKIBZ , ener , err, nAtoms \n']  
 for iplot in range(nplots):
@@ -178,7 +201,7 @@ ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
 xlabel('N kpoints')
 ylabel('Vasp energy/atom (eV)') 
-title('Convergence vs mesh method')
+# title('Convergence vs mesh method')
 #ylim((1e-12,1e0))
 oldmethod = ''
 methods = []
@@ -188,7 +211,7 @@ for iplot in range(nplots):
     if method != oldmethod and method not in methods:
         methods.append(method)
         plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],\
-          label=data[iplot]['method'],linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
+          label='{} {}'.format(filter,data[iplot]['method']),linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
     else:
         plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],\
           linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)     
@@ -203,7 +226,7 @@ ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
 xlabel('N kpoints')
 ylabel('Error (meV)') 
-title('Convergence vs mesh method')
+# title('Convergence vs mesh method')
 #ylim((1e-12,1e0))
 for iplot in range(nplots):
     n = data[iplot]['nDone'] 
@@ -211,7 +234,7 @@ for iplot in range(nplots):
     if method != oldmethod and method not in methods:
         methods.append(method)
         semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
-          label=data[iplot]['method'],linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
+          label='{} {}'.format(filter,data[iplot]['method']),linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
     else:
         semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
           linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)     
@@ -227,14 +250,14 @@ ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
 xlabel('N kpoints')
 ylabel('Error (meV)') 
-title('Convergence vs mesh method')
+# title('Convergence vs mesh method')
 for iplot in range(nplots):
     n = data[iplot]['nDone']
     method = data[iplot]['method']
     if method != oldmethod and method not in methods:
         methods.append(method)
         loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
-          label=data[iplot]['method'],linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
+          label='{} {}'.format(filter,data[iplot]['method']),linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
     else:
         loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
           linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)   
