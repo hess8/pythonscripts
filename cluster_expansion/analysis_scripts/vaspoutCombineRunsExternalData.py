@@ -13,7 +13,7 @@ from symmetry import get_lattice_pointGroup, get_spaceGroup #these have vectors 
 from kmeshroutines import readposcar
 
 # from plotTools import plotxy
-from pylab import figure,cm,plot,xlabel,ylabel,title,loglog,semilogy,legend
+from pylab import figure,cm,plot,xlabel,ylabel,title,loglog,semilogy,legend,rcParams,style
 from copy import deepcopy
 
 def areEqual(x,y,eps):
@@ -24,27 +24,27 @@ testfile = 'POSCAR'
 # paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstrEK_fcc'
 #         ,'/fslhome/bch/cluster_expansion/vcmesh/the99']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym','/fslhome/bch/cluster_expansion/mpmesh/mpPure']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_IR','/fslhome/bch/cluster_expansion/mpmesh/mpPure_MPbch']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/semicond','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
 
-filter = 'Cu' #string must be in dir name to be included
+filter = 'W' #string must be in dir name to be included
 summaryPath = paths[0]
 # summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu17Jul17/'
 # summaryPath = paths[1]
 iplot = 0
 maxCalcs = 0
 #count the number of plots:
-for ipath,maindir in enumerate(paths):
-    os.chdir(maindir)
+for ipath,path in enumerate(paths):
+    os.chdir(path)
     structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and filter in d])
     for struct in structs:
         os.chdir(struct)
         iplot += 1
         calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
         if len(calcs)>maxCalcs: maxCalcs = len(calcs)
-        os.chdir(maindir)
+        os.chdir(path)
 
 #external data is of the form extpath/atom_method/struct.csv.  The csv has energies vs nK
 os.chdir(extpath)
@@ -61,18 +61,22 @@ for atom_method in atoms_methods:
 
 nplots = iplot 
 if nplots < len(paths): sys.exit('Stop.  Not enough structures match filter')      
-data = zeros(nplots,dtype = [('ID', 'S15'),('nDone','int8'),('nAtoms','int8'),('nops','int8'),('eners', '{}float'.format(maxCalcs)),\
+data = zeros(nplots,dtype = [('ID', 'S15'),('color', 'S15'),('method', 'S15'),('nDone','int8'),('nAtoms','int8'),('nops','int8'),('eners', '{}float'.format(maxCalcs)),\
                 ('errs', '{}float'.format(maxCalcs)),('nKs', '{}int16'.format(maxCalcs))])
 #read all the data 
 iplot = -1
-for ipath, maindir in enumerate(paths):
-#     meshMethod = maindir.split('/')[-3][:3]+maindir.split('/')[-1][-3:]
-    meshMethod = maindir.split('/')[-1][-7:]
-    os.chdir(maindir)
+style.use('ggplot')
+colors = []
+for i, item in enumerate(rcParams['axes.prop_cycle']):
+    colors.append(item['color'])
+for ipath, path in enumerate(paths):
+#     meshMethod = path.split('/')[-3][:3]+path.split('/')[-1][-3:]
+    meshMethod = path.split('/')[-1][-7:]
+    os.chdir(path)
     structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and filter in d])
 #     structs = ['f9292']; print'only struct 9292'
     nStructs = len(structs)
-    print;print structs,maindir
+    print;print structs,path
     for istruct,struct in enumerate(structs):
 #         print 'test', istruct, struct
         iplot += 1
@@ -89,7 +93,7 @@ for ipath, maindir in enumerate(paths):
                 if not areEqual(ener,0,1e-5):
                     nDone +=1
                     energies.append(ener)
-                    if 'vc' in maindir:
+                    if 'vc' in path:
                         nK = getNkIBZ(calc,'KPOINTS')
                     else:
                         nK = getNkIBZ(calc,'IBZKPT')
@@ -120,12 +124,21 @@ for ipath, maindir in enumerate(paths):
             data[iplot]['eners'][:nDone] = energies
             data[iplot]['errs'][:nDone] = errs
             data[iplot]['nKs'][:nDone] = nKs
-        os.chdir(maindir)
+            data[iplot]['color'] = colors[ipath]
+            method = path.split('_')[-1]
+            data[iplot]['method'] = method
+        os.chdir(path)
 os.chdir(extpath)
 
-
+print; print atoms_methods
 for atom_method in atoms_methods:
     os.chdir(atom_method)
+    if 'MP' in atom_method: 
+        color = colors[len(paths)]
+        method = 'MP'
+    elif 'Mueller' in atom_method:
+        color = colors[len(paths)+1]
+        method = 'Mueller'
     for structfile in os.listdir(os.getcwd()):
         iplot += 1
         energies = []
@@ -149,6 +162,8 @@ for atom_method in atoms_methods:
         data[iplot]['eners'][:nDone] = energies
         data[iplot]['errs'][:nDone] = errs
         data[iplot]['nKs'][:nDone] = nKs
+        data[iplot]['color'] = color
+        data[iplot]['method'] = method
     os.chdir(extpath)
 
 lines = [' ID , nKIBZ , ener , err, nAtoms \n']  
@@ -165,19 +180,24 @@ xlabel('N kpoints')
 ylabel('Vasp energy/atom (eV)') 
 title('Convergence vs mesh method')
 #ylim((1e-12,1e0))
+oldmethod = ''
+methods = []
 for iplot in range(nplots):
-    if iplot < nplots -1:
-        plotcolor = cm.jet(1.*(iplot+1)/float(nplots))
+    n = data[iplot]['nDone']     
+    method = data[iplot]['method']
+    if method != oldmethod and method not in methods:
+        methods.append(method)
+        plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],\
+          label=data[iplot]['method'],linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
     else:
-        plotcolor = 'k'
-    n = data[iplot]['nDone']  
-#     print 'iplot',data[iplot]['eners'][:n], data[iplot]['nKs'][:n]
-    plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],\
-      label=data[iplot]['ID'],linestyle='None',color = plotcolor, marker = 'o',markeredgewidth=0.0) 
+        plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],\
+          linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)     
 legend(loc='lower left',prop={'size':12});
 # show()
 fig.savefig('{}/energy_vs_n'.format(summaryPath))         
-        
+
+oldmethod = ''
+methods = []        
 fig = figure()
 ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
@@ -186,33 +206,45 @@ ylabel('Error (meV)')
 title('Convergence vs mesh method')
 #ylim((1e-12,1e0))
 for iplot in range(nplots):
-    if iplot < nplots -1:
-        plotcolor = cm.jet(1.*(iplot+1)/float(nplots))
+    n = data[iplot]['nDone'] 
+    method = data[iplot]['method']
+    if method != oldmethod and method not in methods:
+        methods.append(method)
+        semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
+          label=data[iplot]['method'],linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
     else:
-        plotcolor = 'k'
-    n = data[iplot]['nDone']  
-    semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
-      label=data[iplot]['ID'],linestyle='None',color=plotcolor, marker = 'o',markeredgewidth=0.0) 
+        semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
+          linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)     
 legend(loc='lower left',prop={'size':12});
 # show()
 fig.savefig('{}/log_err_vs_n'.format(summaryPath)) 
 
 #log-log
+oldmethod = ''
+methods = []
 fig = figure()
 ax1 = fig.add_subplot(111)
 #    ax1.set_color_cycle(['r','b','g','c', 'm', 'y', 'k'])
 xlabel('N kpoints')
 ylabel('Error (meV)') 
 title('Convergence vs mesh method')
-#ylim((1e-12,1e0))
 for iplot in range(nplots):
-    if iplot < nplots -1:
-        plotcolor = cm.jet(1.*(iplot+1)/float(nplots))
+    n = data[iplot]['nDone']
+    method = data[iplot]['method']
+    if method != oldmethod and method not in methods:
+        methods.append(method)
+        loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
+          label=data[iplot]['method'],linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
     else:
-        plotcolor = 'k'
-    n = data[iplot]['nDone']  
-    ax1.loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
-      label=data[iplot]['ID'],linestyle='None',color=plotcolor, marker = 'o',markeredgewidth=0.0) 
+        loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
+          linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)   
+
+
+  
+#     ax1.loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
+#       label=data[iplot]['ID'],linestyle='None',color=plotcolor, marker = 'o',markeredgewidth=0.0) 
+    
+    
 legend(loc='lower left',prop={'size':12});
 # show()
 fig.savefig('{}/loglog_err_vs_n'.format(summaryPath)) 
