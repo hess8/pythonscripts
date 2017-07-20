@@ -25,10 +25,10 @@ testfile = 'POSCAR'
 #         ,'/fslhome/bch/cluster_expansion/vcmesh/the99']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym','/fslhome/bch/cluster_expansion/mpmesh/mpPure']
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/semicond','/fslhome/bch/cluster_expansion/mpmesh/semicond']
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/semicond','/fslhome/bch/cluster_expansion/mpmesh/semicond']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
-filter = 'Si' #string must be in dir name to be included
+filter = 'Ge' #string must be in dir name to be included
 summaryPath = paths[0]
 # summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu17Jul17/'
 # summaryPath = paths[1]
@@ -63,7 +63,7 @@ for ipath, maindir in enumerate(paths):
 #         print 'test', istruct, struct
         iplot += 1
         os.chdir(struct)
-        calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
+        calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and os.path.exists('{}/OUTCAR'.format(d))])
         energies = []
         nKs = []
         nAtoms = []

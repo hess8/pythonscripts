@@ -105,12 +105,12 @@ def createRunDir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/test'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semicond'
-# poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/semicondPoscars/POSCARS'
-# vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/semicondPoscars/vaspinput/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym'
-poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym/0_info/POSCARS'
-vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym/0_info/vaspinput'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semicond'
+poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/0_info/POSCARS'
+vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/0_info/vaspinput'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym'
+# poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym/0_info/POSCARS'
+# vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym/0_info/vaspinput'
 
 
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/test2'
@@ -154,14 +154,16 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(2,25,1):#23
+            for n in range(2,31,1):#23
                 print 
                 print '==============================================' 
                 print 'Base {} in submitVasp (target = n^3)'.format(n)
                 print '==============================================' 
                 print
                 newdir = createRunDir(currdir,n,type) 
-                subprocess.call(['sbatch', '{}/job'.format(newdir)])
+                os.chdir(newdir)
+                subprocess.call(['sbatch', 'job'])
+                os.chdir(maindir)
                     
                
 print 'Done'
