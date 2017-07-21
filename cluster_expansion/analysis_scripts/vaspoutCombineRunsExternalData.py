@@ -21,22 +21,25 @@ def areEqual(x,y,eps):
 
 testfile = 'POSCAR'
 
-# paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstrEK_fcc'
-#         ,'/fslhome/bch/cluster_expansion/vcmesh/the99']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/limNvary_off05',
+         '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off00',
+         '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off-05']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod','/fslhome/bch/cluster_expansion/mpmesh/mpPure_MPbch']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod','/fslhome/bch/cluster_expansion/mpmesh/mpPure_MPbch']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/semicond','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
 
-filter = 'Al_' #string must be in dir name to be included
+filter = '_' #string must be in dir name to be included
 filter2 = None #'Cu_1' #for single structures.  set to None if using filter1 only
 summaryPath = paths[0]
 # summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu17Jul17/'
 # summaryPath = paths[1]
+
+#count the number of plots:
 iplot = 0
 maxCalcs = 0
-#count the number of plots:
 for ipath,path in enumerate(paths):
     os.chdir(path)
     if filter2 == None:
@@ -78,12 +81,7 @@ data = zeros(nplots,dtype = [('ID', 'S15'),('color', 'S15'),('method', 'S15'),('
 style.use('fivethirtyeight')
 colors = []
 for i, item in enumerate(rcParams['axes.prop_cycle']):
-    colors.append(item['color'])
-# font = {'family' : 'Bitstream Vera Sans',
-#         'weight' : 'normal',
-#         'size'   : 9}
-# rc('font', **font)
-# rcParams.update({'font.size': 12})    
+    colors.append(item['color']) 
 rcParams.update({'figure.autolayout': True})  
 rcParams['axes.facecolor'] = 'white' 
 rcParams['axes.linewidth'] = 1.0  
@@ -134,7 +132,7 @@ for atom_method in atoms_methods:
     os.chdir(extpath)
 for ipath, path in enumerate(paths):
 #     meshMethod = path.split('/')[-3][:3]+path.split('/')[-1][-3:]
-    meshMethod = path.split('/')[-1][-7:]
+    tag = path.split('/')[-1][-7:]
     os.chdir(path)
     if filter2 == None:
         structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and filter in d])
@@ -144,7 +142,7 @@ for ipath, path in enumerate(paths):
     print;print structs,path
     for istruct,struct in enumerate(structs):
 #         print 'test', istruct, struct
-        iplot += 1
+        
         os.chdir(struct)
         calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and os.path.exists('{}/OUTCAR'.format(d))])
         energies = []
@@ -165,6 +163,7 @@ for ipath, path in enumerate(paths):
                     nKs.append(nK)
         #sort by increasing number of kpoints
         if len(energies)>0: 
+            iplot += 1
             nKs = array(nKs)
             energies = array(energies)
             order = argsort(nKs)
@@ -182,7 +181,7 @@ for ipath, path in enumerate(paths):
     
             errs = abs(energies-eref)*1000 + 1e-6 #now in meV 
     #         plotErrs()
-            data[iplot]['ID'] = '{} {}'.format(struct,meshMethod)
+            data[iplot]['ID'] = '{} {}'.format(struct,tag)
             nAtoms = getNatoms('{}/POSCAR'.format(calc))
             data[iplot]['nAtoms'] = nAtoms
             data[iplot]['nDone'] = nDone
@@ -195,7 +194,7 @@ for ipath, path in enumerate(paths):
         os.chdir(path)
 # os.chdir(extpath)
 
-
+nplots = iplot+1 
 
 lines = [' ID , nKIBZ , ener , err, nAtoms \n']  
 for iplot in range(nplots):
@@ -213,6 +212,7 @@ ylabel('Vasp energy/atom (eV)')
 #ylim((1e-12,1e0))
 oldmethod = ''
 methods = []
+if filter[0] == '_':filter = '' #labels can't begin with _
 for iplot in range(nplots):
     n = data[iplot]['nDone']     
     method = data[iplot]['method']

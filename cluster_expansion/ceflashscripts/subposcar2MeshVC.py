@@ -24,7 +24,7 @@ def writeJob(path,ntarget,type):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=4:00:02\n')
+    jobFile.write('#SBATCH --time=0:30:02\n')
     jobFile.write("#SBATCH --ntasks=4\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -108,11 +108,13 @@ def createRunDir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semicond'
 # poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/0_info/POSCARS'
 # vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/0_info/vaspinput'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod'
-poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod/0_info/POSCARS'
-vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod/0_info/vaspinput'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod'
+# poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod/0-info/POSCARS'
+# vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod/0-info/vaspinput'
 
-
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off-05'
+poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off-05/0-info/POSCARS'
+vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off-05/0-info/vaspinput'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/test2'
 # poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/test2/info/POSCARS'
 # vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/test2/info/vaspinput'
@@ -154,7 +156,7 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(2,26,1):#23
+            for n in range(5,15,1):#23
                 print 
                 print '==============================================' 
                 print 'Base {} in submitVasp (target = n^3)'.format(n)

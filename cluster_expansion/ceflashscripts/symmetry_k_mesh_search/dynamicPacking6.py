@@ -469,7 +469,7 @@ class dynamicPack():
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
         self.facetsMathFile(IBZ,'IBZ') 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
-        if 0 < len(IBZ.mesh) <= 1000:
+        if 8 < len(IBZ.mesh) <= 50:
             OK = True
             self.dynamic(IBZ,eps)
             IBZ = self.weightPoints(IBZ,eps)
