@@ -29,8 +29,8 @@ paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod','/fslhome/bc
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
 
-filter = 'Cu' #string must be in dir name to be included
-filter2 = 'Cu_1' #for single structures.  set to None if using filter1 only
+filter = 'Al_' #string must be in dir name to be included
+filter2 = None #'Cu_1' #for single structures.  set to None if using filter1 only
 summaryPath = paths[0]
 # summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu17Jul17/'
 # summaryPath = paths[1]
@@ -54,12 +54,16 @@ for ipath,path in enumerate(paths):
 os.chdir(extpath)
 atoms_methods = sorted([d for d in os.listdir(extpath) if os.path.isdir(d) and filter in d])# os.chdir(extpath)
 for atom_method in atoms_methods:
+    atom = atom_method.split('_')[0]
     os.chdir(atom_method)
     os.system('rm -r .*lock*')
+    for structfile in os.listdir(os.getcwd()):
+        if atom not in structfile:
+            os.system('mv {} {}_{}'.format(structfile,atom,structfile)) #so that file has atom name at beginning
     if filter2 == None:
-        structfiles = os.listdir(os.getcwd())
+        structfiles = sorted([d for d in os.listdir(os.getcwd()) if os.path.getsize(d)>0])
     else:
-        structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2])
+        structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2 and os.path.getsize(d)>0])
     for structfile in structfiles:
         iplot += 1
         #count number of points in this structfile
@@ -80,8 +84,11 @@ for i, item in enumerate(rcParams['axes.prop_cycle']):
 #         'size'   : 9}
 # rc('font', **font)
 # rcParams.update({'font.size': 12})    
-rcParams.update({'figure.autolayout': True})   
-    
+rcParams.update({'figure.autolayout': True})  
+rcParams['axes.facecolor'] = 'white' 
+rcParams['axes.linewidth'] = 1.0  
+rcParams['axes.edgecolor'] = 'black' # axisbg=axescolor
+rcParams['savefig.facecolor'] = 'white' # axisbg=axescolor
 #read all the data 
 iplot = -1
 os.chdir(extpath)
@@ -95,10 +102,11 @@ for atom_method in atoms_methods:
         color = colors[len(paths)+1]
         method = 'Mueller'
     if filter2 == None:
-        structfiles = os.listdir(os.getcwd())
+        structfiles = sorted([d for d in os.listdir(os.getcwd()) if os.path.getsize(d)>0])
     else:
-        structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2])
+        structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2 and os.path.getsize(d)>0])
     for structfile in structfiles:
+#         print 'file',structfile
         iplot += 1
         energies = []
         nKs = []

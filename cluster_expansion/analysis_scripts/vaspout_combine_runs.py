@@ -21,14 +21,14 @@ def areEqual(x,y,eps):
 
 testfile = 'POSCAR'
 
-# paths = ['/fslhome/bch/cluster_expansion/mpmesh/cu.pt.ntest/12fstrEK_fcc'
-#         ,'/fslhome/bch/cluster_expansion/vcmesh/the99']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99skew','/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod','/fslhome/bch/cluster_expansion/mpmesh/mpPure_MPbch']
+
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym','/fslhome/bch/cluster_expansion/mpmesh/mpPure']
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/semicond','/fslhome/bch/cluster_expansion/mpmesh/semicond']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/semicond','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
-filter = 'Ge' #string must be in dir name to be included
+filter = 'Al' #string must be in dir name to be included
 summaryPath = paths[0]
 # summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu17Jul17/'
 # summaryPath = paths[1]
@@ -130,7 +130,7 @@ for iplot in range(nplots):
 #     print 'iplot',data[iplot]['eners'][:n], data[iplot]['nKs'][:n]
     plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],\
       label=data[iplot]['ID'],linestyle='None',color = plotcolor, marker = 'o',markeredgewidth=0.0) 
-legend(loc='lower left',prop={'size':12});
+# legend(loc='lower left',prop={'size':12});
 # show()
 fig.savefig('{}/energy_vs_n'.format(summaryPath))         
         
@@ -149,7 +149,7 @@ for iplot in range(nplots):
     n = data[iplot]['nDone']  
     semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
       label=data[iplot]['ID'],linestyle='None',color=plotcolor, marker = 'o',markeredgewidth=0.0) 
-legend(loc='lower left',prop={'size':12});
+# legend(loc='lower left',prop={'size':12});
 # show()
 fig.savefig('{}/log_err_vs_n'.format(summaryPath)) 
 
@@ -169,7 +169,7 @@ for iplot in range(nplots):
     n = data[iplot]['nDone']  
     ax1.loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],\
       label=data[iplot]['ID'],linestyle='None',color=plotcolor, marker = 'o',markeredgewidth=0.0) 
-legend(loc='lower left',prop={'size':12});
+# legend(loc='lower left',prop={'size':12});
 # show()
 fig.savefig('{}/loglog_err_vs_n'.format(summaryPath)) 
 

@@ -988,11 +988,14 @@ class dynamicPack():
         reflOps = []
         rotOps = []
         rotReflOps = []
-        inversion = False
+#         inversion = False
+        inversion = True
         for iop in range(self.nops):
             op = self.symops[:,:,iop]
             if areEqual(trace(op),-3.0,eps):
-                inversion = True #for all simple lattices
+                inversionNatural = True  
+#                 inversion = True  
+#                 
             if areEqual(abs(trace(op)),3.0,eps):#skip identity
                 continue
             evals,evecs = eig(op)
@@ -1069,6 +1072,9 @@ class dynamicPack():
                         break 
             if areEqual(self.IBZvolCut,self.nops,1e-2): return BZ 
         if inversion and not areEqual(self.IBZvolCut,self.nops,eps):
+            if not inversionNatural:
+                print 'Inversion added'
+                self.nops = 2*self.nops
             anyDups,point1,point2 = makesDups(array([[-1,0,0],[0,-1,0],[0,0,-1]]),BZ,eps)
             if anyDups:
                 u1 = self.choose111(point1/norm(point1),eps)
