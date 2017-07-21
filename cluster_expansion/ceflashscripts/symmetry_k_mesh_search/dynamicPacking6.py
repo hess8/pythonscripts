@@ -715,6 +715,7 @@ class dynamicPack():
         minstep = 0.0001
         xold= x0
         fold,gold = self.enerGrad(xold)
+        gnew = gold
         fnew = fold
         gnormold = norm(gold)
         fstart = fold; gstart = gold; gnormstart = gnormold

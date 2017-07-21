@@ -112,9 +112,9 @@ def createRunDir(path,n,type):
 # poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod/0-info/POSCARS'
 # vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod/0-info/vaspinput'
 
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off-05'
-poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off-05/0-info/POSCARS'
-vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off-05/0-info/vaspinput'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/vary_off-05'
+poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/vary_off-05/0-info/POSCARS'
+vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/vary_off-05/0-info/vaspinput'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/test2'
 # poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/test2/info/POSCARS'
 # vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/test2/info/vaspinput'
