@@ -22,9 +22,9 @@ def areEqual(x,y,eps):
 testfile = 'POSCAR'
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod']
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/limNvary_off05',
-         '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off00',
-         '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off-05']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/vary_off05',
+         '/fslhome/bch/cluster_expansion/vcmesh/vary_off00',
+         '/fslhome/bch/cluster_expansion/vcmesh/vary_off-05']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod','/fslhome/bch/cluster_expansion/mpmesh/mpPure_MPbch']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/semicond','/fslhome/bch/cluster_expansion/mpmesh/semicond']

@@ -433,7 +433,7 @@ class dynamicPack():
         self.power = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.wallOffset = -0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.interfactor = 1.0        
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
@@ -718,6 +718,7 @@ class dynamicPack():
         gnew = gold
         fnew = fold
         gnormold = norm(gold)
+        gnormnew = gnormold
         fstart = fold; gstart = gold; gnormstart = gnormold
         method = 'steepest'
 #         xolder =  xold + 0.01*gold #go backwards
