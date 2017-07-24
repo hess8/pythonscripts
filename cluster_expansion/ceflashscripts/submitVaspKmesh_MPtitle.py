@@ -106,9 +106,9 @@ def createRunDir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
-maindir = '/fslhome/bch/cluster_expansion/mpmesh/semicond'
-poscarsDir = '/fslhome/bch/cluster_expansion/mpmesh/semicondPoscars/POSCARS'
-vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/semicondPoscars/vaspinput/'
+maindir = '/fslhome/bch/cluster_expansion/mpmesh/scond_mp'
+poscarsDir = '/fslhome/bch/cluster_expansion/mpmesh/scond_mp/0-info/POSCARS'
+vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/scond_mp/0-info/vaspinput/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
@@ -151,7 +151,7 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(2,23,1):#23
+            for n in range(2,31,1):#23
                 print 
                 print '==============================================' 
                 print 'Base {} in Monkhorst Pack k submitVasp (target = n^3)'.format(n)
@@ -159,7 +159,8 @@ for dir in dirs:
                 print
                 newdir = createRunDir(currdir,n,type) 
                 os.chdir(newdir)
-                subprocess.call(['sbatch', 'vaspjob'])
+                if n^3<=1000:
+                    subprocess.call(['sbatch', 'vaspjob'])
                     
 #                     toRun.append(newdir)
                     

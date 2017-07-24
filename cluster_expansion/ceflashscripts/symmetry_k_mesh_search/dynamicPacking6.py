@@ -429,19 +429,20 @@ class dynamicPack():
         self.B = B
 #         print '\nB (Recip lattice vectors as columns',B
 #         print 'method',method
-        self.initFactor = 1.0 #assign some portion of the point at the beginning based on an FCC or BCC mesh
+        
         self.power = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = -0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.interfactor = 1.0        
+        self.initFactor = 1.0 
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
         self.method = method
         vol = abs(det(B))
         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
-        self.df = self.ravg #inter-point force scale distance
-        self.dw = self.df/2 #wall force scale distance
+        self.df = 1.00 * self.ravg #inter-point force scale distance
+        self.dw = 0.5 * self.df #wall force scale distance
         self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/300
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
@@ -469,7 +470,7 @@ class dynamicPack():
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
         self.facetsMathFile(IBZ,'IBZ') 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
-        if 8 < len(IBZ.mesh) <= 50:
+        if 0 < len(IBZ.mesh) <= 1000:
             OK = True
             self.dynamic(IBZ,eps)
             IBZ = self.weightPoints(IBZ,eps)

@@ -22,14 +22,14 @@ def areEqual(x,y,eps):
 testfile = 'POSCAR'
 
 
-
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/limNvary_off05',
-         '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off-05']
+# 
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/limNvary_off05',
+#          '/fslhome/bch/cluster_expansion/vcmesh/limNvary_off-05']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym','/fslhome/bch/cluster_expansion/mpmesh/mpPure']
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/semicond','/fslhome/bch/cluster_expansion/mpmesh/semicond']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/scond','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
-filter = 'Al' #string must be in dir name to be included
+filter = 'C' #string must be in dir name to be included
 summaryPath = paths[0]
 # summaryPath = '/fslhome/bch/cluster_expansion/vcmesh/cu17Jul17/'
 # summaryPath = paths[1]
