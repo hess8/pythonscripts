@@ -432,7 +432,7 @@ class dynamicPack():
         
         self.power = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
-        self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
+        self.wallClose = 2.0 #0.5 #to allow initial points closer to the wall set to less than 1. 
         self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.interfactor = 1.0        
         self.initFactor = 1.0 
@@ -460,7 +460,6 @@ class dynamicPack():
 #         self.symops[:,:,1] = array([[1,0,0],[0,1,0],[0,0,1]])
         ###temp code
         
-        
         print 'Number of desired points in full BZ:', targetNmesh
         BZ = cell() #instance
         BZ.volume = vol
@@ -470,7 +469,7 @@ class dynamicPack():
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
         self.facetsMathFile(IBZ,'IBZ') 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
-        if 0 < len(IBZ.mesh) <= 1000:
+        if 0 < len(IBZ.mesh) <= 4000:
             OK = True
             self.dynamic(IBZ,eps)
             IBZ = self.weightPoints(IBZ,eps)

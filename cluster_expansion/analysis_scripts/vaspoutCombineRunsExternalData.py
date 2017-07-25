@@ -21,25 +21,25 @@ from copy import deepcopy
 def areEqual(x,y,eps):
     return abs(x-y)<eps
 
-def plotData(data,plotType,filter,doLegend,doLabel,lablelStr):
+def plotData(datai,n,plotType,filter,doLegend,lablelStr):
     if plotType == 'linear':                      
-        plot(data[iplot]['nKs'][:n],data[iplot]['eners'][:n],label=labelStr,\
-              linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
+        plot(datai['nKs'][:n],datai['eners'][:n],label=labelStr,\
+              linestyle='None',color = datai['color'], marker = 'o',markeredgewidth=0.0)
     elif plotType == 'loglinear':                      
-        semilogy(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],label=labelStr,\
-              linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)
+        semilogy(datai['nKs'][:n],datai['errs'][:n],label=labelStr,\
+              linestyle='None',color = datai['color'], marker = 'o',markeredgewidth=0.0)
     elif plotType == 'loglog':                      
-        loglog(data[iplot]['nKs'][:n],data[iplot]['errs'][:n],label=labelStr,\
-              linestyle='None',color = data[iplot]['color'], marker = 'o',markeredgewidth=0.0)                             
-    if doLegend and doLabel:
+        loglog(datai['nKs'][:n],datai['errs'][:n],label=labelStr,\
+              linestyle='None',color = datai['color'], marker = 'o',markeredgewidth=0.0)                             
+    if doLegend:
         legend(loc='lower left',prop={'size':12});
         # show()
     fig.savefig('{}/{}_e_vs_n'.format(summaryPath,plotType))
 
 testfile = 'POSCAR'
 
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod']
-# paths = [         '/fslhome/bch/cluster_expansion/vcmesh/vr_dw05']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod',
+         '/fslhome/bch/cluster_expansion/vcmesh/vr_wc20']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/vr_pow4',
 #          '/fslhome/bch/cluster_expansion/vcmesh/vr_pow5',
@@ -54,18 +54,26 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/vary_off075']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_22JulOpt']
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/scond_vc','/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/scond_vc','/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc04',
 #          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc05',
 #          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc06',
+#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc07',
+#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc08',
+#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc09', 
+#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc10', 
+#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc15',
+#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc20',   
+#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc30',                           
 #          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
-# extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
 
-extpath = None
-# coloring = 'method'
-coloring = 'indiv'
+extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
+# extpath = None
+
+coloring = 'method'
+# coloring = 'indiv'
 doLegend = True
 doLabel = True
 
@@ -116,12 +124,27 @@ if not extpath is None:
 nplots = iplot 
 if nplots < len(paths): sys.exit('Stop.  Not enough structures match filter')      
 data = zeros(nplots,dtype = [('ID', 'S15'),('color', 'S15'),('method', 'S15'),('nDone','int8'),('nAtoms','int8'),('nops','int8'),('eners', '{}float'.format(maxCalcs)),\
-                ('errs', '{}float'.format(maxCalcs)),('nKs', '{}int16'.format(maxCalcs))])
-style.use('fivethirtyeight')
-colorsList = []
-for i, item in enumerate(rcParams['axes.prop_cycle']):
-    colorsList.append(item['color']) 
-colorsList = colorsList + ['b','r','g','c','m','y']
+                ('errs', '{}float'.format(maxCalcs)),('nKs', '{}int16'.format(maxCalcs)),('ns', '{}int8'.format(maxCalcs))])
+
+# colorsList = []
+# style.use('bmh')
+# for i, item in enumerate(rcParams['axes.prop_cycle']):
+#     colorsList.append(item['color']) 
+# style.use('fivethirtyeight')
+# for i, item in enumerate(rcParams['axes.prop_cycle'][:-2]):
+#     colorsList.append(item['color']) 
+
+colorsList = [u'#348ABD', 
+              u'#A60628', 
+              u'#7A68A6', 
+              u'#467821', 
+              u'#D55E00', 
+              u'#CC79A7', 
+              u'#56B4E9', 
+              u'#009E73', 
+              u'#F0E442', u'#fc4f30', u'#e5ae38']
+
+colorsList = colorsList + ['b','m','y','c','k']
 rcParams.update({'figure.autolayout': True})  
 rcParams['axes.facecolor'] = 'white' 
 rcParams['axes.linewidth'] = 1.0  
@@ -134,7 +157,7 @@ if not extpath is None:
     print; print atoms_methods
     for atom_method in atoms_methods:
         os.chdir(atom_method)
-        if coloring == method:
+        if coloring == 'method':
             if 'MP' in atom_method: 
                 color = colorsList[len(paths)]
                 method = 'MP'
@@ -151,8 +174,6 @@ if not extpath is None:
                     color = cm.jet(1.*(iplot+1)/float(nplots))
                 else:
                     color = 'k'
-            elif coloring == 'method':
-                color = colorsList[ipath]
             iplot += 1
             energies = []
             nKs = []
@@ -194,19 +215,20 @@ for ipath, path in enumerate(paths): #my data
         
         os.chdir(struct)
         if coloring == 'indiv':
-            if iplot < nplots -1:
-                color = rgb2hex(cm.jet(1.*(iplot+1)/float(nplots)))
-            else:
-                color = 'k' 
+#             if iplot < nplots -1:
+            color = rgb2hex(cm.jet(1.*(iplot+1)/float(nplots)))
+#             else:
+#                 color = 'k' 
         elif coloring == 'method':
             color =  colorsList[ipath]     
         calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and os.path.exists('{}/OUTCAR'.format(d))])
         energies = []
         nKs = []
         nAtoms = []
+        ns = [] #the base n of the run run
         nDone = 0
         for calc in calcs:  
-#             print 'calc',calc
+            
             if electronicConvergeFinish(calc):
                 ener = getEnergy(calc) #in energy/atom
                 if not areEqual(ener,0,1e-5):
@@ -217,21 +239,25 @@ for ipath, path in enumerate(paths): #my data
                     else:
                         nK = getNkIBZ(calc,'IBZKPT')
                     nKs.append(nK)
+                    ns.append(int(calc.split('_')[-1]))
         #sort by increasing number of kpoints
         if len(energies)>0: 
             iplot += 1
             nKs = array(nKs)
             energies = array(energies)
+            ns = array(ns)
             order = argsort(nKs)
     #         print 'struct',struct
     #         print 'energies',energies
             energies = energies[order]
+            ns = ns[order]
+            nKs = sort(nKs)
             eref = energies[-1]#the last energy of each struct is that of the most kpoints
 #             print 'struct',struct,'\t', mean(energies),'\t',eref,'\t', mean(energies-eref)*1000
     #         print 'eref',eref
     #         print 'energies sorted',energies, 'nKs', nKs
     #         print
-            nKs = sort(nKs)
+           
     #         print 'NKs', nKs      
     #         if ipath == 0 and istruct == 0: ******* useful if comparing methods on the same struct with a trusted first method*******
     #             eref = energies[-1] #the last energy of each struct is that of the most kpoints
@@ -245,6 +271,7 @@ for ipath, path in enumerate(paths): #my data
             data[iplot]['eners'][:nDone] = energies
             data[iplot]['errs'][:nDone] = errs
             data[iplot]['nKs'][:nDone] = nKs
+            data[iplot]['ns'][:nDone] = ns
             data[iplot]['color'] = color
             method = path.split('_')[-1]
             data[iplot]['method'] = method
@@ -253,12 +280,12 @@ for ipath, path in enumerate(paths): #my data
 
 nplots = iplot+1 
 
-lines = [' ID , nKIBZ , ener , err, nAtoms \n']  
+lines = [' ID , nKIBZ , ener , err, nAtoms, color\n']  
 for iplot in range(nplots):
     n = data[iplot]['nDone']
     for icalc in range(n):#data[iplot]['eners'][:n].tolist()
-        lines.append('{},{},{:15.12f},{:15.12f},{}\n'.format(data[iplot]['ID'], data[iplot]['nKs'][icalc],\
-             data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],data[iplot]['nAtoms']))  
+        lines.append('{}_n{},{},{:15.12f},{:15.12f},{},{}\n'.format(data[iplot]['ID'], data[iplot]['ns'][icalc], data[iplot]['nKs'][icalc],\
+             data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],data[iplot]['nAtoms'],data[iplot]['color']))  
 writefile(lines,'{}/summary.csv'.format(summaryPath)) 
 
 #plots
@@ -266,6 +293,7 @@ if filter[0] == '_':filter = '' #labels can't begin with
 plotTypes = ['linear','loglinear','loglog']
 ylabels = ['Vasp energy/atom (eV)','Error (meV)','Error (meV)']
 xtext = 'N k-points'
+
 for it,plotType in enumerate(plotTypes):
     fig = figure()
     ax1 = fig.add_subplot(111)
@@ -273,23 +301,23 @@ for it,plotType in enumerate(plotTypes):
     ylabel(ylabels[it]) 
     # title('Convergence vs mesh method')
     #ylim((1e-12,1e0))
-    oldmethod = ''
     methods = []
+    oldmethod = '' 
     labelStr = None
     for iplot in range(nplots):
         n = data[iplot]['nDone']
-        
         if coloring == 'method':  
             method = data[iplot]['method']   
-            if doLabel: labelStr = '{} {}'.format(filter,data[iplot]['method'])
             if method != oldmethod and method not in methods:
                 methods.append(method)
-                plotData(data,plotType,filter,doLegend,True,labelStr)
+                if doLabel: labelStr = '{} {}'.format(filter,data[iplot]['method'])
+                plotData(data[iplot],n,plotType,filter,doLegend,labelStr)
+                labelStr = None
             else:
-                plotData(data,plotType,filter,doLegend,False,labelStr)
+                plotData(data[iplot],n,plotType,filter,doLegend,labelStr)
         elif coloring == 'indiv': 
             if doLabel: labelStr = '{} {}'.format(filter,data[iplot]['ID'])
-            plotData(data,plotType,filter,doLegend,doLabel,labelStr)
+            plotData(data[iplot],n,plotType,filter,doLegend,labelStr)
             method = data[iplot]['ID']  
             methods.append(method)
  
