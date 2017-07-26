@@ -38,8 +38,8 @@ def plotData(datai,n,plotType,filter,doLegend,lablelStr):
 
 testfile = 'POSCAR'
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod',
-         '/fslhome/bch/cluster_expansion/vcmesh/vr_wc20']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod',
+#          '/fslhome/bch/cluster_expansion/vcmesh/vr_wc20']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/vr_pow4',
 #          '/fslhome/bch/cluster_expansion/vcmesh/vr_pow5',
@@ -53,8 +53,14 @@ paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod',
 #          '/fslhome/bch/cluster_expansion/vcmesh/vary_off06',
 #          '/fslhome/bch/cluster_expansion/vcmesh/vary_off075']
 
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_22JulOpt']
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/scond_vc','/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_fcc',
+         '/fslhome/bch/cluster_expansion/vcmesh/the99sym_bcc',
+          '/fslhome/bch/cluster_expansion/vcmesh/the99sym_cub',
+          ]
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/scond_fcc',
+#          '/fslhome/bch/cluster_expansion/vcmesh/scond_bcc',
+#          '/fslhome/bch/cluster_expansion/vcmesh/scond_cub',
+#          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc04',
 #          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc05',
 #          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc06',
@@ -130,7 +136,7 @@ data = zeros(nplots,dtype = [('ID', 'S15'),('color', 'S15'),('method', 'S15'),('
 # style.use('bmh')
 # for i, item in enumerate(rcParams['axes.prop_cycle']):
 #     colorsList.append(item['color']) 
-# style.use('fivethirtyeight')
+style.use('fivethirtyeight')
 # for i, item in enumerate(rcParams['axes.prop_cycle'][:-2]):
 #     colorsList.append(item['color']) 
 
@@ -150,6 +156,7 @@ rcParams['axes.facecolor'] = 'white'
 rcParams['axes.linewidth'] = 1.0  
 rcParams['axes.edgecolor'] = 'black' # axisbg=axescolor
 rcParams['savefig.facecolor'] = 'white' # axisbg=axescolor
+rcParams['lines.markersize'] = 4.5
 #read all the data 
 iplot = -1
 if not extpath is None:

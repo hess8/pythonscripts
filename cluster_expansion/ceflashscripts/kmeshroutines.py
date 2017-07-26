@@ -34,6 +34,20 @@ def writefile(lines,filepath): #need to have \n's inserted already
 def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 
+def waitMaxJobs():
+    maxjobs = 1500
+    '''Waits until the number of jobs running and pending is less than maxjobs.'''
+    go = True
+    while go:  #need to handle occasional errors
+        try: 
+            N = len(subprocess.check_output(['squeue','-u', 'bch']).splitlines())-1
+            if N > maxjobs:
+                time.sleep(10) #seconds between checks 
+            else:
+                break
+        except:
+            continue # try again
+
 def reverseStructured(arr):
     temp = deepcopy(arr)
     for i in range(len(temp)):

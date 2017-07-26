@@ -3,7 +3,7 @@
 '''Dynamic packing method. For each POSCAR in poscarsDir in maindir: makes a directory, copies POSCAR, makes a POTCAR from 
 the element name in the POSCAR title (double the first atom).  copies vaspinput, creates kpoints file with correct mesh 
 (just relative to the recip lattice), reads a jobfile from the vaspinput,
-writes the structure tag etc to the job name, and submits a vasp job.  
+writes the structure tag etc to the job name, and submits a vasp job.
 '''
     
 import sys,os,subprocess
@@ -12,7 +12,7 @@ from copy import copy, deepcopy
 from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
-from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile
+from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile,waitMaxJobs
 import dynamicPacking6
 
 def writeJob(path,ntarget,type):
@@ -24,7 +24,7 @@ def writeJob(path,ntarget,type):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=4:30:02\n')
+    jobFile.write('#SBATCH --time=24:30:02\n')
     jobFile.write("#SBATCH --ntasks=4\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -109,11 +109,11 @@ def createRunDir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc30'
 # poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/0_info/POSCARS'
 # vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/0_info/vaspinput'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_22JulOpt'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/scond_bcc'
 # poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod/0-info/POSCARS'
 # vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod/0-info/vaspinput'
 
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/vr_wc20'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/vr_wc20'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/test2'
@@ -123,7 +123,7 @@ vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
-type = 'fcc' 
+type = 'bcc' 
 testfile = 'POSCAR' 
 reallatt = zeros((3,3))
 createdirs(poscarsDir,maindir,vaspinputdir)
@@ -165,6 +165,7 @@ for dir in dirs:
                 print
                 newdir = createRunDir(currdir,n,type) 
                 os.chdir(newdir)
+#                 waitMaxJobs()
                 subprocess.call(['sbatch', 'job'])
                 os.chdir(maindir)
                     
