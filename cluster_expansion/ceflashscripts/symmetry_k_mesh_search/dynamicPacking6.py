@@ -9,7 +9,7 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where,real,allclose,sign,pi,imag,identity)
+                   trace,where,real,allclose,sign,pi,imag,identity,cos,arccos)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi, ConvexHull as convexH
 from numpy.linalg import inv, norm, det, eig
@@ -29,6 +29,80 @@ sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 sys.path.append('/fslhome/bch/graphener/graphener')
 
 from symmetry import get_lattice_pointGroup, get_spaceGroup #these have vectors as ROWS
+
+# def my_solid_angle(center, coords):
+#     """
+#     From pymatgen
+#     Helper method to calculate the solid angle of a set of coords from the
+#     center.
+# 
+#     Args:
+#         center:
+#             Center to measure solid angle from.
+#         coords:
+#             List of coords to determine solid angle.
+# 
+#     Returns:
+#         The solid angle.
+#     """
+#     o = array(center)
+#     r = [array(c) - o for c in coords]
+#     r.append(r[0])
+#     n = [cross(r[i + 1], r[i]) for i in range(len(r) - 1)]
+#     n.append(cross(r[1], r[0]))
+#     phi = 0.0
+#     for i in range(len(n) - 1):
+#         try:
+#             value = arccos(-dot(n[i], n[i + 1]) / (norm(n[i]) * norm(n[i + 1])))
+#         except ValueError:
+#             mycos = -dot(n[i], n[i + 1]) / (norm(n[i]) * norm(n[i + 1]))
+#             if 0.999999999999 < mycos < 1.000000000001:
+#                 value = arccos(1.0)
+#             elif -0.999999999999 > mycos > -1.000000000001:
+#                 value = arccos(-1.0)
+#             else:
+# #                 raise SolidAngleError(mycos)
+#                 print 'Solid angle error'
+#         phi += value
+#     return phi + (3 - len(r)) * pi
+
+def solidAngle(center, others,eps):
+    '''estimates solid angle by making points at a unit distance from the center along the vectors 
+    to the others. '''
+
+    others = others - center
+    for i,vec in enumerate(deepcopy(others)):
+#         if (norm(vec))==0:
+#             sys.exit('solid angle routine only works for ')
+#         print vec, vec
+        others[i] = vec/(norm(vec))
+        
+#    A method that is not quite debugged
+#     u,ro = plane3pts(others[:3],eps)
+#     for i,vec in enumerate(deepcopy(others[3:])): #project others onto this plane
+#         others[i+3] = ro/dot(vec,u)*vec
+# #     print 'others', others
+#     area = convexH(planar3dTo2d(others,eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
+
+# a second method that works  for 3 or 4 other points, which is all I think we need
+    if len(others) == 3:
+         side1 = others[0] - others[1]
+         side2 = others[0] - others[2]
+         area = 1/2.0*norm(cross(side1,side2))
+    elif len(others) == 4:
+         norms  = []
+         BCD = range(1,4)
+         for i in BCD:
+             norms.append(norm(others[0] - others[i]))
+         imax = argmax(norms)
+         diag1 = others[0] - others[imax]
+         BCD.pop(imax)
+         diag2 = others[BCD[0]] - others[BCD[1]]
+         area = 1/2.0*norm(cross(diag1,diag2))
+    else:
+         sys.exit('stop: Number of vertex neighbors should be 3 or 4. It is {}'.format(len(others)))
+    print 'others',others;print
+    return area
 
 def readfile(filepath):
     file1 = open(filepath,'r')
@@ -450,15 +524,6 @@ class dynamicPack():
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
             self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))
-
-
-        ###temp code
-#         self.nops = 2
-#         print 'Ignoring symmetry operators other than inversion'
-#         self.symops = zeros((3,3,self.nops),dtype = float)
-#         self.symops[:,:,0] = array([[-1,0,0],[0,-1,0],[0,0,-1]])
-#         self.symops[:,:,1] = array([[1,0,0],[0,1,0],[0,0,1]])
-        ###temp code
         
         print 'Number of desired points in full BZ:', targetNmesh
         BZ = cell() #instance
@@ -482,6 +547,64 @@ class dynamicPack():
 #         OK = True
 #         return OK,self.nops
     
+
+    def getPointsThruWall(self):
+        '''Finds the group symmetry generated points within Rneigh from any point
+        in the IBZ'''
+#         for ip,point in enumerate(self.IBZ.fpoints):
+#             print 'point',point
+#             vertexNeighs = []
+#             for ifac, fac in enumerate(self.IBZ.facets):
+#                 for ifp, fp in enumerate(fac):
+#                     np = len(fac)
+#                     if allclose(fp,point):
+#                         if ifp == 0:
+#                             addVec(fac[1],vertexNeighs,self.eps)
+#                             addVec(fac[np-1],vertexNeighs,self.eps)
+#                         elif ifp == np-1:
+#                             addVec(fac[0],vertexNeighs,self.eps)
+#                             addVec(fac[np-2],vertexNeighs,self.eps)
+#                         else:
+#                             addVec(fac[ifp-1],vertexNeighs,self.eps)
+#                             addVec(fac[ifp+1],vertexNeighs,self.eps)                      
+# #                             
+# #                     
+# #             others = deepcopy(self.IBZ.fpoints).pop(ip)
+# #             print 'normalized solid angle',my_solid_angle(point, vertexNeighs)/4/pi
+#             sa = solidAngle(point, vertexNeighs,self.eps)/4/pi
+#             print 'normalized solid angle',sa, 1/sa
+        self.alienMesh = []
+        for ip,point in enumerate(self.IBZ.mesh):
+            for iop in range(self.nops):
+                point1 = dot(self.symops[:,:,iop],point)
+                for i in [-1,0,1]:
+                    for j in [-1,0,1]:
+                        for k in [-1,0,1]:
+#                             if [i,j,k] != [0,0,0]:
+#                                 print 'test', point2 , i*self.B[:,0]+j*self.B[:,1]+k*self.B[:,2]
+                            point2 = point1 + i*self.B[:,0]+j*self.B[:,1]+k*self.B[:,2]
+                            if point2[2]> 0.5:
+                                'pause'
+                            if not among(point2,self.IBZ.mesh,self.eps):
+#                                 print 'iop',iop,'trans',i,j,k
+#                                 print 'point',point2, 'distance',norm(point2-point)
+                                
+                                for i3,point3 in enumerate(self.IBZ.mesh): 
+                                    if norm(point3 - point2) <= self.neighR:
+#                                         print 'point2 OK', point2
+                                        addVec(point2,self.alienMesh,self.eps)
+                                        break
+        
+        tempCell = cell()
+        tempCell.mesh = self.IBZ.mesh + self.alienMesh
+        tempCell.facets  = self.IBZ.facets
+        self.facetsMeshMathFile(tempCell,'in-out')  
+        print 'Aliens',len(self.alienMesh)
+        sys.exit('Stopping')              
+        return
+            
+            
+    
     def writeSym(self):
         writefile(['nops: {}\n'.format(self.nops),'IBZvolCut: {}\n'.format(self.IBZvolCut)],'sym.out')
 
@@ -492,40 +615,22 @@ class dynamicPack():
         
         Vectors are first taken from each mesh point as the origin, 
         then displaced to their real positions in the cell for possible display'''
-        
-#       begin MP facets printing
-#         print 'begin Voronoi scipy'
-#         t1 = time.time()
-#         vor = Voronoi(array(IBZ.mesh))
-#         t2 = time.time()
-#         print t2-t1
-#         voltest = 0.0
-#         for cellv in vor.regions:
-#             facetpoints = []
-#             for ind in cellv:
-#                 facetpoints.append(vor.vertices[ind])
-#             print 'facets',facetpoints
-#             if len(facetpoints)>0:
-#                 print 'vol',convexH(facetpoints).volume
-#                 voltest += convexH(facetpoints).volume
-#         print 'volume',voltest
-#         print 'end scipy Vor'
         allMPfacets = []
         skews = []
         for ip,point in enumerate(IBZ.mesh):
             print ip,
             pointCell = cell()
-            neighs,neighLbls = self.getNeighbors(point,IBZ,eps)
+            neighs,neighLbls = self.getNeighbors(point,IBZ.mesh,eps)
 #             print 'neighLbls',neighLbls
             boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
-            for iw, u in enumerate(IBZ.bounds[0]):
-                
-                ro = self.bounds[1][iw]
-                d = ro-dot(point,u) 
-                vec = d*u
-                boundVecs[iw]['vec'] = vec  #vector from point to wall
-                boundVecs[iw]['mag'] = norm(vec)
-#                 print 'wall',iw,u, vec, norm(vec)
+#             for iw, u in enumerate(IBZ.bounds[0]):
+#                 
+#                 ro = self.bounds[1][iw]
+#                 d = ro-dot(point,u) 
+#                 vec = d*u
+#                 boundVecs[iw]['vec'] = vec  #vector from point to wall
+#                 boundVecs[iw]['mag'] = norm(vec)
+# #                 print 'wall',iw,u, vec, norm(vec)
             for j, jpoint in enumerate(neighs):
                 vec = (jpoint - point)/2
                 boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
@@ -685,7 +790,7 @@ class dynamicPack():
         self.facets = IBZ.facets
         self.eps = eps
         self.relax()
-        self.facetsMeshMathFile(self.IBZ)
+        self.facetsMeshMathFile(self.IBZ,'IBZmesh')
         return
 
     def relax(self):
@@ -707,7 +812,7 @@ class dynamicPack():
         
         '''
         self.IBZ.mesh = self.points
-#         self.facetsMeshMathFile(self.IBZ); print ';Show[p,q]\n'
+#         self.facetsMeshMathFile(self.IBZ,'IBZmesh'); print ';Show[p,q]\n'
 #         print 'Start Minimization';
 
         itermax = 100
@@ -764,7 +869,7 @@ class dynamicPack():
             gnormold = gnormnew
             iIter += 1                   
         self.IBZ.mesh = self.points; 
-#         print;self.facetsMeshMathFile(self.IBZ); print ';Show[p,q]\n'
+#         print;self.facetsMeshMathFile(self.IBZ,'IBZmesh'); print ';Show[p,q]\n'
         print 'For {} points in IBZ and {} steps'.format(len(self.points),iIter)
         print '\tStarting energy',fstart, 'gnorm',gnormstart
         print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
@@ -788,29 +893,38 @@ class dynamicPack():
         wallfact = self.wallfactor
         interfact = self.interfactor
         etot = 0
+        
+        #Find neighbors that are close enough to exert a reasonable force (right now we well 
+        #take that the be the distance for neightbor searching of any kind. 
+        self.neighR = 4.0*self.rpacking
+        self.getPointsThruWall()
         for i,ri in enumerate(vecs):
 #             print 'EG{}'.format(i),
 #             print 'point',i,ri
             #wall forces
-            for iw, u in enumerate(self.bounds[0]):
-                ro = self.bounds[1][iw]
-                d = ro-dot(ri,u)+ self.wallOffset*self.dw #distance from plane to ri offset factor allows points to move closer to walls. 
+#             for iw, u in enumerate(self.bounds[0]):
+#                 ro = self.bounds[1][iw]
+#                 d = ro-dot(ri,u)+ self.wallOffset*self.dw #distance from plane to ri offset factor allows points to move closer to walls. 
+# #                 if d<0:
+# #                     'pause'
+# # #                     print '** point {} crossed boundary'.format(i), iw, u,ro
+# # #                     d = -d/10 #Have crossed boundary. Increase force by shortening effective d. 
 #                 if d<0:
-#                     'pause'
-# #                     print '** point {} crossed boundary'.format(i), iw, u,ro
-# #                     d = -d/10 #Have crossed boundary. Increase force by shortening effective d. 
-                if d<0:
-                    print 'ri,ro,u, dot(ri,u),d'
-                    print ri,ro,u, dot(ri,u), d 
-                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
-                fmag = wallfact*(d/self.dw)**(-p)  #dimensionless
-                etot += wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
-#                 print '\t wall',iw,d, u,ro
-#                 print '\t\tf',-u*fmag,'\te',wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
-                self.forces[i] += -u*fmag
-                self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudes
-#             print '\tfwtot',self.forces[i]
-#                 print 'Wall',iw,d,'force',-u*fmag,fmag
+#                     print 'ri,ro,u, dot(ri,u),d'
+#                     print ri,ro,u, dot(ri,u), d 
+#                     sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
+#                 fmag = wallfact*(d/self.dw)**(-p)  #dimensionless
+#                 etot += wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+# #                 print '\t wall',iw,d, u,ro
+# #                 print '\t\tf',-u*fmag,'\te',wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
+#                 self.forces[i] += -u*fmag
+#                 self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudes
+# #             print '\tfwtot',self.forces[i]
+# #                 print 'Wall',iw,d,'force',-u*fmag,fmag
+       
+
+
+
 #            inter-point forces
             for j, rj in enumerate(vecs):
                 if i!=j:
@@ -819,9 +933,9 @@ class dynamicPack():
                     self.forces[i] += interfact*(d/self.df)**(-p)*(ri-rj)/d
                     if j>i: #don't overcount
                         etot += interfact*self.df/abs(-p+1)*(d/self.df)**(-p+1)
-        for i,fac in enumerate(self.facets):
-            area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
-            self.wallPress[i] = self.wallForce[i]/area
+#         for i,fac in enumerate(self.facets):
+#             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
+#             self.wallPress[i] = self.wallForce[i]/area
 #         print '\tetot,norm',etot,norm(-self.forces.flatten())
         return etot, -self.forces.flatten() #gradient is opposite the forces.
         
@@ -839,20 +953,16 @@ class dynamicPack():
                          .format(kpointDir[0],kpointDir[1],kpointDir[2],cell.weights[ik]))
         writefile(lines,'KPOINTS')         
        
-    def getNeighbors(self,kpoint,IBZ,eps):
+    def getNeighbors(self,kpoint,points,eps):
         '''Search a sphere around the kpoint and collect neighbors.
         Then if outside the IBZ, move point into IBZ by symmetry.  Search another sphere.
         Return the neighbors        '''
-        neighR = 8.0*self.rpacking
-        neighs,neighLbls = self.searchSphere(kpoint,IBZ,neighR,eps)
-        return neighs,neighLbls 
-    
-    def searchSphere(self,kpoint,IBZ,R,eps):
+        #search sphere
         neighs = []
         neighLbls = []
-        for ip,meshPt in enumerate(IBZ.mesh):
+        for ip,meshPt in enumerate(points):
             if not allclose(kpoint,meshPt,eps):
-                if norm(meshPt-kpoint) <= R:
+                if norm(meshPt-kpoint) <= self.neighR:
                     neighs.append(meshPt)
                     neighLbls.append(ip)
         return neighs,neighLbls
@@ -1145,7 +1255,7 @@ class dynamicPack():
 #         strOut += '}];'
         writefile(strOut,'cell_{}.m'.format(tag))     
             
-    def facetsMeshMathFile(self,cell):
+    def facetsMeshMathFile(self,cell,tag):
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
@@ -1156,7 +1266,7 @@ class dynamicPack():
             if ipoint < len(cell.mesh) -1:
                 strOut += ','
         strOut += '}];\nShow[s,p]'
-        writefile(strOut,'IBZspheres.m')     
+        writefile(strOut,'cell_{}.m'.format(tag))         
    
     def facetsMeshVCMathFile(self,BZ,meshFacets):
         '''Output for Mathematica graphics drawing the facets of each mesh point
