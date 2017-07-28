@@ -9,7 +9,9 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where,real,allclose,sign,pi,imag,identity,cos,arccos)
+                   trace,where,real,allclose,sign,pi,imag,identity,cos,arccos,
+                   )
+from numpy import append as npappend
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi, ConvexHull as convexH
 from numpy.linalg import inv, norm, det, eig
@@ -505,11 +507,12 @@ class dynamicPack():
 #         print 'method',method
         
         self.power = 6.0
-        self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
-        self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
+        self.wallfactor = 0.0
+        self.wallClose = 0.3 #0.5 #to allow initial points closer to the wall set to less than 1. 
         self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.interfactor = 1.0        
         self.initFactor = 1.0 
+        self.neighRfactor = 6.0
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
         self.method = method
@@ -537,9 +540,12 @@ class dynamicPack():
         if 0 < len(IBZ.mesh) <= 4000:
             OK = True
             self.dynamic(IBZ,eps)
+            self.getPointsThruWall()
+            sys.exit('stopping')
             IBZ = self.weightPoints(IBZ,eps)
             self.writeKpoints(IBZ)
             self.writeSym()
+            
             return OK,self.nops
         else: 
             OK = False
@@ -549,7 +555,7 @@ class dynamicPack():
     
 
     def getPointsThruWall(self):
-        '''Finds the group symmetry generated points within Rneigh from any point
+        '''Finds the group symmetry generated points within neighR from any point
         in the IBZ'''
 #         for ip,point in enumerate(self.IBZ.fpoints):
 #             print 'point',point
@@ -576,6 +582,7 @@ class dynamicPack():
         self.alienMesh = []
         for ip,point in enumerate(self.IBZ.mesh):
             for iop in range(self.nops):
+#                 print 'iop',iop;print self.symops[:,:,iop];print
                 point1 = dot(self.symops[:,:,iop],point)
                 for i in [-1,0,1]:
                     for j in [-1,0,1]:
@@ -583,12 +590,13 @@ class dynamicPack():
 #                             if [i,j,k] != [0,0,0]:
 #                                 print 'test', point2 , i*self.B[:,0]+j*self.B[:,1]+k*self.B[:,2]
                             point2 = point1 + i*self.B[:,0]+j*self.B[:,1]+k*self.B[:,2]
-                            if point2[2]> 0.5:
-                                'pause'
                             if not among(point2,self.IBZ.mesh,self.eps):
 #                                 print 'iop',iop,'trans',i,j,k
 #                                 print 'point',point2, 'distance',norm(point2-point)
-                                
+#                                 
+#                                 if isInside(point2,self.IBZ.bounds,self.eps):
+#                                     print 'inside', iop,i,j,k,point2
+#                                     sys.exit('stop')
                                 for i3,point3 in enumerate(self.IBZ.mesh): 
                                     if norm(point3 - point2) <= self.neighR:
 #                                         print 'point2 OK', point2
@@ -596,11 +604,12 @@ class dynamicPack():
                                         break
         
         tempCell = cell()
-        tempCell.mesh = self.IBZ.mesh + self.alienMesh
+        tempCell.mesh = npappend(array(self.IBZ.mesh),array(self.alienMesh),axis=0).tolist()
         tempCell.facets  = self.IBZ.facets
-        self.facetsMeshMathFile(tempCell,'in-out')  
+        self.facetsMeshMathFile(tempCell,'in-out',None)  
+        self.facetsMeshMathFile(self.IBZ,'IBZmesh','Blue') 
         print 'Aliens',len(self.alienMesh)
-        sys.exit('Stopping')              
+#         sys.exit('Stopping')              
         return
             
             
@@ -785,18 +794,17 @@ class dynamicPack():
     def dynamic(self,IBZ,eps):
         ''' '''
         self.IBZ = IBZ
-        self.points = IBZ.mesh #initial mesh
         self.bounds = IBZ.bounds 
         self.facets = IBZ.facets
         self.eps = eps
         self.relax()
-        self.facetsMeshMathFile(self.IBZ,'IBZmesh')
+        self.facetsMeshMathFile(self.IBZ,'IBZmesh','None')
         return
 
     def relax(self):
         '''Minimization of the potential energy.
         The energy must be a function of 1-D inputs, so we flatten the points into components '''
-        initialPos = array(self.points).flatten()
+        initialPos = array(self.IBZ.mesh).flatten()
         epsilon = self.ravg/100
 #         out = self.fmin_cg(initialPos,self.eps)
         self.minSteepest(initialPos,self.eps)    
@@ -811,13 +819,12 @@ class dynamicPack():
         better than the Barzilai-Borwein method that tries to predict an optimal step.    
         
         '''
-        self.IBZ.mesh = self.points
-#         self.facetsMeshMathFile(self.IBZ,'IBZmesh'); print ';Show[p,q]\n'
+#         self.facetsMeshMathFile(self.IBZ,'IBZmesh','None'); print ';Show[p,q]\n'
 #         print 'Start Minimization';
 
         itermax = 100
         gnormTol = 0.001
-        minstep = 0.0001
+        minstep = 0.000000001
         xold= x0
         fold,gold = self.enerGrad(xold)
         gnew = gold
@@ -832,7 +839,7 @@ class dynamicPack():
         print 'energy_0',fold, 'gnorm',gnormold #,'grad', gold
         fstart = fold; gnormstart = gnormold
         iIter = 0
-        step = 1.0
+        step = 0.001
         atMinStep = False
         while iIter < itermax and gnormold > gnormTol and not atMinStep:
             print iIter, #progress bar
@@ -845,9 +852,9 @@ class dynamicPack():
                     break
                 if method == 'steepest':
                     xnew = xold - step*gold
-                self.points = xnew.reshape((len(self.points),3))
+                newpoints = xnew.reshape((len(self.IBZ.mesh),3))
                 inside = True
-                for point in self.points:
+                for point in newpoints:
                     if not isInside(point,self.bounds,eps):
                         print 'point is outside IBZ...reduce step size:',point
                         inside = False
@@ -858,6 +865,7 @@ class dynamicPack():
 #                     print '\nenergy',iIter, fnew,'step',step,'gnorm',gnormnew #, 'grad', gnew
                     if fnew<fold and gnormnew < gnormold:
                         lower = True
+                        self.IBZ.mesh = newpoints; 
                 step /= 2
             step *= 4
 #             xolder = xold
@@ -867,10 +875,9 @@ class dynamicPack():
             fold = fnew
             gold = gnew
             gnormold = gnormnew
-            iIter += 1                   
-        self.IBZ.mesh = self.points; 
-#         print;self.facetsMeshMathFile(self.IBZ,'IBZmesh'); print ';Show[p,q]\n'
-        print 'For {} points in IBZ and {} steps'.format(len(self.points),iIter)
+            iIter += 1                    
+#         print;self.facetsMeshMathFile(self.IBZ,'IBZmesh','None'); print ';Show[p,q]\n'
+        print 'For {} points in IBZ and {} steps'.format(len(self.IBZ.mesh),iIter)
         print '\tStarting energy',fstart, 'gnorm',gnormstart
         print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
         if gnormnew <= gnormTol:
@@ -885,10 +892,10 @@ class dynamicPack():
         '''Returns the total energy, gradient (-forces), 
         using comps, which are the flattened components of the current positions  '''
 #         print 'oldindvecs',self.oldindVecs
-        self.forces = zeros((len(self.points),3))
+        self.forces = zeros((len(self.IBZ.mesh),3))
         self.wallForce = zeros(len(self.IBZ.facets))
         self.wallPress = zeros(len(self.IBZ.facets))
-        vecs = comps.reshape((len(self.points),3))
+        vecs = comps.reshape((len(self.IBZ.mesh),3))
         p = self.power
         wallfact = self.wallfactor
         interfact = self.interfactor
@@ -896,43 +903,50 @@ class dynamicPack():
         
         #Find neighbors that are close enough to exert a reasonable force (right now we well 
         #take that the be the distance for neightbor searching of any kind. 
-        self.neighR = 4.0*self.rpacking
+        self.neighR = self.neighRfactor*self.rpacking
         self.getPointsThruWall()
         for i,ri in enumerate(vecs):
+            print 'ri',i,ri
 #             print 'EG{}'.format(i),
 #             print 'point',i,ri
-            #wall forces
-#             for iw, u in enumerate(self.bounds[0]):
-#                 ro = self.bounds[1][iw]
-#                 d = ro-dot(ri,u)+ self.wallOffset*self.dw #distance from plane to ri offset factor allows points to move closer to walls. 
-# #                 if d<0:
-# #                     'pause'
-# # #                     print '** point {} crossed boundary'.format(i), iw, u,ro
-# # #                     d = -d/10 #Have crossed boundary. Increase force by shortening effective d. 
+#           wall forces
+            for iw, u in enumerate(self.bounds[0]):
+                ro = self.bounds[1][iw]
+                d = ro-dot(ri,u) + self.wallOffset*self.dw #distance from plane to ri offset factor allows points to move closer to walls. 
 #                 if d<0:
+#                     'pause'
+# #                     print '** point {} crossed boundary'.format(i), iw, u,ro
+# #                     d = -d/10 #Have crossed boundary. Increase force by shortening effective d. 
+                if d<0:
 #                     print 'ri,ro,u, dot(ri,u),d'
 #                     print ri,ro,u, dot(ri,u), d 
-#                     sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
-#                 fmag = wallfact*(d/self.dw)**(-p)  #dimensionless
-#                 etot += wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
-# #                 print '\t wall',iw,d, u,ro
-# #                 print '\t\tf',-u*fmag,'\te',wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
-#                 self.forces[i] += -u*fmag
+                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
+                fmag = wallfact*(d/self.dw)**(-p)  #dimensionless
+                etot += wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+#                 print '\t wall',iw,d, u,ro
+#                 print '\t\tf',-u*fmag,'\te',wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
+                self.forces[i] += -u*fmag
 #                 self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudes
-# #             print '\tfwtot',self.forces[i]
-# #                 print 'Wall',iw,d,'force',-u*fmag,fmag
+#             print '\tfwtot',self.forces[i]
+#                 print 'Wall',iw,d,'force',-u*fmag,fmag
        
 
 
 
 #            inter-point forces
-            for j, rj in enumerate(vecs):
-                if i!=j:
+            allpoints = npappend(deepcopy(vecs),array(self.alienMesh),axis=0)
+            ds=[]
+            for j, rj in enumerate(allpoints):
+                if not allclose(ri,rj,self.eps):
+                    
                     d = norm(ri-rj)
+                    ds.append(d)
 #                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
                     self.forces[i] += interfact*(d/self.df)**(-p)*(ri-rj)/d
+                    print 'rj',j,rj,d, interfact*(d/self.df)**(-p)*(ri-rj)/d
                     if j>i: #don't overcount
                         etot += interfact*self.df/abs(-p+1)*(d/self.df)**(-p+1)
+            print 'min d',min(ds),argmin(array(ds))
 #         for i,fac in enumerate(self.facets):
 #             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
 #             self.wallPress[i] = self.wallForce[i]/area
@@ -1255,13 +1269,15 @@ class dynamicPack():
 #         strOut += '}];'
         writefile(strOut,'cell_{}.m'.format(tag))     
             
-    def facetsMeshMathFile(self,cell,tag):
+    def facetsMeshMathFile(self,cell,tag,color):
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
         strOut += ';\n p=Graphics3D[{'
         cell.mesh = list(trimSmall(array(cell.mesh)))
         for ipoint,point in enumerate(cell.mesh):
+            if color != None:
+                strOut += '{},'.format(color)
             strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
             if ipoint < len(cell.mesh) -1:
                 strOut += ','
