@@ -65,7 +65,7 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestCuts/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/test2/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/test4/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/test2/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
@@ -109,7 +109,7 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(6,7,1):#23
+            for n in range(7,8,1):#23
                 print 
                 print '==============================================' 
                 print 'Target npoints: {}^3'.format(n)
