@@ -431,9 +431,10 @@ class dynamicPack():
 #         print 'method',method
         
         self.power = 6.0
+        self.wallPower = 10.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.wallOffset = 0.0 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.interfactor = 1.0        
         self.initFactor = 1.0 
         self.nTarget = int(self.initFactor*targetNmesh)
@@ -442,7 +443,7 @@ class dynamicPack():
         vol = abs(det(B))
         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.df = 1.00 * self.ravg #inter-point force scale distance
-        self.dw = 0.5 * self.df #wall force scale distance
+        self.dw = 0.1 * self.df #wall force scale distance
         self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/300
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
@@ -492,24 +493,6 @@ class dynamicPack():
         
         Vectors are first taken from each mesh point as the origin, 
         then displaced to their real positions in the cell for possible display'''
-        
-#       begin MP facets printing
-#         print 'begin Voronoi scipy'
-#         t1 = time.time()
-#         vor = Voronoi(array(IBZ.mesh))
-#         t2 = time.time()
-#         print t2-t1
-#         voltest = 0.0
-#         for cellv in vor.regions:
-#             facetpoints = []
-#             for ind in cellv:
-#                 facetpoints.append(vor.vertices[ind])
-#             print 'facets',facetpoints
-#             if len(facetpoints)>0:
-#                 print 'vol',convexH(facetpoints).volume
-#                 voltest += convexH(facetpoints).volume
-#         print 'volume',voltest
-#         print 'end scipy Vor'
         allMPfacets = []
         skews = []
         for ip,point in enumerate(IBZ.mesh):
@@ -785,6 +768,7 @@ class dynamicPack():
         self.wallPress = zeros(len(self.IBZ.facets))
         vecs = comps.reshape((len(self.points),3))
         p = self.power
+        wp = self.wallPower
         wallfact = self.wallfactor
         interfact = self.interfactor
         etot = 0
@@ -803,8 +787,8 @@ class dynamicPack():
                     print 'ri,ro,u, dot(ri,u),d'
                     print ri,ro,u, dot(ri,u), d 
                     sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
-                fmag = wallfact*(d/self.dw)**(-p)  #dimensionless
-                etot += wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+                fmag = wallfact*(d/self.dw)**(-wp)  #dimensionless
+                etot += wallfact*self.dw/abs(-wp+1)*(d/self.dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
 #                 print '\t wall',iw,d, u,ro
 #                 print '\t\tf',-u*fmag,'\te',wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
                 self.forces[i] += -u*fmag
