@@ -53,14 +53,16 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/vary_off06',
 #          '/fslhome/bch/cluster_expansion/vcmesh/vary_off075']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_fcc',
-         '/fslhome/bch/cluster_expansion/vcmesh/the99sym_bcc',
-          '/fslhome/bch/cluster_expansion/vcmesh/the99sym_cub',
-          ]
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/scond_fcc',
-#          '/fslhome/bch/cluster_expansion/vcmesh/scond_bcc',
-#          '/fslhome/bch/cluster_expansion/vcmesh/scond_cub',
-#          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_fcc',
+#          '/fslhome/bch/cluster_expansion/vcmesh/the99sym_bcc',
+#           '/fslhome/bch/cluster_expansion/vcmesh/the99sym_cub',
+#           ]
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/scond_fcc',
+         '/fslhome/bch/cluster_expansion/vcmesh/scond_fccOut',
+         '/fslhome/bch/cluster_expansion/vcmesh/sc_fccOut4',
+          '/fslhome/bch/cluster_expansion/vcmesh/sc_fccOutOF05',
+         '/fslhome/bch/cluster_expansion/vcmesh/sc_fOut03',
+         '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc04',
 #          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc05',
 #          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc06',
@@ -75,8 +77,8 @@ paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_fcc',
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
-extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
-# extpath = None
+# extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
+extpath = None
 
 coloring = 'method'
 # coloring = 'indiv'
