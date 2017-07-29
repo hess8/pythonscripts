@@ -509,7 +509,7 @@ class dynamicPack():
         self.power = 6.0
         self.wallClose = 0.3 #0.5 #to allow initial points closer to the wall set to less than 1. 
         self.interfactor = 1.0 
-        self.outfactor = 0.50        
+        self.outfactor = 0.5     
         self.initFactor = 1.0 
         self.neighRfactor = 4.0
         self.nTarget = int(self.initFactor*targetNmesh)

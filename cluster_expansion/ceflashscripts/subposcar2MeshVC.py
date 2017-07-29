@@ -109,7 +109,7 @@ def createRunDir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc30'
 # poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/0_info/POSCARS'
 # vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/0_info/vaspinput'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/sc_fccOutOF05'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_fo05'
 # poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod/0-info/POSCARS'
 # vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod/0-info/vaspinput'
 
@@ -157,7 +157,7 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(2,35,1):#23
+            for n in range(2,21,1):#23
                 print 
                 print '==============================================' 
                 print 'Base {} in submitVasp (target = n^3)'.format(n)
