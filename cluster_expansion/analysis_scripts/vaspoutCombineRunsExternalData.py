@@ -27,13 +27,15 @@ def readSym(dir):
     lines = readfile('{}/sym.out'.format(dir))
     nops = int(lines[0].split(':')[1])
     IBZvolCut = float(lines[1].split(':')[1])
-    IBZvol = float(lines[2].split(':')[1])
+#     IBZvol = float(lines[2].split(':')[1])
+    IBZvol = None
     return nops, IBZvolCut, IBZvol
 
 def copyData(structfile,data):
     struct = '_'.join(structfile.split('_')[:2])
+    n = structfile.split('_')[1]
     for i,ID in enumerate(data['ID']):
-        if struct in ID:
+        if struct in ID and n in ID:
             icopy = i
             break
     return data[icopy]['nops'],data[icopy]['IBZvolcut'],data[icopy]['nAtoms']
@@ -156,7 +158,7 @@ if not extpath is None:
         os.chdir(extpath)
 
 nplots = iplot 
-if nplots < len(paths): sys.exit('Stop.  Not enough structures match filter')      
+if nplots < len(paths): sys.exit('Stop.  Structures do not match filter')      
 data = zeros(nplots,dtype = [('ID', 'S25'),('color', 'S15'),('method', 'S15'),\
                              ('nDone','int32'),('nAtoms','int32'),('nops','int8'),\
                              ('IBZvolcut','float'),('IBZvol','float'),\
@@ -212,7 +214,7 @@ for ipath, path in enumerate(paths): #my data
         nKs = []
         ns = [] #the base n of the run run
         nDone = 0
-        nops,IBZvolcut = readSym(calcs[0])
+        nops,IBZvolcut,IBZvol = readSym(calcs[0])
         for calc in calcs:  
             if electronicConvergeFinish(calc):
                 ener = getEnergy(calc) #in energy/atom
@@ -277,7 +279,7 @@ if not extpath is None:
         else:
             structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2 and os.path.getsize(d)>0])
         for structfile in structfiles:
-            nops,IBZvolcut,natoms = copyData(structfile,data)
+            nops,IBZvolcut,nAtoms = copyData(structfile,data)
             if coloring == 'indiv':
                 if iplot < nplots -1:
                     color = cm.jet(1.*(iplot+1)/float(nplots))
@@ -300,7 +302,7 @@ if not extpath is None:
             eref = energies[-1]#the last energy of each struct is that of the most kpoints
             nKs = sort(nKs)
             errs = abs(energies-eref)*1000 + 1e-6 #now in meV 
-            struct = structfile.split('_')[0]
+            struct = '_'.join(structfile.split('_')[:2])
             data[iplot]['ID'] = atom_method + struct
             data[iplot]['nAtoms'] = nAtoms
             data[iplot]['nops'] = nops
@@ -328,8 +330,8 @@ writefile(lines,'{}/summary.csv'.format(summaryPath))
 if filter[0] == '_':filter = '' #labels can't begin with _
 # plotTypes = ['linear','loglog'] #loglinear
 # print 'plot only loglog'
-plotTypes = ['loglog'] #loglinear
-# plotTypes = [] 
+# plotTypes = ['loglog'] #loglinear
+plotTypes = [] 
 ylabels = ['Vasp energy/atom (eV)','Error (meV)','Error (meV)']
 xtext = 'N k-points'
 
@@ -373,6 +375,7 @@ if coloring == 'method':
         binCounts = zeros(nbins,dtype = int32)
         binErrs = zeros(nbins,dtype = float)       
         for iplot in range(nplots):
+#             print 'iplot',iplot, data[iplot]['nKs']
             if data[iplot]['method'] == method:
                 for icalc in range(data[iplot]['nDone']-1):
                     nK = data[iplot]['nKs'][icalc]
@@ -394,15 +397,15 @@ if coloring == 'method':
         print 'Method',method, 'nKmax',methnKmax
     legend(loc='lower left',prop={'size':12});
     fig.savefig('{}/methodErrs'.format(summaryPath))
-#Method averaging with scaled Nk to account for symmetry and natoms advantages
+#Method averaging with scaled Nk to account for symmetry and nAtoms advantages
     maxNk = 0
     for iplot in range(nplots):
         nops = data[iplot]['nops'] 
-        natoms = data[iplot]['nAtoms'] 
-        data[iplot]['nKs'] = data[iplot]['nKs']*float(natoms)*float()
-        maxNi = data[iplot]['nKs'][-1]
+        nAtoms = data[iplot]['nAtoms'] 
+        data[iplot]['nKs'] = data[iplot]['nKs']*float(nAtoms)*float(nops)
+        maxNi = max(data[iplot]['nKs'])
         if maxNi > maxNk: maxNk = maxNi
-    print 'Averaging, plottingwith nK scaling of symmetry and natoms'
+    print 'Averaging, plotting with nK scaling of symmetry and nAtoms'
     nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
     nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
     fig = figure()
