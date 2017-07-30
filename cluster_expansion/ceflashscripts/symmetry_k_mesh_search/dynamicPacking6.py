@@ -480,8 +480,6 @@ class dynamicPack():
         else: 
             OK = False
             return OK,self.nops
-#         OK = True
-#         return OK,self.nops
     
     def writeSym(self):
         writefile(['nops: {}\n'.format(self.nops),'IBZvolCut: {}\n'.format(self.IBZvolCut)],'sym.out')

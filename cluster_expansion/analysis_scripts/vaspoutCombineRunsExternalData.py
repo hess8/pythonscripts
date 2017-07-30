@@ -4,7 +4,7 @@ Comparison plot for different k mesh methods.  Allows reading external data from
 '''
 
 import sys,os,subprocess
-from numpy import zeros,transpose,array,sum,float64,rint,mean,sort,argsort,ceil,log10,int8,where
+from numpy import zeros,transpose,array,sum,float64,rint,mean,sort,argsort,ceil,log10,int8,int32,where
 from numpy.linalg import norm
 from analysisToolsVasp import getEnergy, getNkIBZ,getNatoms, readfile, writefile,electronicConvergeFinish
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
@@ -20,6 +20,14 @@ from copy import deepcopy
 
 def areEqual(x,y,eps):
     return abs(x-y)<eps
+
+# def writeSym(self):
+#         writefile(['nops: {}\n'.format(self.nops),'IBZvolCut: {}\n'.format(self.IBZvolCut)],'sym.out')
+def readSym(dir):
+    lines = readfile('{}/sym.out'.format(dir))
+    nops = int(lines[0].split(':')[1])
+    IBZvolCut = int(lines[1].split(':')[1])
+    return nops, IBZvolCut
 
 def plotData(datai,n,plotType,filter,doLegend,lablelStr):
     if plotType == 'linear':                      
@@ -59,7 +67,7 @@ testfile = 'POSCAR'
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_fo10']
 
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_fcc']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_Hess']
 # 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_fccOut',
 #          '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc']
@@ -91,8 +99,8 @@ coloring = 'method'
 # coloring = 'indiv'
 doLegend = True
 doLabel = True
-
-filter = '_' #string must be in dir name to be included
+smoothFactor = 2.0
+filter = 'Al' #string must be in dir name to be included
 filter2 = None #'Cu_1' #for single structures.  set to None if using filter1 only
 summaryPath = paths[0]
 
@@ -140,7 +148,7 @@ if not extpath is None:
 
 nplots = iplot 
 if nplots < len(paths): sys.exit('Stop.  Not enough structures match filter')      
-data = zeros(nplots,dtype = [('ID', 'S15'),('color', 'S15'),('method', 'S15'),('nDone','int8'),('nAtoms','int8'),('nops','int8'),('eners', '{}float'.format(maxCalcs)),\
+data = zeros(nplots,dtype = [('ID', 'S15'),('color', 'S15'),('method', 'S15'),('nDone','int32'),('nAtoms','int32'),('nops','int8'),('eners', '{}float'.format(maxCalcs)),\
                 ('errs', '{}float'.format(maxCalcs)),('nKs', '{}int16'.format(maxCalcs)),('ns', '{}int8'.format(maxCalcs))])
 
 # colorsList = []
@@ -220,21 +228,12 @@ for ipath, path in enumerate(paths): #my data
             energies = energies[order]
             ns = ns[order]
             nKs = sort(nKs)
-            eref = energies[-1]#the last energy of each struct is that of the most kpoints
-#             print 'struct',struct,'\t', mean(energies),'\t',eref,'\t', mean(energies-eref)*1000
-    #         print 'eref',eref
-    #         print 'energies sorted',energies, 'nKs', nKs
-    #         print
-           
-    #         print 'NKs', nKs      
-    #         if ipath == 0 and istruct == 0: ******* useful if comparing methods on the same struct with a trusted first method*******
-    #             eref = energies[-1] #the last energy of each struct is that of the most kpoints
-    
+            eref = energies[-1]#the last energy of each struct is that of the most kpoints   
             errs = abs(energies-eref)*1000 + 1e-6 #now in meV 
-    #         plotErrs()
             data[iplot]['ID'] = '{} {}'.format(struct,tag)
             nAtoms = getNatoms('{}/POSCAR'.format(calc))
             data[iplot]['nAtoms'] = nAtoms
+            data[iplot]['nops'] = readSym(os.getcwd())[0]
             data[iplot]['nDone'] = nDone
             data[iplot]['eners'][:nDone] = energies
             data[iplot]['errs'][:nDone] = errs
@@ -300,17 +299,20 @@ if not extpath is None:
         os.chdir(extpath)
 nplots = iplot+1 
 
-lines = [' ID , nKIBZ , ener , err, nAtoms, color\n']  
+lines = [' ID , nKIBZ , ener , err, nAtoms, nops,color\n']  
 for iplot in range(nplots):
     n = data[iplot]['nDone']
     for icalc in range(n):#data[iplot]['eners'][:n].tolist()
-        lines.append('{}_n{},{},{:15.12f},{:15.12f},{},{}\n'.format(data[iplot]['ID'], data[iplot]['ns'][icalc], data[iplot]['nKs'][icalc],\
-             data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],data[iplot]['nAtoms'],data[iplot]['color']))  
+        lines.append('{}_n{},{},{:15.12f},{:15.12f},{},{},{}\n'.format(data[iplot]['ID'], data[iplot]['ns'][icalc], data[iplot]['nKs'][icalc],\
+             data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],data[iplot]['nAtoms'],data[iplot]['nops'],data[iplot]['color']))  
 writefile(lines,'{}/summary.csv'.format(summaryPath)) 
 
 #plots
-if filter[0] == '_':filter = '' #labels can't begin with 
-plotTypes = ['linear','loglinear','loglog']
+if filter[0] == '_':filter = '' #labels can't begin with _
+# plotTypes = ['linear','loglog'] #loglinear
+# print 'plot only loglog'
+plotTypes = ['loglog'] #loglinear
+# plotTypes = [] 
 ylabels = ['Vasp energy/atom (eV)','Error (meV)','Error (meV)']
 xtext = 'N k-points'
 
@@ -322,16 +324,18 @@ for it,plotType in enumerate(plotTypes):
     # title('Convergence vs mesh method')
     #ylim((1e-12,1e0))
     oldmethod = '' 
+    methods2 = []
     for iplot in range(nplots):
         labelStr = None
         n = data[iplot]['nDone']
         if coloring == 'method':  
             method = data[iplot]['method'] 
             data[iplot]['color'] = colorsList[methods.index(method)] 
-            if method != oldmethod:
+            if method != oldmethod and method not in methods2:
                 if doLabel: labelStr = '{} {}'.format(filter,data[iplot]['method'])
                 plotData(data[iplot],n,plotType,filter,doLegend,labelStr)
                 oldmethod = method;labelStr = None
+                methods2.append(method)
             else:
                 plotData(data[iplot],n,plotType,filter,doLegend,labelStr)
         elif coloring == 'indiv': 
@@ -340,17 +344,16 @@ for it,plotType in enumerate(plotTypes):
  
 #Method averaging
 if coloring == 'method':
-    smoothFactor = 4.0
     print 'Averaging, plotting method errors'
+    nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
+    nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
     fig = figure()
     ax1 = fig.add_subplot(111)
     xlabel('N k-points (smoothed by factor {})'.format(int(smoothFactor)))
     ylabel('Error (meV)') 
     for im,method in enumerate(methods):
         methnKmax = 0 
-        nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
-        nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
-        binCounts = zeros(nbins,dtype = int8)
+        binCounts = zeros(nbins,dtype = int32)
         binErrs = zeros(nbins,dtype = float)       
         for iplot in range(nplots):
             if data[iplot]['method'] == method:
@@ -360,21 +363,25 @@ if coloring == 'method':
                     if nK>1:
                         for ibin in range(nbins):
                             if abs(log10(nK/nKbins[ibin])) <= log10(smoothFactor)\
-                               and nKbins[ibin]<= maxNk:
-                               binErrs[ibin] += data[iplot]['errs'][icalc]
-                               binCounts[ibin] += 1
+                              and nKbins[ibin]<= maxNk:
+                                binErrs[ibin] += data[iplot]['errs'][icalc]
+                                binCounts[ibin] += 1
+#                                 print 'id',data[iplot]['ID'],'nK',nK,'ibin',ibin
+#                                 print binCounts
         mask = where(binCounts>0)
-        binErrs = binErrs[mask[0]]
-        binCounts = binCounts[mask[0]]
-        nKbins = nKbins[mask[0]]
-        nbins = len(nKbins)
-        avgErrs = [binErrs[ibin]/binCounts[ibin] for ibin in range(nbins)]
-        #plot
-        loglog(nKbins,avgErrs,label = method,\
+        binErrs2 = binErrs[mask[0]]
+        binCounts2 = binCounts[mask[0]]
+        nKbins2 = nKbins[mask[0]]
+        nbins2 = len(nKbins2)
+        avgErrs = [binErrs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+        #plot meth
+        loglog(nKbins2,avgErrs,label = method,\
               color = colorsList[im], marker = None)
         print 'Method',method, 'nKmax',methnKmax
+#         print
     legend(loc='lower left',prop={'size':12});
     fig.savefig('{}/methodErrs'.format(summaryPath))
+#     print
         
         #print 'Method {} \terror {}'.format(method,normErr), 'counts',mcounts[im]
 print 'Done'
