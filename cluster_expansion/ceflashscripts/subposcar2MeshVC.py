@@ -142,21 +142,6 @@ for dir in dirs:
         poscar = file1.readlines()
         file1.close()
         if len(poscar) > 0:
-#             os.chdir(currdir)
-#            scale = sum(array(float(poscar[1])))
-#            N = rint(Nkppra/sum(array(poscar[5].split(),dtype=int16))).astype(int) # number of kpts desired
-#            reallatt[0,:] = array(poscar[2].split())
-#            reallatt[1,:] = array(poscar[3].split())
-#            reallatt[2,:] = array(poscar[4].split())
-#            reallatt = scale*reallatt.astype(float)        
-#            reciplatt = 2*pi*transpose(linalg.inv(reallatt))
-
-#             os.system('rm slurm*')
-#             subprocess.call(['rm', 'vasp.out'])
-#             subprocess.call(['rm', 'OUTCAR'])          
-#            subprocess.call(['cp','POSCAR.orig','POSCAR'])
-#            subprocess.call(['sbatch', 'vaspjob'])
-
             for n in range(2,21,1):#23
                 print 
                 print '==============================================' 

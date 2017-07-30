@@ -606,14 +606,11 @@ class dynamicPack():
         tempCell.facets  = self.IBZ.facets
         self.facetsMeshMathFile(tempCell,'in-out',None)  
         self.facetsMeshMathFile(self.IBZ,'IBZmesh','Blue') 
-        print 'Outer points',len(self.outerPoints)
-#         sys.exit('Stopping')              
+        print 'Outer points',len(self.outerPoints)             
         return
-            
-            
-    
+
     def writeSym(self):
-        writefile(['nops: {}\n'.format(self.nops),'IBZvolCut: {}\n'.format(self.IBZvolCut)],'sym.out')
+        writefile(['nops: {}\n'.format(self.nops),'IBZvolCut: {}\n'.format(self.IBZvolCut)],'sym.out')       
 
     def weightPoints(self,IBZ,eps):
         '''Find the volume of the Voronoi cell around each point, and use it to weight the point.
