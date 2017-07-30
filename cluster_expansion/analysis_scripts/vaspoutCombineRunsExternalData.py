@@ -26,8 +26,17 @@ def areEqual(x,y,eps):
 def readSym(dir):
     lines = readfile('{}/sym.out'.format(dir))
     nops = int(lines[0].split(':')[1])
-    IBZvolCut = int(lines[1].split(':')[1])
-    return nops, IBZvolCut
+    IBZvolCut = float(lines[1].split(':')[1])
+    IBZvol = float(lines[2].split(':')[1])
+    return nops, IBZvolCut, IBZvol
+
+def copyData(structfile,data):
+    struct = '_'.join(structfile.split('_')[:2])
+    for i,ID in enumerate(data['ID']):
+        if struct in ID:
+            icopy = i
+            break
+    return data[icopy]['nops'],data[icopy]['IBZvolcut'],data[icopy]['nAtoms']
 
 def plotData(datai,n,plotType,filter,doLegend,lablelStr):
     if plotType == 'linear':                      
@@ -148,8 +157,11 @@ if not extpath is None:
 
 nplots = iplot 
 if nplots < len(paths): sys.exit('Stop.  Not enough structures match filter')      
-data = zeros(nplots,dtype = [('ID', 'S15'),('color', 'S15'),('method', 'S15'),('nDone','int32'),('nAtoms','int32'),('nops','int8'),('eners', '{}float'.format(maxCalcs)),\
-                ('errs', '{}float'.format(maxCalcs)),('nKs', '{}int16'.format(maxCalcs)),('ns', '{}int8'.format(maxCalcs))])
+data = zeros(nplots,dtype = [('ID', 'S25'),('color', 'S15'),('method', 'S15'),\
+                             ('nDone','int32'),('nAtoms','int32'),('nops','int8'),\
+                             ('IBZvolcut','float'),('IBZvol','float'),\
+                             ('eners', '{}float'.format(maxCalcs)), ('errs', '{}float'.format(maxCalcs)),\
+                             ('nKs', '{}int16'.format(maxCalcs)),('ns', '{}int8'.format(maxCalcs))])
 
 # colorsList = []
 # style.use('bmh')
@@ -198,11 +210,10 @@ for ipath, path in enumerate(paths): #my data
         calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and os.path.exists('{}/OUTCAR'.format(d))])
         energies = []
         nKs = []
-        nAtoms = []
         ns = [] #the base n of the run run
         nDone = 0
+        nops,IBZvolcut = readSym(calcs[0])
         for calc in calcs:  
-            
             if electronicConvergeFinish(calc):
                 ener = getEnergy(calc) #in energy/atom
                 if not areEqual(ener,0,1e-5):
@@ -233,7 +244,8 @@ for ipath, path in enumerate(paths): #my data
             data[iplot]['ID'] = '{} {}'.format(struct,tag)
             nAtoms = getNatoms('{}/POSCAR'.format(calc))
             data[iplot]['nAtoms'] = nAtoms
-            data[iplot]['nops'] = readSym(os.getcwd())[0]
+            data[iplot]['nops'] = nops
+            data[iplot]['IBZvolcut'] = IBZvolcut
             data[iplot]['nDone'] = nDone
             data[iplot]['eners'][:nDone] = energies
             data[iplot]['errs'][:nDone] = errs
@@ -265,6 +277,7 @@ if not extpath is None:
         else:
             structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2 and os.path.getsize(d)>0])
         for structfile in structfiles:
+            nops,IBZvolcut,natoms = copyData(structfile,data)
             if coloring == 'indiv':
                 if iplot < nplots -1:
                     color = cm.jet(1.*(iplot+1)/float(nplots))
@@ -289,7 +302,9 @@ if not extpath is None:
             errs = abs(energies-eref)*1000 + 1e-6 #now in meV 
             struct = structfile.split('_')[0]
             data[iplot]['ID'] = atom_method + struct
-            data[iplot]['nAtoms'] = 0
+            data[iplot]['nAtoms'] = nAtoms
+            data[iplot]['nops'] = nops
+            data[iplot]['IBZvolcut'] = IBZvolcut
             data[iplot]['nDone'] = len(energies)
             data[iplot]['eners'][:nDone] = energies
             data[iplot]['errs'][:nDone] = errs
@@ -299,12 +314,14 @@ if not extpath is None:
         os.chdir(extpath)
 nplots = iplot+1 
 
-lines = [' ID , nKIBZ , ener , err, nAtoms, nops,color\n']  
+lines = [' ID , nKIBZ , ener , err, nAtoms, nops,IBZcut\n']  
 for iplot in range(nplots):
     n = data[iplot]['nDone']
     for icalc in range(n):#data[iplot]['eners'][:n].tolist()
-        lines.append('{}_n{},{},{:15.12f},{:15.12f},{},{},{}\n'.format(data[iplot]['ID'], data[iplot]['ns'][icalc], data[iplot]['nKs'][icalc],\
-             data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],data[iplot]['nAtoms'],data[iplot]['nops'],data[iplot]['color']))  
+        lines.append('{}_n{},{},{:15.12f},{:15.12f},{},{},{}\n'.format(data[iplot]['ID'],\
+          data[iplot]['ns'][icalc], data[iplot]['nKs'][icalc],\
+          data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],\
+          data[iplot]['nAtoms'],data[iplot]['nops'],data[iplot]['IBZvolcut']))
 writefile(lines,'{}/summary.csv'.format(summaryPath)) 
 
 #plots

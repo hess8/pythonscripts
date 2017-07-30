@@ -482,7 +482,9 @@ class dynamicPack():
             return OK,self.nops
     
     def writeSym(self):
-        writefile(['nops: {}\n'.format(self.nops),'IBZvolCut: {}\n'.format(self.IBZvolCut)],'sym.out')
+        writefile(['nops: {}\n'.format(self.nops),\
+                   'IBZvolCut: {}\n'.format(self.IBZvolCut),\
+                   'IBZvol: {}\n'.format(self.IBZ.volume)],'sym.out')
 
     def weightPoints(self,IBZ,eps):
         '''Find the volume of the Voronoi cell around each point, and use it to weight the point.
