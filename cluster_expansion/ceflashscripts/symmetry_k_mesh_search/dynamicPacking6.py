@@ -435,6 +435,7 @@ class dynamicPack():
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
         self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.vertexPull = 1.0
         self.interfactor = 1.0        
         self.initFactor = 1.0 
         self.nTarget = int(self.initFactor*targetNmesh)
@@ -795,6 +796,11 @@ class dynamicPack():
                 self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudes
 #             print '\tfwtot',self.forces[i]
 #                 print 'Wall',iw,d,'force',-u*fmag,fmag
+            #vertext pull forces
+            for vert in self.IBZ.fpoints:
+                d = norm(ri-vert)
+                self.forces[i] += -self.vertexPull*(d/self.df)**(-p)*(ri-vert)/d #pull not push
+                etot +=  self.vertexPull*self.df/abs(-p+1)*(d/self.df)**(-p+1)
 #            inter-point forces
             for j, rj in enumerate(vecs):
                 if i!=j:

@@ -77,8 +77,14 @@ testfile = 'POSCAR'
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_cub',
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_fo10']
 
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_fcc',
+#          '/fslhome/bch/cluster_expansion/vcmesh/sc_bcc',
+#           '/fslhome/bch/cluster_expansion/vcmesh/sc_cub']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_Hess']
+
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_vp10', 
+         '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc',
+          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 # 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_fccOut',
 #          '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc']
@@ -103,8 +109,8 @@ paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_Hess']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
-extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
-# extpath = None
+# extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
+extpath = None
 
 coloring = 'method'
 # coloring = 'indiv'

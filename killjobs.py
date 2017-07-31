@@ -2,13 +2,13 @@ import os,subprocess,time
 '''Kills jobs in the 'jobrange' '''
 user = 'bch'
 # 
-# jobrange = [   0, 1e10]  #for use with jobstring criterium
-# jobstring = 'iso'  
+jobrange = [   0, 1e10]  #for use with jobstring criterium
+jobstring = 'fo'  
 # state = 'running'
 # state = 'pending'
 state = 'all'
-jobrange = [ 16684877 , 16684900]  #must adjust this range of job numbers to kill
-jobstring = ':'
+# jobrange = [ 16684877 , 16684900]  #must adjust this range of job numbers to kill
+# jobstring = ':'
 joblist = subprocess.check_output(['squeue','-o','%.25i %.7P %.35j %.5u %.2t %.10M %.6D %R','-u',user,'--state={}'.format(state)])#'--state=pending'])
 # joblist = subprocess.check_output(['squeue','-o','%.10i %.7P %.15j %.5u %.2t %.10M %.6D %R','-u',user])#'--state=pending']) 
 #joblist = subprocess.check_output(['squeue','-o','%.7i %.7P %.15j %.5u %.2t %.10M %.6D %R','-u',user])#'--state=RUNNING'])    
