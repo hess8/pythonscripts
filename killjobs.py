@@ -7,8 +7,8 @@ user = 'bch'
 # state = 'running'
 # state = 'pending'
 state = 'all'
-jobrange = [ 16684877 , 16684900]  #must adjust this range of job numbers to kill
-jobstring = ':'
+jobrange = [ 18122490 , 18124279]  #must adjust this range of job numbers to kill
+jobstring = '_'
 joblist = subprocess.check_output(['squeue','-o','%.25i %.7P %.35j %.5u %.2t %.10M %.6D %R','-u',user,'--state={}'.format(state)])#'--state=pending'])
 # joblist = subprocess.check_output(['squeue','-o','%.10i %.7P %.15j %.5u %.2t %.10M %.6D %R','-u',user])#'--state=pending']) 
 #joblist = subprocess.check_output(['squeue','-o','%.7i %.7P %.15j %.5u %.2t %.10M %.6D %R','-u',user])#'--state=RUNNING'])    

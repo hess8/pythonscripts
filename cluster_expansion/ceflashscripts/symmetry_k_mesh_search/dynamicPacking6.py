@@ -509,7 +509,7 @@ class dynamicPack():
         self.power = 6.0
         self.wallClose = 0.3 #0.5 #to allow initial points closer to the wall set to less than 1. 
         self.interfactor = 1.0 
-        self.outfactor = 0.5     
+        self.outfactor = 0.1     
         self.initFactor = 1.0 
         self.neighRfactor = 4.0
         self.nTarget = int(self.initFactor*targetNmesh)
@@ -536,7 +536,7 @@ class dynamicPack():
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
         self.facetsMathFile(IBZ,'IBZ') 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
-        if 2 <= len(IBZ.mesh) <= 50:
+        if 2 <= len(IBZ.mesh) <= 150:
             OK = True
             self.dynamic(IBZ,eps)
             self.getPointsThruWall()
