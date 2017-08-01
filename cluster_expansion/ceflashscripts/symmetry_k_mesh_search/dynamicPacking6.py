@@ -9,7 +9,8 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where,real,allclose,sign,pi,imag,identity,argsort)
+                   trace,where,real,allclose,sign,pi,imag,identity,argsort,
+                   cos,sin)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi, ConvexHull as convexH
 from numpy.linalg import inv, norm, det, eig
@@ -446,22 +447,12 @@ class dynamicPack():
         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.df = 1.00 * self.ravg #inter-point force scale distance
         self.dw = 0.5 * self.df #wall force scale distance
-        self.shift =  array([1,1,1])/25 #array([1/10,0,0])
         eps = self.ravg/300
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
             self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))
-
-
-        ###temp code
-#         self.nops = 2
-#         print 'Ignoring symmetry operators other than inversion'
-#         self.symops = zeros((3,3,self.nops),dtype = float)
-#         self.symops[:,:,0] = array([[-1,0,0],[0,-1,0],[0,0,-1]])
-#         self.symops[:,:,1] = array([[1,0,0],[0,1,0],[0,0,1]])
-        ###temp code
         
         print 'Number of desired points in full BZ:', targetNmesh
         BZ = cell() #instance
@@ -683,13 +674,115 @@ class dynamicPack():
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubic.')
+        self.searchNmax(cubicLVs,IBZ,aKcubConv,sites)
+        #Search over shift and rotation to find the most possible points inside
+
+    def searchNmax(self,cubicLVs,IBZ,aKcubConv,sites):
+        '''Test an entire grid of init values'''
+        cubicLVs0 = cubicLVs
+        shiftDiv = 0.1
+        shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(int(ceil(1/shiftDiv)) + 1)]
+        thDiv = 10.0  #deg
+        thetas = [i*thDiv for i in range(int(ceil(90/shiftDiv)) + 1)]
+        phis = [i*thDiv for i in range(int(ceil(90/shiftDiv)) + 1)]
+        nMax = 0
+        for shift in shifts:
+            for theta in thetas:
+                for phi in phis:
+                    Rmat = dot(
+                        array([[1,0,0],
+                        [0,cos(theta),-sin(theta)],
+                        [0, sin(theta), cos(theta)]]),
+                        array([[0,0,1],
+                        [cos(phi),-sin(phi),0],
+                        [sin(phi), cos(phi),0]]) )
+                        
+                    cubicLVs = dot(Rmat,cubicLVs0)
+                    IBZ,nInside = self.fillMesh(cubicLVs,IBZ,shift,aKcubConv,sites)
+                    if nInside > nMax: 
+                        nMax = nInside
+                        print 'Nmax', nMax, shift, theta, phi
+                    
+                                    
+                             
+
+
+#     def searchNmax(self,cubicLVs,IBZ):
+#         shift = self.ravg*array([1,1,1])/2 #array([1/10,0,0])
+#         theta = 0
+#         phi = 0
+#         itermax = 100
+# #         gnormTol = 0.001
+# #         minstep = 0.000001
+#         xold = x0
+#         xnew = x0
+#         nold,gold = self.enerGrad(xold)
+#         gnew = gold
+#         nnew = nold
+#         gnormold = norm(gold)
+#         gnormnew = gnormold
+#         nstart = nold; gstart = gold; gnormstart = gnormold
+#         method = 'steepest'
+# #         xolder =  xold + 0.01*gold #go backwards
+# #         golder = dot(H,(xolder-xold))
+# #         folder = dot(gold,(xolder-xold))
+#         print 'n_0',nold, 'gnorm',gnormold #,'grad', gold
+#         iIter = 0
+#         step = 1.0 #* minstep
+#         atMinStep = False
+#         while iIter < itermax and gnormold > gnormTol and not atMinStep:
+#             print iIter, #progress bar
+#             method = 'steepest'
+#             lower = False
+#             while not lower:
+#                 if step < minstep:
+#                     print 'minimum step reached: {}'.format(step) 
+#                     atMinStep = True
+#                     break
+#                 if method == 'steepest':
+#                     xnew = xold - step*gold
+#                 currPoints = xnew.reshape((len(self.IBZ.mesh),3))
+#                 inside = True
+#                 for point in currPoints:
+#                     if not isInside(point,self.bounds,eps):
+#                         print 'point is outside IBZ...reduce step size:',point
+#                         inside = False
+#                         break                   
+#                 if inside:
+#                     nnew,gnew = self.enerGrad(xnew)
+#                     gnormnew = norm(gnew)
+#                     if nnew<nold and gnormnew < gnormold:
+#                         lower = True
+#                         self.IBZ.mesh = currPoints.tolist()
+#                 step /= 2
+#             step *= 4
+#             xold = xnew
+#             nold = nnew
+#             gold = gnew
+#             gnormold = gnormnew
+#             iIter += 1                   
+#         self.IBZ.mesh = currPoints.tolist()
+#         print 'For {} points in IBZ and {} steps'.format(len(self.IBZ.mesh),iIter)
+#         print '\tStarting energy',fstart, 'gnorm',gnormstart
+#         print '\tEnding energy',nnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
+#         if gnormnew <= gnormTol:
+#             print '\nSuccess after {} iterations'.format(iIter)
+#         elif iIter == itermax:
+#             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
+#         if not (nnew < fstart and gnormnew < gnormstart):
+#             sys.exit('Did not find a lower energy and force norm: stop')
+#         
+#         return nnew
+
+    
+    def fillMesh(self,cubicLVs,IBZ,shift,aKcubConv,sites):
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
         for i in range(3):
             projs = []
             for point in IBZ.fpoints:
-                shifted = point + self.shift
+                shifted = point + shift
                 projs.append(dot(cubicLVs[:,i],shifted)/aKcubConv**2)
             intMaxs.append(int(ceil(max(projs)))+2) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
             intMins.append(int(floor(min(projs)))-1)#optimize: Is -1 required?       
@@ -705,12 +798,12 @@ class dynamicPack():
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for iS, site in enumerate(sites):
                         ik+=1
-                        kpoint = lvec + aKcubConv*self.shift + site
+                        kpoint = lvec + aKcubConv*shift + site
                         if isInside(kpoint,IBZ.bounds,self.dw*self.wallClose):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
                             IBZ.mesh.append(kpoint) 
         print 'Points inside', nInside
-        return IBZ
+        return IBZ,nInside
 
     def dynamic(self,IBZ,eps):
         ''' '''
@@ -767,7 +860,6 @@ class dynamicPack():
 #         golder = dot(H,(xolder-xold))
 #         folder = dot(gold,(xolder-xold))
         print 'energy_0',fold, 'gnorm',gnormold #,'grad', gold
-        fstart = fold; gnormstart = gnormold
         iIter = 0
         step = 1.0 #* minstep
         atMinStep = False
