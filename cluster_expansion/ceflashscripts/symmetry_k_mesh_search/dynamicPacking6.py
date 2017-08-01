@@ -436,9 +436,9 @@ class dynamicPack():
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
         self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
-        self.vertexPull = 1.0
+        self.vertexPull = 0.0
         self.interfactor = 1.0        
-        self.initFactor = 1.0 
+        self.initFactor = 1.0
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
         self.method = method
@@ -446,7 +446,7 @@ class dynamicPack():
         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.df = 1.00 * self.ravg #inter-point force scale distance
         self.dw = 0.5 * self.df #wall force scale distance
-        self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
+        self.shift =  array([1,1,1])/25 #array([1/10,0,0])
         eps = self.ravg/300
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
@@ -727,16 +727,18 @@ class dynamicPack():
         The energy must be a function of 1-D inputs, so we flatten the points into components '''
         
         epsilon = self.ravg/100
-        testN = True
-        while testN:
-            comps = array(self.IBZ.mesh).flatten()
-            energy = self.minSteepest(comps,self.eps) 
-            self.facetsMeshMathFile(self.IBZ,'IBZmesh_{}'.format(len(self.IBZ.mesh)),None)  
-            if energy/len(self.IBZ.mesh) < 0.1:
-                print 'Adding point'
-                self.IBZ.mesh = self.addPoints(self.IBZ)
-            else: 
-                testN = False
+#         testN = True
+#         while testN:
+#             comps = array(self.IBZ.mesh).flatten()
+#             energy = self.minSteepest(comps,self.eps) 
+#             self.facetsMeshMathFile(self.IBZ,'IBZmesh_{}'.format(len(self.IBZ.mesh)),None)  
+#             if energy/len(self.IBZ.mesh) < 0.1:
+#                 print 'Adding point'
+#                 self.IBZ.mesh = self.addPoints(self.IBZ)
+#             else: 
+#                 testN = False
+        comps = array(self.IBZ.mesh).flatten()
+        energy = self.minSteepest(comps,self.eps) 
         return
 
     def minSteepest(self,x0,eps):
