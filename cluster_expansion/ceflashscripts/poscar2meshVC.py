@@ -42,4 +42,5 @@ statusOK,nops = getVCmesh(os.getcwd(),method,ntarget,type)
 if statusOK:
     writefile([],'OK')  
 elif os.path.exists('OK'):
+    print'Status not OK'
     os.system('rm OK')           

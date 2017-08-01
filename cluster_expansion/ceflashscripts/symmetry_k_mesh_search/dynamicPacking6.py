@@ -474,9 +474,11 @@ class dynamicPack():
             IBZ = self.weightPoints(IBZ,eps)
             self.writeKpoints(IBZ)
             self.writeSym()
+            print 'OK status'
             return OK,self.nops
         else: 
             OK = False
+            print 'NOT OK status'
             return OK,self.nops
     
     def sortfpoints(self,cell):
@@ -712,14 +714,14 @@ class dynamicPack():
                         nMax = nInside
                         if self.searchType == 'max':
                             bestN = nInside
-                            bestIBZ = IBZ
+                            bestIBZ = deepcopy(IBZ)
                         print 'Nmax', nMax, shift, theta, phi
                     if self.searchType != 'max':
                         closeLog = abs(log(nInside/(self.searchInitFactor*self.nTargetIBZ)))
                         if closeLog < closestLog:
                             closestLog = closeLog
                             bestN = nInside
-                            bestIBZ = IBZ
+                            bestIBZ = deepcopy(IBZ)
                         
 #                         print 'Found nInside {} vs target N {} after {} steps'\
 #                         .format(nInside,self.searchInitFactor*self.nTargetIBZ,isearch)
