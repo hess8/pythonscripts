@@ -435,12 +435,14 @@ class dynamicPack():
         self.power = 6.0
         self.wallPower = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
-        self.wallClose = 0.25 #0.5 #to allow initial points closer to the wall set to less than 1. 
+        self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
         self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.vertexPull = 0.0
         self.interfactor = 1.0        
         self.initFactor = 1.0
         self.searchInitFactor = 0.6
+        self.searchType = 'max'
+#         self.searchType = 'target'
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
         self.method = method
@@ -708,14 +710,16 @@ class dynamicPack():
 #                     print 'nInside', nInside
                     if nInside > nMax: 
                         nMax = nInside
-#                         bestN = nInside
-#                         bestIBZ = IBZ
+                        if self.searchType == 'max':
+                            bestN = nInside
+                            bestIBZ = IBZ
                         print 'Nmax', nMax, shift, theta, phi
-                    closeLog = abs(log(nInside/(self.searchInitFactor*self.nTargetIBZ)))
-                    if closeLog < closestLog:
-                        closestLog = closeLog
-                        bestN = nInside
-                        bestIBZ = IBZ
+                    if self.searchType != 'max':
+                        closeLog = abs(log(nInside/(self.searchInitFactor*self.nTargetIBZ)))
+                        if closeLog < closestLog:
+                            closestLog = closeLog
+                            bestN = nInside
+                            bestIBZ = IBZ
                         
 #                         print 'Found nInside {} vs target N {} after {} steps'\
 #                         .format(nInside,self.searchInitFactor*self.nTargetIBZ,isearch)
@@ -726,7 +730,10 @@ class dynamicPack():
 #             print 'nInside {} vs target N {} after searching entire grid'.format(bestN,self.nTargetIBZ)
 # #             print 'nInside {} is less than target N {}'.format(bestN,self.nTargetIBZ)
 #              return bestIBZ
-        print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.searchInitFactor*self.nTargetIBZ)
+        if self.searchType == 'max':
+            print 'Maximum nInside {} found vs target N {}'.format(bestN,self.nTargetIBZ)
+        else:
+            print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.searchInitFactor*self.nTargetIBZ)
         return bestIBZ
         
     def fillMesh(self,cubicLVs,IBZ,shift,aKcubConv,sites):
