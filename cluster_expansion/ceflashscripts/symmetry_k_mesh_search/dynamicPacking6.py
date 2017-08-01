@@ -435,7 +435,7 @@ class dynamicPack():
         self.power = 6.0
         self.wallPower = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
-        self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
+        self.wallClose = 0.25 #0.5 #to allow initial points closer to the wall set to less than 1. 
         self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.vertexPull = 0.0
         self.interfactor = 1.0        
@@ -461,7 +461,8 @@ class dynamicPack():
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
         self.facetsMathFile(BZ,'BZ') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
-        IBZ = self.sortfpoints(IBZ)
+#         IBZ = self.sortfpoints(IBZ)
+        self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)))
         self.facetsMathFile(IBZ,'IBZ') 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
         if 0 < len(IBZ.mesh) <= 4000:
@@ -488,45 +489,45 @@ class dynamicPack():
         cell.fpoints = array(cell.fpoints)[order].tolist()
         return cell
             
-    def addPoints(self,IBZ):
-        '''Add N points near vertices, with the vertex farthest from center first
-        Put the new point a distance of ravg/4 from the vertex, along the line 
-        between the center and the vertex '''
-        print 'Finding largest cell to add point:',
-        pointCells = []
-        vols = []
-        for ip,point in enumerate(IBZ.mesh):
-            print ip,
-            pointCell = cell()
-            neighs,neighLbls = self.getNeighbors(point,IBZ,self.eps)
-            boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
-            for iw, u in enumerate(IBZ.bounds[0]):
-                ro = self.bounds[1][iw]
-                d = ro-dot(point,u) 
-                vec = d*u
-                boundVecs[iw]['vec'] = vec  #vector from point to wall
-                boundVecs[iw]['mag'] = norm(vec)
-            walls = boundVecs
-            for j, jpoint in enumerate(neighs):
-                vec = (jpoint - point)/2
-                boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
-                boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
-            boundVecs.sort(order = 'mag')
-            pointCell = getVorCell(boundVecs,pointCell,'point',self.eps)
-            pointCells.append(pointCell)
-            vols.append(pointCell.volume)
-        largeCell = pointCells[argmax(vols)]
-        #find the first vertex that is not on a wall.  Put the new point there. 
-        for point in largeCell.fpoints:
-            for ib, u in enumerate(IBZ.bounds[0]):
-                if areEqual(dot(point,u),IBZ.bounds[1][ib],self.eps):
-                    break2 = True
-                    break
-            else:
-                vpoint = point
-                break
-        IBZ.mesh.append(vpoint)
-        return IBZ.mesh
+#     def addPoints(self,IBZ):
+#         '''Add N points near vertices, with the vertex farthest from center first
+#         Put the new point a distance of ravg/4 from the vertex, along the line 
+#         between the center and the vertex '''
+#         print 'Finding largest cell to add point:',
+#         pointCells = []
+#         vols = []
+#         for ip,point in enumerate(IBZ.mesh):
+#             print ip,
+#             pointCell = cell()
+#             neighs,neighLbls = self.getNeighbors(point,IBZ,self.eps)
+#             boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
+#             for iw, u in enumerate(IBZ.bounds[0]):
+#                 ro = self.bounds[1][iw]
+#                 d = ro-dot(point,u) 
+#                 vec = d*u
+#                 boundVecs[iw]['vec'] = vec  #vector from point to wall
+#                 boundVecs[iw]['mag'] = norm(vec)
+#             walls = boundVecs
+#             for j, jpoint in enumerate(neighs):
+#                 vec = (jpoint - point)/2
+#                 boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
+#                 boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
+#             boundVecs.sort(order = 'mag')
+#             pointCell = getVorCell(boundVecs,pointCell,'point',self.eps)
+#             pointCells.append(pointCell)
+#             vols.append(pointCell.volume)
+#         largeCell = pointCells[argmax(vols)]
+#         #find the first vertex that is not on a wall.  Put the new point there. 
+#         for point in largeCell.fpoints:
+#             for ib, u in enumerate(IBZ.bounds[0]):
+#                 if areEqual(dot(point,u),IBZ.bounds[1][ib],self.eps):
+#                     break2 = True
+#                     break
+#             else:
+#                 vpoint = point
+#                 break
+#         IBZ.mesh.append(vpoint)
+#         return IBZ.mesh
 
     def writeSym(self):
         writefile(['nops: {}\n'.format(self.nops),\
@@ -674,21 +675,24 @@ class dynamicPack():
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubic.')
-        self.searchNmax(cubicLVs,IBZ,aKcubConv,sites)
+        return self.searchNmax(cubicLVs,IBZ,aKcubConv,sites)
         #Search over shift and rotation to find the most possible points inside
 
     def searchNmax(self,cubicLVs,IBZ,aKcubConv,sites):
         '''Test an entire grid of init values'''
         cubicLVs0 = cubicLVs
-        shiftDiv = 0.1
-        shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(int(ceil(1/shiftDiv)) + 1)]
+        shiftDiv = 0.15
         thDiv = 10.0  #deg
-        thetas = [i*thDiv for i in range(int(ceil(90/shiftDiv)) + 1)]
-        phis = [i*thDiv for i in range(int(ceil(90/shiftDiv)) + 1)]
+        shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(int(ceil(1/shiftDiv)) + 1)]
+        thetas = [i*thDiv for i in range(int(ceil(90/thDiv)) + 1)]
+        phis = [i*thDiv for i in range(int(ceil(90/thDiv)) + 1)]
         nMax = 0
+        isearch = 0
         for shift in shifts:
+            print 'shift',shift
             for theta in thetas:
                 for phi in phis:
+                    isearch += 1
                     Rmat = dot(
                         array([[1,0,0],
                         [0,cos(theta),-sin(theta)],
@@ -701,7 +705,22 @@ class dynamicPack():
                     IBZ,nInside = self.fillMesh(cubicLVs,IBZ,shift,aKcubConv,sites)
                     if nInside > nMax: 
                         nMax = nInside
+                        bestN = nInside
+                        bestIBZ = IBZ
                         print 'Nmax', nMax, shift, theta, phi
+#                     tol = 0.01
+#                     if (1-tol)*self.nTargetIBZ <= nInside <= (1+tol) * self.nTargetIBZ: 
+#                     if  nInside >= self.nTargetIBZ:
+#                         print 'Found nInside {} vs target N {} after {} steps'\
+#                         .format(nInside,self.nTargetIBZ,isearch)
+#                         return IBZ
+        else:
+#             print 'Did not find nInside within {}% of target N {}'.format(tol*100,self.nTargetIBZ)
+            print 'nInside {} vs target N {} after searching entire grid'.format(bestN,self.nTargetIBZ)
+#             print 'nInside {} is less than target N {}'.format(bestN,self.nTargetIBZ)
+            return bestIBZ
+        
+            
                     
                                     
                              
@@ -802,7 +821,7 @@ class dynamicPack():
                         if isInside(kpoint,IBZ.bounds,self.dw*self.wallClose):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
                             IBZ.mesh.append(kpoint) 
-        print 'Points inside', nInside
+#         print 'Points inside', nInside
         return IBZ,nInside
 
     def dynamic(self,IBZ,eps):
@@ -898,13 +917,13 @@ class dynamicPack():
         print 'For {} points in IBZ and {} steps'.format(len(self.IBZ.mesh),iIter)
         print '\tStarting energy',fstart, 'gnorm',gnormstart
         print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
+        print 'Energy/N',fnew/len(self.IBZ.mesh)
         if gnormnew <= gnormTol:
             print '\nSuccess after {} iterations'.format(iIter)
         elif iIter == itermax:
             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
         if not (fnew < fstart and gnormnew < gnormstart):
             sys.exit('Did not find a lower energy and force norm: stop')
-        
         return fnew
 
     def enerGrad(self,comps):
@@ -913,7 +932,7 @@ class dynamicPack():
 #         print 'oldindvecs',self.oldindVecs
         self.forces = zeros((len(self.IBZ.mesh),3))
         self.wallForce = zeros(len(self.IBZ.facets))
-        self.wallPress = zeros(len(self.IBZ.facets))
+#         self.wallPress = zeros(len(self.IBZ.facets))
         IBZvecs = comps.reshape((len(self.IBZ.mesh),3))
         p = self.power
         wp = self.wallPower
@@ -946,11 +965,10 @@ class dynamicPack():
                     self.forces[i] += interfact*(d/self.df)**(-p)*(ri-rj)/d
                     if j>i: #don't overcount
                         etot += interfact*self.df/abs(-p+1)*(d/self.df)**(-p+1)
-        for i,fac in enumerate(self.facets):
-            area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
-            self.wallPress[i] = self.wallForce[i]/area
+#         for i,fac in enumerate(self.facets):
+#             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
+#             self.wallPress[i] = self.wallForce[i]/area
 #         print 'Pressure avg', mean(self.wallPress)
-        print 'Energy/N',etot/len(self.IBZ.mesh)
         return etot, -self.forces.flatten() #gradient is opposite the forces.
         
     def writeKpoints(self,cell):
