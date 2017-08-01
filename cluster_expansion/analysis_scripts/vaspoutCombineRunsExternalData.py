@@ -81,9 +81,11 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/sc_bcc',
 #           '/fslhome/bch/cluster_expansion/vcmesh/sc_cub']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_vp10', 
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_testfcc', 
+         '/fslhome/bch/cluster_expansion/vcmesh/sc_bcc', 
+         '/fslhome/bch/cluster_expansion/vcmesh/sc_cub', 
          '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc',
-          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
+         '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 # 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_fccOut',
 #          '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc']
@@ -110,7 +112,7 @@ paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_vp10',
 
 # extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
 extpath = None
-
+useSym = False
 coloring = 'method'
 # coloring = 'indiv'
 doLegend = True
@@ -219,7 +221,11 @@ for ipath, path in enumerate(paths): #my data
         nKs = []
         ns = [] #the base n of the run run
         nDone = 0
-        nops,IBZvolcut,IBZvol = readSym(calcs[0])
+        if useSym:
+            try:
+                nops,IBZvolcut,IBZvol = readSym(calcs[0])
+            except:
+                sys.exit('Stopping. readSym failed. Set useSym to False')
         for calc in calcs:  
             if electronicConvergeFinish(calc):
                 ener = getEnergy(calc) #in energy/atom
@@ -251,8 +257,9 @@ for ipath, path in enumerate(paths): #my data
             data[iplot]['ID'] = '{} {}'.format(struct,tag)
             nAtoms = getNatoms('{}/POSCAR'.format(calc))
             data[iplot]['nAtoms'] = nAtoms
-            data[iplot]['nops'] = nops
-            data[iplot]['IBZvolcut'] = IBZvolcut
+            if useSym:
+                data[iplot]['nops'] = nops
+                data[iplot]['IBZvolcut'] = IBZvolcut
             data[iplot]['nDone'] = nDone
             data[iplot]['eners'][:nDone] = energies
             data[iplot]['errs'][:nDone] = errs
@@ -284,7 +291,8 @@ if not extpath is None:
         else:
             structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2 and os.path.getsize(d)>0])
         for structfile in structfiles:
-            nops,IBZvolcut,nAtoms = copyData(structfile,data)
+            if useSym:
+                nops,IBZvolcut,nAtoms = copyData(structfile,data)
             if coloring == 'indiv':
                 if iplot < nplots -1:
                     color = cm.jet(1.*(iplot+1)/float(nplots))
@@ -310,8 +318,9 @@ if not extpath is None:
             struct = '_'.join(structfile.split('_')[:2])
             data[iplot]['ID'] = atom_method + struct
             data[iplot]['nAtoms'] = nAtoms
-            data[iplot]['nops'] = nops
-            data[iplot]['IBZvolcut'] = IBZvolcut
+            if useSym:
+                data[iplot]['nops'] = nops
+                data[iplot]['IBZvolcut'] = IBZvolcut
             data[iplot]['nDone'] = len(energies)
             data[iplot]['eners'][:nDone] = energies
             data[iplot]['errs'][:nDone] = errs
@@ -365,7 +374,6 @@ for it,plotType in enumerate(plotTypes):
         elif coloring == 'indiv': 
             if doLabel: labelStr = '{} {}'.format(filter,data[iplot]['ID'])
             plotData(data[iplot],n,plotType,filter,doLegend,labelStr)
- 
 #Method averaging
 if coloring == 'method':
     print 'Averaging, plotting method errors'
@@ -407,70 +415,65 @@ if coloring == 'method':
     legend(loc='lower left',prop={'size':12});
     fig.savefig('{}/methodErrs'.format(summaryPath))
 
-
-#Method averaging with scaled Nk to account for symmetry and nAtoms advantages
-    maxNk = 0
-    for iplot in range(nplots):
-        nops = data[iplot]['nops'] 
-        nAtoms = data[iplot]['nAtoms'] 
-        n = data[iplot]['nDone']
-        for icalc in range(n):#data[iplot]['eners'][:n].tolist()
-            nK = data[iplot]['nKs'][icalc]
-            if nK>1:
-                data[iplot]['nKs'][icalc] = data[iplot]['nKs'][icalc]*nAtoms*nops
-                maxNi = max(data[iplot]['nKs'])
-                if maxNi > maxNk: maxNk = maxNi
-            
-    lines = [' ID , nKIBZ , ener , err, nAtoms, nops,IBZcut\n']  
-    for iplot in range(nplots):
-        n = data[iplot]['nDone']
-        for icalc in range(n):#data[iplot]['eners'][:n].tolist()
-            lines.append('{}_n{},{},{:15.12f},{:15.12f},{},{},{}\n'.format(data[iplot]['ID'],\
-              data[iplot]['ns'][icalc], data[iplot]['nKs'][icalc],\
-              data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],\
-              data[iplot]['nAtoms'],data[iplot]['nops'],data[iplot]['IBZvolcut']))
-    writefile(lines,'{}/summaryScaled.csv'.format(summaryPath)) 
-
-
-
-
-
-    print '\nAveraging, plotting with nK scaling of symmetry and nAtoms'
-    nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
-    nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
-    fig = figure()
-    ax1 = fig.add_subplot(111)
-    smoothFactor *= 2
-    xlabel('N k-points (smoothed by factor {}, scaled by N-atoms and N-sym)'.format(int(smoothFactor)))
-    ylabel('Error (meV)') 
-    for im,method in enumerate(methods):
-        methnKmax = 0 
-        binCounts = zeros(nbins,dtype = int32)
-        binErrs = zeros(nbins,dtype = float)       
+if useSym:
+    #Method averaging with scaled Nk to account for symmetry and nAtoms advantages
+        maxNk = 0
         for iplot in range(nplots):
-            if data[iplot]['method'] == method:
-                for icalc in range(data[iplot]['nDone']-1):
-                    nK = data[iplot]['nKs'][icalc]
-                    if nK>methnKmax: methnKmax = nK
-                    if nK>1:
-                        for ibin in range(nbins):
-                            if abs(log10(nK/nKbins[ibin])) <= log10(smoothFactor)\
-                              and nKbins[ibin]<= maxNk:
-                                binErrs[ibin] += data[iplot]['errs'][icalc]
-                                binCounts[ibin] += 1
-        mask = where(binCounts>0)
-        binErrs2 = binErrs[mask[0]]
-        binCounts2 = binCounts[mask[0]]
-        nKbins2 = nKbins[mask[0]]
-        nbins2 = len(nKbins2)
-        avgErrs = [binErrs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
-        loglog(nKbins2,avgErrs,label = method,\
-              color = colorsList[im], marker = None)
-        print 'Method',method, 'nKmax',methnKmax
-        print 'nKs',nKbins2
-        print 'errs',binErrs2
-        print 'counts',binCounts2
-        print 'avgErrs',avgErrs
-    legend(loc='lower left',prop={'size':12});
-    fig.savefig('{}/methodErrsScaledNk'.format(summaryPath))
+            nops = data[iplot]['nops'] 
+            nAtoms = data[iplot]['nAtoms'] 
+            n = data[iplot]['nDone']
+            for icalc in range(n):#data[iplot]['eners'][:n].tolist()
+                nK = data[iplot]['nKs'][icalc]
+                if nK>1:
+                    data[iplot]['nKs'][icalc] = data[iplot]['nKs'][icalc]*nAtoms*nops
+                    maxNi = max(data[iplot]['nKs'])
+                    if maxNi > maxNk: maxNk = maxNi
+                
+        lines = [' ID , nKIBZ , ener , err, nAtoms, nops,IBZcut\n']  
+        for iplot in range(nplots):
+            n = data[iplot]['nDone']
+            for icalc in range(n):#data[iplot]['eners'][:n].tolist()
+                lines.append('{}_n{},{},{:15.12f},{:15.12f},{},{},{}\n'.format(data[iplot]['ID'],\
+                  data[iplot]['ns'][icalc], data[iplot]['nKs'][icalc],\
+                  data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],\
+                  data[iplot]['nAtoms'],data[iplot]['nops'],data[iplot]['IBZvolcut']))
+        writefile(lines,'{}/summaryScaled.csv'.format(summaryPath))    
+        print '\nAveraging, plotting with nK scaling of symmetry and nAtoms'
+        nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
+        nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
+        fig = figure()
+        ax1 = fig.add_subplot(111)
+        smoothFactor *= 2
+        xlabel('N k-points (smoothed by factor {}, scaled by N-atoms and N-sym)'.format(int(smoothFactor)))
+        ylabel('Error (meV)') 
+        for im,method in enumerate(methods):
+            methnKmax = 0 
+            binCounts = zeros(nbins,dtype = int32)
+            binErrs = zeros(nbins,dtype = float)       
+            for iplot in range(nplots):
+                if data[iplot]['method'] == method:
+                    for icalc in range(data[iplot]['nDone']-1):
+                        nK = data[iplot]['nKs'][icalc]
+                        if nK>methnKmax: methnKmax = nK
+                        if nK>1:
+                            for ibin in range(nbins):
+                                if abs(log10(nK/nKbins[ibin])) <= log10(smoothFactor)\
+                                  and nKbins[ibin]<= maxNk:
+                                    binErrs[ibin] += data[iplot]['errs'][icalc]
+                                    binCounts[ibin] += 1
+            mask = where(binCounts>0)
+            binErrs2 = binErrs[mask[0]]
+            binCounts2 = binCounts[mask[0]]
+            nKbins2 = nKbins[mask[0]]
+            nbins2 = len(nKbins2)
+            avgErrs = [binErrs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+            loglog(nKbins2,avgErrs,label = method,\
+                  color = colorsList[im], marker = None)
+            print 'Method',method, 'nKmax',methnKmax
+            print 'nKs',nKbins2
+            print 'errs',binErrs2
+            print 'counts',binCounts2
+            print 'avgErrs',avgErrs
+        legend(loc='lower left',prop={'size':12});
+        fig.savefig('{}/methodErrsScaledNk'.format(summaryPath))
 print 'Done'
