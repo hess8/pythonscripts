@@ -9,7 +9,8 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where,real,allclose,sign,pi,imag,identity,argsort)
+                   trace,where,real,allclose,sign,pi,imag,identity,argsort,
+                   cos,sin,log)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi, ConvexHull as convexH
 from numpy.linalg import inv, norm, det, eig
@@ -470,7 +471,9 @@ class dynamicPack():
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
         self.facetsMathFile(BZ,'BZ') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
-        IBZ = self.sortfpoints(IBZ)
+        self.IBZ = IBZ  
+#         IBZ = self.sortfpoints(IBZ)
+        self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)))
         self.facetsMathFile(IBZ,'IBZ') 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
         if 0 < len(IBZ.mesh) <= 4000:
@@ -497,45 +500,45 @@ class dynamicPack():
         cell.fpoints = array(cell.fpoints)[order].tolist()
         return cell
             
-    def addPoints(self,IBZ):
-        '''Add N points near vertices, with the vertex farthest from center first
-        Put the new point a distance of ravg/4 from the vertex, along the line 
-        between the center and the vertex '''
-        print 'Finding largest cell to add point:',
-        pointCells = []
-        vols = []
-        for ip,point in enumerate(IBZ.mesh):
-            print ip,
-            pointCell = cell()
-            neighs,neighLbls = self.getNeighbors(point,IBZ,self.eps)
-            boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
-            for iw, u in enumerate(IBZ.bounds[0]):
-                ro = self.bounds[1][iw]
-                d = ro-dot(point,u) 
-                vec = d*u
-                boundVecs[iw]['vec'] = vec  #vector from point to wall
-                boundVecs[iw]['mag'] = norm(vec)
-            walls = boundVecs
-            for j, jpoint in enumerate(neighs):
-                vec = (jpoint - point)/2
-                boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
-                boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
-            boundVecs.sort(order = 'mag')
-            pointCell = getVorCell(boundVecs,pointCell,'point',self.eps)
-            pointCells.append(pointCell)
-            vols.append(pointCell.volume)
-        largeCell = pointCells[argmax(vols)]
-        #find the first vertex that is not on a wall.  Put the new point there. 
-        for point in largeCell.fpoints:
-            for ib, u in enumerate(IBZ.bounds[0]):
-                if areEqual(dot(point,u),IBZ.bounds[1][ib],self.eps):
-                    break2 = True
-                    break
-            else:
-                vpoint = point
-                break
-        IBZ.mesh.append(vpoint)
-        return IBZ.mesh
+#     def addPoints(self,IBZ):
+#         '''Add N points near vertices, with the vertex farthest from center first
+#         Put the new point a distance of ravg/4 from the vertex, along the line 
+#         between the center and the vertex '''
+#         print 'Finding largest cell to add point:',
+#         pointCells = []
+#         vols = []
+#         for ip,point in enumerate(IBZ.mesh):
+#             print ip,
+#             pointCell = cell()
+#             neighs,neighLbls = self.getNeighbors(point,IBZ,self.eps)
+#             boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
+#             for iw, u in enumerate(IBZ.bounds[0]):
+#                 ro = self.IBZ.bounds[1][iw]
+#                 d = ro-dot(point,u) 
+#                 vec = d*u
+#                 boundVecs[iw]['vec'] = vec  #vector from point to wall
+#                 boundVecs[iw]['mag'] = norm(vec)
+#             walls = boundVecs
+#             for j, jpoint in enumerate(neighs):
+#                 vec = (jpoint - point)/2
+#                 boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
+#                 boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
+#             boundVecs.sort(order = 'mag')
+#             pointCell = getVorCell(boundVecs,pointCell,'point',self.eps)
+#             pointCells.append(pointCell)
+#             vols.append(pointCell.volume)
+#         largeCell = pointCells[argmax(vols)]
+#         #find the first vertex that is not on a wall.  Put the new point there. 
+#         for point in largeCell.fpoints:
+#             for ib, u in enumerate(IBZ.bounds[0]):
+#                 if areEqual(dot(point,u),IBZ.bounds[1][ib],self.eps):
+#                     break2 = True
+#                     break
+#             else:
+#                 vpoint = point
+#                 break
+#         IBZ.mesh.append(vpoint)
+#         return IBZ.mesh
 
     def writeSym(self):
         writefile(['nops: {}\n'.format(self.nops),\
@@ -556,9 +559,8 @@ class dynamicPack():
             neighs,neighLbls = self.getNeighbors(point,IBZ,eps)
 #             print 'neighLbls',neighLbls
             boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
-            for iw, u in enumerate(IBZ.bounds[0]):
-                
-                ro = self.bounds[1][iw]
+            for iw, u in enumerate(IBZ.bounds[0]):    
+                ro = IBZ.bounds[1][iw]
                 d = ro-dot(point,u) 
                 vec = d*u
                 boundVecs[iw]['vec'] = vec  #vector from point to wall
@@ -714,10 +716,6 @@ class dynamicPack():
 
     def dynamic(self,IBZ,eps):
         ''' '''
-        self.IBZ = IBZ
-        self.bounds = IBZ.bounds 
-        self.facets = IBZ.facets
-        self.eps = eps
         self.relax()
         self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
         return
@@ -767,7 +765,6 @@ class dynamicPack():
 #         golder = dot(H,(xolder-xold))
 #         folder = dot(gold,(xolder-xold))
         print 'energy_0',fold, 'gnorm',gnormold #,'grad', gold
-        fstart = fold; gnormstart = gnormold
         iIter = 0
         step = 1.0 #* minstep
         atMinStep = False
@@ -785,7 +782,7 @@ class dynamicPack():
                 currPoints = xnew.reshape((len(self.IBZ.mesh),3))
                 inside = True
                 for point in currPoints:
-                    if not isInside(point,self.bounds,eps):
+                    if not isInside(point,self.IBZ.bounds,eps):
                         print 'point is outside IBZ...reduce step size:',point
                         inside = False
                         break                   
@@ -821,7 +818,7 @@ class dynamicPack():
 #         print 'oldindvecs',self.oldindVecs
         self.forces = zeros((len(self.IBZ.mesh),3))
         self.wallForce = zeros(len(self.IBZ.facets))
-        self.wallPress = zeros(len(self.IBZ.facets))
+#         self.wallPress = zeros(len(self.IBZ.facets))
         IBZvecs = comps.reshape((len(self.IBZ.mesh),3))
         p = self.power
         wp = self.wallPower
@@ -830,8 +827,8 @@ class dynamicPack():
         etot = 0
         for i,ri in enumerate(IBZvecs):
             #wall forces
-            for iw, u in enumerate(self.bounds[0]):
-                ro = self.bounds[1][iw]
+            for iw, u in enumerate(self.IBZ.bounds[0]):
+                ro = self.IBZ.bounds[1][iw]
                 d = ro-dot(ri,u)+ self.wallOffset*self.dw #distance from plane to ri offset factor allows points to move closer to walls. 
                 if d<0:
                     print '\nri,ro,u, dot(ri,u),d'
@@ -854,9 +851,9 @@ class dynamicPack():
                     self.forces[i] += interfact*(d/self.df)**(-p)*(ri-rj)/d
                     if j>i: #don't overcount
                         etot += interfact*self.df/abs(-p+1)*(d/self.df)**(-p+1)
-        for i,fac in enumerate(self.facets):
-            area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
-            self.wallPress[i] = self.wallForce[i]/area
+#         for i,fac in enumerate(self.facets):
+#             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
+#             self.wallPress[i] = self.wallForce[i]/area
 #         print 'Pressure avg', mean(self.wallPress)
         print 'Energy/N',etot/len(self.IBZ.mesh)
         return etot, -self.forces.flatten() #gradient is opposite the forces.
