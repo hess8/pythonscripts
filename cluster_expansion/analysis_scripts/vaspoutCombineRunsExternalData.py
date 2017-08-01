@@ -204,7 +204,7 @@ for ipath, path in enumerate(paths): #my data
     print structs,path
     for istruct,struct in enumerate(structs):
 #         print 'test', istruct, struct
-        
+        print 'struct',struct
         os.chdir(struct)
         if coloring == 'indiv':
 #             if iplot < nplots -1:
@@ -220,6 +220,7 @@ for ipath, path in enumerate(paths): #my data
         ns = [] #the base n of the run run
         nDone = 0
         nops,IBZvolcut,IBZvol = readSym(calcs[0])
+        print 'struct',struct
         for calc in calcs:  
             if electronicConvergeFinish(calc):
                 ener = getEnergy(calc) #in energy/atom

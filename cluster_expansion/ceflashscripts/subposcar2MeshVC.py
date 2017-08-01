@@ -123,7 +123,7 @@ vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
-type = 'bcc' 
+type = 'fcc' 
 testfile = 'POSCAR' 
 reallatt = zeros((3,3))
 createdirs(poscarsDir,maindir,vaspinputdir)
