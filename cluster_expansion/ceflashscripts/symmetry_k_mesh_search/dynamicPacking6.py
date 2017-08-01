@@ -449,6 +449,7 @@ class dynamicPack():
         self.dw = 0.5 * self.df #wall force scale distance
         self.shift =  array([1,1,1])/25 #array([1/10,0,0])
         eps = self.ravg/300
+        self.eps = eps
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
