@@ -474,11 +474,9 @@ class dynamicPack():
             IBZ = self.weightPoints(IBZ,eps)
             self.writeKpoints(IBZ)
             self.writeSym()
-            print 'OK status'
             return OK,self.nops
         else: 
             OK = False
-            print 'NOT OK status'
             return OK,self.nops
     
     def sortfpoints(self,cell):
