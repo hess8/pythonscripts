@@ -9,7 +9,7 @@ import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
-                   trace,where,real,allclose,sign,pi,imag,identity)
+                   trace,where,real,allclose,sign,pi,imag,identity,argsort)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi, ConvexHull as convexH
 from numpy.linalg import inv, norm, det, eig
@@ -22,6 +22,7 @@ from matplotlib.pyplot import (subplots,savefig,imshow,close,plot,title,xlabel,
 import matplotlib.image as mpimg
 from scipy.spatial import Voronoi
 from __builtin__ import True
+from _symtable import CELL
 # import datetime
 # from _ast import operator
 # from pip._vendor.html5lib.constants import rcdataElements
@@ -469,6 +470,7 @@ class dynamicPack():
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
         self.facetsMathFile(BZ,'BZ') 
         IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
+        IBZ = self.sortfpoints(IBZ)
         self.facetsMathFile(IBZ,'IBZ') 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
         if 0 < len(IBZ.mesh) <= 4000:
@@ -482,6 +484,59 @@ class dynamicPack():
             OK = False
             return OK,self.nops
     
+    def sortfpoints(self,cell):
+        #sort with vertices closest to the origin first
+        norms = []
+        newfpoints = zeros(len(cell.fpoints))
+        for point in cell.fpoints:
+            norms.append(norm(point))
+        order = argsort(norms)
+#         for inew,iold in order:
+#             newfpoints.append(cell.fpoints[iold])
+#         cell.fpoints = newfpoints
+        cell.fpoints = array(cell.fpoints)[order].tolist()
+        return cell
+            
+    def addPoints(self,IBZ):
+        '''Add N points near vertices, with the vertex farthest from center first
+        Put the new point a distance of ravg/4 from the vertex, along the line 
+        between the center and the vertex '''
+        print 'Finding largest cell to add point:',
+        pointCells = []
+        vols = []
+        for ip,point in enumerate(IBZ.mesh):
+            print ip,
+            pointCell = cell()
+            neighs,neighLbls = self.getNeighbors(point,IBZ,self.eps)
+            boundVecs = zeros(len(neighs)+ len(IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
+            for iw, u in enumerate(IBZ.bounds[0]):
+                ro = self.bounds[1][iw]
+                d = ro-dot(point,u) 
+                vec = d*u
+                boundVecs[iw]['vec'] = vec  #vector from point to wall
+                boundVecs[iw]['mag'] = norm(vec)
+            walls = boundVecs
+            for j, jpoint in enumerate(neighs):
+                vec = (jpoint - point)/2
+                boundVecs[j+len(IBZ.bounds[0])]['vec'] = vec
+                boundVecs[j+len(IBZ.bounds[0])]['mag'] = norm(vec)
+            boundVecs.sort(order = 'mag')
+            pointCell = getVorCell(boundVecs,pointCell,'point',self.eps)
+            pointCells.append(pointCell)
+            vols.append(pointCell.volume)
+        largeCell = pointCells[argmax(vols)]
+        #find the first vertex that is not on a wall.  Put the new point there. 
+        for point in largeCell.fpoints:
+            for ib, u in enumerate(IBZ.bounds[0]):
+                if areEqual(dot(point,u),IBZ.bounds[1][ib],self.eps):
+                    break2 = True
+                    break
+            else:
+                vpoint = point
+                break
+        IBZ.mesh.append(vpoint)
+        return IBZ.mesh
+
     def writeSym(self):
         writefile(['nops: {}\n'.format(self.nops),\
                    'IBZvolCut: {}\n'.format(self.IBZvolCut),\
@@ -495,7 +550,6 @@ class dynamicPack():
         Vectors are first taken from each mesh point as the origin, 
         then displaced to their real positions in the cell for possible display'''
         allMPfacets = []
-        skews = []
         for ip,point in enumerate(IBZ.mesh):
             print ip,
             pointCell = cell()
@@ -517,9 +571,6 @@ class dynamicPack():
 #                 print 'neighs',j,jpoint, vec, norm(vec)
             boundVecs.sort(order = 'mag')
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
-#             skew = norm(pointCell.center)/self.ravg
-#             skews.append(skew)
-#             print 'Skew: Distance from point to center,normalized',norm(pointCell.center)/self.ravg
             IBZ.weights.append(pointCell.volume)
             
             #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
@@ -664,40 +715,45 @@ class dynamicPack():
     def dynamic(self,IBZ,eps):
         ''' '''
         self.IBZ = IBZ
-        self.points = IBZ.mesh #initial mesh
         self.bounds = IBZ.bounds 
         self.facets = IBZ.facets
         self.eps = eps
         self.relax()
-        self.facetsMeshMathFile(self.IBZ)
+        self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
         return
 
     def relax(self):
         '''Minimization of the potential energy.
         The energy must be a function of 1-D inputs, so we flatten the points into components '''
-        initialPos = array(self.points).flatten()
+        
         epsilon = self.ravg/100
-#         out = self.fmin_cg(initialPos,self.eps)
-        self.minSteepest(initialPos,self.eps)    
+        testN = True
+        while testN:
+            comps = array(self.IBZ.mesh).flatten()
+            energy = self.minSteepest(comps,self.eps) 
+            self.facetsMeshMathFile(self.IBZ,'IBZmesh_{}'.format(len(self.IBZ.mesh)),None)  
+            if energy/len(self.IBZ.mesh) < 0.1:
+                print 'Adding point'
+                self.IBZ.mesh = self.addPoints(self.IBZ)
+            else: 
+                testN = False
         return
 
     def minSteepest(self,x0,eps):
-        ''' Steepest descent works better on tests than sophisticated methods such as 
+        ''' Steepest descent works better in tests than sophisticated methods such as 
         conjugate gradient or using a Hessian method (see intro to P. Pulay, Chem. Phys. Lett. 73, 393 (1980)). 
         We move in the direction of -gradient, starting with a default step, and decreasing it by 2 until
         a lower energy and lower norm(gradient) is found.   The default step is increased if the previous step succeeded without adjustment.
         If the step must be lowered to find a lower energy and lower norm(gradient), the default is lowered. This worked
         better than the Barzilai-Borwein method that tries to predict an optimal step.    
         
-        '''
-        self.IBZ.mesh = self.points
-#         self.facetsMeshMathFile(self.IBZ); print ';Show[p,q]\n'
-#         print 'Start Minimization';
+'''
 
         itermax = 100
         gnormTol = 0.001
-        minstep = 0.0001
-        xold= x0
+        minstep = 0.000001
+        xold = x0
+        xnew = x0
         fold,gold = self.enerGrad(xold)
         gnew = gold
         fnew = fold
@@ -711,7 +767,7 @@ class dynamicPack():
         print 'energy_0',fold, 'gnorm',gnormold #,'grad', gold
         fstart = fold; gnormstart = gnormold
         iIter = 0
-        step = 1.0
+        step = 1.0 #* minstep
         atMinStep = False
         while iIter < itermax and gnormold > gnormTol and not atMinStep:
             print iIter, #progress bar
@@ -724,9 +780,9 @@ class dynamicPack():
                     break
                 if method == 'steepest':
                     xnew = xold - step*gold
-                self.points = xnew.reshape((len(self.points),3))
+                currPoints = xnew.reshape((len(self.IBZ.mesh),3))
                 inside = True
-                for point in self.points:
+                for point in currPoints:
                     if not isInside(point,self.bounds,eps):
                         print 'point is outside IBZ...reduce step size:',point
                         inside = False
@@ -734,22 +790,18 @@ class dynamicPack():
                 if inside:
                     fnew,gnew = self.enerGrad(xnew)
                     gnormnew = norm(gnew)
-#                     print '\nenergy',iIter, fnew,'step',step,'gnorm',gnormnew #, 'grad', gnew
                     if fnew<fold and gnormnew < gnormold:
                         lower = True
+                        self.IBZ.mesh = currPoints.tolist()
                 step /= 2
             step *= 4
-#             xolder = xold
-#             folder = folder
-#             golder = gold
             xold = xnew
             fold = fnew
             gold = gnew
             gnormold = gnormnew
             iIter += 1                   
-        self.IBZ.mesh = self.points; 
-#         print;self.facetsMeshMathFile(self.IBZ); print ';Show[p,q]\n'
-        print 'For {} points in IBZ and {} steps'.format(len(self.points),iIter)
+        self.IBZ.mesh = currPoints.tolist()
+        print 'For {} points in IBZ and {} steps'.format(len(self.IBZ.mesh),iIter)
         print '\tStarting energy',fstart, 'gnorm',gnormstart
         print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
         if gnormnew <= gnormTol:
@@ -758,51 +810,42 @@ class dynamicPack():
             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
         if not (fnew < fstart and gnormnew < gnormstart):
             sys.exit('Did not find a lower energy and force norm: stop')
-#         print; print
+        
+        return fnew
 
     def enerGrad(self,comps):
         '''Returns the total energy, gradient (-forces), 
         using comps, which are the flattened components of the current positions  '''
 #         print 'oldindvecs',self.oldindVecs
-        self.forces = zeros((len(self.points),3))
+        self.forces = zeros((len(self.IBZ.mesh),3))
         self.wallForce = zeros(len(self.IBZ.facets))
         self.wallPress = zeros(len(self.IBZ.facets))
-        vecs = comps.reshape((len(self.points),3))
+        IBZvecs = comps.reshape((len(self.IBZ.mesh),3))
         p = self.power
         wp = self.wallPower
         wallfact = self.wallfactor
         interfact = self.interfactor
         etot = 0
-        for i,ri in enumerate(vecs):
-#             print 'EG{}'.format(i),
-#             print 'point',i,ri
+        for i,ri in enumerate(IBZvecs):
             #wall forces
             for iw, u in enumerate(self.bounds[0]):
                 ro = self.bounds[1][iw]
                 d = ro-dot(ri,u)+ self.wallOffset*self.dw #distance from plane to ri offset factor allows points to move closer to walls. 
-#                 if d<0:
-#                     'pause'
-# #                     print '** point {} crossed boundary'.format(i), iw, u,ro
-# #                     d = -d/10 #Have crossed boundary. Increase force by shortening effective d. 
                 if d<0:
-                    print 'ri,ro,u, dot(ri,u),d'
+                    print '\nri,ro,u, dot(ri,u),d'
                     print ri,ro,u, dot(ri,u), d 
-                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(iw))
+                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(i+1))
                 fmag = wallfact*(d/self.dw)**(-wp)  #dimensionless
                 etot += wallfact*self.dw/abs(-wp+1)*(d/self.dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
-#                 print '\t wall',iw,d, u,ro
-#                 print '\t\tf',-u*fmag,'\te',wallfact*self.dw/abs(-p+1)*(d/self.dw)**(-p+1)
                 self.forces[i] += -u*fmag
-                self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudes
-#             print '\tfwtot',self.forces[i]
-#                 print 'Wall',iw,d,'force',-u*fmag,fmag
+                self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudesrce',-u*fmag,fmag
             #vertext pull forces
             for vert in self.IBZ.fpoints:
                 d = norm(ri-vert)
                 self.forces[i] += -self.vertexPull*(d/self.df)**(-p)*(ri-vert)/d #pull not push
                 etot +=  self.vertexPull*self.df/abs(-p+1)*(d/self.df)**(-p+1)
 #            inter-point forces
-            for j, rj in enumerate(vecs):
+            for j, rj in enumerate(IBZvecs):
                 if i!=j:
                     d = norm(ri-rj)
 #                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
@@ -812,7 +855,8 @@ class dynamicPack():
         for i,fac in enumerate(self.facets):
             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
             self.wallPress[i] = self.wallForce[i]/area
-#         print '\tetot,norm',etot,norm(-self.forces.flatten())
+#         print 'Pressure avg', mean(self.wallPress)
+        print 'Energy/N',etot/len(self.IBZ.mesh)
         return etot, -self.forces.flatten() #gradient is opposite the forces.
         
     def writeKpoints(self,cell):
@@ -1073,11 +1117,15 @@ class dynamicPack():
                 BZ = self.cutCell(u1,0.0,BZ,eps)
                 print 'Inversion', u1
                 self.testCuts(BZ,oldBZ,oldIBZvolCut,'inv',eps)
+                BZ.fpoints = flatVecsList(cell.facets,eps)
+            BZ.fpoints = flatVecsList(cell.facets,eps)
             return BZ           
         if not areEqual(self.IBZvolCut,self.nops,eps):
             print ('Fail: Volume not reduced by factor equal to the number of symmetry operations')
+            BZ.fpoints = flatVecsList(cell.facets,eps)
             return BZ
         else:
+            BZ.fpoints = flatVecsList(cell.facets,eps)
             return BZ
    
     def testCuts(self,BZ,oldBZ,oldIBZvolCut,tag,eps):
@@ -1097,7 +1145,6 @@ class dynamicPack():
                 opDone = True
             elif self.IBZvolCut>self.nops+eps:
                 opDone = True
-#                                             sys.exit('Stop.  Reduced by more than number of symmetry ops')
             else:
                 print 'Noninteger or no change.'
                 BZ = deepcopy(oldBZ)
@@ -1135,18 +1182,20 @@ class dynamicPack():
 #         strOut += '}];'
         writefile(strOut,'cell_{}.m'.format(tag))     
             
-    def facetsMeshMathFile(self,cell):
+    def facetsMeshMathFile(self,cell,tag,color):
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
         strOut += ';\n p=Graphics3D[{'
         cell.mesh = list(trimSmall(array(cell.mesh)))
         for ipoint,point in enumerate(cell.mesh):
+            if color != None:
+                strOut += '{},'.format(color)
             strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
             if ipoint < len(cell.mesh) -1:
                 strOut += ','
         strOut += '}];\nShow[s,p]'
-        writefile(strOut,'IBZspheres.m')     
+        writefile(strOut,'cell_{}.m'.format(tag))         
    
     def facetsMeshVCMathFile(self,BZ,meshFacets):
         '''Output for Mathematica graphics drawing the facets of each mesh point

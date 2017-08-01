@@ -81,7 +81,6 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/sc_bcc',
 #           '/fslhome/bch/cluster_expansion/vcmesh/sc_cub']
 
-
 paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_vp10', 
          '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc',
           '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
