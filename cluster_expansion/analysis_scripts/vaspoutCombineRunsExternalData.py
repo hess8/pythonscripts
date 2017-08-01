@@ -81,9 +81,10 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/sc_bcc',
 #           '/fslhome/bch/cluster_expansion/vcmesh/sc_cub']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_sInit', 
-         '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc',
-          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_sinit06',
+    '/fslhome/bch/cluster_expansion/vcmesh/sc_sinit08',
+    '/fslhome/bch/cluster_expansion/vcmesh/sc_sInit', 
+         '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc']
 # 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_fccOut',
 #          '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc']
@@ -336,8 +337,8 @@ writefile(lines,'{}/summary.csv'.format(summaryPath))
 if filter[0] == '_':filter = '' #labels can't begin with _
 # plotTypes = ['linear','loglog'] #loglinear
 # print 'plot only loglog'
-# plotTypes = ['loglog'] #loglinear
-plotTypes = [] 
+plotTypes = ['loglog'] #loglinear
+# plotTypes = [] 
 ylabels = ['Vasp energy/atom (eV)','Error (meV)','Error (meV)']
 xtext = 'N k-points'
 

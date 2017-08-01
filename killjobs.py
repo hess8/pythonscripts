@@ -3,10 +3,10 @@ import os,subprocess,time
 user = 'bch'
 # 
 jobrange = [   0, 1e10]  #for use with jobstring criterium
-jobstring = 'fo'  
+jobstring = '_'  
 # state = 'running'
-# state = 'pending'
-state = 'all'
+state = 'pending'
+# state = 'all'
 # jobrange = [ 16684877 , 16684900]  #must adjust this range of job numbers to kill
 # jobstring = ':'
 joblist = subprocess.check_output(['squeue','-o','%.25i %.7P %.35j %.5u %.2t %.10M %.6D %R','-u',user,'--state={}'.format(state)])#'--state=pending'])

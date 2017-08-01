@@ -10,7 +10,7 @@ from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
                    trace,where,real,allclose,sign,pi,imag,identity,argsort,
-                   cos,sin)
+                   cos,sin,log)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi, ConvexHull as convexH
 from numpy.linalg import inv, norm, det, eig
@@ -440,6 +440,7 @@ class dynamicPack():
         self.vertexPull = 0.0
         self.interfactor = 1.0        
         self.initFactor = 1.0
+        self.searchInitFactor = 0.6
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
         self.method = method
@@ -682,14 +683,15 @@ class dynamicPack():
         '''Test an entire grid of init values'''
         cubicLVs0 = cubicLVs
         shiftDiv = 0.15
-        thDiv = 10.0  #deg
+        thDiv = 15.0  #deg
         shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(int(ceil(1/shiftDiv)) + 1)]
         thetas = [i*thDiv for i in range(int(ceil(90/thDiv)) + 1)]
         phis = [i*thDiv for i in range(int(ceil(90/thDiv)) + 1)]
         nMax = 0
+        closestLog = 10
         isearch = 0
         for shift in shifts:
-            print 'shift',shift
+#             print 'shift',shift
             for theta in thetas:
                 for phi in phis:
                     isearch += 1
@@ -703,97 +705,30 @@ class dynamicPack():
                         
                     cubicLVs = dot(Rmat,cubicLVs0)
                     IBZ,nInside = self.fillMesh(cubicLVs,IBZ,shift,aKcubConv,sites)
+#                     print 'nInside', nInside
                     if nInside > nMax: 
                         nMax = nInside
+#                         bestN = nInside
+#                         bestIBZ = IBZ
+                        print 'Nmax', nMax, shift, theta, phi
+                    closeLog = abs(log(nInside/(self.searchInitFactor*self.nTargetIBZ)))
+                    if closeLog < closestLog:
+                        closestLog = closeLog
                         bestN = nInside
                         bestIBZ = IBZ
-                        print 'Nmax', nMax, shift, theta, phi
-#                     tol = 0.01
-#                     if (1-tol)*self.nTargetIBZ <= nInside <= (1+tol) * self.nTargetIBZ: 
-#                     if  nInside >= self.nTargetIBZ:
+                        
 #                         print 'Found nInside {} vs target N {} after {} steps'\
-#                         .format(nInside,self.nTargetIBZ,isearch)
+#                         .format(nInside,self.searchInitFactor*self.nTargetIBZ,isearch)
 #                         return IBZ
-        else:
-#             print 'Did not find nInside within {}% of target N {}'.format(tol*100,self.nTargetIBZ)
-            print 'nInside {} vs target N {} after searching entire grid'.format(bestN,self.nTargetIBZ)
-#             print 'nInside {} is less than target N {}'.format(bestN,self.nTargetIBZ)
-            return bestIBZ
         
-            
-                    
-                                    
-                             
-
-
-#     def searchNmax(self,cubicLVs,IBZ):
-#         shift = self.ravg*array([1,1,1])/2 #array([1/10,0,0])
-#         theta = 0
-#         phi = 0
-#         itermax = 100
-# #         gnormTol = 0.001
-# #         minstep = 0.000001
-#         xold = x0
-#         xnew = x0
-#         nold,gold = self.enerGrad(xold)
-#         gnew = gold
-#         nnew = nold
-#         gnormold = norm(gold)
-#         gnormnew = gnormold
-#         nstart = nold; gstart = gold; gnormstart = gnormold
-#         method = 'steepest'
-# #         xolder =  xold + 0.01*gold #go backwards
-# #         golder = dot(H,(xolder-xold))
-# #         folder = dot(gold,(xolder-xold))
-#         print 'n_0',nold, 'gnorm',gnormold #,'grad', gold
-#         iIter = 0
-#         step = 1.0 #* minstep
-#         atMinStep = False
-#         while iIter < itermax and gnormold > gnormTol and not atMinStep:
-#             print iIter, #progress bar
-#             method = 'steepest'
-#             lower = False
-#             while not lower:
-#                 if step < minstep:
-#                     print 'minimum step reached: {}'.format(step) 
-#                     atMinStep = True
-#                     break
-#                 if method == 'steepest':
-#                     xnew = xold - step*gold
-#                 currPoints = xnew.reshape((len(self.IBZ.mesh),3))
-#                 inside = True
-#                 for point in currPoints:
-#                     if not isInside(point,self.bounds,eps):
-#                         print 'point is outside IBZ...reduce step size:',point
-#                         inside = False
-#                         break                   
-#                 if inside:
-#                     nnew,gnew = self.enerGrad(xnew)
-#                     gnormnew = norm(gnew)
-#                     if nnew<nold and gnormnew < gnormold:
-#                         lower = True
-#                         self.IBZ.mesh = currPoints.tolist()
-#                 step /= 2
-#             step *= 4
-#             xold = xnew
-#             nold = nnew
-#             gold = gnew
-#             gnormold = gnormnew
-#             iIter += 1                   
-#         self.IBZ.mesh = currPoints.tolist()
-#         print 'For {} points in IBZ and {} steps'.format(len(self.IBZ.mesh),iIter)
-#         print '\tStarting energy',fstart, 'gnorm',gnormstart
-#         print '\tEnding energy',nnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
-#         if gnormnew <= gnormTol:
-#             print '\nSuccess after {} iterations'.format(iIter)
-#         elif iIter == itermax:
-#             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
-#         if not (nnew < fstart and gnormnew < gnormstart):
-#             sys.exit('Did not find a lower energy and force norm: stop')
-#         
-#         return nnew
-
-    
+#         else:
+# #             print 'Did not find nInside within {}% of target N {}'.format(tol*100,self.nTargetIBZ)
+#             print 'nInside {} vs target N {} after searching entire grid'.format(bestN,self.nTargetIBZ)
+# #             print 'nInside {} is less than target N {}'.format(bestN,self.nTargetIBZ)
+#              return bestIBZ
+        print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.searchInitFactor*self.nTargetIBZ)
+        return bestIBZ
+        
     def fillMesh(self,cubicLVs,IBZ,shift,aKcubConv,sites):
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
