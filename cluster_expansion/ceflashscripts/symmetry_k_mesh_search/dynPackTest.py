@@ -164,7 +164,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=24:30:02\n')
+    jobFile.write('#SBATCH --time=0:20:02\n')
     jobFile.write("#SBATCH --ntasks=4\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -241,7 +241,7 @@ maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/test1'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
-nlims = [4,18,1]
+nlims = [11,12,1]
 
 testfile = 'POSCAR' 
 reallatt = zeros((3,3))

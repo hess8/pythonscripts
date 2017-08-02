@@ -440,17 +440,16 @@ class dynamicPack():
         self.interFactor = 1.0        
         self.initFactor = 1.0
         self.df = 1.00 * self.ravg #inter-point force scale distance
-        self.dw = float(params[0]) * self.df  #0.5 * self.df #wall force scale distance
+        self.dw = float(params[5]) * self.df  #0.5 * self.df #wall force scale distance
 #        self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/300
         self.eps = eps
         self.searchInitFactor = 0.0
-        self.initSrch = 'max'
+#         self.initSrch = 'max'
         self.initSrch = None
 #         self.initSrch = 'target'
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
-        self.method = method
         
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
@@ -468,6 +467,7 @@ class dynamicPack():
         self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)))
         self.facetsMathFile(IBZ,'IBZ') 
         IBZ = self.meshInitCubic(IBZ,meshtype,eps)
+        print 'nIn',len(IBZ.mesh)
         if 0 < len(IBZ.mesh) <= 4000:
             OK = True
             self.dynamic(IBZ,eps)
@@ -583,7 +583,7 @@ class dynamicPack():
                     break
         #Define basis vectors for cubic lattice:
         Lsum= [] #length of vectors in pair or triplet
-        if len(triples)>0:
+        if len(triples)>0:    
             print 'At least one triplet of orthogonal plane normals found:',triples[0]
             if len(triples)>1: #find the one with most total vector length
                 sums = zeros(len(triples))
