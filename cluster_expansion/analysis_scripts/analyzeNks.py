@@ -40,7 +40,7 @@ def copyData(structfile,data):
             break
     return data[icopy]['nops'],data[icopy]['IBZvolcut'],data[icopy]['nAtoms']
 
-def plotData(datai,n,plotType,filter,doLegend,lablelStr):
+def plotData(fig,summaryPath,datai,n,plotType,filter,doLegend,labelStr):
     if plotType == 'linear':                      
         plot(datai['nKs'][:n],datai['eners'][:n],label=labelStr,\
               linestyle='None',color = datai['color'], marker = 'o',markeredgewidth=0.0)
@@ -136,7 +136,7 @@ def analyze(paths): #as used with the parameter search, paths will have only one
     #read all the data 
     iplot = -1
     for ipath, path in enumerate(paths): #my data
-        print;print path
+#         print;print path
     #     meshMethod = path.split('/')[-3][:3]+path.split('/')[-1][-3:]
         tag = path.split('/')[-1][-7:]
         os.chdir(path)
@@ -145,10 +145,10 @@ def analyze(paths): #as used with the parameter search, paths will have only one
         else:
             structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and d==filter2])
         nStructs = len(structs)
-        print structs,path
+#         print structs,path
         for istruct,struct in enumerate(structs):
     #         print 'test', istruct, struct
-            print 'struct',struct
+#             print 'struct',struct
             os.chdir(struct)
             if coloring == 'indiv':
     #             if iplot < nplots -1:
@@ -214,7 +214,7 @@ def analyze(paths): #as used with the parameter search, paths will have only one
     # os.chdir(extpath)
     if not extpath is None:
         os.chdir(extpath)
-        print; print atoms_methods
+#         print; print atoms_methods
         for atom_method in atoms_methods:
             os.chdir(atom_method)
             if coloring == 'method':
@@ -308,17 +308,17 @@ def analyze(paths): #as used with the parameter search, paths will have only one
                 data[iplot]['color'] = colorsList[methods.index(method)] 
                 if method != oldmethod and method not in methods2:
                     if doLabel: labelStr = '{} {}'.format(filter,data[iplot]['method'])
-                    plotData(data[iplot],n,plotType,filter,doLegend,labelStr)
+                    plotData(fig,summaryPath,data[iplot],n,plotType,filter,doLegend,labelStr)
                     oldmethod = method;labelStr = None
                     methods2.append(method)
                 else:
-                    plotData(data[iplot],n,plotType,filter,doLegend,labelStr)
+                    plotData(fig,summaryPath,data[iplot],n,plotType,filter,doLegend,labelStr)
             elif coloring == 'indiv': 
                 if doLabel: labelStr = '{} {}'.format(filter,data[iplot]['ID'])
                 plotData(data[iplot],n,plotType,filter,doLegend,labelStr)
     #Method averaging
     if coloring == 'method':
-        print 'Averaging, plotting method errors'
+#         print 'Averaging, plotting method errors'
         nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
         nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
         fig = figure()
@@ -357,7 +357,7 @@ def analyze(paths): #as used with the parameter search, paths will have only one
               color = colorsList[im], marker = None)
         loglog(nKbins2,avgcostLins,label = None,\
               color = colorsList[im], marker = None,linestyle=':')
-        print 'Method',method, 'nKmax',methnKmax, 'avgLogCost', mean(avgcostLogs)
+#         print 'Method',method, 'nKmax',methnKmax, 'avgLogCost', mean(avgcostLogs)
         legend(loc='lower left',prop={'size':12});
         fig.savefig('{}/methodErrs'.format(summaryPath))
            

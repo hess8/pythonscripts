@@ -11,6 +11,7 @@ from numpy import int as np_int
 from random import random, randrange
 from ctypes import byref, cdll, c_double, c_int, c_bool
 from copy import copy, deepcopy
+from sched import scheduler
 
 utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
 # utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
@@ -1171,3 +1172,33 @@ def cartFromDirect(Lvs,dirvec):
     which is top row of transpose(LV) dot D, or the first matrix multiplication 
     operation'''
     return dot(transpose(Lvs), transpose(dirvec))
+
+def waitJobs(jobIds):
+    """ Waits for the training structures to be generated for all of the atomSets before moving on.
+        Checks every x seconds to see if the jobs have finished. """
+    s = scheduler(time.time, time.sleep)    
+    finished = False
+    start_time = time.time()
+    event_time = start_time
+    while not finished:
+        event_time += 10 #check every x seconds 
+        s.enterabs(event_time, 1, doNothing, ([1]))
+        s.run()
+        finished = reportFinished(jobIds)
+        
+def doNothing(dummy):
+    """ This is just to satisfy the scheduler's requirements to call a method in the enterabs()
+        command. """
+    pass
+
+def reportFinished(jobIds):
+    """ Reports whether the job ids have dropped from the queue. """
+    devnull = open(os.devnull, 'w')
+    for jobid in jobIds:
+        proc = subprocess.Popen(['squeue', '--job', jobid], stdout=subprocess.PIPE, stderr=devnull)
+        output = proc.communicate()[0].split()
+        if len(output) != 8 and len(output) != 0:   # It will list either all the headers or
+            return False                            # sometimes an error and outputs nothing.
+                                                    # The error in this case is an "invalid
+                                                    # job id" error because the job is no
+    return True  

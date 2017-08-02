@@ -34,7 +34,8 @@ sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 #import kmeshroutines as km
-from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile,waitMaxJobs
+from kmeshroutines import (nstrip,readposcar,create_poscar,readfile,writefile,
+                           waitMaxJobs,waitJobs)
 import dynamicPacking7, analyzeNks
 
 def setParams(type):
@@ -45,31 +46,35 @@ def setParams(type):
 def Nkcost(params,nlims,maindir,poscarsDir,vaspinputdir):
     createdirs(maindir,poscarsDir,vaspinputdir)
     os.chdir(maindir)
-#     dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
-#         
-#     for dir in dirs:
-#         os.chdir(maindir)
-#         if testfile in os.listdir(dir): 
-#             print
-#             currdir = maindir + '/'+ dir+'/'
-#             print "*********************************************************************************************************"
-#             print dir + "*********************************************************************************************************"
-#             print "*********************************************************************************************************"
-#             file1 = open(currdir+testfile,'r')
-#             poscar = file1.readlines()
-#             file1.close()
-#             if len(poscar) > 0:
-#                 for n in range(nlims[0],nlims[1],nlims[2]):#23
-#                     print 
-#                     print '==============================================' 
-#                     print 'Base {} in submitVasp (target = n^3)'.format(n)
-#                     print '==============================================' 
-#                     print
-#                     newdir = createRunDir(currdir,n,type,params) 
-#                     os.chdir(newdir)
-#     #                 waitMaxJobs()
-#                     subprocess.call(['sbatch', 'job'])
-#                     os.chdir(maindir) 
+    dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
+    jobIDs = []     
+    for dir in dirs:
+        os.chdir(maindir)
+        if testfile in os.listdir(dir): 
+            print
+            currdir = maindir + '/'+ dir+'/'
+            print "*********************************************************************************************************"
+            print dir + "*********************************************************************************************************"
+            print "*********************************************************************************************************"
+            file1 = open(currdir+testfile,'r')
+            poscar = file1.readlines()
+            file1.close()
+            if len(poscar) > 0:
+                for n in range(nlims[0],nlims[1],nlims[2]):#23
+                    print 
+                    print '==============================================' 
+                    print 'Base {} in submitVasp (target = n^3)'.format(n)
+                    print '==============================================' 
+                    print
+                    newdir = createRunDir(currdir,n,type,params) 
+                    os.chdir(newdir)
+                    waitMaxJobs()
+                    proc = subprocess.Popen(['sbatch','job'], stdout=subprocess.PIPE)
+                    jobid = proc.communicate()[0].split()[3]
+                    jobIDs.append(jobid)
+                    os.chdir(maindir) 
+    subprocess.call(['echo', '\tSubmitted {} jobs, ID range {} , {} .'.format(len(jobIDs),jobIDs[0],jobIDs[-1])])
+    waitJobs(jobIDs)
     costs = analyzeNks.analyze([maindir])
     return costs[0]
    
