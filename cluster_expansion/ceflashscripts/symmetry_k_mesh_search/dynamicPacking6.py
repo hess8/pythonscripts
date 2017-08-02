@@ -761,7 +761,7 @@ class dynamicPack():
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for iS, site in enumerate(sites):
                         ik+=1
-                        kpoint = lvec + aKcubConv*shift + site
+                        kpoint = lvec + shift + site
                         if isInside(kpoint,IBZ.bounds,self.dw*self.wallClose):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
                             IBZ.mesh.append(kpoint) 
