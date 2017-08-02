@@ -57,8 +57,10 @@ def plotData(datai,n,plotType,filter,doLegend,lablelStr):
 
 testfile = 'POSCAR'
 
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/the99sym_newMethod',
-#          '/fslhome/bch/cluster_expansion/vcmesh/vr_wc20']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_mxwc10',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_mxwc25',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfcc',
+#          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/vr_pow4',
 #          '/fslhome/bch/cluster_expansion/vcmesh/vr_pow5',
@@ -77,35 +79,36 @@ testfile = 'POSCAR'
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_cub',
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_fo10']
 
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_fcc',
-#          '/fslhome/bch/cluster_expansion/vcmesh/sc_bcc',
-#           '/fslhome/bch/cluster_expansion/vcmesh/sc_cub']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfcc',
+#     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc',
+#           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_testfcc', 
-         '/fslhome/bch/cluster_expansion/vcmesh/sc_bcc', 
-         '/fslhome/bch/cluster_expansion/vcmesh/sc_cub', 
-         '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc',
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams', 
+         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc', 
+         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub', 
+         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc',
          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 # 
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/sc_fccOut',
-#          '/fslhome/bch/cluster_expansion/vcmesh/sc_fcc']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fccOut',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc']
 # # r1
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/scond_fcc',
-#          '/fslhome/bch/cluster_expansion/vcmesh/scond_fccOut',
-#          '/fslhome/bch/cluster_expansion/vcmesh/sc_fccOut4',
-#           '/fslhome/bch/cluster_expansion/vcmesh/sc_fccOutOF05',
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/scond_fcc',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/scond_fccOut',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fccOut4',
+#           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fccOutOF05',
 #          '/fslhome/bch/cluster_expansion/vcmesh/sc_fOut03',
 #          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc04',
-#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc05',
-#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc06',
-#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc07',
-#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc08',
-#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc09', 
-#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc10', 
-#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc15',
-#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc20',   
-#          '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc30',                           
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc04',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc05',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc06',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc07',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc08',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc09', 
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc10', 
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc15',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc20',   
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc30',                           
 #          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
@@ -206,7 +209,7 @@ for ipath, path in enumerate(paths): #my data
     print structs,path
     for istruct,struct in enumerate(structs):
 #         print 'test', istruct, struct
-        
+        print 'struct',struct
         os.chdir(struct)
         if coloring == 'indiv':
 #             if iplot < nplots -1:
@@ -344,8 +347,8 @@ writefile(lines,'{}/summary.csv'.format(summaryPath))
 if filter[0] == '_':filter = '' #labels can't begin with _
 # plotTypes = ['linear','loglog'] #loglinear
 # print 'plot only loglog'
-# plotTypes = ['loglog'] #loglinear
-plotTypes = [] 
+plotTypes = ['loglog'] #loglinear
+# plotTypes = [] 
 ylabels = ['Vasp energy/atom (eV)','Error (meV)','Error (meV)']
 xtext = 'N k-points'
 

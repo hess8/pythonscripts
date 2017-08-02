@@ -431,25 +431,26 @@ class dynamicPack():
         self.B = B
 #         print '\nB (Recip lattice vectors as columns',B
 #         print 'method',method
+        vol = abs(det(B))
+        self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         
         self.power = 6.0
         self.wallPower = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
         self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
-        self.vertexPull = 0.0
         self.interfactor = 1.0        
         self.initFactor = 1.0
+        self.df = 1.00 * self.ravg #inter-point force scale distance
+        self.dw = 0.5 * self.df #wall force scale distance
+        self.shift =  array([1,1,1])/25.0 #array([1/10,0,0])
+        eps = self.ravg/300
+        self.eps = eps
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
         self.method = method
-        vol = abs(det(B))
-        self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
-        self.df = 1.00 * self.ravg #inter-point force scale distance
-        self.dw = 0.5 * self.df #wall force scale distance
-        self.shift =  array([1,1,1])/25 #array([1/10,0,0])
-        eps = self.ravg/300
-        self.eps = eps
+
+
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
@@ -840,10 +841,10 @@ class dynamicPack():
                 self.forces[i] += -u*fmag
                 self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudesrce',-u*fmag,fmag
             #vertext pull forces
-            for vert in self.IBZ.fpoints:
-                d = norm(ri-vert)
-                self.forces[i] += -self.vertexPull*(d/self.df)**(-p)*(ri-vert)/d #pull not push
-                etot +=  self.vertexPull*self.df/abs(-p+1)*(d/self.df)**(-p+1)
+#             for vert in self.IBZ.fpoints:
+#                 d = norm(ri-vert)
+#                 self.forces[i] += -self.vertexPull*(d/self.df)**(-p)*(ri-vert)/d #pull not push
+#                 etot +=  self.vertexPull*self.df/abs(-p+1)*(d/self.df)**(-p+1)
 #            inter-point forces
             for j, rj in enumerate(IBZvecs):
                 if i!=j:
