@@ -41,6 +41,7 @@ from numpy import zeros,transpose,array,sum,float64,rint,divide,multiply
 from copy import copy, deepcopy
 from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
+sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 #import kmeshroutines as km
 from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile,waitMaxJobs
 import dynamicPacking7
@@ -48,11 +49,9 @@ import dynamicPacking7
 def setParams(type):
     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ],
     params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
-    x0 
-    return x0, params0
+    return params0
     
-def Nkcost(x,params0):
-    params = multiply(x,params0)
+def Nkcost(params,nlims):
     createdirs(poscarsDir,maindir,vaspinputdir)
     os.chdir(maindir)
     dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
@@ -69,41 +68,41 @@ def Nkcost(x,params0):
             poscar = file1.readlines()
             file1.close()
             if len(poscar) > 0:
-                for n in range(2,28,1):#23
+                for n in range(nlims[0],nlims[1],nlims[2]):#23
                     print 
                     print '==============================================' 
                     print 'Base {} in submitVasp (target = n^3)'.format(n)
                     print '==============================================' 
                     print
-                    newdir = createRunDir(currdir,n,type) 
+                    newdir = createRunDir(currdir,n,type,params) 
                     os.chdir(newdir)
     #                 waitMaxJobs()
                     subprocess.call(['sbatch', 'job'])
-                    os.chdir(maindir)    
+                    os.chdir(maindir) 
+    sys.exit('stop')   
     
-def costGrad(x,params0):
+def costGrad(x,params0,nlims):
     '''Compute current cost.  Then advance each component of x and compute separately
     to find the gradient'''
     f1arr = zeros(len(x),dtype=float)
     gradfactor = 1.2
     x1 = x * gradfactor
     dx = x1-x
-    f = Nkcost(multiply(x,params0))
+    f = Nkcost(multiply(x,params0),nlims)
     for i in range(len(x)):
         xtemp = x
         xtemp[i] = x1[i] #change only one parameter at a time
-        f1arr[i] = Nkcost(xtemp,params0)
+        f1arr[i] = Nkcost(multiply(xtemp,params0),nlims)
     grad = divide(f1arr-f,dx)
     return f,grad 
                            
-def searchParams(params0):
+def searchParams(params0,poscarsDir,maindir,vaspinputdir,nlims):
     '''The vector x is divide(params,params0).  Deal with x here only.''' 
     xold = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     itermax = 100
     gnormTol = 0.001
     minstep = 0.05
-    g = gradP(params)
-    fold,gold = costGrad(xold,params0)
+    fold,gold = costGrad(xold,params0,nlims)
     gnew = gold
     fnew = fold
     gnormold = norm(gold)
@@ -151,7 +150,6 @@ def searchParams(params0):
     if not (fnew < fstart and gnormnew < gnormstart):
         sys.exit('Did not find a lower cost and gradient norm: stop')
     return newParams
-
 
 def writeJob(path,ntarget,type,params):
     """ Creates a standard job file for submitting a VASP job on the supercomputer. 
@@ -226,7 +224,7 @@ def modIncar(newdir):
     writefile(lines,'{}/INCAR'.format(newdir))     
     return
 
-def createRunDir(path,n,type):
+def createRunDir(path,n,type,params):
     newdir = path + '%s_%i/' % (type,n)
     if not os.path.isdir(newdir):
         os.system('mkdir %s' % newdir)
@@ -234,21 +232,24 @@ def createRunDir(path,n,type):
     os.system('cp {}/POSCAR {}'.format(path,newdir))
     os.system('cp {}/POTCAR {}'.format(path,newdir))
     os.system('cp -P {}/vasp.x {}'.format(path,newdir))
-    writeJob(newdir,n**3,type)
+    writeJob(newdir,n**3,type,params)
     return newdir
    
 
 ################# script #######################
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/test1'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
+
+nlims = [4,18,1]
+
 testfile = 'POSCAR' 
 reallatt = zeros((3,3))
 
 print 'Varying parameters in dynamicPacking'
 type = 'bcc'
 params0 = setParams(type)
-xbest = searchParams(params0,poscarsDir,maindir,vaspinputdir)
+xbest = searchParams(params0,poscarsDir,maindir,vaspinputdir,nlims)
  
                
 print 'Done'

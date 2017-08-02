@@ -1,9 +1,6 @@
 '''
-1. Get IBZ
-2. Fill with an FCC mesh, with the desired number of points
-3. Relax 100 steps with steepest descent
-
-All matrices store vectors as COLUMNS
+This version is passed parameters from posca2mesh7, which is called by dynPackTest 
+for searching method parameter space.
 '''
 import os, subprocess,sys,re,time
 from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
@@ -425,7 +422,8 @@ class dynamicPack():
     from numpy.random import rand, uniform
     from conjGradMin2 import (fmin_cg,minimize_cg,line_search_wolfe1,scalar_search_wolfe1)
         
-    def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,method):
+    def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
+        paramLabels = ['power','wallPower','wallFactor','wallClose','wallOffset','dw' ]
         #1. nCoarse random points in the cell parallelpiped.  
 #         nCoarseMax = 200
         self.B = B
@@ -434,15 +432,15 @@ class dynamicPack():
         vol = abs(det(B))
         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         
-        self.power = 6.0
-        self.wallPower = 6.0
-        self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
-        self.wallClose = 0.1 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
-        self.interfactor = 1.0        
+        self.power = float(params[0]) #6.0
+        self.wallPower = float(params[1]) #6.0
+        self.wallFactor = float(params[2]) #1.0  #probably needs to be bigger than interFactor by about the average number of nearest neighbors
+        self.wallClose = float(params[3]) #0.1 #0.5 #to allow initial points closer to the wall set to less than 1. 
+        self.wallOffset = float(params[4]) #0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.interFactor = 1.0        
         self.initFactor = 1.0
         self.df = 1.00 * self.ravg #inter-point force scale distance
-        self.dw = 0.5 * self.df #wall force scale distance
+        self.dw = float(params[0]) * self.df  #0.5 * self.df #wall force scale distance
 #        self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/300
         self.eps = eps
@@ -453,8 +451,7 @@ class dynamicPack():
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
         self.method = method
-
-
+        
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
@@ -844,8 +841,8 @@ class dynamicPack():
         IBZvecs = comps.reshape((len(self.IBZ.mesh),3))
         p = self.power
         wp = self.wallPower
-        wallfact = self.wallfactor
-        interfact = self.interfactor
+        wallfact = self.wallFactor
+        interfact = self.interFactor
         etot = 0
         for i,ri in enumerate(IBZvecs):
             #wall forces
