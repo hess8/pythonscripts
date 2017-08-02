@@ -84,9 +84,10 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc',
 #           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams', 
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc', 
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub', 
+paths = [
+#     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams', 
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc', 
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub', 
          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc',
          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 #
@@ -386,12 +387,13 @@ if coloring == 'method':
     ax1 = fig.add_subplot(111)
     xlabel('N k-points (smoothed by factor {})'.format(int(smoothFactor)))
     ylabel('Error (meV)') 
+    methodCostsLogs = []
     for im,method in enumerate(methods):
         methnKmax = 0 
         binCounts = zeros(nbins,dtype = int32)
-        binErrs = zeros(nbins,dtype = float)       
+        binErrs = zeros(nbins,dtype = float)
+        costLogs = zeros(nbins,dtype = float) # "Costs" relative to Si Monkhorst Pack, which has err = 10^3/nK^3 + 10^-3 meV.         
         for iplot in range(nplots):
-#             print 'iplot',iplot, data[iplot]['nKs']
             if data[iplot]['method'] == method:
                 for icalc in range(data[iplot]['nDone']-1):
                     nK = data[iplot]['nKs'][icalc]
@@ -401,82 +403,98 @@ if coloring == 'method':
                             if abs(log10(nK/nKbins[ibin])) <= log10(smoothFactor)\
                               and nKbins[ibin]<= maxNk:
                                 binErrs[ibin] += data[iplot]['errs'][icalc]
+                                costLogs[ibin] += log10(data[iplot]['errs'][icalc]/(10**3/(nK**3.0)+0.001))
                                 binCounts[ibin] += 1
         mask = where(binCounts>0)
         binErrs2 = binErrs[mask[0]]
         binCounts2 = binCounts[mask[0]]
         nKbins2 = nKbins[mask[0]]
+        costLogs2 = costLogs[mask[0]]
         nbins2 = len(nKbins2)
         avgErrs = [binErrs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+        avgCostLogs =  [costLogs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+        avgCostLins = [10**avgCostLogs[ibin] for ibin in range(nbins2)]
+        methodCostsLogs.append(mean(avgCostLogs))
         loglog(nKbins2,avgErrs,label = method,\
               color = colorsList[im], marker = None)
-        print 'Method',method, 'nKmax',methnKmax
-        print 'nKs',nKbins2
-        print 'errs',binErrs2
-        print 'counts',binCounts2
+        loglog(nKbins2,avgCostLins,label = None,\
+              color = colorsList[im], marker = None,linestyle=':')
+        print 'Method',method, 'nKmax',methnKmax, 'avgLogCost', mean(avgCostLogs)
+#         print 'nKs',nKbins2
+#         print 'errs',binErrs2
+#         print 'counts',binCounts2
         print 'avgErrs',avgErrs
     legend(loc='lower left',prop={'size':12});
     fig.savefig('{}/methodErrs'.format(summaryPath))
 
 if useSym:
     #Method averaging with scaled Nk to account for symmetry and nAtoms advantages
-        maxNk = 0
+    maxNk = 0
+    for iplot in range(nplots):
+        nops = data[iplot]['nops'] 
+        nAtoms = data[iplot]['nAtoms'] 
+        n = data[iplot]['nDone']
+        for icalc in range(n):#data[iplot]['eners'][:n].tolist()
+            nK = data[iplot]['nKs'][icalc]
+            if nK>1:
+                data[iplot]['nKs'][icalc] = data[iplot]['nKs'][icalc]*nAtoms*nops
+                maxNi = max(data[iplot]['nKs'])
+                if maxNi > maxNk: maxNk = maxNi
+            
+    lines = [' ID , nKIBZ , ener , err, nAtoms, nops,IBZcut\n']  
+    for iplot in range(nplots):
+        n = data[iplot]['nDone']
+        for icalc in range(n):#data[iplot]['eners'][:n].tolist()
+            lines.append('{}_n{},{},{:15.12f},{:15.12f},{},{},{}\n'.format(data[iplot]['ID'],\
+              data[iplot]['ns'][icalc], data[iplot]['nKs'][icalc],\
+              data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],\
+              data[iplot]['nAtoms'],data[iplot]['nops'],data[iplot]['IBZvolcut']))
+    writefile(lines,'{}/summaryScaled.csv'.format(summaryPath))    
+    print '\nAveraging, plotting with nK scaling of symmetry and nAtoms'
+    nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
+    nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
+    fig = figure()
+    ax1 = fig.add_subplot(111)
+    smoothFactor *= 2
+    xlabel('N k-points (smoothed by factor {}, scaled by N-atoms and N-sym)'.format(int(smoothFactor)))
+    ylabel('Error (meV)')
+    methodCostsLogs = []
+    for im,method in enumerate(methods):
+        methnKmax = 0 
+        binCounts = zeros(nbins,dtype = int32)
+        binErrs = zeros(nbins,dtype = float)
+        costLogs = zeros(nbins,dtype = float) # "Costs" relative to Si Monkhorst Pack, which has err = 10^3/nK^3 + 10^-3 meV.         
         for iplot in range(nplots):
-            nops = data[iplot]['nops'] 
-            nAtoms = data[iplot]['nAtoms'] 
-            n = data[iplot]['nDone']
-            for icalc in range(n):#data[iplot]['eners'][:n].tolist()
-                nK = data[iplot]['nKs'][icalc]
-                if nK>1:
-                    data[iplot]['nKs'][icalc] = data[iplot]['nKs'][icalc]*nAtoms*nops
-                    maxNi = max(data[iplot]['nKs'])
-                    if maxNi > maxNk: maxNk = maxNi
-                
-        lines = [' ID , nKIBZ , ener , err, nAtoms, nops,IBZcut\n']  
-        for iplot in range(nplots):
-            n = data[iplot]['nDone']
-            for icalc in range(n):#data[iplot]['eners'][:n].tolist()
-                lines.append('{}_n{},{},{:15.12f},{:15.12f},{},{},{}\n'.format(data[iplot]['ID'],\
-                  data[iplot]['ns'][icalc], data[iplot]['nKs'][icalc],\
-                  data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],\
-                  data[iplot]['nAtoms'],data[iplot]['nops'],data[iplot]['IBZvolcut']))
-        writefile(lines,'{}/summaryScaled.csv'.format(summaryPath))    
-        print '\nAveraging, plotting with nK scaling of symmetry and nAtoms'
-        nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
-        nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
-        fig = figure()
-        ax1 = fig.add_subplot(111)
-        smoothFactor *= 2
-        xlabel('N k-points (smoothed by factor {}, scaled by N-atoms and N-sym)'.format(int(smoothFactor)))
-        ylabel('Error (meV)') 
-        for im,method in enumerate(methods):
-            methnKmax = 0 
-            binCounts = zeros(nbins,dtype = int32)
-            binErrs = zeros(nbins,dtype = float)       
-            for iplot in range(nplots):
-                if data[iplot]['method'] == method:
-                    for icalc in range(data[iplot]['nDone']-1):
-                        nK = data[iplot]['nKs'][icalc]
-                        if nK>methnKmax: methnKmax = nK
-                        if nK>1:
-                            for ibin in range(nbins):
-                                if abs(log10(nK/nKbins[ibin])) <= log10(smoothFactor)\
-                                  and nKbins[ibin]<= maxNk:
-                                    binErrs[ibin] += data[iplot]['errs'][icalc]
-                                    binCounts[ibin] += 1
-            mask = where(binCounts>0)
-            binErrs2 = binErrs[mask[0]]
-            binCounts2 = binCounts[mask[0]]
-            nKbins2 = nKbins[mask[0]]
-            nbins2 = len(nKbins2)
-            avgErrs = [binErrs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
-            loglog(nKbins2,avgErrs,label = method,\
-                  color = colorsList[im], marker = None)
-            print 'Method',method, 'nKmax',methnKmax
-            print 'nKs',nKbins2
-            print 'errs',binErrs2
-            print 'counts',binCounts2
-            print 'avgErrs',avgErrs
-        legend(loc='lower left',prop={'size':12});
-        fig.savefig('{}/methodErrsScaledNk'.format(summaryPath))
+            if data[iplot]['method'] == method:
+                for icalc in range(data[iplot]['nDone']-1):
+                    nK = data[iplot]['nKs'][icalc]
+                    if nK>methnKmax: methnKmax = nK
+                    if nK>1:
+                        for ibin in range(nbins):
+                            if abs(log10(nK/nKbins[ibin])) <= log10(smoothFactor)\
+                              and nKbins[ibin]<= maxNk:
+                                binErrs[ibin] += data[iplot]['errs'][icalc]
+                                costLogs[ibin] += log10(data[iplot]['errs'][icalc]/(10**3/(nK**3.0)+0.001))
+                                binCounts[ibin] += 1
+        mask = where(binCounts>0)
+        binErrs2 = binErrs[mask[0]]
+        binCounts2 = binCounts[mask[0]]
+        nKbins2 = nKbins[mask[0]]
+        costLogs2 = costLogs[mask[0]]
+        nbins2 = len(nKbins2)
+        avgErrs = [binErrs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+        avgCostLogs =  [costLogs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+        avgCostLins = [10**avgCostLogs[ibin] for ibin in range(nbins2)]
+        methodCostsLogs.append(mean(avgCostLogs))
+        loglog(nKbins2,avgErrs,label = method,\
+              color = colorsList[im], marker = None)
+        loglog(nKbins2,avgCostLins,label = None,\
+              color = colorsList[im], marker = None,linestyle=':')
+        print 'Method',method, 'nKmax',methnKmax, 'avgLogCost', mean(avgCostLogs)
+#         print 'nKs',nKbins2
+#         print 'errs',binErrs2
+#         print 'counts',binCounts2
+#         print 'avgErrs',avgErrs
+    legend(loc='lower left',prop={'size':12});
+    fig.savefig('{}/methodErrsScaledNk'.format(summaryPath))
 print 'Done'

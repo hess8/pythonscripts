@@ -1,3 +1,4 @@
+#!/usr/bin/python
 '''Test looping structure for finding the dynamicPacking parameters by fastest 
 convergence
 
@@ -23,86 +24,77 @@ All parameters: (Implement search on *'s
         minstep = 0.000001
         step = 1.0 #* minstep
         step /= 2
-        neighR = 8.0*self.rpacking
-        
-        
-        '''
-        
-#!/usr/bin/python
-
-'''Dynamic packing method. For each POSCAR in poscarsDir in maindir: makes a directory, copies POSCAR, makes a POTCAR from 
-the element name in the POSCAR title (double the first atom).  copies vaspinput, creates kpoints file with correct mesh 
-(just relative to the recip lattice), reads a jobfile from the vaspinput,
-writes the structure tag etc to the job name, and submits a vasp job.
-'''
+        neighR = 8.0*self.rpacking'''
     
 import sys,os,subprocess
 from numpy import zeros,transpose,array,sum,float64,rint,divide,multiply
 from copy import copy, deepcopy
 from numpy.linalg import norm
+sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts')
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 #import kmeshroutines as km
 from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile,waitMaxJobs
-import dynamicPacking7
+import dynamicPacking7, analyzeNks
 
 def setParams(type):
     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ],
     params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
     return params0
     
-def Nkcost(params,nlims):
-    createdirs(poscarsDir,maindir,vaspinputdir)
+def Nkcost(params,nlims,maindir,poscarsDir,vaspinputdir):
+    createdirs(maindir,poscarsDir,vaspinputdir)
     os.chdir(maindir)
-    dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
-        
-    for dir in dirs:
-        os.chdir(maindir)
-        if testfile in os.listdir(dir): 
-            print
-            currdir = maindir + '/'+ dir+'/'
-            print "*********************************************************************************************************"
-            print dir + "*********************************************************************************************************"
-            print "*********************************************************************************************************"
-            file1 = open(currdir+testfile,'r')
-            poscar = file1.readlines()
-            file1.close()
-            if len(poscar) > 0:
-                for n in range(nlims[0],nlims[1],nlims[2]):#23
-                    print 
-                    print '==============================================' 
-                    print 'Base {} in submitVasp (target = n^3)'.format(n)
-                    print '==============================================' 
-                    print
-                    newdir = createRunDir(currdir,n,type,params) 
-                    os.chdir(newdir)
-    #                 waitMaxJobs()
-                    subprocess.call(['sbatch', 'job'])
-                    os.chdir(maindir) 
-    sys.exit('stop')   
-    
-def costGrad(x,params0,nlims):
+#     dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
+#         
+#     for dir in dirs:
+#         os.chdir(maindir)
+#         if testfile in os.listdir(dir): 
+#             print
+#             currdir = maindir + '/'+ dir+'/'
+#             print "*********************************************************************************************************"
+#             print dir + "*********************************************************************************************************"
+#             print "*********************************************************************************************************"
+#             file1 = open(currdir+testfile,'r')
+#             poscar = file1.readlines()
+#             file1.close()
+#             if len(poscar) > 0:
+#                 for n in range(nlims[0],nlims[1],nlims[2]):#23
+#                     print 
+#                     print '==============================================' 
+#                     print 'Base {} in submitVasp (target = n^3)'.format(n)
+#                     print '==============================================' 
+#                     print
+#                     newdir = createRunDir(currdir,n,type,params) 
+#                     os.chdir(newdir)
+#     #                 waitMaxJobs()
+#                     subprocess.call(['sbatch', 'job'])
+#                     os.chdir(maindir) 
+    costs = analyzeNks.analyze([maindir])
+    return costs[0]
+   
+def costGrad(x,params0,nlims,maindir,poscarsDir,vaspinputdir):
     '''Compute current cost.  Then advance each component of x and compute separately
     to find the gradient'''
     f1arr = zeros(len(x),dtype=float)
     gradfactor = 1.2
     x1 = x * gradfactor
     dx = x1-x
-    f = Nkcost(multiply(x,params0),nlims)
+    f = Nkcost(multiply(x,params0),nlims,maindir,poscarsDir,vaspinputdir)
     for i in range(len(x)):
         xtemp = x
         xtemp[i] = x1[i] #change only one parameter at a time
-        f1arr[i] = Nkcost(multiply(xtemp,params0),nlims)
+        f1arr[i] = Nkcost(multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
     grad = divide(f1arr-f,dx)
     return f,grad 
                            
-def searchParams(params0,poscarsDir,maindir,vaspinputdir,nlims):
+def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     '''The vector x is divide(params,params0).  Deal with x here only.''' 
     xold = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     itermax = 100
     gnormTol = 0.001
     minstep = 0.05
-    fold,gold = costGrad(xold,params0,nlims)
+    fold,gold = costGrad(xold,params0,nlims,maindir,poscarsDir,vaspinputdir)
     gnew = gold
     fnew = fold
     gnormold = norm(gold)
@@ -155,7 +147,6 @@ def writeJob(path,ntarget,type,params):
     """ Creates a standard job file for submitting a VASP job on the supercomputer. 
     The job file calls python for mesh definition.
     Writes name and and ntarget."""  
-
     paramStr = ''
     for param in params:
        paramStr += ' {:6.3f}'.format(param)
@@ -184,7 +175,7 @@ def writeJob(path,ntarget,type,params):
     jobFile.close()
     return
 
-def createdirs(poscarsDir,maindir,vaspinputdir):
+def createdirs(maindir,poscarsDir,vaspinputdir):
     '''makes dir in maindir for each structure in poscarsDir'''
     potcarDir = "/fslhome/bch/vaspfiles/src/potpaw_PBE"
     for file in os.listdir(poscarsDir):
@@ -234,14 +225,13 @@ def createRunDir(path,n,type,params):
     os.system('cp -P {}/vasp.x {}'.format(path,newdir))
     writeJob(newdir,n**3,type,params)
     return newdir
-   
 
 ################# script #######################
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/test1'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_test1'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
-nlims = [11,12,1]
+nlims = [9,12,1]
 
 testfile = 'POSCAR' 
 reallatt = zeros((3,3))
@@ -249,7 +239,7 @@ reallatt = zeros((3,3))
 print 'Varying parameters in dynamicPacking'
 type = 'bcc'
 params0 = setParams(type)
-xbest = searchParams(params0,poscarsDir,maindir,vaspinputdir,nlims)
+xbest = searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims)
  
                
 print 'Done'
