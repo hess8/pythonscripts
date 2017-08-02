@@ -84,7 +84,7 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc',
 #           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub']
 
-# paths = [
+paths = [
 #      '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc50wo2',
 #      '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc50wo1',
 #       '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc50wo0',
@@ -92,9 +92,10 @@ testfile = 'POSCAR'
 #     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc150',
 #     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc100',
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc50',
-#     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_sInit', 
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc',
-#          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
+    '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_init', 
+    '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_initfcc', 
+         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc',
+         '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 # 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fccOut',
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc']
@@ -105,17 +106,17 @@ testfile = 'POSCAR'
 #           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fccOutOF05',
 #          '/fslhome/bch/cluster_expansion/vcmesh/sc_fOut03',
 #          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc04',
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc05',
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc06',
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc07',
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc08',
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc09', 
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc10', 
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc15',
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc20',   
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc30',                           
-         '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc04',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc05',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc06',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc07',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc08',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc09', 
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc10', 
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc15',
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc20',   
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc30',                           
+#          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 

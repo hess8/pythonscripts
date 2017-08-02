@@ -435,8 +435,8 @@ class dynamicPack():
         self.power = 6.0
         self.wallPower = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
-        self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = 2.0 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.wallClose = 0.1 #0.5 #to allow initial points closer to the wall set to less than 1. 
+        self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.vertexPull = 0.0
         self.interfactor = 1.0        
         self.initFactor = 1.0
@@ -576,12 +576,13 @@ class dynamicPack():
         self.facetsMeshVCMathFile(IBZ,allMPfacets)
         wtot = sum(IBZ.weights)
         stdev = std(IBZ.weights)
+        meanV = mean(IBZ.weights)
         volCheck = 0.1
         volErr = wtot - IBZ.volume        
         volErrRel = volErr/IBZ.volume
         
         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
-        print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev',stdev
+        print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
         if not areEqual(wtot, IBZ.volume, volCheck*IBZ.volume):
 #             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZ.volume
             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
@@ -684,11 +685,15 @@ class dynamicPack():
     def searchNmax(self,cubicLVs,IBZ,aKcubConv,sites):
         '''Test an entire grid of init values'''
         cubicLVs0 = cubicLVs
-        shiftDiv = 0.15
-        thDiv = 15.0  #deg
-        shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(int(ceil(1/shiftDiv)) + 1)]
-        thetas = [i*thDiv for i in range(int(ceil(90/thDiv)) + 1)]
-        phis = [i*thDiv for i in range(int(ceil(90/thDiv)) + 1)]
+        nShift = 5
+        nTh = 10
+        nPh = 20
+        shiftDiv = 0.5*sqrt(3)/float(nShift)
+        thDiv = 90/float(nTh) #deg
+        phDiv = 180/float(nPh)
+        shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(nShift)]
+        thetas = [i*thDiv for i in range(nTh)]
+        phis = [i*phDiv for i in range(nPh)]
         nMax = 0
         closestLog = 10
         isearch = 0
@@ -708,14 +713,19 @@ class dynamicPack():
                         [sin(phi), cos(phi),0]]) )
                         
                     cubicLVs = dot(Rmat,cubicLVs0)
+                    for i, site in enumerate(deepcopy(sites)):
+                        sites[i] = dot(Rmat,site)        
                     IBZ,nInside = self.fillMesh(cubicLVs,IBZ,shift,aKcubConv,sites)
+#                     self.facetsMeshMathFile(IBZ,'IBZinit_{}'.format(isearch),None)
+#                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
                     if nInside > nMax: 
                         nMax = nInside
                         if self.searchType == 'max':
                             bestN = nInside
                             bestIBZ = deepcopy(IBZ)
-                        print 'Nmax', nMax, shift, theta, phi
+                            besti = isearch
+                        print 'Step {}: Nmax'.format(isearch),nMax, shift, theta, phi
                     if self.searchType != 'max':
                         closeLog = abs(log(nInside/(self.searchInitFactor*self.nTargetIBZ)))
                         if closeLog < closestLog:
@@ -733,7 +743,7 @@ class dynamicPack():
 # #             print 'nInside {} is less than target N {}'.format(bestN,self.nTargetIBZ)
 #              return bestIBZ
         if self.searchType == 'max':
-            print 'Maximum nInside {} found vs target N {}'.format(bestN,self.nTargetIBZ)
+            print 'Maximum nInside {}(step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
         else:
             print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.searchInitFactor*self.nTargetIBZ)
         return bestIBZ
@@ -774,6 +784,7 @@ class dynamicPack():
         self.bounds = IBZ.bounds 
         self.facets = IBZ.facets
         self.eps = eps
+        self.facetsMeshMathFile(self.IBZ,'IBZmeshInit',None)
         self.relax()
         self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
         return

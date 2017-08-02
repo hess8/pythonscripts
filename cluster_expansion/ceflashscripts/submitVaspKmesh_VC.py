@@ -55,7 +55,6 @@ def createdir(path,n,type):
     writejobfile(newdir,n,type)  
     return newdir
 
-
 ################# script #######################
 
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestCuts'
@@ -65,13 +64,13 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestCuts/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/test3/'
 maindir = '/fslhome/bch/cluster_expansion/vcmesh/test4/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/test4/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
-type = 'fcc' 
+type = 'bcc' 
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
 method = 0.5
@@ -109,7 +108,7 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(5,6,1):#23
+            for n in range(10,11,1):#23
                 print 
                 print '==============================================' 
                 print 'Target npoints: {}^3'.format(n)
