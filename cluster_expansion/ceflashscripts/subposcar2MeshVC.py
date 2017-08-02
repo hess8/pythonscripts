@@ -113,7 +113,7 @@ maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
-type = 'fcc' 
+type = 'bcc' 
 testfile = 'POSCAR' 
 reallatt = zeros((3,3))
 createdirs(poscarsDir,maindir,vaspinputdir)

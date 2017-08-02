@@ -758,7 +758,7 @@ class dynamicPack():
         
         epsilon = self.ravg/100
         comps = array(self.IBZ.mesh).flatten()
-        energy = self.minSteepest(comps,self.eps) 
+        self.minSteepest(comps,self.eps) 
         return
 
     def minSteepest(self,x0,eps):
@@ -832,7 +832,7 @@ class dynamicPack():
             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
         if not (fnew < fstart and gnormnew < gnormstart):
             sys.exit('Did not find a lower energy and force norm: stop')
-        return fnew
+        return
 
     def enerGrad(self,comps):
         '''Returns the total energy, gradient (-forces), 
