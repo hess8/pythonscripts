@@ -74,28 +74,21 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/vary_off06',
 #          '/fslhome/bch/cluster_expansion/vcmesh/vary_off075']
 
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_fcc',
-#          '/fslhome/bch/cluster_expansion/vcmesh/mt_bcc',
-#           '/fslhome/bch/cluster_expansion/vcmesh/mt_cub',
-#           '/fslhome/bch/cluster_expansion/vcmesh/mt_fo10']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_initbcc',
+         '/fslhome/bch/cluster_expansion/vcmesh/mt_bcc',
+          '/fslhome/bch/cluster_expansion/vcmesh/mt_cub',
+          '/fslhome/bch/cluster_expansion/vcmesh/mt_fcc']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfcc',
 #     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc',
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc',
 #           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub']
 
-paths = [
-#      '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc50wo2',
-#      '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc50wo1',
-#       '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc50wo0',
-#     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc30',
-#     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc150',
-#     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc100',
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_iwc50',
-    '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_init', 
-    '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_initfcc', 
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc',
-         '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
+# paths = [
+#     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_init', 
+#     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_initfcc', 
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc',
+#          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 # 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fccOut',
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc']
@@ -120,8 +113,8 @@ paths = [
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
-# extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
-extpath = None
+extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
+# extpath = None
 useSym = False
 coloring = 'method'
 # coloring = 'indiv'
@@ -215,8 +208,6 @@ for ipath, path in enumerate(paths): #my data
     nStructs = len(structs)
     print structs,path
     for istruct,struct in enumerate(structs):
-#         print 'test', istruct, struct
-        print 'struct',struct
         os.chdir(struct)
         if coloring == 'indiv':
 #             if iplot < nplots -1:
@@ -236,7 +227,6 @@ for ipath, path in enumerate(paths): #my data
                 nops,IBZvolcut,IBZvol = readSym(calcs[0])
             except:
                 sys.exit('Stopping. readSym failed. Set useSym to False')
-        print 'struct',struct
         for calc in calcs:  
             if electronicConvergeFinish(calc):
                 ener = getEnergy(calc) #in energy/atom
