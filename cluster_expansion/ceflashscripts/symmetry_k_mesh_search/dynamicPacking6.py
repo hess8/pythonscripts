@@ -436,11 +436,11 @@ class dynamicPack():
         self.wallPower = 6.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
         self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.wallOffset = 2.0 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.vertexPull = 0.0
         self.interfactor = 1.0        
         self.initFactor = 1.0
-        self.searchInitFactor = 0.6
+        self.searchInitFactor = 0.0
         self.searchType = 'max'
 #         self.searchType = 'target'
         self.nTarget = int(self.initFactor*targetNmesh)
@@ -692,6 +692,8 @@ class dynamicPack():
         nMax = 0
         closestLog = 10
         isearch = 0
+        bestN = 0
+        bestIBZ = deepcopy(IBZ)
         for shift in shifts:
 #             print 'shift',shift
             for theta in thetas:
