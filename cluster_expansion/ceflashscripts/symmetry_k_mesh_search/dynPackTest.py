@@ -27,7 +27,8 @@ All parameters: (Implement search on *'s
         neighR = 8.0*self.rpacking'''
     
 import sys,os,subprocess
-from numpy import zeros,transpose,array,sum,float64,rint,divide,multiply,argmin,sign
+from numpy import (zeros,transpose,array,sum,float64,rint,divide,multiply,argmin,
+                   argmax,sign)
 from numpy import copy as npcopy
 # from copy import copy, deepcopy
 from numpy.linalg import norm
@@ -165,7 +166,7 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     itermax = 100
     notLowerMax = 20
     step = 0.1  
-    nNotLower = 0
+    nNotLower = 1
     nKeep = 10
     best = zeros(nKeep,dtype = [('iIter','int32'),('cost','float'),('x','{}float'.format(len(params0)))])
     best['cost'] += 100
@@ -189,7 +190,8 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
         print '\nLowest costs at iter {}:'.format(iIter),best['cost']
         imin = argmin(costs)
         xcurr = xs[imin]
-        print 'New x with cost {}:'.format(costs[imin]),xcurr 
+        if nNotLower == 0:
+            print 'New x with cost {}:'.format(costs[imin]),xcurr 
         iIter += 1 
         nNotLower += 1                  
 #     newParams = currparams
@@ -358,7 +360,7 @@ poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
 # nlims = [2,14,1]
-nlims = [8,11,1]
+nlims = [5,21,1]
 
 testfile = 'POSCAR' 
 reallatt = zeros((3,3))
