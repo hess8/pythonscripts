@@ -57,9 +57,7 @@ def Nkcost(params,nlims,maindir,poscarsDir,vaspinputdir):
     for dir in dirs:
         os.chdir(maindir)
         if testfile in os.listdir(dir): 
-            print
             currdir = maindir + '/'+ dir+'/'
-#             print dir
             file1 = open(currdir+testfile,'r')
             poscar = file1.readlines()
             file1.close()
@@ -87,9 +85,7 @@ def gsubmit(i,jobIDs,params,nlims,maindir,poscarsDir,vaspinputdir):
     for dir in dirs:
         os.chdir(pdir)
         if testfile in os.listdir(dir): 
-            print
             currdir = pdir + '/'+ dir+'/'
-#             print dir
             file1 = open(currdir+testfile,'r')
             poscar = file1.readlines()
             file1.close()
@@ -108,7 +104,6 @@ def gsubmit(i,jobIDs,params,nlims,maindir,poscarsDir,vaspinputdir):
 def cost(x,params0,nlims,maindir,poscarsDir,vaspinputdir):
     '''Compute current cost'''
     f = Nkcost(multiply(x,params0),nlims,maindir,poscarsDir,vaspinputdir)
-#     print 'Cost',f
     return f
 
 def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
@@ -124,68 +119,85 @@ def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
         xtemp[i] = x1[i] #change only one parameter at a time
         jobIDs = gsubmit(i,jobIDs,multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
     waitJobs(jobIDs)
+    gcosts = []
     for i in range(len(x)):
         pdir = '{}/p{}'.format(maindir,i)
         costs = analyzeNks.analyze([pdir])
         f1arr[i] = costs[0]
+        gcosts.append(costs[0]) 
         print 'gcost {}: {}'.format(i,f1arr[i])
     grad = divide(f1arr-f,dx)
     print '\ngrad',grad
-    return grad 
+    minGradcost = min(gcosts)
+    if minGradcost < 0.5*f: #use the corresponding x in the search
+        imin = argmin(gcosts)
+        xnew = x
+        xnew[i] = x1[i]
+        returnList = [xnew,minGradcost]
+    else:
+        returnList = None
+    return grad,returnList
                            
 def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     '''The vector x is divide(params,params0).  Deal with x here only.''' 
-    xold = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    xbest = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     itermax = 100
     gnormTol = 0.001
     minstep = 0.0001
     iIter = 0
     step = 0.1  
-    fold = cost(deepcopy(xold),params0,nlims,maindir,poscarsDir,vaspinputdir)
-    gold = grad(step,deepcopy(xold),fold,params0,nlims,maindir,poscarsDir,vaspinputdir)
-    gnew = deepcopy(gold)
-    fnew = copy(fold)
-    gnormold = norm(gold)
-    gnormnew = gnormold
-    fstart = fold; gstart = gold; gnormstart = gnormold
+    fbest = cost(deepcopy(xbest),params0,nlims,maindir,poscarsDir,vaspinputdir)
+    checkLow = []
+    while not checkLow is None:
+        if len(checkLow)>0:
+            print 'Moving to low cost point found in grad routine'
+            xbest = checkLow[0]
+            fbest = checkLow[1]
+        gr,checkLow = grad(max([step,0.01]),deepcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
+    gnorm  = norm(gr)
+    gnormstart = gnorm
+    fstart = fbest
     method = 'steepest'
-    print 'cost_0',fold, 'gnorm',gnormold,xold #,'grad', gold
-
+    print 'Initial cost',fbest,'gnorm',gnorm,xbest 
     atMinStep = False
-    while iIter < itermax and gnormold > gnormTol and not atMinStep:
+    while iIter < itermax and gnorm > gnormTol and not atMinStep:
         print iIter, #progress bar   
         lower = False
         while not lower:
-            if step < minstep:
-                print 'minimum step reached: {}'.format(step) 
-                atMinStep = True
-                break
             if method == 'steepest':
-                xnew = deepcopy(xold - step*gold)
+                xnew = xbest - step*gr
             fnew = cost(deepcopy(xnew),params0,nlims,maindir,poscarsDir,vaspinputdir)
             print 'Cost',fnew,xnew,step
-            if fnew < fold:
-                gnew = grad(step,deepcopy(xnew),fnew,params0,nlims,maindir,poscarsDir,vaspinputdir)
-                gnormnew = norm(gnew)
+            if fnew < fbest:
                 lower = True
+                fbest = copy(fnew)
                 xbest = deepcopy(xnew)
-            step /= 2
-        step *= 4
-        xold = deepcopy(xnew)
-        fold = copy(fnew)
-        gold = deepcopy(gnew)
-        gnormold = gnormnew
+                checkLow = []
+                while not checkLow is None:
+                    if len(checkLow)>0:
+                        print 'Moving to low cost point found in grad routine'
+                        xbest = checkLow[0]
+                        fbest = checkLow[1] 
+                    gr,checkLow = grad(max([step,0.01]),deepcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
+                gnorm  = norm(gr)
+                step *= 2
+            else:
+                step /= 2
+                if step < minstep:
+                    print 'minimum step reached: {}'.format(step) 
+                    atMinStep = True
+                    break
         iIter += 1                   
 #     newParams = currparams
     print 'For {} parameters and {} steps'.format(len(xnew),iIter)
     print '\tStarting cost',fstart, 'gnorm',gnormstart
-    print '\tEnding cost',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
+    print '\tEnding cost',fnew,'gnorm',gnorm,'step',step#, 'grad', gnew
     if gnormnew <= gnormTol:
         print '\nSuccess after {} iterations'.format(iIter)
     elif iIter == itermax:
         print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
-    if not (fnew < fstart and gnormnew < gnormstart):
-        sys.exit('Did not find a lower cost and gradient norm: stop')
+    if fnew >= fstart:
+        print('Did not find a lower cost!')
     return xbest
 
 def writeJob(path,ntarget,type,params):
@@ -281,6 +293,7 @@ testfile = 'POSCAR'
 reallatt = zeros((3,3))
 
 print 'Varying parameters in dynamicPacking'
+print maindir
 type = 'bcc'
 params0 = setParams(maindir)
 xbest = searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims)
