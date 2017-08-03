@@ -172,7 +172,7 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     best = zeros(nKeep,dtype = [('iIter','int32'),('cost','float'),('x','{}float'.format(len(params0)))])
     best['cost'] += 100
     defCost = Nkcost(multiply(xcurr,params0),nlims,maindir,poscarsDir,vaspinputdir)
-    print '\tStarting cost {:6.3f}'.format(defCost)
+    print '\tStarting cost {:6.2f}'.format(defCost)
     best[0]['cost'] = defCost
     best[0]['x'] = xcurr
     iIter = 0
@@ -181,32 +181,41 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
         for i, cost in enumerate(costs):
             xsStr = '['
             for ix in xs[i]:
-                xsStr += ' {:6.3f}'.format(ix) 
-            print 'cost {}: {:6.3f} xi: {}]'.format(i,cost,xsStr)
+                xsStr += ' {:6.2f}'.format(ix) 
+            print 'cost {}: {:6.2f} xi: {}]'.format(i,cost,xsStr)
+            if cost < min(best['cost']):
+                nSinceMin =0 
             if cost < max(best['cost']):
                 ibmax = argmax(best['cost'])
                 best[ibmax]['cost'] = cost
-                best[ibmax]['x'] = xs[i]
-            if cost < min(best['cost']):
-                nSinceMin ==0      
-        print 'Lowest costs at iter {}'.format(iIter);print best['cost'], '\n'
+                best[ibmax]['x'] = xs[i]  
+        xsStr = '['
         imin = argmin(costs)
         if nSinceMin == 0:
             xcurr = xs[imin]
-            print 'Lower x with cost {}:'.format(costs[imin]),xcurr 
+            print 'New x with lower cost {:6.2f}:'.format(costs[imin]),xcurr 
+            for ix in best[i]['cost']:
+                xsStr += ' {:6.2f}'.format(ix) 
+            print '\nLowest costs at iter {}: {}\n'.format(iIter,xsStr)
+        else:
+            print '\nNo lower cost found at iter {}: {}\n'.format(iIter,xsStr)
         iIter += 1 
         nSinceMin += 1                  
 #     newParams = currparams
     best.sort('cost')
     print 'For {} parameters and {} steps'.format(len(xcurr),iIter)
-    print '\tStarting cost {:6.3f}'.format(defCost)
-    print '\tLowest cost{:6.3f}'.format(best[0]['cost']),best[0]['x']
+    print '\tStarting cost {:6.2f}'.format(defCost)
+    print '\tLowest cost{:6.2f}'.format(best[0]['cost']),best[0]['x']
     if best[0]['cost'] >= defCost:
         print('Did not find a lower cost')
     if nSinceMin == maxSinceMin:
-        print '\nStop: no progress during the latest {} iterations.'.format(maxSinceMin)
+        sys.exit( '\nStop: no progress during the latest {} iterations.'.format(maxSinceMin))
     elif iIter == itermax:
         print '\nExceeded maximum number of iterations ({})'.format(itermax)
+    for ix in best['cost'][i]:
+        xsStr += ' {:6.2f}'.format(ix) 
+    print '\nLowest costs at end{}: {}\n'.format(iIter,xsStr)
+
     return 
 
                            
@@ -279,7 +288,7 @@ def writeJob(path,ntarget,type,params):
     Writes name and and ntarget."""  
     paramStr = ''
     for param in params:
-       paramStr += ' {:6.3f}'.format(param)
+       paramStr += ' {:6.2f}'.format(param)
     dir = os.getcwd()
     runFolder = dir.split('/')[-1] 
     jobName = '{}.{}'.format(path[-12:],runFolder)
@@ -357,13 +366,15 @@ def createRunDir(path,n,type,params):
     return newdir
 
 ################# script #######################
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/me_AlLP/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowP2'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_AlLP/'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
 # nlims = [2,14,1]
-nlims = [5,21,1]
+nlims = [8,12,1]
 
 testfile = 'POSCAR' 
 reallatt = zeros((3,3))
