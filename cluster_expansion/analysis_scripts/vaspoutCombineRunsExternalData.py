@@ -88,7 +88,7 @@ paths = [
 #     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams', 
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc', 
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub', 
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc',
+         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_junk',
          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 #
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fccOut',
