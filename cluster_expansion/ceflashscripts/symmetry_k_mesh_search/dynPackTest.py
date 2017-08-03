@@ -104,51 +104,19 @@ def submit(i,jobIDs,params,nlims,maindir,poscarsDir,vaspinputdir):
                     jobIDs.append(jobid)
                     os.chdir(pdir) 
     return jobIDs
-   
-# def cost(x,params0,nlims,maindir,poscarsDir,vaspinputdir):
-#     '''Compute current cost'''
-#     f = Nkcost(multiply(x,params0),nlims,maindir,poscarsDir,vaspinputdir)
-#     return f
-
-# def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
-#     '''Advance each component of x separately and compute each 
-#     cost to estimate the gradient. These run in parallel.'''
-#     jobIDs = []
-#     f1arr = zeros(len(x),dtype=float)
-#     gradfactor = (1+step)
-#     x1 = x * gradfactor
-#     dx = x1-x
-#     for i in range(len(x)):
-#         xtemp = x
-#         xtemp[i] = x1[i] #change only one parameter at a time
-#         jobIDs = gsubmit(i,jobIDs,multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
-#     waitJobs(jobIDs)
-#     gcosts = []
-#     for i in range(len(x)):
-#         pdir = '{}/p{}'.format(maindir,i)
-#         costs = analyzeNks.analyze([pdir])
-#         f1arr[i] = costs[0]
-#         gcosts.append(costs[0]) 
-#         print 'gcost {}: {}'.format(i,f1arr[i])
-#     grad = divide(f1arr-f,dx)
-#     print '\ngrad',grad
-#     minGradcost = min(gcosts)
-#     if minGradcost < 0.85*f: #use the corresponding x in the search
-#         imin = argmin(gcosts)
-#         xnew = deepcopy(x)
-#         xnew[i] = x1[i]
-#         returnList = [xnew,minGradcost]
-#     else:
-#         returnList = None
-#     return grad,returnList
 
 def randSteps(step,x,params0,nlims,maindir,poscarsDir,vaspinputdir):
     '''Advance each component of x separately and return costs and x's. These run in parallel.'''
     jobIDs = []
     xs = []
-    for i in range(len(x)):
+#     for i in range(len(x)):
+#         xtemp = npcopy(x)
+#         xtemp[i] *= (1 + sign(uniform(-1,1)) * step )#change only one parameter at a time
+#         xs.append(xtemp)
+    for i in range(len(x)): #change all parameters with random sign by step
         xtemp = npcopy(x)
-        xtemp[i] *= (1 + sign(uniform(-1,1)) * step )#change only one parameter at a time
+        for j in range(len(x)):   
+            xtemp[j] *= (1 + sign(uniform(-1,1)) * step )#change only one parameter at a time
         xs.append(xtemp)
         jobIDs = submit(i,jobIDs,multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
     waitJobs(jobIDs)
@@ -165,8 +133,9 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     Use a random hopping search''' 
     xcurr = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     itermax = 100
-    maxSinceMin = 20
-    step = 0.1  
+    maxSinceMin = 10
+    origStep = 0.1
+    step = origStep  
     nSinceMin = 1
     nKeep = 10
     best = zeros(nKeep,dtype = [('iIter','int32'),('cost','float'),('x','{}float'.format(len(params0)))])
@@ -180,11 +149,11 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
         costs,xs = randSteps(step,xcurr,params0,nlims,maindir,poscarsDir,vaspinputdir)
         for i, cost in enumerate(costs):
             xsStr = '['
-            for ix in xs[i]:
-                xsStr += ' {:6.2f}'.format(ix) 
-            print 'cost {}: {:6.2f} xi: {}]'.format(i,cost,xsStr)
+            for xi in xs[i]:
+                xsStr += ' {:6.2f}'.format(xi) 
+            print 'cost {}: {:6.2f} {}]'.format(i,cost,xsStr)
             if cost < min(best['cost']):
-                nSinceMin =0 
+                nSinceMin = 0 
             if cost < max(best['cost']):
                 ibmax = argmax(best['cost'])
                 best[ibmax]['cost'] = cost
@@ -192,13 +161,19 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
         xsStr = '['
         imin = argmin(costs)
         if nSinceMin == 0:
+            step = origStep
             xcurr = xs[imin]
             print 'New x with lower cost {:6.2f}:'.format(costs[imin]),xcurr 
-            for ix in best[i]['cost']:
-                xsStr += ' {:6.2f}'.format(ix) 
-            print '\nLowest costs at iter {}: {}\n'.format(iIter,xsStr)
+            cStr = ''
+            for ic in range(nKeep):
+                cStr += ' {:6.2f}'.format(best[ic]['cost']) 
+            print '\nLowest costs at iter {}: {}\n'.format(iIter,cStr)
         else:
-            print '\nNo lower cost found at iter {}: {}\n'.format(iIter,xsStr)
+            print '\nNo lower cost found at iter {}\n'.format(iIter)
+        if nSinceMin > maxSinceMin:
+            step *= 2
+            print 'Increasing step to', step
+            nSinceMin = 1
         iIter += 1 
         nSinceMin += 1                  
 #     newParams = currparams
@@ -209,78 +184,15 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     if best[0]['cost'] >= defCost:
         print('Did not find a lower cost')
     if nSinceMin == maxSinceMin:
-        sys.exit( '\nStop: no progress during the latest {} iterations.'.format(maxSinceMin))
+        sys.exit( '\nStop: no progress during the last {} iterations.'.format(maxSinceMin))
     elif iIter == itermax:
         print '\nExceeded maximum number of iterations ({})'.format(itermax)
-    for ix in best['cost'][i]:
-        xsStr += ' {:6.2f}'.format(ix) 
-    print '\nLowest costs at end{}: {}\n'.format(iIter,xsStr)
+    cStr = ''
+    for ic in range(nKeep):
+        cStr += ' {:6.2f}'.format(best[ic]['cost'])  
+    print '\nLowest costs at end{}: {}\n'.format(iIter,cStr)
 
     return 
-
-                           
-# def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
-#     '''The vector x is divide(params,params0).  Deal with x here only.''' 
-#     xbest = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-#     itermax = 100
-#     gnormTol = 0.001
-#     minstep = 0.0001
-#     iIter = 0
-#     step = 0.1  
-#     fbest = cost(deepcopy(xbest),params0,nlims,maindir,poscarsDir,vaspinputdir)
-#     print 'Cost at defaults',fbest
-#     checkLow = []
-#     while not checkLow is None:
-#         if len(checkLow)>0:
-#             print 'Moving to low cost point found in grad routine'
-#             xbest = deepcopy(checkLow[0])
-#             fbest = checkLow[1]
-#         gr,checkLow = grad(max([step,0.01]),deepcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
-#     gnorm  = norm(gr)
-#     gnormstart = gnorm
-#     fstart = fbest
-#     method = 'steepest'
-#     print 'Cost before iterations',fbest,'gnorm',gnorm,xbest 
-#     atMinStep = False
-#     while iIter < itermax and gnorm > gnormTol and not atMinStep:
-#         print iIter, #progress bar   
-#         lower = False
-#         while not lower:
-#             if method == 'steepest':
-#                 xnew = xbest - step*gr
-#             fnew = cost(deepcopy(xnew),params0,nlims,maindir,poscarsDir,vaspinputdir)
-#             print 'Cost',fnew,xnew,step
-#             if fnew < fbest:
-#                 lower = True
-#                 fbest = copy(fnew)
-#                 xbest = deepcopy(xnew)
-#                 checkLow = []
-#                 while not checkLow is None:
-#                     if len(checkLow)>0:
-#                         print 'Moving to low cost point found in grad routine'
-#                         xbest = checkLow[0]
-#                         fbest = checkLow[1] 
-#                     gr,checkLow = grad(max([step,0.01]),deepcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
-#                 gnorm  = norm(gr)
-#                 step *= 2
-#             else:
-#                 step /= 2
-#                 if step < minstep:
-#                     print 'minimum step reached: {}'.format(step) 
-#                     atMinStep = True
-#                     break
-#         iIter += 1                   
-# #     newParams = currparams
-#     print 'For {} parameters and {} steps'.format(len(xnew),iIter)
-#     print '\tStarting cost',fstart, 'gnorm',gnormstart
-#     print '\tEnding cost',fnew,'gnorm',gnorm,'step',step#, 'grad', gnew
-#     if gnorm <= gnormTol:
-#         print '\nSuccess after {} iterations'.format(iIter)
-#     elif iIter == itermax:
-#         print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnorm,gnormTol)
-#     if fnew >= fstart:
-#         print('Did not find a lower cost!')
-#     return xbest
 
 def writeJob(path,ntarget,type,params):
     """ Creates a standard job file for submitting a VASP job on the supercomputer. 
@@ -366,15 +278,15 @@ def createRunDir(path,n,type,params):
     return newdir
 
 ################# script #######################
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowP2'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_AlLP/'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
-# nlims = [2,14,1]
-nlims = [8,12,1]
+nlims = [2,14,1]
+# nlims = [8,12,1]
 
 testfile = 'POSCAR' 
 reallatt = zeros((3,3))
