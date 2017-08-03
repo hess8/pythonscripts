@@ -38,34 +38,34 @@ from kmeshroutines import (nstrip,readposcar,create_poscar,readfile,writefile,
                            waitMaxJobs,waitJobs)
 import dynamicPacking7, analyzeNks
 
-def setParams(type):
+def setParams(maindir):
     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ],
     params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
+    #to run the gradient in parallel, we need a folder for each parameter.
+    for i in range(len(params0)):
+        pdir = '{}/p{}'.format(maindir,i)
+        if not os.path.exists(pdir):
+            os.mkdir(pdir)
     return params0
     
 def Nkcost(params,nlims,maindir,poscarsDir,vaspinputdir):
     createdirs(maindir,poscarsDir,vaspinputdir)
     os.chdir(maindir)
     dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
-    jobIDs = []     
+    jobIDs = []
+    ns = []     
     for dir in dirs:
         os.chdir(maindir)
         if testfile in os.listdir(dir): 
             print
             currdir = maindir + '/'+ dir+'/'
-            print "*********************************************************************************************************"
-            print dir + "*********************************************************************************************************"
-            print "*********************************************************************************************************"
+#             print dir
             file1 = open(currdir+testfile,'r')
             poscar = file1.readlines()
             file1.close()
             if len(poscar) > 0:
                 for n in range(nlims[0],nlims[1],nlims[2]):#23
-                    print 
-                    print '==============================================' 
-                    print 'Base {} in submitVasp (target = n^3)'.format(n)
-                    print '==============================================' 
-                    print
+                    ns.append(n)
                     newdir = createRunDir(currdir,n,type,params) 
                     os.chdir(newdir)
                     waitMaxJobs()
@@ -73,49 +73,87 @@ def Nkcost(params,nlims,maindir,poscarsDir,vaspinputdir):
                     jobid = proc.communicate()[0].split()[3]
                     jobIDs.append(jobid)
                     os.chdir(maindir) 
-    subprocess.call(['echo', '\tSubmitted {} jobs, ID range {} , {} .'.format(len(jobIDs),jobIDs[0],jobIDs[-1])])
+#     subprocess.call(['echo', '\tSubmitted {} jobs, ID range {} , {} for ns {}'.format(len(jobIDs),jobIDs[0],jobIDs[-1],ns)])
     waitJobs(jobIDs)
     costs = analyzeNks.analyze([maindir])
     return costs[0]
+
+def gsubmit(i,jobIDs,params,nlims,maindir,poscarsDir,vaspinputdir):
+    pdir = '{}/p{}'.format(maindir,i)
+    createdirs(pdir,poscarsDir,vaspinputdir)
+    os.chdir(pdir)
+    dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
+    ns = []     
+    for dir in dirs:
+        os.chdir(pdir)
+        if testfile in os.listdir(dir): 
+            print
+            currdir = pdir + '/'+ dir+'/'
+#             print dir
+            file1 = open(currdir+testfile,'r')
+            poscar = file1.readlines()
+            file1.close()
+            if len(poscar) > 0:
+                for n in range(nlims[0],nlims[1],nlims[2]):#23
+                    ns.append(n)
+                    newdir = createRunDir(currdir,n,type,params) 
+                    os.chdir(newdir)
+                    waitMaxJobs()
+                    proc = subprocess.Popen(['sbatch','job'], stdout=subprocess.PIPE)
+                    jobid = proc.communicate()[0].split()[3]
+                    jobIDs.append(jobid)
+                    os.chdir(pdir) 
+    return jobIDs
    
-def costGrad(x,params0,nlims,maindir,poscarsDir,vaspinputdir):
-    '''Compute current cost.  Then advance each component of x and compute separately
-    to find the gradient'''
+def cost(x,params0,nlims,maindir,poscarsDir,vaspinputdir):
+    '''Compute current cost'''
+    f = Nkcost(multiply(x,params0),nlims,maindir,poscarsDir,vaspinputdir)
+#     print 'Cost',f
+    return f
+
+def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
+    '''Advance each component of x separately and compute each 
+    cost to estimate the gradient. These run in parallel.'''
+    jobIDs = []
     f1arr = zeros(len(x),dtype=float)
-    gradfactor = 1.2
+    gradfactor = (1+step)
     x1 = x * gradfactor
     dx = x1-x
-    f = Nkcost(multiply(x,params0),nlims,maindir,poscarsDir,vaspinputdir)
     for i in range(len(x)):
         xtemp = x
         xtemp[i] = x1[i] #change only one parameter at a time
-        f1arr[i] = Nkcost(multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
+        jobIDs = gsubmit(i,jobIDs,multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
+    waitJobs(jobIDs)
+    for i in range(len(x)):
+        pdir = '{}/p{}'.format(maindir,i)
+        costs = analyzeNks.analyze([pdir])
+        f1arr[i] = costs[0]
+        print 'gcost {}: {}'.format(i,f1arr[i])
     grad = divide(f1arr-f,dx)
-    return f,grad 
+    print '\ngrad',grad
+    return grad 
                            
 def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     '''The vector x is divide(params,params0).  Deal with x here only.''' 
     xold = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     itermax = 100
     gnormTol = 0.001
-    minstep = 0.05
-    fold,gold = costGrad(xold,params0,nlims,maindir,poscarsDir,vaspinputdir)
-    gnew = gold
-    fnew = fold
+    minstep = 0.0001
+    iIter = 0
+    step = 0.1  
+    fold = cost(deepcopy(xold),params0,nlims,maindir,poscarsDir,vaspinputdir)
+    gold = grad(step,deepcopy(xold),fold,params0,nlims,maindir,poscarsDir,vaspinputdir)
+    gnew = deepcopy(gold)
+    fnew = copy(fold)
     gnormold = norm(gold)
     gnormnew = gnormold
     fstart = fold; gstart = gold; gnormstart = gnormold
     method = 'steepest'
-#         xolder =  xold + 0.01*gold #go backwards
-#         golder = dot(H,(xolder-xold))
-#         folder = dot(gold,(xolder-xold))
-    print 'cost_0',fold, 'gnorm',gnormold #,'grad', gold
-    iIter = 0
-    step = 1.0 #* minstep
+    print 'cost_0',fold, 'gnorm',gnormold,xold #,'grad', gold
+
     atMinStep = False
     while iIter < itermax and gnormold > gnormTol and not atMinStep:
-        print iIter, #progress bar
-        method = 'steepest'
+        print iIter, #progress bar   
         lower = False
         while not lower:
             if step < minstep:
@@ -123,21 +161,23 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
                 atMinStep = True
                 break
             if method == 'steepest':
-                xnew = xold - step*gold
-            fnew,gnew = costGrad(xnew,params0)
-            gnormnew = norm(gnew)
+                xnew = deepcopy(xold - step*gold)
+            fnew = cost(deepcopy(xnew),params0,nlims,maindir,poscarsDir,vaspinputdir)
+            print 'Cost',fnew,xnew,step
             if fnew < fold:
+                gnew = grad(step,deepcopy(xnew),fnew,params0,nlims,maindir,poscarsDir,vaspinputdir)
+                gnormnew = norm(gnew)
                 lower = True
-                xbest = xnew
+                xbest = deepcopy(xnew)
             step /= 2
         step *= 4
-        xold = xnew
-        fold = fnew
-        gold = gnew
+        xold = deepcopy(xnew)
+        fold = copy(fnew)
+        gold = deepcopy(gnew)
         gnormold = gnormnew
         iIter += 1                   
 #     newParams = currparams
-    print 'For {} parmaters and {} steps'.format(len(newParames),iIter)
+    print 'For {} parameters and {} steps'.format(len(xnew),iIter)
     print '\tStarting cost',fstart, 'gnorm',gnormstart
     print '\tEnding cost',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
     if gnormnew <= gnormTol:
@@ -146,7 +186,7 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
         print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
     if not (fnew < fstart and gnormnew < gnormstart):
         sys.exit('Did not find a lower cost and gradient norm: stop')
-    return newParams
+    return xbest
 
 def writeJob(path,ntarget,type,params):
     """ Creates a standard job file for submitting a VASP job on the supercomputer. 
@@ -160,7 +200,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=0:20:02\n')
+    jobFile.write('#SBATCH --time=0:10:02\n')
     jobFile.write("#SBATCH --ntasks=4\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -191,7 +231,6 @@ def createdirs(maindir,poscarsDir,vaspinputdir):
         if not os.path.isdir(structDir):
             os.system('mkdir {}'.format(structDir)) #structure is in 
         os.system('cp {}/{} {}/POSCAR'.format(poscarsDir,file,structDir))
-        print 'atom',atom
         try:
             potcar = readfile('{}/{}/POTCAR'.format(potcarDir,atom))
         except:
@@ -232,7 +271,7 @@ def createRunDir(path,n,type,params):
     return newdir
 
 ################# script #######################
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_test1'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
@@ -243,8 +282,8 @@ reallatt = zeros((3,3))
 
 print 'Varying parameters in dynamicPacking'
 type = 'bcc'
-params0 = setParams(type)
+params0 = setParams(maindir)
 xbest = searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims)
- 
+print 'Final parameters', multiply(xbest,params0)
                
 print 'Done'

@@ -13,7 +13,7 @@ from symmetry import get_lattice_pointGroup, get_spaceGroup #these have vectors 
 from kmeshroutines import readposcar
 
 # from plotTools import plotxy
-from pylab import figure,cm,plot,xlabel,ylabel,title,loglog,semilogy,legend,rcParams,style,rc
+from pylab import figure,cm,plot,xlabel,ylabel,title,loglog,semilogy,legend,rcParams,style,rc,close
 from matplotlib.colors import rgb2hex
 # from matplotlib.colors import to_hex
 from copy import deepcopy
@@ -286,8 +286,8 @@ def analyze(paths): #as used with the parameter search, paths will have only one
     if filter[0] == '_':filter = '' #labels can't begin with _
     # plotTypes = ['linear','loglog'] #loglinear
     # print 'plot only loglog'
-    plotTypes = ['loglog'] #loglinear
-    # plotTypes = [] 
+#     plotTypes = ['loglog'] #loglinear
+    plotTypes = [] 
     ylabels = ['Vasp energy/atom (eV)','Error (meV)','Error (meV)']
     xtext = 'N k-points'
     
@@ -360,5 +360,5 @@ def analyze(paths): #as used with the parameter search, paths will have only one
 #         print 'Method',method, 'nKmax',methnKmax, 'avgLogCost', mean(avgcostLogs)
         legend(loc='lower left',prop={'size':12});
         fig.savefig('{}/methodErrs'.format(summaryPath))
-           
+    close('all')      
     return methodCostsLogs
