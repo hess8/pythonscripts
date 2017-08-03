@@ -286,8 +286,8 @@ def analyze(paths): #as used with the parameter search, paths will have only one
     if filter[0] == '_':filter = '' #labels can't begin with _
     # plotTypes = ['linear','loglog'] #loglinear
     # print 'plot only loglog'
-#     plotTypes = ['loglog'] #loglinear
-    plotTypes = [] 
+    plotTypes = ['loglog'] #loglinear
+#     plotTypes = [] 
     ylabels = ['Vasp energy/atom (eV)','Error (meV)','Error (meV)']
     xtext = 'N k-points'
     

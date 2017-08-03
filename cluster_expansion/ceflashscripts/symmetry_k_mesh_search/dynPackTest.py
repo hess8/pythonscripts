@@ -32,7 +32,7 @@ from numpy import (zeros,transpose,array,sum,float64,rint,divide,multiply,argmin
 from numpy import copy as npcopy
 # from copy import copy, deepcopy
 from numpy.linalg import norm
-from random import uniform
+from random import uniform,seed
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts')
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
@@ -160,22 +160,23 @@ def randSteps(step,x,params0,nlims,maindir,poscarsDir,vaspinputdir):
     return rcosts,xs
 
 def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
+    seed()
     '''The vector x is divide(params,params0).  Deal with x here only.
     Use a random hopping search''' 
     xcurr = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     itermax = 100
-    notLowerMax = 20
+    maxSinceMin = 20
     step = 0.1  
-    nNotLower = 1
+    nSinceMin = 1
     nKeep = 10
     best = zeros(nKeep,dtype = [('iIter','int32'),('cost','float'),('x','{}float'.format(len(params0)))])
     best['cost'] += 100
     defCost = Nkcost(multiply(xcurr,params0),nlims,maindir,poscarsDir,vaspinputdir)
-    print '\tStarting cost',defCost
+    print '\tStarting cost {:6.3f}'.format(defCost)
     best[0]['cost'] = defCost
     best[0]['x'] = xcurr
     iIter = 0
-    while iIter < itermax and nNotLower < notLowerMax:
+    while iIter < itermax and nSinceMin < maxSinceMin:
         costs,xs = randSteps(step,xcurr,params0,nlims,maindir,poscarsDir,vaspinputdir)
         for i, cost in enumerate(costs):
             xsStr = '['
@@ -183,26 +184,27 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
                 xsStr += ' {:6.3f}'.format(ix) 
             print 'cost {}: {:6.3f} xi: {}]'.format(i,cost,xsStr)
             if cost < max(best['cost']):
-                nNotLower = 0
                 ibmax = argmax(best['cost'])
                 best[ibmax]['cost'] = cost
-                best[ibmax]['x'] = xs[i]      
-        print '\nLowest costs at iter {}:'.format(iIter),best['cost']
+                best[ibmax]['x'] = xs[i]
+            if cost < min(best['cost']):
+                nSinceMin ==0      
+        print 'Lowest costs at iter {}'.format(iIter);print best['cost'], '\n'
         imin = argmin(costs)
-        xcurr = xs[imin]
-        if nNotLower == 0:
-            print 'New x with cost {}:'.format(costs[imin]),xcurr 
+        if nSinceMin == 0:
+            xcurr = xs[imin]
+            print 'Lower x with cost {}:'.format(costs[imin]),xcurr 
         iIter += 1 
-        nNotLower += 1                  
+        nSinceMin += 1                  
 #     newParams = currparams
     best.sort('cost')
     print 'For {} parameters and {} steps'.format(len(xcurr),iIter)
-    print '\tStarting cost',defCost
-    print '\tLowest cost',best[0]['cost'],best[0]['x']
+    print '\tStarting cost {:6.3f}'.format(defCost)
+    print '\tLowest cost{:6.3f}'.format(best[0]['cost']),best[0]['x']
     if best[0]['cost'] >= defCost:
         print('Did not find a lower cost')
-    if nNotLower == notLowerMax:
-        print '\nStop: no progress during the latest {} iterations.'.format(notLowerMax)
+    if nSinceMin == maxSinceMin:
+        print '\nStop: no progress during the latest {} iterations.'.format(maxSinceMin)
     elif iIter == itermax:
         print '\nExceeded maximum number of iterations ({})'.format(itermax)
     return 
@@ -356,6 +358,7 @@ def createRunDir(path,n,type,params):
 
 ################# script #######################
 maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/me_AlLP/'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
