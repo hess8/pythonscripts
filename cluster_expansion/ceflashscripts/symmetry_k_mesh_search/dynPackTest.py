@@ -41,6 +41,21 @@ from kmeshroutines import (nstrip,readposcar,create_poscar,readfile,writefile,
                            waitMaxJobs,waitJobs)
 import dynamicPacking7, analyzeNks
 
+#***************************************
+#*************  Settings ***************
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowP2'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_AlLP/'
+poscarsDir = '{}/0-info/POSCARS'.format(maindir)
+vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
+type = 'bcc'
+search = 'grad'
+# nlims = [8,12,1]
+nlims = [4,20,1]
+#***************************************
+#***************************************
+
 def setParams(maindir):
 #     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
 #     params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
@@ -62,9 +77,9 @@ def Nkcost(params,nlims,maindir,poscarsDir,vaspinputdir):
     ns = []     
     for dir in dirs:
         os.chdir(maindir)
-        if testfile in os.listdir(dir): 
+        if 'POSCAR' in os.listdir(dir): 
             currdir = maindir + '/'+ dir+'/'
-            file1 = open(currdir+testfile,'r')
+            file1 = open(currdir+'POSCAR','r')
             poscar = file1.readlines()
             file1.close()
             if len(poscar) > 0:
@@ -90,9 +105,9 @@ def submit(i,jobIDs,params,nlims,maindir,poscarsDir,vaspinputdir):
     ns = []     
     for dir in dirs:
         os.chdir(pdir)
-        if testfile in os.listdir(dir): 
+        if 'POSCAR' in os.listdir(dir): 
             currdir = pdir + '/'+ dir+'/'
-            file1 = open(currdir+testfile,'r')
+            file1 = open(currdir+'POSCAR','r')
             poscar = file1.readlines()
             file1.close()
             if len(poscar) > 0:
@@ -116,11 +131,12 @@ def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
     x1 = x * gradfactor
     dx = x1-x
     for i in range(len(x)):
-        xtemp = x
+        xtemp = npcopy(x)
         xtemp[i] = x1[i] #change only one parameter at a time
-        jobIDs = gsubmit(i,jobIDs,multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
+        jobIDs = submit(i,jobIDs,multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
     waitJobs(jobIDs)
     gcosts = []
+    print
     for i in range(len(x)):
         pdir = '{}/p{}'.format(maindir,i)
         costs = analyzeNks.analyze([pdir])
@@ -128,9 +144,9 @@ def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
         gcosts.append(costs[0]) 
         print 'gcost {}: {}'.format(i,f1arr[i])
     grad = divide(f1arr-f,dx)
-    print '\ngrad',grad
+    print 'grad',grad
     minGradcost = min(gcosts)
-    if minGradcost < 0.5*f: #use the corresponding x in the search
+    if minGradcost < 0.95*f: #use the corresponding x in the search
         imin = argmin(gcosts)
         xnew = x
         xnew[i] = x1[i]
@@ -228,8 +244,6 @@ def searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims):
         cStr += ' {:6.2f}'.format(best[ic]['cost'])  
     print '\nLowest costs at end{}: {}\n'.format(iIter,cStr)
 
-    return 
-
 def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     '''The vector x is divide(params,params0).  Deal with x here only.
     Uses gradient search''' 
@@ -241,13 +255,13 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     iIter = 0
     step = 0.1  
     fbest = Nkcost(multiply(npcopy(xbest),params0),nlims,maindir,poscarsDir,vaspinputdir)
-    checkLow = []
-    while not checkLow is None:
-        if len(checkLow)>0:
+    returnList = []
+    while not returnList is None:
+        if len(returnList)>0:
             print 'Moving to low cost point found in grad routine'
-            xbest = checkLow[0]
-            fbest = checkLow[1]
-        gr,checkLow = grad(max([step,0.01]),npcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
+            xbest = returnList[0]
+            fbest = returnList[1]
+        gr,returnList = grad(max([step,0.01]),npcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
     gnorm  = norm(gr)
     gnormstart = gnorm
     fstart = fbest
@@ -260,19 +274,19 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
         while not lower:
             if method == 'steepest':
                 xnew = xbest - step*gr
-            fnew =  Nkcost(multiply(npcopy(xbest),params0),nlims,maindir,poscarsDir,vaspinputdir)
+            fnew =  Nkcost(multiply(npcopy(xnew),params0),nlims,maindir,poscarsDir,vaspinputdir)
             print 'Cost',fnew,xnew,step
             if fnew < fbest:
                 lower = True
-                fbest = copy(fnew)
+                fbest = fnew
                 xbest = npcopy(xnew)
-                checkLow = []
-                while not checkLow is None:
-                    if len(checkLow)>0:
+                returnList = []
+                while not returnList is None:
+                    if len(returnList)>0:
                         print 'Moving to low cost point found in grad routine'
-                        xbest = checkLow[0]
-                        fbest = checkLow[1] 
-                    gr,checkLow = grad(max([step,0.01]),npcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
+                        xbest = returnList[0]
+                        fbest = returnList[1] 
+                    gr,returnList = grad(max([step,0.01]),npcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
                 gnorm  = norm(gr)
                 step *= 2
             else:
@@ -292,7 +306,6 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
         print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
     if fnew >= fstart:
         print('Did not find a lower cost!')
-    return xbest
 
 def writeJob(path,ntarget,type,params):
     """ Creates a standard job file for submitting a VASP job on the supercomputer. 
@@ -378,23 +391,11 @@ def createRunDir(path,n,type,params):
     return newdir
 
 ################# script #######################
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowP2'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_AlLP/'
-poscarsDir = '{}/0-info/POSCARS'.format(maindir)
-vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
-# nlims = [2,14,1]
-nlims = [8,12,1]
-
-testfile = 'POSCAR' 
-reallatt = zeros((3,3))
-search = 'grad'
 #search = 'rand'
 print 'Varying parameters in dynamicPacking'
 print '\t' + maindir
-type = 'bcc'
+
 params0 = setParams(maindir)
 if search == 'grad':
     searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims)
