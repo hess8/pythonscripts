@@ -44,18 +44,19 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowP2'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_AlLP/'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 type = 'bcc'
-search = 'grad'
+# search = 'grad'
+search = 'rand'
 # nlims = [8,12,1]
 nlims = [4,20,1]
 #***************************************
 #***************************************
-
+#Initial cost 1.08936163273 gnorm 5.46028736809 [ 1.   1.   1.   1.   1.1]
 def setParams(maindir):
 #     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
 #     params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
@@ -148,8 +149,8 @@ def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
     minGradcost = min(gcosts)
     if minGradcost < 0.95*f: #use the corresponding x in the search
         imin = argmin(gcosts)
-        xnew = x
-        xnew[i] = x1[i]
+        xnew = npcopy(x)
+        xnew[imin] = x1[imin]
         returnList = [xnew,minGradcost]
     else:
         returnList = None
@@ -182,7 +183,7 @@ def searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims):
     seed()
     '''The vector x is divide(params,params0).  Deal with x here only.
     Use a random hopping search''' 
-    xcurr = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    xcurr = array([1.0, 1.0, 1.0, 1.0, 1.0])
     itermax = 100
     maxSinceMin = 5
     origStep = 0.15
@@ -254,14 +255,15 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     minstep = 0.0001
     iIter = 0
     step = 0.1  
-    fbest = Nkcost(multiply(npcopy(xbest),params0),nlims,maindir,poscarsDir,vaspinputdir)
+    fbest = Nkcost(multiply(xbest,params0),nlims,maindir,poscarsDir,vaspinputdir)
+    print '\tDefault parameters cost {:6.2f}'.format(fbest)
     returnList = []
     while not returnList is None:
         if len(returnList)>0:
             print 'Moving to low cost point found in grad routine'
             xbest = returnList[0]
             fbest = returnList[1]
-        gr,returnList = grad(max([step,0.01]),npcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
+        gr,returnList = grad(max([step,0.01]),xbest,fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
     gnorm  = norm(gr)
     gnormstart = gnorm
     fstart = fbest
@@ -274,8 +276,8 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
         while not lower:
             if method == 'steepest':
                 xnew = xbest - step*gr
-            fnew =  Nkcost(multiply(npcopy(xnew),params0),nlims,maindir,poscarsDir,vaspinputdir)
-            print 'Cost',fnew,xnew,step
+            fnew =  Nkcost(multiply(xnew,params0),nlims,maindir,poscarsDir,vaspinputdir)
+            print '\tCost {:6.2f}'.format(fnew),xnew,step
             if fnew < fbest:
                 lower = True
                 fbest = fnew
@@ -297,13 +299,13 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
                     break
         iIter += 1                   
 #     newParams = currparams
-    print 'For {} parameters and {} steps'.format(len(xnew),iIter)
+    print 'For {} parameters and {} steps'.format(len(xbest),iIter)
     print '\tStarting cost',fstart, 'gnorm',gnormstart
     print '\tEnding cost',fnew,'gnorm',gnorm,'step',step#, 'grad', gnew
-    if gnormnew <= gnormTol:
+    if gnorm <= gnormTol:
         print '\nSuccess after {} iterations'.format(iIter)
     elif iIter == itermax:
-        print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
+        print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnorm,gnormTol)
     if fnew >= fstart:
         print('Did not find a lower cost!')
 
@@ -323,6 +325,7 @@ def writeJob(path,ntarget,type,params):
     jobFile.write("#SBATCH --ntasks=4\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
+#     jobFile.write("#SBATCH --qos=test\n")
     jobFile.write('module unload mpi\n')
     jobFile.write('module load mpi/openmpi-1.6.5_intel-13.0.1\n')
     jobFile.write('module unload mkl\n')
