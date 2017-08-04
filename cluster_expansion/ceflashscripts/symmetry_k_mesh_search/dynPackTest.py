@@ -30,7 +30,7 @@ import sys,os,subprocess
 from numpy import (zeros,transpose,array,sum,float64,rint,divide,multiply,argmin,
                    argmax,sign)
 from numpy import copy as npcopy
-# from copy import copy, deepcopy
+# from copy import copy, npcopy
 from numpy.linalg import norm
 from random import uniform,seed
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts')
@@ -42,8 +42,10 @@ from kmeshroutines import (nstrip,readposcar,create_poscar,readfile,writefile,
 import dynamicPacking7, analyzeNks
 
 def setParams(maindir):
-    paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ],
-    params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
+#     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+#     params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
+    paramLabels = ['power','wallPower','wallfactor','wallOffset','dw' ]
+    params0 =     [  6.0,     6.0,        1.0,         0.5,      0.5 ]    
     #to run the gradient in parallel, we need a folder for each parameter.
     for i in range(len(params0)):
         pdir = '{}/p{}'.format(maindir,i)
@@ -105,6 +107,39 @@ def submit(i,jobIDs,params,nlims,maindir,poscarsDir,vaspinputdir):
                     os.chdir(pdir) 
     return jobIDs
 
+def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
+    '''Advance each component of x separately and compute each 
+    cost to estimate the gradient. These run in parallel.'''
+    jobIDs = []
+    f1arr = zeros(len(x),dtype=float)
+    gradfactor = (1+step)
+    x1 = x * gradfactor
+    dx = x1-x
+    for i in range(len(x)):
+        xtemp = x
+        xtemp[i] = x1[i] #change only one parameter at a time
+        jobIDs = gsubmit(i,jobIDs,multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
+    waitJobs(jobIDs)
+    gcosts = []
+    for i in range(len(x)):
+        pdir = '{}/p{}'.format(maindir,i)
+        costs = analyzeNks.analyze([pdir])
+        f1arr[i] = costs[0]
+        gcosts.append(costs[0]) 
+        print 'gcost {}: {}'.format(i,f1arr[i])
+    grad = divide(f1arr-f,dx)
+    print '\ngrad',grad
+    minGradcost = min(gcosts)
+    if minGradcost < 0.5*f: #use the corresponding x in the search
+        imin = argmin(gcosts)
+        xnew = x
+        xnew[i] = x1[i]
+        returnList = [xnew,minGradcost]
+    else:
+        returnList = None
+    return grad,returnList
+
+
 def randSteps(step,x,params0,nlims,maindir,poscarsDir,vaspinputdir):
     '''Advance each component of x separately and return costs and x's. These run in parallel.'''
     jobIDs = []
@@ -127,7 +162,7 @@ def randSteps(step,x,params0,nlims,maindir,poscarsDir,vaspinputdir):
         rcosts.append(costs[0]) 
     return rcosts,xs
 
-def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
+def searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims):
     seed()
     '''The vector x is divide(params,params0).  Deal with x here only.
     Use a random hopping search''' 
@@ -194,6 +229,70 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     print '\nLowest costs at end{}: {}\n'.format(iIter,cStr)
 
     return 
+
+def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
+    '''The vector x is divide(params,params0).  Deal with x here only.
+    Uses gradient search''' 
+#     xbest = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    xbest = array([1.0, 1.0, 1.0, 1.0, 1.0])
+    itermax = 100
+    gnormTol = 0.001
+    minstep = 0.0001
+    iIter = 0
+    step = 0.1  
+    fbest = Nkcost(multiply(npcopy(xbest),params0),nlims,maindir,poscarsDir,vaspinputdir)
+    checkLow = []
+    while not checkLow is None:
+        if len(checkLow)>0:
+            print 'Moving to low cost point found in grad routine'
+            xbest = checkLow[0]
+            fbest = checkLow[1]
+        gr,checkLow = grad(max([step,0.01]),npcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
+    gnorm  = norm(gr)
+    gnormstart = gnorm
+    fstart = fbest
+    method = 'steepest'
+    print 'Initial cost',fbest,'gnorm',gnorm,xbest 
+    atMinStep = False
+    while iIter < itermax and gnorm > gnormTol and not atMinStep:
+        print iIter, #progress bar   
+        lower = False
+        while not lower:
+            if method == 'steepest':
+                xnew = xbest - step*gr
+            fnew =  Nkcost(multiply(npcopy(xbest),params0),nlims,maindir,poscarsDir,vaspinputdir)
+            print 'Cost',fnew,xnew,step
+            if fnew < fbest:
+                lower = True
+                fbest = copy(fnew)
+                xbest = npcopy(xnew)
+                checkLow = []
+                while not checkLow is None:
+                    if len(checkLow)>0:
+                        print 'Moving to low cost point found in grad routine'
+                        xbest = checkLow[0]
+                        fbest = checkLow[1] 
+                    gr,checkLow = grad(max([step,0.01]),npcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
+                gnorm  = norm(gr)
+                step *= 2
+            else:
+                step /= 2
+                if step < minstep:
+                    print 'minimum step reached: {}'.format(step) 
+                    atMinStep = True
+                    break
+        iIter += 1                   
+#     newParams = currparams
+    print 'For {} parameters and {} steps'.format(len(xnew),iIter)
+    print '\tStarting cost',fstart, 'gnorm',gnormstart
+    print '\tEnding cost',fnew,'gnorm',gnorm,'step',step#, 'grad', gnew
+    if gnormnew <= gnormTol:
+        print '\nSuccess after {} iterations'.format(iIter)
+    elif iIter == itermax:
+        print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
+    if fnew >= fstart:
+        print('Did not find a lower cost!')
+    return xbest
 
 def writeJob(path,ntarget,type,params):
     """ Creates a standard job file for submitting a VASP job on the supercomputer. 
@@ -286,17 +385,20 @@ maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
-nlims = [2,14,1]
-# nlims = [8,12,1]
+# nlims = [2,14,1]
+nlims = [8,12,1]
 
 testfile = 'POSCAR' 
 reallatt = zeros((3,3))
-
+search = 'grad'
+#search = 'rand'
 print 'Varying parameters in dynamicPacking'
 print '\t' + maindir
 type = 'bcc'
 params0 = setParams(maindir)
-xbest = searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims)
-print 'Final parameters', multiply(xbest,params0)
+if search == 'grad':
+    searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims)
+elif search == 'rand':
+    searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims)
                
 print 'Done'
