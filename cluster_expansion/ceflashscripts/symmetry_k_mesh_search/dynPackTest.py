@@ -133,8 +133,8 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     Use a random hopping search''' 
     xcurr = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
     itermax = 100
-    maxSinceMin = 10
-    origStep = 0.1
+    maxSinceMin = 5
+    origStep = 0.15
     step = origStep  
     nSinceMin = 1
     nKeep = 10
@@ -145,7 +145,7 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     best[0]['cost'] = defCost
     best[0]['x'] = xcurr
     iIter = 0
-    while iIter < itermax and nSinceMin < maxSinceMin:
+    while iIter < itermax:
         costs,xs = randSteps(step,xcurr,params0,nlims,maindir,poscarsDir,vaspinputdir)
         for i, cost in enumerate(costs):
             xsStr = '['
@@ -169,7 +169,8 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
                 cStr += ' {:6.2f}'.format(best[ic]['cost']) 
             print '\nLowest costs at iter {}: {}\n'.format(iIter,cStr)
         else:
-            print '\nNo lower cost found at iter {}\n'.format(iIter)
+#             print '\nNo lower cost found at iter {}\n'.format(iIter)
+            print 'Iteration {}\n'.format(iIter)
         if nSinceMin > maxSinceMin:
             step *= 2
             print 'Increasing step to', step
@@ -177,7 +178,7 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
         iIter += 1 
         nSinceMin += 1                  
 #     newParams = currparams
-    best.sort('cost')
+    sort(best,order=['cost']) 
     print 'For {} parameters and {} steps'.format(len(xcurr),iIter)
     print '\tStarting cost {:6.2f}'.format(defCost)
     print '\tLowest cost{:6.2f}'.format(best[0]['cost']),best[0]['x']
@@ -278,8 +279,8 @@ def createRunDir(path,n,type,params):
     return newdir
 
 ################# script #######################
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowP2'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_AlLP/'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
