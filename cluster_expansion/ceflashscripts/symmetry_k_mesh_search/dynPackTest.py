@@ -26,9 +26,9 @@ All parameters: (Implement search on *'s
         step /= 2
         neighR = 8.0*self.rpacking'''
     
-import sys,os,subprocess
+import sys,os,subprocess,time
 from numpy import (zeros,transpose,array,sum,float64,rint,divide,multiply,argmin,
-                   argmax,sign)
+                   argmax,sign,int32)
 from numpy import copy as npcopy
 # from copy import copy, npcopy
 from numpy.linalg import norm
@@ -70,20 +70,20 @@ def setParams(maindir):
     for i in range(len(params0)):
         pdir = '{}/p{}'.format(maindir,i)
         if os.path.exists(pdir):
-            os.system('rm -r {}'.format(pdir))
+            os.system('rm -r -f {}'.format(pdir))
         os.mkdir(pdir)
     return params0
     
-def Nkcost(params,nlims,maindir,poscarsDir,vaspinputdir):
-    createdirs(maindir,poscarsDir,vaspinputdir)
-    os.chdir(maindir)
+def Nkcost(params,nlims,dir0,poscarsDir,vaspinputdir):
+#     createdirs(dir0,poscarsDir,vaspinputdir)
+    os.chdir(dir0)
     dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
     jobIDs = []
     ns = []     
     for dir in dirs:
-        os.chdir(maindir)
+        os.chdir(dir0)
         if 'POSCAR' in os.listdir(dir): 
-            currdir = maindir + '/'+ dir+'/'
+            currdir = dir0 + '/'+ dir+'/'
             file1 = open(currdir+'POSCAR','r')
             poscar = file1.readlines()
             file1.close()
@@ -96,10 +96,10 @@ def Nkcost(params,nlims,maindir,poscarsDir,vaspinputdir):
                     proc = subprocess.Popen(['sbatch','job'], stdout=subprocess.PIPE)
                     jobid = proc.communicate()[0].split()[3]
                     jobIDs.append(jobid)
-                    os.chdir(maindir) 
+                    os.chdir(dir0) 
 #     subprocess.call(['echo', '\tSubmitted {} jobs, ID range {} , {} for ns {}'.format(len(jobIDs),jobIDs[0],jobIDs[-1],ns)])
     waitJobs(jobIDs)
-    costs = analyzeNks.analyze([maindir])
+    costs = analyzeNks.analyze([dir0])
     return costs[0]
 
 def submit(i,jobIDs,params,nlims,maindir,poscarsDir,vaspinputdir):
@@ -196,7 +196,7 @@ def submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims):
     createdirs(rdir,poscarsDir,vaspinputdir)
     os.chdir(rdir)
     dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
-    print 'dirs',dirs
+#     print 'dirs',dirs
     ns = []     
     for dir in dirs:
         os.chdir(dir)
@@ -220,6 +220,11 @@ def submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims):
 def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     '''Set up a N-dimensional grid of parameters, and run through all of it''' 
     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+    print 'Parameters in method'
+    print'\t{}'.format(paramLabels)
+    print 'wallPower equals power'
+    print 'dw held at 0.5'
+    
     #
     params0 =     [ 2.0, 4.0, 6.0, 8.0 ] 
     params1 =     'duplicate Power for wallPower' 
@@ -233,16 +238,14 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     iset = 0
     nRunSlots = 4 #runslots are directories that run a paramSet
     slotsJobIDs = [[]]*nRunSlots
-    slotsParams = [[]]*nRunSlots
-    slotsIsets =  [[]]*nRunSlots
+    slotsIsets =  zeros(nRunSlots,dtype = int32)
     for i in range(nRunSlots):
         rdir = '{}/r{}'.format(maindir,i)
         if os.path.exists(rdir):
-            os.system('rm -r {}'.format(rdir))
+            os.system('rm -r -f {}'.format(rdir))
         os.mkdir(rdir)
     isetsToStart = range(nPsets)
     setsDone = []
-    
     for p0 in params0:
         p1 = p0
         for p2 in params2:
@@ -252,24 +255,45 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                         params = [p0,p1,p2,p3,p4,p5]                      
                         all[iset]['params'] = params
                         iset += 1
-    slotsBusy = [False]*nRunSlots
+    summary = open('{}/summary.csv'.format(maindir),'w')
+    summary.write('iset, cost, power,wallPower,wallfactor,wallClose,wallOffset,dw \n')
+    toAnalyze = []
+    iwait = 0
+    minCost = 100
+    bestParams = []
     while len(setsDone) < nPsets:
         icurrSet = isetsToStart[0]
         for ir in range(nRunSlots):
-            if len(slotsJobIDs[ir]) == 0:
-                if slotsBusy[ir]: #this slot has not been analyzed
-                    setDir = '[]/r{}'.format(maindir,ir)
-                    cost = Nkcost(params,nlims,setDir,poscarsDir,vaspinputdir)
-                    all[iset]['cost'] = cost
-                    print 'cost for set {}: {:6.2f} {}]'.format(iset,cost,all[iset]['params'])
-                slotsBusy[ir] = False
-                params = all[iset]['params']
+            if len(slotsJobIDs[ir]) == 0: #use this slot for next set
+                iwait = 0; print #needed
+                if ir in toAnalyze: #the slot's previous calc has not been analyzed
+                    setDir = '{}/r{}'.format(maindir,ir)
+                    costs = analyzeNks.analyze([setDir])
+                    ioldSet = slotsIsets[ir]
+                    all[ioldSet]['cost'] = costs[0]
+                    if costs[0] < minCost: 
+                        minCost = costs[0]
+                        bestParams = all[ioldSet]['params']
+                        iminCost =  ioldSet
+                        rdir = '{}/r{}'.format(maindir,ir)
+                        os.system('mv {}/loglog_e_vs_n.png {}/best_loglog_e_vs_n.png'.format(rdir,maindir))
+                        os.system('mv {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir))                    
+                    print 'cost for set {}: {:6.2f} {}]'.format(ioldSet,costs[0],all[ioldSet]['params'])
+                    print 'vs. min cost {}: {:6.2f} {}]'.format(iminCost,minCost,bestParams)
+                    ps = all[ioldSet]['params']
+                    summary.write('{},{:6.3f},{},{},{},{},{},{}\n'.format(iset,costs[0],
+                                                ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
+                #start new set
+                params = all[icurrSet]['params']
                 jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims)
-                subprocess.call(['echo', '\tSubmitted {} jobs, ID range {} , {} for iset {}'.format(len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
+                subprocess.call(['echo', '\tFor set {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
                 slotsJobIDs[ir] = jobIDs
-                slotsParams[ir] = icurrSet
                 isetsToStart.pop(0)
                 setsDone.append(icurrSet)
+                toAnalyze.append(ir)
+                slotsIsets[ir] = icurrSet
+                if len(slotsJobIDs[-1]) > 0: #slots have all started work
+                    print '\twait', 
                 break
         #update slotsJobIDs
         output = []
@@ -286,15 +310,17 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                 if id in runningIDs:
                     continue
                 else:
-                    slotsJobIDs[ir].remove(id)    
-            print 'Running',slotsJobIDs[ir] 
-    lines = ['iset, cost, power,wallPower,wallfactor,wallClose,wallOffset,dw \n']  
+                    slotsJobIDs[ir].remove(id) 
+        if len(slotsJobIDs[-1]) > 0:
+               iwait += 1   
+               time.sleep(10)
+               print ' {}'.format(iwait),
+      
     for iset in range(nPsets):
         ps = all[iset]['params']
-        lines.append('{},{:6.3f},{},{},{},{},{},{}\n'.format(
-              iset,all[iset]['cost'],
-              ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
-    writefile(lines,'{}/summary.csv'.format(maindir)) 
+        lines.append()
+    writefile(lines,'{}/summary.csv'.format(maindir))
+    print 'Finished {} sets of parameters'.format(nPsets)
     
 def searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims):
     '''The vector x is divide(params,params0).  Deal with x here only.
@@ -469,7 +495,7 @@ def createdirs(maindir,poscarsDir,vaspinputdir):
         structDir = '{}/{}'.format(maindir,struct)
         atom = info[1]
         if os.path.isdir(structDir):
-            os.system('rm -r {}'.format(structDir))
+            os.system('rm -r -f {}'.format(structDir))
         os.system('mkdir {}'.format(structDir)) #structure is in 
         os.system('cp {}/{} {}/POSCAR'.format(poscarsDir,file,structDir))
         try:

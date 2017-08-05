@@ -317,7 +317,7 @@ def analyze(paths): #as used with the parameter search, paths will have only one
                 if doLabel: labelStr = '{} {}'.format(filter,data[iplot]['ID'])
                 plotData(data[iplot],n,plotType,filter,doLegend,labelStr)
     #Method averaging
-    if coloring == 'method':
+    if coloring == 'method' and maxNk > 0:
 #         print 'Averaging, plotting method errors'
         nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
         nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
@@ -326,39 +326,42 @@ def analyze(paths): #as used with the parameter search, paths will have only one
         xlabel('N k-points (smoothed by factor {})'.format(int(smoothFactor)))
         ylabel('Error (meV)') 
         methodCostsLogs = []
-    for im,method in enumerate(methods):
-        methnKmax = 0 
-        binCounts = zeros(nbins,dtype = int32)
-        binErrs = zeros(nbins,dtype = float)
-        costLogs = zeros(nbins,dtype = float) # "Costs" relative to excellent Si Monkhorst Pack, which has err = 10^3/nK^3 + 10^-3 meV.         
-        for iplot in range(nplots):
-            if data[iplot]['method'] == method:
-                for icalc in range(data[iplot]['nDone']-1):
-                    nK = data[iplot]['nKs'][icalc]
-                    if nK>methnKmax: methnKmax = nK
-                    if nK>1:
-                        for ibin in range(nbins):
-                            if abs(log10(nK/nKbins[ibin])) <= log10(smoothFactor)\
-                              and nKbins[ibin]<= maxNk:
-                                binErrs[ibin] += data[iplot]['errs'][icalc]
-                                costLogs[ibin] += log10(data[iplot]['errs'][icalc]/(10**3/(nK**3.0)+0.001))
-                                binCounts[ibin] += 1
-        mask = where(binCounts>0)
-        binErrs2 = binErrs[mask[0]]
-        binCounts2 = binCounts[mask[0]]
-        nKbins2 = nKbins[mask[0]]
-        costLogs2 = costLogs[mask[0]]
-        nbins2 = len(nKbins2)
-        avgErrs = [binErrs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
-        avgcostLogs =  [costLogs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
-        avgcostLins = [10**avgcostLogs[ibin] for ibin in range(nbins2)]
-        methodCostsLogs.append(mean(avgcostLogs))
-        loglog(nKbins2,avgErrs,label = method,\
-              color = colorsList[im], marker = None)
-        loglog(nKbins2,avgcostLins,label = None,\
-              color = colorsList[im], marker = None,linestyle=':')
-#         print 'Method',method, 'nKmax',methnKmax, 'avgLogCost', mean(avgcostLogs)
-        legend(loc='lower left',prop={'size':12});
-        fig.savefig('{}/methodErrs'.format(summaryPath))
-    close('all')      
-    return methodCostsLogs
+        for im,method in enumerate(methods):
+            methnKmax = 0 
+            binCounts = zeros(nbins,dtype = int32)
+            binErrs = zeros(nbins,dtype = float)
+            costLogs = zeros(nbins,dtype = float) # "Costs" relative to excellent Si Monkhorst Pack, which has err = 10^3/nK^3 + 10^-3 meV.         
+            for iplot in range(nplots):
+                if data[iplot]['method'] == method:
+                    for icalc in range(data[iplot]['nDone']-1):
+                        nK = data[iplot]['nKs'][icalc]
+                        if nK>methnKmax: methnKmax = nK
+                        if nK>1:
+                            for ibin in range(nbins):
+                                if abs(log10(nK/nKbins[ibin])) <= log10(smoothFactor)\
+                                  and nKbins[ibin]<= maxNk:
+                                    binErrs[ibin] += data[iplot]['errs'][icalc]
+                                    costLogs[ibin] += log10(data[iplot]['errs'][icalc]/(10**3/(nK**3.0)+0.001))
+                                    binCounts[ibin] += 1
+            mask = where(binCounts>0)
+            binErrs2 = binErrs[mask[0]]
+            binCounts2 = binCounts[mask[0]]
+            nKbins2 = nKbins[mask[0]]
+            costLogs2 = costLogs[mask[0]]
+            nbins2 = len(nKbins2)
+            avgErrs = [binErrs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+            avgcostLogs =  [costLogs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+            avgcostLins = [10**avgcostLogs[ibin] for ibin in range(nbins2)]
+            methodCostsLogs.append(mean(avgcostLogs))
+            loglog(nKbins2,avgErrs,label = method,\
+                  color = colorsList[im], marker = None)
+            loglog(nKbins2,avgcostLins,label = None,\
+                  color = colorsList[im], marker = None,linestyle=':')
+    #         print 'Method',method, 'nKmax',methnKmax, 'avgLogCost', mean(avgcostLogs)
+            legend(loc='lower left',prop={'size':12});
+            fig.savefig('{}/methodErrs'.format(summaryPath))
+        close('all')
+    if maxNk > 0:  
+        return methodCostsLogs
+    else:
+        return [100]
