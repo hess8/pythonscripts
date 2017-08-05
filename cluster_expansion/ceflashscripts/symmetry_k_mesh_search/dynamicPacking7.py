@@ -435,12 +435,12 @@ class dynamicPack():
         self.power = float(params[0]) #6.0
         self.wallPower = float(params[1]) #6.0
         self.wallFactor = float(params[2]) #1.0  #probably needs to be bigger than interFactor by about the average number of nearest neighbors
-        self.wallClose = 0.5 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = float(params[3]) #0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.wallClose = float(params[3]) #0.5 #to allow initial points closer to the wall set to less than 1. 
+        self.wallOffset = float(params[4]) #0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.interFactor = 1.0        
         self.initFactor = 1.0
         self.df = 1.00 * self.ravg #inter-point force scale distance
-        self.dw = float(params[4]) * self.df  #0.5 * self.df #wall force scale distance
+        self.dw = float(params[5]) * self.df  #0.5 * self.df #wall force scale distance
 #        self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/300
         self.eps = eps

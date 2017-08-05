@@ -43,17 +43,18 @@ import dynamicPacking7, analyzeNks
 
 #***************************************
 #*************  Settings ***************
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_AlLP/'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 type = 'bcc'
 # search = 'grad'
-search = 'rand'
-# nlims = [8,12,1]
-nlims = [4,20,1]
+# search = 'rand'
+search = 'all'
+nlims = [8,12,1]
+# nlims = [4,20,1]
 #***************************************
 #***************************************
 #Initial cost 1.08936163273 gnorm 5.46028736809 [ 1.   1.   1.   1.   1.1]
@@ -61,7 +62,10 @@ def setParams(maindir):
 #     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
 #     params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
     paramLabels = ['power','wallPower','wallfactor','wallOffset','dw' ]
-    params0 =     [  6.0,     6.0,        1.0,         0.5,      0.5 ]    
+    params0 =     [  6.0,     6.0,        1.0,         0.5,      0.5 ]  
+    print 'Initial settings'
+    print'\t{}'.format(paramLabels)
+    print'\t{}'.format(params0)  
     #to run the gradient in parallel, we need a folder for each parameter.
     for i in range(len(params0)):
         pdir = '{}/p{}'.format(maindir,i)
@@ -156,8 +160,7 @@ def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
         returnList = None
     return grad,returnList
 
-
-def randSteps(step,x,params0,nlims,maindir,poscarsDir,vaspinputdir):
+def randSteps(allRands,step,x,params0,nlims,maindir,poscarsDir,vaspinputdir):
     '''Advance each component of x separately and return costs and x's. These run in parallel.'''
     jobIDs = []
     xs = []
@@ -166,9 +169,15 @@ def randSteps(step,x,params0,nlims,maindir,poscarsDir,vaspinputdir):
 #         xtemp[i] *= (1 + sign(uniform(-1,1)) * step )#change only one parameter at a time
 #         xs.append(xtemp)
     for i in range(len(x)): #change all parameters with random sign by step
-        xtemp = npcopy(x)
-        for j in range(len(x)):   
-            xtemp[j] *= (1 + sign(uniform(-1,1)) * step )#change only one parameter at a time
+        for itry in range(1000):
+            xtemp = npcopy(x)
+            for j in range(len(x)):   
+                xtemp[j] *= (1 + sign(uniform(-1,1)) * step )#change only one parameter at a time
+            xsStr = '['
+            for xi in xtemp:
+                xsStr += ' {:6.2f}'.format(xi)
+            if xsStr not in allRands:
+                break #this one is unique
         xs.append(xtemp)
         jobIDs = submit(i,jobIDs,multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
     waitJobs(jobIDs)
@@ -179,13 +188,121 @@ def randSteps(step,x,params0,nlims,maindir,poscarsDir,vaspinputdir):
         rcosts.append(costs[0]) 
     return rcosts,xs
 
+def submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims):
+    '''For use with searchParamsAll.  Submits a parameter set run, and returns to check
+    on progress later'''
+    jobIDs = []
+    rdir = '{}/r{}'.format(maindir,ir)
+    createdirs(rdir,poscarsDir,vaspinputdir)
+    os.chdir(rdir)
+    dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
+    print 'dirs',dirs
+    ns = []     
+    for dir in dirs:
+        os.chdir(dir)
+        if 'POSCAR' in os.listdir(os.getcwd()): 
+            currdir = rdir + '/'+ dir+'/'
+            file1 = open(currdir+'POSCAR','r')
+            poscar = file1.readlines()
+            file1.close()
+            if len(poscar) > 0:
+                for n in range(nlims[0],nlims[1],nlims[2]):#23
+                    ns.append(n)
+                    newdir = createRunDir(currdir,n,type,params) 
+                    os.chdir(newdir)
+                    waitMaxJobs()
+                    proc = subprocess.Popen(['sbatch','job'], stdout=subprocess.PIPE)
+                    jobid = proc.communicate()[0].split()[3]
+                    jobIDs.append(jobid)
+                    os.chdir(rdir) 
+    return jobIDs 
+
+def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
+    '''Set up a N-dimensional grid of parameters, and run through all of it''' 
+    paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+    #
+    params0 =     [ 2.0, 4.0, 6.0, 8.0 ] 
+    params1 =     'duplicate Power for wallPower' 
+    params2 =     [ 0.1, 0.5, 1.0, 2.0]
+    params3 =     [ 0.1, 0.5, 1.0, 2.0]
+    params4 =     [ 0.0, 0.5, 1.0, 2.0]
+    params5 =  [0.5]
+    nP = len(paramLabels)
+    nPsets = len(paramLabels)**4 #adjust this
+    all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
+    iset = 0
+    nRunSlots = 4 #runslots are directories that run a paramSet
+    slotsJobIDs = [[]]*nRunSlots
+    slotsParams = [[]]*nRunSlots
+    slotsIsets =  [[]]*nRunSlots
+    for i in range(nRunSlots):
+        rdir = '{}/r{}'.format(maindir,i)
+        if os.path.exists(rdir):
+            os.system('rm -r {}'.format(rdir))
+        os.mkdir(rdir)
+    isetsToStart = range(nPsets)
+    setsDone = []
+    
+    for p0 in params0:
+        p1 = p0
+        for p2 in params2:
+            for p3 in params3:
+                for p4 in params4:
+                    for p5 in params5:
+                        params = [p0,p1,p2,p3,p4,p5]                      
+                        all[iset]['params'] = params
+                        iset += 1
+    slotsBusy = [False]*nRunSlots
+    while len(setsDone) < nPsets:
+        icurrSet = isetsToStart[0]
+        for ir in range(nRunSlots):
+            if len(slotsJobIDs[ir]) == 0:
+                if slotsBusy[ir]: #this slot has not been analyzed
+                    setDir = '[]/r{}'.format(maindir,ir)
+                    cost = Nkcost(params,nlims,setDir,poscarsDir,vaspinputdir)
+                    all[iset]['cost'] = cost
+                    print 'cost for set {}: {:6.2f} {}]'.format(iset,cost,all[iset]['params'])
+                slotsBusy[ir] = False
+                params = all[iset]['params']
+                jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims)
+                subprocess.call(['echo', '\tSubmitted {} jobs, ID range {} , {} for iset {}'.format(len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
+                slotsJobIDs[ir] = jobIDs
+                slotsParams[ir] = icurrSet
+                isetsToStart.pop(0)
+                setsDone.append(icurrSet)
+                break
+        #update slotsJobIDs
+        output = []
+        while len(output) in [0,8]:
+            devnull = open(os.devnull, 'w')
+            proc = subprocess.Popen(['squeue', '-u', 'bch'], stdout=subprocess.PIPE, stderr=devnull)
+            output = proc.communicate()[0].split()
+        runningIDs = []
+        for item in output:
+            if item.isdigit() and len(item) == 8:
+                runningIDs.append(item)
+        for ir in range(nRunSlots):
+            for id in npcopy(slotsJobIDs[ir]):
+                if id in runningIDs:
+                    continue
+                else:
+                    slotsJobIDs[ir].remove(id)    
+            print 'Running',slotsJobIDs[ir] 
+    lines = ['iset, cost, power,wallPower,wallfactor,wallClose,wallOffset,dw \n']  
+    for iset in range(nPsets):
+        ps = all[iset]['params']
+        lines.append('{},{:6.3f},{},{},{},{},{},{}\n'.format(
+              iset,all[iset]['cost'],
+              ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
+    writefile(lines,'{}/summary.csv'.format(maindir)) 
+    
 def searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims):
-    seed()
     '''The vector x is divide(params,params0).  Deal with x here only.
     Use a random hopping search''' 
+    seed()
     xcurr = array([1.0, 1.0, 1.0, 1.0, 1.0])
     itermax = 100
-    maxSinceMin = 5
+    maxSinceMin = 15
     origStep = 0.15
     step = origStep  
     nSinceMin = 1
@@ -197,12 +314,14 @@ def searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims):
     best[0]['cost'] = defCost
     best[0]['x'] = xcurr
     iIter = 0
+    allRands = [] 
     while iIter < itermax:
-        costs,xs = randSteps(step,xcurr,params0,nlims,maindir,poscarsDir,vaspinputdir)
+        costs,xs = randSteps(allRands,step,xcurr,params0,nlims,maindir,poscarsDir,vaspinputdir)
         for i, cost in enumerate(costs):
             xsStr = '['
             for xi in xs[i]:
                 xsStr += ' {:6.2f}'.format(xi) 
+            allRands.append(xsStr)
             print 'cost {}: {:6.2f} {}]'.format(i,cost,xsStr)
             if cost < min(best['cost']):
                 nSinceMin = 0 
@@ -210,7 +329,6 @@ def searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims):
                 ibmax = argmax(best['cost'])
                 best[ibmax]['cost'] = cost
                 best[ibmax]['x'] = xs[i]  
-        xsStr = '['
         imin = argmin(costs)
         if nSinceMin == 0:
             step = origStep
@@ -399,10 +517,14 @@ def createRunDir(path,n,type,params):
 print 'Varying parameters in dynamicPacking'
 print '\t' + maindir
 
-params0 = setParams(maindir)
+
 if search == 'grad':
+    params0 = setParams(maindir)
     searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims)
 elif search == 'rand':
+    params0 = setParams(maindir)
     searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims)
+elif search == 'all':
+    searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims)
                
 print 'Done'
