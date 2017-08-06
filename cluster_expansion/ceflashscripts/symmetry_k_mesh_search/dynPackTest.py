@@ -313,7 +313,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                     print 'cost for set {}: {:6.2f} {}]'.format(ioldSet,costs[0],all[ioldSet]['params'])
                     print 'vs. min cost {}: {:6.2f} {}]'.format(iminCost,minCost,bestParams)
                     ps = all[ioldSet]['params']
-                    summary.write('{},{:6.3f},{},{},{},{},{},{}\n'.format(iset,costs[0],
+                    summary.write('{},{:6.3f},{},{},{},{},{},{}\n'.format(icurrSet,costs[0],
                                                 ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
                     summary.flush()
                 #start new set
