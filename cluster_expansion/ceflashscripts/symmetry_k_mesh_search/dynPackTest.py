@@ -43,8 +43,8 @@ import dynamicPacking7, analyzeNks
 
 #***************************************
 #*************  Settings ***************
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_AlLP/'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
@@ -53,11 +53,45 @@ type = 'bcc'
 # search = 'grad'
 # search = 'rand'
 search = 'all'
-nlims = [8,12,1]
-# nlims = [4,20,1]
+# nlims = [8,12,1]
+nlims = [4,26,1]
 #***************************************
 #***************************************
-#Initial cost 1.08936163273 gnorm 5.46028736809 [ 1.   1.   1.   1.   1.1]
+
+
+def writeJob(path,ntarget,type,params):
+    """ Creates a standard job file for submitting a VASP job on the supercomputer. 
+    The job file calls python for mesh definition.
+    Writes name and and ntarget."""  
+    paramStr = ''
+    for param in params:
+       paramStr += ' {:6.2f}'.format(param)
+    dir = os.getcwd()
+    runFolder = dir.split('/')[-1] 
+    jobName = '{}.{}'.format(path[-12:],runFolder)
+    jobFile = open('{}/job'.format(path),'w')   
+    jobFile.write("#!/bin/bash\n\n")
+    jobFile.write('#SBATCH --time=2:10:02\n')
+    jobFile.write("#SBATCH --ntasks=4\n")
+    jobFile.write("#SBATCH --mem-per-cpu=2G\n")
+    jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
+#     jobFile.write("#SBATCH --qos=test\n")
+    jobFile.write('module unload mpi\n')
+    jobFile.write('module load mpi/openmpi-1.6.5_intel-13.0.1\n')
+    jobFile.write('module unload mkl\n')
+    jobFile.write('module load mkl/11/2\n')
+    jobFile.write('module unload python\n')
+    jobFile.write('module load python/2/7\n')
+    
+    jobFile.write('python ~/pythonscripts/cluster_expansion/ceflashscripts/poscar2mesh7.py {} {} {} > out\n'.format(ntarget,type,paramStr))
+
+    jobFile.write('if [ -e "OK" ]\n')
+    jobFile.write('then\n')
+    jobFile.write('mpiexec ./vasp.x > vasp.out\n')
+    jobFile.write('fi\n')
+    jobFile.close()
+    return
+
 def setParams(maindir):
 #     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
 #     params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
@@ -222,10 +256,8 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
-    print 'wallPower equals power'
-    print 'dw held at 0.5'
-    
-    #
+    print '\twallPower equals power'
+    print '\tdw held at 0.5'
     params0 =     [ 2.0, 4.0, 6.0, 8.0 ] 
     params1 =     'duplicate Power for wallPower' 
     params2 =     [ 0.1, 0.5, 1.0, 2.0]
@@ -236,7 +268,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     nPsets = len(paramLabels)**4 #adjust this
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
     iset = 0
-    nRunSlots = 4 #runslots are directories that run a paramSet
+    nRunSlots = 22 #runslots are directories that run a paramSet
     slotsJobIDs = [[]]*nRunSlots
     slotsIsets =  zeros(nRunSlots,dtype = int32)
     for i in range(nRunSlots):
@@ -245,7 +277,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
             os.system('rm -r -f {}'.format(rdir))
         os.mkdir(rdir)
     isetsToStart = range(nPsets)
-    setsDone = []
+    isetsDone = []
     for p0 in params0:
         p1 = p0
         for p2 in params2:
@@ -255,13 +287,13 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                         params = [p0,p1,p2,p3,p4,p5]                      
                         all[iset]['params'] = params
                         iset += 1
-    summary = open('{}/summary.csv'.format(maindir),'w')
-    summary.write('iset, cost, power,wallPower,wallfactor,wallClose,wallOffset,dw \n')
+    summary = open('{}/summaryGrid.csv'.format(maindir),'w')
+    summary.write('iset, cost, power,wallPower,wallfactor,wallClose,wallOffset,dw\n')
     toAnalyze = []
     iwait = 0
     minCost = 100
     bestParams = []
-    while len(setsDone) < nPsets:
+    while len(isetsDone) < nPsets:
         icurrSet = isetsToStart[0]
         for ir in range(nRunSlots):
             if len(slotsJobIDs[ir]) == 0: #use this slot for next set
@@ -283,13 +315,14 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                     ps = all[ioldSet]['params']
                     summary.write('{},{:6.3f},{},{},{},{},{},{}\n'.format(iset,costs[0],
                                                 ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
+                    summary.flush()
                 #start new set
                 params = all[icurrSet]['params']
                 jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims)
                 subprocess.call(['echo', '\tFor set {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
                 slotsJobIDs[ir] = jobIDs
                 isetsToStart.pop(0)
-                setsDone.append(icurrSet)
+                isetsDone.append(icurrSet)
                 toAnalyze.append(ir)
                 slotsIsets[ir] = icurrSet
                 if len(slotsJobIDs[-1]) > 0: #slots have all started work
@@ -315,11 +348,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                iwait += 1   
                time.sleep(10)
                print ' {}'.format(iwait),
-      
-    for iset in range(nPsets):
-        ps = all[iset]['params']
-        lines.append()
-    writefile(lines,'{}/summary.csv'.format(maindir))
+    summary.close()  
     print 'Finished {} sets of parameters'.format(nPsets)
     
 def searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims):
@@ -453,38 +482,6 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
     if fnew >= fstart:
         print('Did not find a lower cost!')
 
-def writeJob(path,ntarget,type,params):
-    """ Creates a standard job file for submitting a VASP job on the supercomputer. 
-    The job file calls python for mesh definition.
-    Writes name and and ntarget."""  
-    paramStr = ''
-    for param in params:
-       paramStr += ' {:6.2f}'.format(param)
-    dir = os.getcwd()
-    runFolder = dir.split('/')[-1] 
-    jobName = '{}.{}'.format(path[-12:],runFolder)
-    jobFile = open('{}/job'.format(path),'w')   
-    jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=0:10:02\n')
-    jobFile.write("#SBATCH --ntasks=4\n")
-    jobFile.write("#SBATCH --mem-per-cpu=2G\n")
-    jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
-#     jobFile.write("#SBATCH --qos=test\n")
-    jobFile.write('module unload mpi\n')
-    jobFile.write('module load mpi/openmpi-1.6.5_intel-13.0.1\n')
-    jobFile.write('module unload mkl\n')
-    jobFile.write('module load mkl/11/2\n')
-    jobFile.write('module unload python\n')
-    jobFile.write('module load python/2/7\n')
-    
-    jobFile.write('python ~/pythonscripts/cluster_expansion/ceflashscripts/poscar2mesh7.py {} {} {} > out\n'.format(ntarget,type,paramStr))
-
-    jobFile.write('if [ -e "OK" ]\n')
-    jobFile.write('then\n')
-    jobFile.write('mpiexec ./vasp.x > vasp.out\n')
-    jobFile.write('fi\n')
-    jobFile.close()
-    return
 
 def createdirs(maindir,poscarsDir,vaspinputdir):
     '''makes dir in maindir for each structure in poscarsDir'''
