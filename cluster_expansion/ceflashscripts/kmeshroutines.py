@@ -36,7 +36,7 @@ def timestamp():
     return '{:%Y-%m-%d_%H:%M:%S}'.format(datetime.datetime.now())
 
 def waitMaxJobs():
-    maxjobs = 1500
+    maxjobs = 1800
     '''Waits until the number of jobs running and pending is less than maxjobs.'''
     go = True
     while go:  #need to handle occasional errors

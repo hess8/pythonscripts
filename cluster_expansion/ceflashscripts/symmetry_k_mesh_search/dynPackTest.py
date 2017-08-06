@@ -43,10 +43,13 @@ import dynamicPacking7, analyzeNks
 
 #***************************************
 #*************  Settings ***************
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = os.getcwd()
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_AlLP/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
+
+#maindir default is os.getcwd()
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 type = 'bcc'
@@ -71,7 +74,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=2:10:02\n')
+    jobFile.write('#SBATCH --time=12:10:00\n')
     jobFile.write("#SBATCH --ntasks=4\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -257,13 +260,14 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
     print '\twallPower equals power'
-    print '\tdw held at 0.5'
+    print '\tdw held at {}'.format(sys.argv[1])
     params0 =     [ 2.0, 4.0, 6.0, 8.0 ] 
     params1 =     'duplicate Power for wallPower' 
     params2 =     [ 0.1, 0.5, 1.0, 2.0]
     params3 =     [ 0.1, 0.5, 1.0, 2.0]
     params4 =     [ 0.0, 0.5, 1.0, 2.0]
-    params5 =  [0.5]
+#     params5 =  [0.1]
+    params5 =  [float(sys.argv[1])]
     nP = len(paramLabels)
     nPsets = len(paramLabels)**4 #adjust this
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
