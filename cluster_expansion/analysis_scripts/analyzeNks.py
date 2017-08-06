@@ -363,6 +363,6 @@ def analyze(paths): #as used with the parameter search, paths will have only one
                 fig.savefig('{}/methodErrs'.format(summaryPath))
             close('all')
     if maxNk > 1:  
-        return methodCostsLogs
+        return [methodCostsLogs[0],mean(data['nDone'])]
     else:
-        return [100]
+        return [100,0]

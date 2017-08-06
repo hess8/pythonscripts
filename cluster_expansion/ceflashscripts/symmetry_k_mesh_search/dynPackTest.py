@@ -43,8 +43,8 @@ import dynamicPacking7, analyzeNks
 
 #***************************************
 #*************  Settings ***************
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_AlLP/'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
@@ -53,8 +53,8 @@ type = 'bcc'
 # search = 'grad'
 # search = 'rand'
 search = 'all'
-# nlims = [8,12,1]
-nlims = [4,26,1]
+nlims = [8,12,1]
+# nlims = [4,26,1]
 #***************************************
 #***************************************
 
@@ -133,8 +133,8 @@ def Nkcost(params,nlims,dir0,poscarsDir,vaspinputdir):
                     os.chdir(dir0) 
 #     subprocess.call(['echo', '\tSubmitted {} jobs, ID range {} , {} for ns {}'.format(len(jobIDs),jobIDs[0],jobIDs[-1],ns)])
     waitJobs(jobIDs)
-    costs = analyzeNks.analyze([dir0])
-    return costs[0]
+    [cost,avgnDone] = analyzeNks.analyze([dir0])
+    return cost
 
 def submit(i,jobIDs,params,nlims,maindir,poscarsDir,vaspinputdir):
     pdir = '{}/p{}'.format(maindir,i)
@@ -178,9 +178,9 @@ def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
     print
     for i in range(len(x)):
         pdir = '{}/p{}'.format(maindir,i)
-        costs = analyzeNks.analyze([pdir])
-        f1arr[i] = costs[0]
-        gcosts.append(costs[0]) 
+        [cost,avgnDone] = analyzeNks.analyze([pdir])
+        f1arr[i] = cost
+        gcosts.append(cost) 
         print 'gcost {}: {}'.format(i,f1arr[i])
     grad = divide(f1arr-f,dx)
     print 'grad',grad
@@ -218,8 +218,8 @@ def randSteps(allRands,step,x,params0,nlims,maindir,poscarsDir,vaspinputdir):
     rcosts = []
     for i in range(len(x)):
         pdir = '{}/p{}'.format(maindir,i)
-        costs = analyzeNks.analyze([pdir])
-        rcosts.append(costs[0]) 
+        [cost,avgnDone] = analyzeNks.analyze([pdir])
+        rcosts.append(cost) 
     return rcosts,xs
 
 def submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims):
@@ -268,7 +268,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     nPsets = len(paramLabels)**4 #adjust this
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
     iset = 0
-    nRunSlots = 22 #runslots are directories that run a paramSet
+    nRunSlots = 4 #runslots are directories that run a paramSet
     slotsJobIDs = [[]]*nRunSlots
     slotsIsets =  zeros(nRunSlots,dtype = int32)
     for i in range(nRunSlots):
@@ -288,7 +288,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                         all[iset]['params'] = params
                         iset += 1
     summary = open('{}/summaryGrid.csv'.format(maindir),'w')
-    summary.write('iset, cost, power,wallPower,wallfactor,wallClose,wallOffset,dw\n')
+    summary.write('iset,cost,avgDone,power,wallPower,wallfactor,wallClose,wallOffset,dw\n')
     toAnalyze = []
     iwait = 0
     minCost = 100
@@ -300,20 +300,20 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                 iwait = 0; print #needed
                 if ir in toAnalyze: #the slot's previous calc has not been analyzed
                     setDir = '{}/r{}'.format(maindir,ir)
-                    costs = analyzeNks.analyze([setDir])
+                    [cost,avgnDone] = analyzeNks.analyze([setDir])
                     ioldSet = slotsIsets[ir]
-                    all[ioldSet]['cost'] = costs[0]
-                    if costs[0] < minCost: 
-                        minCost = costs[0]
+                    all[ioldSet]['cost'] = cost
+                    if cost < minCost: 
+                        minCost = cost
                         bestParams = all[ioldSet]['params']
                         iminCost =  ioldSet
                         rdir = '{}/r{}'.format(maindir,ir)
                         os.system('mv {}/loglog_e_vs_n.png {}/best_loglog_e_vs_n.png'.format(rdir,maindir))
                         os.system('mv {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir))                    
-                    print 'cost for set {}: {:6.2f} {}]'.format(ioldSet,costs[0],all[ioldSet]['params'])
+                    print 'cost for set {}: {:6.2f} {}]'.format(ioldSet,cost,all[ioldSet]['params'])
                     print 'vs. min cost {}: {:6.2f} {}]'.format(iminCost,minCost,bestParams)
                     ps = all[ioldSet]['params']
-                    summary.write('{},{:6.3f},{},{},{},{},{},{}\n'.format(icurrSet,costs[0],
+                    summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(icurrSet,cost,avgnDone,
                                                 ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
                     summary.flush()
                 #start new set
