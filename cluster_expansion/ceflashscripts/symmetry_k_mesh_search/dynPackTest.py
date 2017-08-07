@@ -56,11 +56,10 @@ type = 'bcc'
 # search = 'grad'
 # search = 'rand'
 search = 'all'
-nlims = [8,12,1]
-# nlims = [4,26,1]
+# nlims = [8,12,1]
+nlims = [2,26,1]
 #***************************************
 #***************************************
-
 
 def writeJob(path,ntarget,type,params):
     """ Creates a standard job file for submitting a VASP job on the supercomputer. 
@@ -75,7 +74,7 @@ def writeJob(path,ntarget,type,params):
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
     jobFile.write('#SBATCH --time=12:10:00\n')
-    jobFile.write("#SBATCH --ntasks=4\n")
+    jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
 #     jobFile.write("#SBATCH --qos=test\n")
@@ -107,7 +106,8 @@ def setParams(maindir):
     for i in range(len(params0)):
         pdir = '{}/p{}'.format(maindir,i)
         if os.path.exists(pdir):
-            os.system('rm -r -f {}'.format(pdir))
+#             os.system('rm -r -f {}'.format(pdir))
+            output = subprocess.check_output(['rm','-r','-f',pdir])
         os.mkdir(pdir)
     return params0
     
@@ -247,7 +247,7 @@ def submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims):
                     ns.append(n)
                     newdir = createRunDir(currdir,n,type,params) 
                     os.chdir(newdir)
-                    waitMaxJobs()
+#                     waitMaxJobs()
                     proc = subprocess.Popen(['sbatch','job'], stdout=subprocess.PIPE)
                     jobid = proc.communicate()[0].split()[3]
                     jobIDs.append(jobid)
@@ -272,13 +272,14 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     nPsets = len(paramLabels)**4 #adjust this
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
     iset = 0
-    nRunSlots = 4 #runslots are directories that run a paramSet
+    nRunSlots = 10 #runslots are directories that run a paramSet
     slotsJobIDs = [[]]*nRunSlots
     slotsIsets =  zeros(nRunSlots,dtype = int32)
     for i in range(nRunSlots):
         rdir = '{}/r{}'.format(maindir,i)
         if os.path.exists(rdir):
-            os.system('rm -r -f {}'.format(rdir))
+#             os.system('rm -r -f {}'.format(rdir))
+            output = subprocess.check_output(['rm','-r','-f',rdir])
         os.mkdir(rdir)
     isetsToStart = range(nPsets)
     isetsDone = []
@@ -297,7 +298,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     iwait = 0
     minCost = 100
     bestParams = []
-    while len(isetsDone) < nPsets:
+    while len(isetsToStart) > 0:
         icurrSet = isetsToStart[0]
         for ir in range(nRunSlots):
             if len(slotsJobIDs[ir]) == 0: #use this slot for next set
@@ -313,20 +314,21 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                         iminCost =  ioldSet
                         rdir = '{}/r{}'.format(maindir,ir)
                         os.system('mv {}/loglog_e_vs_n.png {}/best_loglog_e_vs_n.png'.format(rdir,maindir))
-                        os.system('mv {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir))                    
+                        os.system('mv {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir)) 
+                        os.system('mv {}/summary.csv {}/best_summary.csv'.format(rdir,maindir))                    
                     print 'cost for set {}: {:6.2f} {}]'.format(ioldSet,cost,all[ioldSet]['params'])
                     print 'vs. min cost {}: {:6.2f} {}]'.format(iminCost,minCost,bestParams)
                     ps = all[ioldSet]['params']
-                    summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(icurrSet,cost,avgnDone,
+                    summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
                                                 ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
                     summary.flush()
+                    isetsDone.append(ioldSet)
                 #start new set
                 params = all[icurrSet]['params']
                 jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims)
-                subprocess.call(['echo', '\tFor set {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
+                subprocess.call(['echo', '\tFor set {} in slot {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,ir,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
                 slotsJobIDs[ir] = jobIDs
                 isetsToStart.pop(0)
-                isetsDone.append(icurrSet)
                 toAnalyze.append(ir)
                 slotsIsets[ir] = icurrSet
                 if len(slotsJobIDs[-1]) > 0: #slots have all started work
@@ -496,7 +498,8 @@ def createdirs(maindir,poscarsDir,vaspinputdir):
         structDir = '{}/{}'.format(maindir,struct)
         atom = info[1]
         if os.path.isdir(structDir):
-            os.system('rm -r -f {}'.format(structDir))
+#             os.system('rm -r -f {}'.format(structDir))
+            output = subprocess.check_output(['rm','-r','-f',structDir])
         os.system('mkdir {}'.format(structDir)) #structure is in 
         os.system('cp {}/{} {}/POSCAR'.format(poscarsDir,file,structDir))
         try:

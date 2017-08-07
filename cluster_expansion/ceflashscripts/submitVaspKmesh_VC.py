@@ -66,7 +66,7 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/test3/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/test4/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cubicAnalytic/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'

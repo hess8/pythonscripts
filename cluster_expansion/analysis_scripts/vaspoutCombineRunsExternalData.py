@@ -84,12 +84,13 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc',
 #           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub']
 
-paths = [
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_dw1/r0']
+    
 #     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams', 
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc', 
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub', 
-         '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_junk',
-         '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
+#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_junk',
+#          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 #
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fccOut',
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fcc']
@@ -210,7 +211,7 @@ for ipath, path in enumerate(paths): #my data
     print structs,path
     for istruct,struct in enumerate(structs):
 #         print 'test', istruct, struct
-        print 'struct',struct
+#         print 'struct',struct
         os.chdir(struct)
         if coloring == 'indiv':
 #             if iplot < nplots -1:
