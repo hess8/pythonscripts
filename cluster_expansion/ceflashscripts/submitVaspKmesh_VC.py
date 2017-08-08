@@ -7,11 +7,12 @@ Assumes we already have POSCAR from aconvaspPoscar.py
 '''
     
 import sys,os,subprocess
+from pylab import figure,cm,plot,xlabel,ylabel,title,loglog,semilogy,legend,rcParams,style,rc,close
 from numpy import zeros,transpose,array,sum,float64,rint
 from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
-from kmeshroutines import readposcar
+from kmeshroutines import readposcar,readfile
 
 import dynamicPacking6
 
@@ -65,8 +66,8 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestCuts/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/test3/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cubicAnalytic/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/test4/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cubicAnalytic/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
@@ -108,8 +109,10 @@ for dir in dirs:
             subprocess.call(['rm', 'OUTCAR'])          
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
+            analy=open('analytic','w')
+            analy.close()
 
-            for n in range(11,12,1):#23
+            for n in range(4,21,1):#23
                 print 
                 print '==============================================' 
                 print 'Target npoints: {}^3'.format(n)
@@ -122,16 +125,24 @@ for dir in dirs:
 #                     os.system('rm -r {}'.format(newdir))
                 else:
                     os.chdir(newdir)
-#                     subprocess.call(['sbatch', 'vaspjob'])
-                    
-#                     toRun.append(newdir)
-                    
-#                 getVCmesh(newdir,method,n,type)
-#         sys.exit('stop')
-#         newdirs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)]) 
-# for newdir in toRun:
-#     os.chdir(newdir)
-#     subprocess.call(['sbatch', 'vaspjob'])
-#     os.chdir(currdir)
+                    subprocess.call(['sbatch', 'vaspjob'])
+            os.chdir(currdir)
+            lines=readfile('analytic')
+            nKs = []
+            eners = []
+            errs = []
+            for line in lines:
+                nK = int(line.split()[0])
+#                 if nK not in nKs:
+                nKs.append(nK)
+                eners.append(float(line.split()[1]))
+            errs = abs((array(eners) - eners[-1])*1000) + 1e-4
+            fig = figure()
+            loglog(nKs,errs,marker = 'o',markeredgewidth=0.0,linestyle='None')                             
+        
+            fig.savefig('analytic_err_vs_n')
+            
+                
+                
 os.chdir(maindir)                 
 print 'Done'

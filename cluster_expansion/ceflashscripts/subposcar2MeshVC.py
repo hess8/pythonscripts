@@ -24,7 +24,7 @@ def writeJob(path,ntarget,type):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=24:30:02\n')
+    jobFile.write('#SBATCH --time=0:10:02\n')
     jobFile.write("#SBATCH --ntasks=4\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -105,11 +105,11 @@ def createRunDir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/test'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/scond_vc'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_isdw.1'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/scondvr_wc30'
 # poscarsDir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/0_info/POSCARS'
 # vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/semicond/0_info/vaspinput'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams'
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 
@@ -148,7 +148,7 @@ for dir in dirs:
 #            subprocess.call(['sbatch', 'vaspjob'])
 
 #             for n in range(2,35,1):#23
-            for n in range(2,28,1):#23
+            for n in range(2,20,1):#23
                 print 
                 print '==============================================' 
                 print 'Base {} in submitVasp (target = n^3)'.format(n)

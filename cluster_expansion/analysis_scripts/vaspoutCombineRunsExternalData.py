@@ -84,7 +84,7 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc',
 #           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_dw1/r0']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_isdw.1','/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
     
 #     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams', 
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc', 
