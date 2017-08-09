@@ -453,7 +453,6 @@ class dynamicPack():
 #         self.initSrch = 'target'
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
-        self.method = method
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
@@ -548,12 +547,7 @@ class dynamicPack():
             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
         else:
             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
-#         print 'Adjusting weights by skew'
-#         temp = []
-#         for i,skew in enumerate(skews):
-#             temp.append(IBZ.weights[i]*(skew)**(1/4.0))    
-#         IBZ.weights = temp/self.ravg**3   
-        IBZ.weights = IBZ.weights/self.ravg**3 #to scale them to order(1).  
+        self.IBZ.weights = self.IBZ.weights/self.ravg**3 #to scale them to order(1).  
 
     def meshInitCubic(self,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
@@ -645,7 +639,7 @@ class dynamicPack():
         
         #Search over shift and rotation to find the most possible points inside
 
-    def searchNmax(self,cubicLVs,IBZ,aKcubConv,sites):
+    def searchNmax(self,cubicLVs,aKcubConv,sites):
         '''Test an entire grid of init values'''
         cubicLVs0 = cubicLVs
         nShift = 5
@@ -697,18 +691,8 @@ class dynamicPack():
                             closestLog = closeLog
                             bestN = nInside
                             bestIBZ = deepcopy(IBZ)
-                        
-#                         print 'Found nInside {} vs target N {} after {} steps'\
-#                         .format(nInside,self.searchInitFactor*self.nTargetIBZ,isearch)
-#                         return IBZ
-        
-#         else:
-# #             print 'Did not find nInside within {}% of target N {}'.format(tol*100,self.nTargetIBZ)
-#             print 'nInside {} vs target N {} after searching entire grid'.format(bestN,self.nTargetIBZ)
-# #             print 'nInside {} is less than target N {}'.format(bestN,self.nTargetIBZ)
-#              return bestIBZ
         if self.initSrch == 'max':
-            print 'Maximum nInside {}(step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
+            print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
         else:
             print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.searchInitFactor*self.nTargetIBZ)
         return bestIBZ
@@ -888,7 +872,7 @@ class dynamicPack():
             #direct coordinates!...vasp doesn't read cartesian kpoints right
             kpointDir = directFromCart(self.B,kpoint)
             lines.append('{:15.12f}  {:15.12f}  {:15.12f}  {:15.12f}\n'\
-                         .format(kpointDir[0],kpointDir[1],kpointDir[2],cell.weights[ik]))
+                         .format(kpointDir[0],kpointDir[1],kpointDir[2],self.IBZ.weights[ik]))
         writefile(lines,'KPOINTS')         
        
     def getNeighbors(self,kpoint,IBZ,eps):
