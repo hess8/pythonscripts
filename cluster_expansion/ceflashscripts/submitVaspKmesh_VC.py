@@ -66,8 +66,8 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestCuts/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/test4/'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/cubicAnalytic/'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/test4/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/cubicAnalytic/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
@@ -107,12 +107,10 @@ for dir in dirs:
             os.system('rm slurm*')
             subprocess.call(['rm', 'vasp.out'])
             subprocess.call(['rm', 'OUTCAR'])          
-#            subprocess.call(['cp','POSCAR.orig','POSCAR'])
-#            subprocess.call(['sbatch', 'vaspjob'])
             analy=open('analytic','w')
             analy.close()
 
-            for n in range(4,21,1):#23
+            for n in range(4,19,1):#23
                 print 
                 print '==============================================' 
                 print 'Target npoints: {}^3'.format(n)
@@ -125,7 +123,7 @@ for dir in dirs:
 #                     os.system('rm -r {}'.format(newdir))
                 else:
                     os.chdir(newdir)
-                    subprocess.call(['sbatch', 'vaspjob'])
+#                     subprocess.call(['sbatch', 'vaspjob'])
             os.chdir(currdir)
             lines=readfile('analytic')
             nKs = []

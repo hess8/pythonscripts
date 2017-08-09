@@ -886,7 +886,8 @@ class dynamicPack():
         lines.append('Reciprocal\n') #direct coordinates!...vasp doesn't read cartesian kpoints right
         etot = 0
         for ik,kpoint in enumerate(self.IBZ.mesh):
-            Ek = cos(pi*2*kpoint[0])*cos(pi*2*kpoint[1])*cos(pi*2*kpoint[2])
+            Ek = cos(pi*2*kpoint[0])*cos(pi*2*kpoint[1])*cos(pi*2*kpoint[2])\
+                 + (sin(pi*kpoint[0])*sin(pi*kpoint[1])*sin(pi*kpoint[2]))**2
 #             print 'Ek',Ek,self.IBZ.weights[ik],kpoint
             etot += Ek*self.IBZ.weights[ik]*self.nops
             kpointDir = directFromCart(self.B,kpoint)

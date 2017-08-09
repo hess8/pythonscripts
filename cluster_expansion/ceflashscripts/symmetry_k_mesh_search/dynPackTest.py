@@ -73,7 +73,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=12:10:00\n')
+    jobFile.write('#SBATCH --time=00:30:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -310,14 +310,15 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                     all[ioldSet]['cost'] = cost
                     if cost < minCost: 
                         minCost = cost
+                        bestAvgNdone = avgnDone
                         bestParams = all[ioldSet]['params']
                         iminCost =  ioldSet
                         rdir = '{}/r{}'.format(maindir,ir)
                         os.system('mv {}/loglog_e_vs_n.png {}/best_loglog_e_vs_n.png'.format(rdir,maindir))
                         os.system('mv {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir)) 
                         os.system('mv {}/summary.csv {}/best_summary.csv'.format(rdir,maindir))                    
-                    print 'cost for set {}: {:6.2f} {}]'.format(ioldSet,cost,all[ioldSet]['params'])
-                    print 'vs. min cost {}: {:6.2f} {}]'.format(iminCost,minCost,bestParams)
+                    print 'cost for set {}: {:6.2f} {}] avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)
+                    print 'vs. min cost {}: {:6.2f} {}] avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
                     ps = all[ioldSet]['params']
                     summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
                                                 ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))

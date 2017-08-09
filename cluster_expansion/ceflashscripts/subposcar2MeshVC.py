@@ -24,7 +24,7 @@ def writeJob(path,ntarget,type):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=0:10:02\n')
+    jobFile.write('#SBATCH --time=00:00:32\n')
     jobFile.write("#SBATCH --ntasks=4\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
