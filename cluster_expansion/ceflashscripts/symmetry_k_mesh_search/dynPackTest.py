@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLPnarrdw.5'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -56,8 +56,8 @@ type = 'bcc'
 # search = 'grad'
 # search = 'rand'
 search = 'all'
-# nlims = [8,12,1]
-nlims = [2,26,1]
+# nlims = [6,9,1]
+nlims = [2,23,1]
 #***************************************
 #***************************************
 
@@ -97,7 +97,7 @@ def writeJob(path,ntarget,type,params):
 def setParams(maindir):
 #     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
 #     params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
-    paramLabels = ['power','wallPower','wallfactor','wallOffset','dw' ]
+    paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset' ]
     params0 =     [  6.0,     6.0,        1.0,         0.5,      0.5 ]  
     print 'Initial settings'
     print'\t{}'.format(paramLabels)
@@ -260,19 +260,34 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
     print '\twallPower equals power'
-    print '\tdw held at {}'.format(sys.argv[1])
-    params0 =     [ 2.0, 4.0, 6.0, 8.0 ] 
+#     print '\tdw held at {}'.format(sys.argv[1])
+#     params0 =     [ 2.0, 4.0, 6.0, 8.0 ] 
+#     params1 =     'duplicate Power for wallPower' 
+#     params2 =     [ 0.1, 0.5, 1.0, 2.0]
+#     params3 =     [ 0.1, 0.5, 1.0, 2.0]
+#     params4 =     [ 0.0, 0.5, 1.0, 2.0]
+
+    params0 =     [ 6.0 ] 
     params1 =     'duplicate Power for wallPower' 
-    params2 =     [ 0.1, 0.5, 1.0, 2.0]
-    params3 =     [ 0.1, 0.5, 1.0, 2.0]
-    params4 =     [ 0.0, 0.5, 1.0, 2.0]
+    params2 =     [ 0.1, 0.2,0.3,0.4]
+    params3 =     [ 0.1, 0.2,0.4,0.5]
+    params4 =     [ 0.0, 0.2,0.5]
+    params5 =     [0.5]
+    
+#     params0 =     [ 6.0 ] 
+#     params1 =     'duplicate Power for wallPower' 
+#     params2 =     [ 0.1]
+#     params3 =     [ 0.1]
+#     params4 =     [ 0.0]
+#     params5 =     [0.5]
+
 #     params5 =  [0.1]
-    params5 =  [float(sys.argv[1])]
-    nP = len(paramLabels)
-    nPsets = len(paramLabels)**4 #adjust this
+#     params5 =  [float(sys.argv[1])]
+    nP =len( paramLabels)
+    nPsets = len(params0)*len(params2)*len(params3)*len(params4)*len(params5)
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
     iset = 0
-    nRunSlots = 10 #runslots are directories that run a paramSet
+    nRunSlots = min(100,nPsets)#run slots are directories that run a paramSet.  Should be <= nPsets
     slotsJobIDs = [[]]*nRunSlots
     slotsIsets =  zeros(nRunSlots,dtype = int32)
     for i in range(nRunSlots):
@@ -298,59 +313,70 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     iwait = 0
     minCost = 100
     bestParams = []
-    while len(isetsToStart) > 0:
-        icurrSet = isetsToStart[0]
-        for ir in range(nRunSlots):
-            if len(slotsJobIDs[ir]) == 0: #use this slot for next set
-                iwait = 0; print #needed
-                if ir in toAnalyze: #the slot's previous calc has not been analyzed
-                    setDir = '{}/r{}'.format(maindir,ir)
-                    [cost,avgnDone] = analyzeNks.analyze([setDir])
-                    ioldSet = slotsIsets[ir]
-                    all[ioldSet]['cost'] = cost
-                    if cost < minCost: 
-                        minCost = cost
-                        bestAvgNdone = avgnDone
-                        bestParams = all[ioldSet]['params']
-                        iminCost =  ioldSet
-                        rdir = '{}/r{}'.format(maindir,ir)
-                        os.system('mv {}/loglog_e_vs_n.png {}/best_loglog_e_vs_n.png'.format(rdir,maindir))
-                        os.system('mv {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir)) 
-                        os.system('mv {}/summary.csv {}/best_summary.csv'.format(rdir,maindir))                    
-                    print 'cost for set {}: {:6.2f} {}] avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)
-                    print 'vs. min cost {}: {:6.2f} {}] avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
-                    ps = all[ioldSet]['params']
-                    summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
-                                                ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
-                    summary.flush()
-                    isetsDone.append(ioldSet)
-                #start new set
-                params = all[icurrSet]['params']
-                jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims)
-                subprocess.call(['echo', '\tFor set {} in slot {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,ir,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
-                slotsJobIDs[ir] = jobIDs
-                isetsToStart.pop(0)
-                toAnalyze.append(ir)
-                slotsIsets[ir] = icurrSet
-                if len(slotsJobIDs[-1]) > 0: #slots have all started work
-                    print '\twait', 
-                break
+    while len(isetsDone) < nPsets:
+        if len(isetsToStart) > 0:
+            icurrSet = isetsToStart[0]
+            for ir in range(nRunSlots):
+                if len(slotsJobIDs[ir]) == 0: #use this slot for next set
+                    iwait = 0; print #needed                
+                    #start new set
+                    params = all[icurrSet]['params']
+                    jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims)
+                    subprocess.call(['echo', '\tFor set {} in slot {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,ir,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
+                    slotsJobIDs[ir] = jobIDs
+                    isetsToStart.pop(0)
+                    toAnalyze.append(ir)
+                    slotsIsets[ir] = icurrSet
+                    if len(slotsJobIDs[-1]) > 0: #slots have all started work
+                        print '\twait', 
+                    break #submit one set at a time
+        if len(toAnalyze) > 0:
+            for ir in range(nRunSlots):
+                if len(slotsJobIDs[ir]) == 0: 
+                    if ir in toAnalyze: #the slot's previous calc has not been analyzed
+                        setDir = '{}/r{}'.format(maindir,ir)
+                        [cost,avgnDone] = analyzeNks.analyze([setDir])
+                        ioldSet = slotsIsets[ir]
+                        all[ioldSet]['cost'] = cost
+                        if cost < minCost: 
+                            minCost = cost
+                            bestAvgNdone = avgnDone
+                            bestParams = all[ioldSet]['params']
+                            iminCost =  ioldSet
+                            rdir = '{}/r{}'.format(maindir,ir)
+                            os.system('mv {}/loglog_e_vs_n.png {}/best_loglog_e_vs_n.png'.format(rdir,maindir))
+                            os.system('mv {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir)) 
+                            os.system('mv {}/summary.csv {}/best_summary.csv'.format(rdir,maindir))                    
+                        print 'cost for set {}: {:6.2f} {}] avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)
+                        print 'vs. min cost {}: {:6.2f} {}] avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
+                        ps = all[ioldSet]['params']
+                        summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
+                                                    ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
+                        summary.flush()
+                        isetsDone.append(ioldSet)
+#                     if len(slotsJobIDs[-1]) > 0: #slots have all started work
+#                         print '\twait', 
+                    break #analyze one set at a tome
+    
         #update slotsJobIDs
         output = []
-        while len(output) in [0,8]:
+        while len(output) in [0]: #[0,8]:
             devnull = open(os.devnull, 'w')
             proc = subprocess.Popen(['squeue', '-u', 'bch'], stdout=subprocess.PIPE, stderr=devnull)
             output = proc.communicate()[0].split()
-        runningIDs = []
-        for item in output:
-            if item.isdigit() and len(item) == 8:
-                runningIDs.append(item)
-        for ir in range(nRunSlots):
-            for id in npcopy(slotsJobIDs[ir]):
-                if id in runningIDs:
-                    continue
-                else:
-                    slotsJobIDs[ir].remove(id) 
+        if len(output)>8:
+            runningIDs = []
+            for item in output:
+                if item.isdigit() and len(item) == 8:
+                    runningIDs.append(item)
+            for ir in range(nRunSlots):
+                for id in npcopy(slotsJobIDs[ir]):
+                    if id in runningIDs:
+                        continue
+                    else:
+                        slotsJobIDs[ir].remove(id) 
+        elif len(output) == 8:
+            slotsJobIDs = [[]]*nRunSlots
         if len(slotsJobIDs[-1]) > 0:
                iwait += 1   
                time.sleep(10)

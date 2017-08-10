@@ -3,7 +3,7 @@ import os,subprocess,time
 user = 'bch'
 # 
 jobrange = [   0, 1e10]  #for use with jobstring criterium
-jobstring = '_11/b'
+jobstring = '2.0SC'
  
 # state = 'running'
 # state = 'pending'
