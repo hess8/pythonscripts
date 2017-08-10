@@ -72,7 +72,7 @@ def analyze(paths): #as used with the parameter search, paths will have only one
     maxNk = 0
     methods = []
     for ipath,path in enumerate(paths):
-        method = path.split('_')[-1]
+        method = path.split('_')[-1].split('/')[0]
         methods.append(method)
         os.chdir(path)
         if filter2 == None:
@@ -136,8 +136,6 @@ def analyze(paths): #as used with the parameter search, paths will have only one
     #read all the data 
     iplot = -1
     for ipath, path in enumerate(paths): #my data
-#         print;print path
-    #     meshMethod = path.split('/')[-3][:3]+path.split('/')[-1][-3:]
         tag = path.split('/')[-1][-7:]
         os.chdir(path)
         if filter2 == None:
@@ -208,7 +206,7 @@ def analyze(paths): #as used with the parameter search, paths will have only one
                 data[iplot]['nKs'][:nDone] = nKs
                 data[iplot]['ns'][:nDone] = ns
                 data[iplot]['color'] = color
-                method = path.split('_')[-1]
+                method = path.split('_')[-1].split('/')[0]
                 data[iplot]['method'] = method
             os.chdir(path)
     # os.chdir(extpath)

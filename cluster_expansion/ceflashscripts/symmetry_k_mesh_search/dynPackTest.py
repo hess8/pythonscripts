@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLPnarrdw.5'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLPnarrdw.5'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -73,7 +73,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=12:10:00\n')
+    jobFile.write('#SBATCH --time=00:40:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -261,20 +261,21 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     print'\t{}'.format(paramLabels)
     print '\twallPower equals power'
 #     print '\tdw held at {}'.format(sys.argv[1])
+
 #     params0 =     [ 2.0, 4.0, 6.0, 8.0 ] 
 #     params1 =     'duplicate Power for wallPower' 
 #     params2 =     [ 0.1, 0.5, 1.0, 2.0]
 #     params3 =     [ 0.1, 0.5, 1.0, 2.0]
 #     params4 =     [ 0.0, 0.5, 1.0, 2.0]
-
-    params0 =     [ 6.0 ] 
+ 
+    params0 =     [6.0] 
     params1 =     'duplicate Power for wallPower' 
-    params2 =     [ 0.1, 0.2,0.3,0.4]
-    params3 =     [ 0.1, 0.2,0.4,0.5]
-    params4 =     [ 0.0, 0.2,0.5]
+    params2 =     [ 0.1, 0.2, 0.3, 0.4]
+    params3 =     [ 0.1, 0.2, 0.4, 0.5]
+    params4 =     [ 0.0, 0.2, 0.5]
     params5 =     [0.5]
     
-#     params0 =     [ 6.0 ] 
+#     params0 =     [ 4.0,6.0 ] 
 #     params1 =     'duplicate Power for wallPower' 
 #     params2 =     [ 0.1]
 #     params3 =     [ 0.1]
@@ -318,7 +319,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
             icurrSet = isetsToStart[0]
             for ir in range(nRunSlots):
                 if len(slotsJobIDs[ir]) == 0: #use this slot for next set
-                    iwait = 0; print #needed                
+                    iwait = 0; print     
                     #start new set
                     params = all[icurrSet]['params']
                     jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims)
@@ -334,6 +335,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
             for ir in range(nRunSlots):
                 if len(slotsJobIDs[ir]) == 0: 
                     if ir in toAnalyze: #the slot's previous calc has not been analyzed
+                        print
                         setDir = '{}/r{}'.format(maindir,ir)
                         [cost,avgnDone] = analyzeNks.analyze([setDir])
                         ioldSet = slotsIsets[ir]
@@ -353,10 +355,9 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
                         summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
                                                     ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
                         summary.flush()
-                        isetsDone.append(ioldSet)
-#                     if len(slotsJobIDs[-1]) > 0: #slots have all started work
-#                         print '\twait', 
-                    break #analyze one set at a tome
+                        toAnalyze.remove(ir)
+                        isetsDone.append(ioldSet) 
+                        break #analyze one set at a tome
     
         #update slotsJobIDs
         output = []
