@@ -28,7 +28,7 @@ All parameters: (Implement search on *'s
     
 import sys,os,subprocess,time
 from numpy import (zeros,transpose,array,sum,float64,rint,divide,multiply,argmin,
-                   argmax,sign,int32)
+                   argmax,sign,int32,append)
 from numpy import copy as npcopy
 # from copy import copy, npcopy
 from numpy.linalg import norm
@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLPnarrdw.5'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -53,9 +53,9 @@ maindir = os.getcwd()
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
 type = 'bcc'
-# search = 'grad'
+search = 'grad'
 # search = 'rand'
-search = 'all'
+# search = 'all'
 # nlims = [6,9,1]
 nlims = [2,23,1]
 #***************************************
@@ -73,7 +73,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=00:40:00\n')
+    jobFile.write('#SBATCH --time=0:40:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=2G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -97,11 +97,12 @@ def writeJob(path,ntarget,type,params):
 def setParams(maindir):
 #     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
 #     params0 =     [  6.0,     6.0,        1.0,          0.5,         0.5,      0.5 ]
-    paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset' ]
-    params0 =     [  6.0,     6.0,        1.0,         0.5,      0.5 ]  
+    paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset' ,'dw']
+    params0 = array([  6.0,     6.0,      0.3]) 
+    paramsFixed =                                 array([0.4,      0.0,       0.5])
     print 'Initial settings'
     print'\t{}'.format(paramLabels)
-    print'\t{}'.format(params0)  
+    print'\t{}'.format(params0),paramsFixed  
     #to run the gradient in parallel, we need a folder for each parameter.
     for i in range(len(params0)):
         pdir = '{}/p{}'.format(maindir,i)
@@ -109,10 +110,10 @@ def setParams(maindir):
 #             os.system('rm -r -f {}'.format(pdir))
             output = subprocess.check_output(['rm','-r','-f',pdir])
         os.mkdir(pdir)
-    return params0
+    return params0,paramsFixed
     
-def Nkcost(params,nlims,dir0,poscarsDir,vaspinputdir):
-#     createdirs(dir0,poscarsDir,vaspinputdir)
+def Nkcost(params,paramsFixed,nlims,dir0,poscarsDir,vaspinputdir):
+    createdirs(dir0,poscarsDir,vaspinputdir)
     os.chdir(dir0)
     dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
     jobIDs = []
@@ -127,7 +128,7 @@ def Nkcost(params,nlims,dir0,poscarsDir,vaspinputdir):
             if len(poscar) > 0:
                 for n in range(nlims[0],nlims[1],nlims[2]):#23
                     ns.append(n)
-                    newdir = createRunDir(currdir,n,type,params) 
+                    newdir = createRunDir(currdir,n,type,append(params,paramsFixed)) 
                     os.chdir(newdir)
                     waitMaxJobs()
                     proc = subprocess.Popen(['sbatch','job'], stdout=subprocess.PIPE)
@@ -164,7 +165,7 @@ def submit(i,jobIDs,params,nlims,maindir,poscarsDir,vaspinputdir):
                     os.chdir(pdir) 
     return jobIDs
 
-def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
+def grad(step,x,f,params0,paramsFixed,nlims,maindir,poscarsDir,vaspinputdir):
     '''Advance each component of x separately and compute each 
     cost to estimate the gradient. These run in parallel.'''
     jobIDs = []
@@ -175,7 +176,7 @@ def grad(step,x,f,params0,nlims,maindir,poscarsDir,vaspinputdir):
     for i in range(len(x)):
         xtemp = npcopy(x)
         xtemp[i] = x1[i] #change only one parameter at a time
-        jobIDs = submit(i,jobIDs,multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
+        jobIDs = submit(i,jobIDs,append(multiply(xtemp,params0),paramsFixed),nlims,maindir,poscarsDir,vaspinputdir)
     waitJobs(jobIDs)
     gcosts = []
     print
@@ -216,7 +217,7 @@ def randSteps(allRands,step,x,params0,nlims,maindir,poscarsDir,vaspinputdir):
             if xsStr not in allRands:
                 break #this one is unique
         xs.append(xtemp)
-        jobIDs = submit(i,jobIDs,multiply(xtemp,params0),nlims,maindir,poscarsDir,vaspinputdir)
+        jobIDs = submit(i,jobIDs,append(multiply(xtemp,params0),paramsFixed),nlims,maindir,poscarsDir,vaspinputdir)
     waitJobs(jobIDs)
     rcosts = []
     for i in range(len(x)):
@@ -247,7 +248,7 @@ def submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nlims):
                     ns.append(n)
                     newdir = createRunDir(currdir,n,type,params) 
                     os.chdir(newdir)
-#                     waitMaxJobs()
+                    waitMaxJobs()
                     proc = subprocess.Popen(['sbatch','job'], stdout=subprocess.PIPE)
                     jobid = proc.communicate()[0].split()[3]
                     jobIDs.append(jobid)
@@ -385,7 +386,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims):
     summary.close()  
     print 'Finished {} sets of parameters'.format(nPsets)
     
-def searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims):
+def searchParamsRand(params0,paramsFixed,maindir,poscarsDir,vaspinputdir,nlims):
     '''The vector x is divide(params,params0).  Deal with x here only.
     Use a random hopping search''' 
     seed()
@@ -452,17 +453,17 @@ def searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims):
         cStr += ' {:6.2f}'.format(best[ic]['cost'])  
     print '\nLowest costs at end{}: {}\n'.format(iIter,cStr)
 
-def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
-    '''The vector x is divide(params,params0).  Deal with x here only.
-    Uses gradient search''' 
+def searchParams(params0,paramsFixed,maindir,poscarsDir,vaspinputdir,nlims):
+    '''Uses gradient search. The vector x is divide(params,params0).  Deal with x here only.
+    ''' 
 #     xbest = array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
-    xbest = array([1.0, 1.0, 1.0, 1.0, 1.0])
+    xbest = array([1.0]*len(params0))
     itermax = 100
     gnormTol = 0.001
     minstep = 0.0001
     iIter = 0
     step = 0.1  
-    fbest = Nkcost(multiply(xbest,params0),nlims,maindir,poscarsDir,vaspinputdir)
+    fbest = Nkcost(multiply(xbest,params0),paramsFixed,nlims,maindir,poscarsDir,vaspinputdir)
     print '\tDefault parameters cost {:6.2f}'.format(fbest)
     returnList = []
     while not returnList is None:
@@ -470,7 +471,7 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
             print 'Moving to low cost point found in grad routine'
             xbest = returnList[0]
             fbest = returnList[1]
-        gr,returnList = grad(max([step,0.01]),xbest,fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
+        gr,returnList = grad(max([step,0.01]),xbest,fbest,params0,paramsFixed,nlims,maindir,poscarsDir,vaspinputdir)
     gnorm  = norm(gr)
     gnormstart = gnorm
     fstart = fbest
@@ -483,7 +484,7 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
         while not lower:
             if method == 'steepest':
                 xnew = xbest - step*gr
-            fnew =  Nkcost(multiply(xnew,params0),nlims,maindir,poscarsDir,vaspinputdir)
+            fnew =  Nkcost(multiply(xnew,params0),paramsFixed,nlims,maindir,poscarsDir,vaspinputdir)
             print '\tCost {:6.2f}'.format(fnew),xnew,step
             if fnew < fbest:
                 lower = True
@@ -495,7 +496,7 @@ def searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims):
                         print 'Moving to low cost point found in grad routine'
                         xbest = returnList[0]
                         fbest = returnList[1] 
-                    gr,returnList = grad(max([step,0.01]),npcopy(xbest),fbest,params0,nlims,maindir,poscarsDir,vaspinputdir)
+                    gr,returnList = grad(max([step,0.01]),npcopy(xbest),fbest,params0,paramsFixed,nlims,maindir,poscarsDir,vaspinputdir)
                 gnorm  = norm(gr)
                 step *= 2
             else:
@@ -571,17 +572,16 @@ def createRunDir(path,n,type,params):
 
 ################# script #######################
 
-#search = 'rand'
 print 'Varying parameters in dynamicPacking'
 print '\t' + maindir
 
 
 if search == 'grad':
-    params0 = setParams(maindir)
-    searchParams(params0,maindir,poscarsDir,vaspinputdir,nlims)
+    params0,paramsFixed = setParams(maindir)
+    searchParams(params0,paramsFixed,maindir,poscarsDir,vaspinputdir,nlims)
 elif search == 'rand':
-    params0 = setParams(maindir)
-    searchParamsRand(params0,maindir,poscarsDir,vaspinputdir,nlims)
+    params0,paramsFixed = setParams(maindir)
+    searchParamsRand(params0,paramsFixed,maindir,poscarsDir,vaspinputdir,nlims)
 elif search == 'all':
     searchParamsAll(maindir,poscarsDir,vaspinputdir,nlims)
                
