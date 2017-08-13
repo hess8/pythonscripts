@@ -44,8 +44,8 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
@@ -61,13 +61,18 @@ search = 'all'
 # nKdecade = 10 # N per decade
 
 
-nKlims = [2,2000] #fix actual bounds in dynamicPacking 
+nKlims = [1,2000] #fix actual bounds in dynamicPacking 
 nKdecade = 10 # N per decade
 
 
 NnKs = int(nKdecade*ceil(log10(nKlims[1]/nKlims[0])))# 
-nKtargets = [nKlims[0] * int(rint(item)) for item in array([(10.0**(1/float(nKdecade)))**i for i in range(NnKs)])]
-
+# nKtargets = [nKlims[0] * int(rint(item)) for item in array([(10.0**(1/float(nKdecade)))**i for i in range(NnKs)])]
+nKtargets = []
+for i in range(NnKs):
+    nK = int(rint((10.0**(1/float(nKdecade)))**i))
+    if not nK in nKtargets:
+        nKtargets.append(nK)
+    
 #***************************************
 #***************************************
 
@@ -83,9 +88,9 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=0:40:00\n')
+    jobFile.write('#SBATCH --time=2:40:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
-    jobFile.write("#SBATCH --mem-per-cpu=2G\n")
+    jobFile.write("#SBATCH --mem-per-cpu=1G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
 #     jobFile.write("#SBATCH --qos=test\n")
     jobFile.write('module unload mpi\n')
@@ -116,7 +121,6 @@ def setParams(maindir):
     #to run the gradient in parallel, we need a folder for each parameter.
     for i in range(len(params0)):
         pdir = '{}/p{}'.format(maindir,i)
-        os.system('rm -r -f r*')
         if os.path.exists(pdir):
 #             os.system('rm -r -f {}'.format(pdir))
             output = subprocess.check_output(['rm','-r','-f',pdir])
@@ -124,7 +128,7 @@ def setParams(maindir):
     return params0,paramsFixed
     
 def Nkcost(params,paramsFixed,nKtargets,dir0,poscarsDir,vaspinputdir):
-    createdirs(dir0,poscarsDir,vaspinputdir)
+    createStructDirs(dir0,poscarsDir,vaspinputdir)
     os.chdir(dir0)
     dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
     jobIDs = []
@@ -153,7 +157,7 @@ def Nkcost(params,paramsFixed,nKtargets,dir0,poscarsDir,vaspinputdir):
 
 def submit(i,jobIDs,params,nKtargets,maindir,poscarsDir,vaspinputdir):
     pdir = '{}/p{}'.format(maindir,i)
-    createdirs(pdir,poscarsDir,vaspinputdir)
+    createStructDirs(pdir,poscarsDir,vaspinputdir)
     os.chdir(pdir)
     dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
     ns = []     
@@ -242,7 +246,7 @@ def submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nKtargets):
     on progress later'''
     jobIDs = []
     rdir = '{}/r{}'.format(maindir,ir)
-    createdirs(rdir,poscarsDir,vaspinputdir)
+    createStructDirs(rdir,poscarsDir,vaspinputdir)
     os.chdir(rdir)
     dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and 'info' not in d])
 #     print 'dirs',dirs
@@ -304,12 +308,9 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     nRunSlots = min(100,nPsets)#run slots are directories that run a paramSet.  Should be <= nPsets
     slotsJobIDs = [[]]*nRunSlots
     slotsIsets =  zeros(nRunSlots,dtype = int32)
+    os.system('rm -r -f r*')
     for i in range(nRunSlots):
         rdir = '{}/r{}'.format(maindir,i)
-        os.system('rm -r -f r*')
-        if os.path.exists(rdir):
-#             os.system('rm -r -f {}'.format(rdir))
-            output = subprocess.check_output(['rm','-r','-f',rdir])
         os.mkdir(rdir)
     isetsToStart = range(nPsets)
     isetsDone = []
@@ -531,13 +532,13 @@ def searchParams(params0,paramsFixed,maindir,poscarsDir,vaspinputdir,nKtargets):
         print('Did not find a lower cost!')
 
 
-def createdirs(maindir,poscarsDir,vaspinputdir):
-    '''makes dir in maindir for each structure in poscarsDir'''
+def createStructDirs(dir,poscarsDir,vaspinputdir):
+    '''makes struct folder in dir for each structure in poscarsDir'''
     potcarDir = "/fslhome/bch/vaspfiles/src/potpaw_PBE"
     for file in os.listdir(poscarsDir):
         info = file.split('_')
         struct = '_'.join(info[1:3])
-        structDir = '{}/{}'.format(maindir,struct)
+        structDir = '{}/{}'.format(dir,struct)
         atom = info[1]
         if os.path.isdir(structDir):
 #             os.system('rm -r -f {}'.format(structDir))
