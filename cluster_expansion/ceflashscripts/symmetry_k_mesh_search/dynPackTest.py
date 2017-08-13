@@ -45,7 +45,7 @@ import dynamicPacking7, analyzeNks
 #*************  Settings ***************
 maindir = os.getcwd()
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
@@ -60,19 +60,18 @@ search = 'all'
 # nKlims = [2,200]
 # nKdecade = 10 # N per decade
 
-
-nKlims = [1,2000] #fix actual bounds in dynamicPacking 
+nKlims = [1,800] #fix actual bounds in dynamicPacking 
 nKdecade = 10 # N per decade
-
 
 NnKs = int(ceil(nKdecade*log10(nKlims[1]/nKlims[0])))# 
 # nKtargets = [nKlims[0] * int(rint(item)) for item in array([(10.0**(1/float(nKdecade)))**i for i in range(NnKs)])]
 nKtargets = []
 for i in range(NnKs):
-    nK = int(rint((10.0**(1/float(nKdecade)))**i))
+    nK = nKlims[0]*int(rint((10.0**(1/float(nKdecade)))**i))
     if not nK in nKtargets:
         nKtargets.append(nK)
-print 'nKtargets',nKtargets
+# print 'nKtargets (before symmetry reduction):',nKtargets
+print 'nKtargets:',nKtargets
 print
 #***************************************
 #***************************************
@@ -89,7 +88,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=2:40:00\n')
+    jobFile.write('#SBATCH --time=12:40:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=1G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -276,7 +275,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
-    print '\twallPower equals power'
+#     print '\twallPower equals power'
 #     print '\tdw held at {}'.format(sys.argv[1])
 
 #     params0 =     [ 2.0, 4.0, 6.0, 8.0 ] 
@@ -287,11 +286,18 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params5 =     [0.5]
  
     params0 =     [6.0] 
-    params1 =     [2.0,6.0,8.0] 
-    params2 =     [ 0.1, 0.2, 0.3, 0.4]
-    params3 =     [ 0.1, 0.2, 0.4, 0.5]
-    params4 =     [ 0.0, 0.2, 0.5]
+    params1 =     [2,4,6] 
+    params2 =     [ 0.3]
+    params3 =     [ 0.5]
+    params4 =     [ 0.2]
     params5 =     [0.5]
+
+#     params0 =     [6.0] 
+#     params1 =     [3,4,5] 
+#     params2 =     [ 0.1, 0.2, 0.3, 0.4]
+#     params3 =     [ 0.1, 0.2, 0.4, 0.5]
+#     params4 =     [ 0.0, 0.2, 0.5]
+#     params5 =     [0.5]
      
 #     params0 =     [ 4.0,6.0 ] 
 #     params1 =     'duplicate Power for wallPower' 

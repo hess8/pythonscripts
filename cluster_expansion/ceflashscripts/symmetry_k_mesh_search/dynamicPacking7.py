@@ -434,7 +434,9 @@ class dynamicPack():
 #         print '\nB (Recip lattice vectors as columns',B
 #         print 'method',method
         vol = abs(det(B))
-        self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
+        IBZvol = vol/float(self.nops)
+#         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
+        self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.power = float(params[0]) #6.0
         self.wallPower = float(params[1]) #6.0
         self.wallFactor = float(params[2]) #1.0  #probably needs to be bigger than interFactor by about the average number of nearest neighbors
@@ -465,8 +467,8 @@ class dynamicPack():
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
         self.facetsMathFile(BZ,'BZ') 
         self.IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
-        self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)))
-        self.nTargetIBZ = self.nTarget
+#         self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)))
+        self.nTargetIBZ = self.nTarget; print 'targets are for IBZ, not full BZ'
         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
         if 2 < len(self.IBZ.mesh) <= 200:
@@ -604,7 +606,7 @@ class dynamicPack():
         else:
             print 'no orthogonal plane normals pairs found.'
         if type == 'fcc':    
-            volKcubConv = det(self.B)/self.nTarget*4
+            volKcubConv = det(self.B)/self.nTarget*4/float(self.nops)
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
@@ -613,7 +615,7 @@ class dynamicPack():
             self.rpacking = 1/2.0/sqrt(2)*aKcubConv
             pf = 4*4/3.0*pi*(1/2.0/sqrt(2))**3  #0.74
         elif type == 'bcc':
-            volKcubConv = det(self.B)/self.nTarget*2
+            volKcubConv = det(self.B)/self.nTarget*2/float(self.nops)
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
@@ -623,7 +625,7 @@ class dynamicPack():
             self.rpacking = sqrt(3)/4.0*aKcubConv
             pf = 2*4/3.0*pi*(sqrt(3)/4.0)**3 #0.68
         elif type == 'cub':
-            volKcubConv = det(self.B)/self.nTarget
+            volKcubConv = det(self.B)/self.nTarget/float(self.nops)
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0])]
