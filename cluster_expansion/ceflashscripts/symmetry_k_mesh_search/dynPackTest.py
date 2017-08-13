@@ -65,14 +65,15 @@ nKlims = [1,2000] #fix actual bounds in dynamicPacking
 nKdecade = 10 # N per decade
 
 
-NnKs = int(nKdecade*ceil(log10(nKlims[1]/nKlims[0])))# 
+NnKs = int(ceil(nKdecade*log10(nKlims[1]/nKlims[0])))# 
 # nKtargets = [nKlims[0] * int(rint(item)) for item in array([(10.0**(1/float(nKdecade)))**i for i in range(NnKs)])]
 nKtargets = []
 for i in range(NnKs):
     nK = int(rint((10.0**(1/float(nKdecade)))**i))
     if not nK in nKtargets:
         nKtargets.append(nK)
-    
+print 'nKtargets',nKtargets
+print
 #***************************************
 #***************************************
 
