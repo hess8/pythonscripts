@@ -71,7 +71,7 @@ maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
-type = 'fcc' 
+type = 'bcc' 
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
 method = 0
@@ -82,6 +82,9 @@ reallatt = zeros((3,3))
 os.chdir(maindir)
 dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 # toRun = []
+meshDet = open('meshDetails.csv','w')
+meshDet.write('Ntarget,Nmesh,std/mean,energy/N,pack frac\n')
+meshDet.close()
 for dir in dirs:
     os.chdir(maindir)
     if testfile in os.listdir(dir): 
@@ -109,14 +112,14 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(11,12,1):#23
+            for n in range(10,17,3):#23
                 print 
                 print '==============================================' 
-                print 'Target npoints: {}^3'.format(n)
+                print 'Target npoints: {}'.format(n)
                 print '==============================================' 
                 print
                 newdir = createdir(currdir,n,type) 
-                statusOK = getVCmesh(newdir,method,n**3,type)
+                statusOK = getVCmesh(newdir,method,n,type)
                 if not statusOK: #no points or too many in IBZ
                     print 'Zero or too many points in IBZ...skip this n'
 #                     os.system('rm -r {}'.format(newdir))

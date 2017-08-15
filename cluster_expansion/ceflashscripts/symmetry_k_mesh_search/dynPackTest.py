@@ -73,6 +73,7 @@ for i in range(NnKs):
 # print 'nKtargets (before symmetry reduction):',nKtargets
 print 'nKtargets:',nKtargets
 print
+
 #***************************************
 #***************************************
 
@@ -297,7 +298,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     params2 =     [ 1.0 ] #wallfactor
     params3 =     [ 0.05, 0.1, 0.2] #wallClose
     params4 =     [ 0.0] #wallOffset
-    params5 =     [ 0.5] #dw
+    params5 =     [ 0.2] #dw
     '''299    1.316    20    4    2    1    0.1    0    0.5
                1.29 [ 4.    3.    1.    0.05  0.    0.5 ]] avg nDone 20.0'''
 
@@ -556,6 +557,9 @@ def createStructDirs(dir,poscarsDir,vaspinputdir):
 #             os.system('rm -r -f {}'.format(structDir))
             output = subprocess.check_output(['rm','-r','-f',structDir])
         os.system('mkdir {}'.format(structDir)) #structure is in 
+        meshDet = open('{}/meshDetails.csv'.format(structDir),'w')
+        meshDet.write('Ntarget,Nmesh,std/mean,energy/N,pack frac\n')
+        meshDet.close()
         os.system('cp {}/{} {}/POSCAR'.format(poscarsDir,file,structDir))
         try:
             potcar = readfile('{}/{}/POTCAR'.format(potcarDir,atom))

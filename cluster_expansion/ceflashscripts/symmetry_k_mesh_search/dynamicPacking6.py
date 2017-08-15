@@ -426,23 +426,30 @@ class dynamicPack():
     from conjGradMin2 import (fmin_cg,minimize_cg,line_search_wolfe1,scalar_search_wolfe1)
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,method):
-        #1. nCoarse random points in the cell parallelpiped.  
-#         nCoarseMax = 200
+        '''1.29 [ 4.    3.    1.    0.05  0.    0.5 ]] avg nDone 20.0'''
+        
+        [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
+        self.nops = len(symopsList)
+        self.symops = zeros((3,3,self.nops),dtype = float)
+        for iop in range(len(symopsList)):
+            self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))       
+        print 'Number of desired points in full BZ:', targetNmesh
         self.B = B
 #         print '\nB (Recip lattice vectors as columns',B
 #         print 'method',method
         vol = abs(det(B))
-        self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
-        
-        self.power = 6.0
-        self.wallPower = 6.0
+        IBZvol = vol/float(self.nops)
+#         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
+        self.ravg = (IBZvol/targetNmesh)**(1/3.0)         
+        self.power = 4.0
+        self.wallPower = 3.0
         self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
-        self.wallClose = 0.1 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.wallClose = 0.05 #0.5 #to allow initial points closer to the wall set to less than 1. 
+        self.wallOffset = 0.0 #back off wall forces and energies by a distance that is a fraction of dw. 
         self.interfactor = 1.0        
         self.initFactor = 1.0
         self.df = 1.00 * self.ravg #inter-point force scale distance
-        self.dw = 0.02 * self.df #wall force scale distance
+        self.dw = 0.5 * self.df #wall force scale distance
 #        self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/300
         self.eps = eps
@@ -452,20 +459,14 @@ class dynamicPack():
 #         self.initSrch = 'target'
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path
-        self.method = method
-        [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
-        self.nops = len(symopsList)
-        self.symops = zeros((3,3,self.nops),dtype = float)
-        for iop in range(len(symopsList)):
-            self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))       
-        print 'Number of desired points in full BZ:', targetNmesh
         BZ = cell() #instance
         BZ.volume = vol
         braggVecs = getBraggVecs(self.B)
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
         self.facetsMathFile(BZ,'BZ') 
         self.IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
-        self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)))
+#         self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)))
+        self.nTargetIBZ = self.nTarget; print 'targets are for IBZ, not full BZ'
         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
         if 0 < len(self.IBZ.mesh) <= 4000:
@@ -505,6 +506,7 @@ class dynamicPack():
         Vectors are first taken from each mesh point as the origin, 
         then displaced to their real positions in the cell for possible display'''
         allMPfacets = []
+        self.IBZ.weights = []
         for ip,point in enumerate(self.IBZ.mesh):
             print ip,
             pointCell = cell()
@@ -547,14 +549,15 @@ class dynamicPack():
             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
         else:
             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
-#         print 'Adjusting weights by skew'
-#         temp = []
-#         for i,skew in enumerate(skews):
-#             temp.append(IBZ.weights[i]*(skew)**(1/4.0))    
-#         IBZ.weights = temp/self.ravg**3   
-#         IBZ.weights = IBZ.weights/self.ravg**3 #to scale them to order(1).  
-
-
+        self.IBZ.weights = self.IBZ.weights/self.ravg**3 #to scale them to order(1).  
+        pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
+        print 'Packing fraction', pf
+        meshDet = open('../../meshDetails.csv','a')
+        N = len(self.IBZ.mesh)
+        meshDet.write('{},{},{:6.3f},{:6.3f},{:6.3f}\n'.format(self.nTarget,N,stdev/meanV,self.meshEnergy/float(N),pf))
+        meshDet.flush()
+        meshDet.close()
+        
     def meshInitCubic(self,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with their normals.       
@@ -608,7 +611,7 @@ class dynamicPack():
 #         else:
 #             print 'no orthogonal plane normals pairs found.'
         if type == 'fcc':    
-            volKcubConv = det(self.B)/self.nTarget*4
+            volKcubConv = det(self.B)/self.nTarget*4/float(self.nops)
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
@@ -617,7 +620,7 @@ class dynamicPack():
             self.rpacking = 1/2.0/sqrt(2)*aKcubConv
             pf = 4*4/3.0*pi*(1/2.0/sqrt(2))**3  #0.74
         elif type == 'bcc':
-            volKcubConv = det(self.B)/self.nTarget*2
+            volKcubConv = det(self.B)/self.nTarget*2/float(self.nops)
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
@@ -627,7 +630,7 @@ class dynamicPack():
             self.rpacking = sqrt(3)/4.0*aKcubConv
             pf = 2*4/3.0*pi*(sqrt(3)/4.0)**3 #0.68
         elif type == 'cub':
-            volKcubConv = det(self.B)/self.nTarget
+            volKcubConv = det(self.B)/self.nTarget/float(self.nops)
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0])]
@@ -674,7 +677,7 @@ class dynamicPack():
                         array([[cos(phi),-sin(phi),0],[sin(phi), cos(phi),0],[0,0,1],]) )
                       
                     cubicLVs = dot(Rmat,cubicLVs0)
-                    for i, site in enumerate(deepcopy(sites0)):
+                    for i, site in enumerate(sites0):
                         sites[i] = dot(Rmat,site)        
                     IBZ,nInside = self.fillMesh(cubicLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
 #                    self.facetsMeshMathFile(IBZ,'IBZinit_{}'.format(isearch),None)
@@ -686,9 +689,10 @@ class dynamicPack():
                             bestN = nInside
                             bestIBZ = deepcopy(IBZ)
                             besti = isearch
-                            
                         print 'Step {}: Nmax'.format(isearch),nMax, shift, theta, phi
-                        print 'Rmat',Rmat , det(Rmat)
+#                         self.IBZ = bestIBZ
+#                         self.weightPoints(self.eps)
+
                     if self.initSrch != 'max':
                         closeLog = abs(log(nInside/(self.searchInitFactor*self.nTargetIBZ)))
                         if closeLog < closestLog:
@@ -706,7 +710,7 @@ class dynamicPack():
 # #             print 'nInside {} is less than target N {}'.format(bestN,self.nTargetIBZ)
 #              return bestIBZ
         if self.initSrch == 'max':
-            print 'Maximum nInside {}(step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
+            print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
         else:
             print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.searchInitFactor*self.nTargetIBZ)
         return bestIBZ
@@ -753,7 +757,7 @@ class dynamicPack():
         
         epsilon = self.ravg/100
         comps = array(self.IBZ.mesh).flatten()
-        energy = self.minSteepest(comps,self.eps) 
+        self.meshEnergy = self.minSteepest(comps,self.eps) 
         return
 
     def minSteepest(self,x0,eps):
@@ -826,7 +830,8 @@ class dynamicPack():
         elif iIter == itermax:
             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
         if not (fnew < fstart and gnormnew < gnormstart):
-            sys.exit('Did not find a lower energy and force norm: stop')
+#             sys.exit('Did not find a lower energy and force norm: stop')
+            print 'Did not find a lower energy and force norm: using unrelaxed packing'
         return fnew
 
     def enerGrad(self,comps):
@@ -881,13 +886,12 @@ class dynamicPack():
         lines.append('Packing of IBZ (Bret Hess, BYU). Total weights: {:12.8f} \n'.format(totw))#(vs 1.0 per general point without symmetry\n'.format(totw))
         lines.append('{}\n'.format(nk))
         lines.append('Reciprocal\n') #direct coordinates!...vasp doesn't read cartesian kpoints right
-        etot = 0
         for ik,kpoint in enumerate(self.IBZ.mesh):
+            #direct coordinates!...vasp doesn't read cartesian kpoints right
             kpointDir = directFromCart(self.B,kpoint)
             lines.append('{:15.12f}  {:15.12f}  {:15.12f}  {:15.12f}\n'\
                          .format(kpointDir[0],kpointDir[1],kpointDir[2],self.IBZ.weights[ik]))
-        writefile(lines,'KPOINTS') 
-                
+        writefile(lines,'KPOINTS')         
        
     def getNeighbors(self,kpoint,IBZ,eps):
         '''Search a sphere around the kpoint and collect neighbors.
