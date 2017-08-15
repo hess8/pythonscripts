@@ -66,7 +66,7 @@ def createdir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/the99/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/test3/'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/cubicAnalytic/'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/12fstrDP_fcc/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
@@ -74,7 +74,7 @@ maindir = '/fslhome/bch/cluster_expansion/vcmesh/cubicAnalytic/'
 type = 'fcc' 
 testfile = 'POSCAR'
 vaspinputdir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/vaspinput/'
-method = 0.5
+method = 0
         #0: exact: use vertices of mesh voronoi cell that are closest/farthest 
         #         from the IBZ center origin to check if the point's volume is cut. 
         #         Cut the VC to determine the volume contribution  

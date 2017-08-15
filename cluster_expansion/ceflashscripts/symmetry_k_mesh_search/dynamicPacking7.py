@@ -579,32 +579,31 @@ class dynamicPack():
                     triples.append(triple)
                     break
         #Define basis vectors for cubic lattice:
-        Lsum= [] #length of vectors in pair or triplet
-        if len(triples)>0:
-            print 'At least one triplet of orthogonal plane normals found:',triples[0]
-            if len(triples)>1: #find the one with most total vector length
-                sums = zeros(len(triples))
-                for it, triple in enumerate(triples):
-                    for i in range(3):
-                        sums[it] += norm(triple[i])
-                triples = [triple for (sum1,triple) in sorted(zip(sums,triples),key = lambda x: x[0])] #sorted by lowest sum  
-            for i in range(3):
-                vec = triples[-1][i]
-                cubicLVs[:,i] = vec/norm(vec)
-        elif len(pairs)>0:
-            print 'At least one pair of orthogonal plane normals found:', pairs[0]
-            if len(pairs)>1:
-                sums = zeros(len(pairs))
-                for ip, pair in enumerate(pairs):
-                    for i in range(2):
-                        sums[ip] += norm(pairs[i])
-                pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
-            for i in range(2):        
-                vec = pairs[-1][i]
-                cubicLVs[:,i] = vec/norm(vec)
-            cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
-        else:
-            print 'no orthogonal plane normals pairs found.'
+#         if len(triples)>0:
+#             print 'At least one triplet of orthogonal plane normals found:',triples[0]
+#             if len(triples)>1: #find the one with most total vector length
+#                 sums = zeros(len(triples))
+#                 for it, triple in enumerate(triples):
+#                     for i in range(3):
+#                         sums[it] += norm(triple[i])
+#                 triples = [triple for (sum1,triple) in sorted(zip(sums,triples),key = lambda x: x[0])] #sorted by lowest sum  
+#             for i in range(3):
+#                 vec = triples[-1][i]
+#                 cubicLVs[:,i] = vec/norm(vec)
+#         elif len(pairs)>0:
+#             print 'At least one pair of orthogonal plane normals found:', pairs[0]
+#             if len(pairs)>1:
+#                 sums = zeros(len(pairs))
+#                 for ip, pair in enumerate(pairs):
+#                     for i in range(2):
+#                         sums[ip] += norm(pairs[i])
+#                 pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
+#             for i in range(2):        
+#                 vec = pairs[-1][i]
+#                 cubicLVs[:,i] = vec/norm(vec)
+#             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
+#         else:
+#             print 'no orthogonal plane normals pairs found.'
         if type == 'fcc':    
             volKcubConv = det(self.B)/self.nTarget*4/float(self.nops)
             aKcubConv = volKcubConv**(1/3.0)
@@ -638,7 +637,7 @@ class dynamicPack():
             self.IBZ = self.searchNmax(cubicLVs,aKcubConv,sites) 
         else:
             shift = array([1,1,1])/8.0 * aKcubConv
-            self.IBZ,nInside = self.fillMesh(cubicLVs,IBZ,shift,aKcubConv,sites)
+            self.IBZ,nInside = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
         
         #Search over shift and rotation to find the most possible points inside
 
@@ -660,6 +659,7 @@ class dynamicPack():
         bestN = 0
         IBZ = deepcopy(self.IBZ)
         bestIBZ = deepcopy(self.IBZ)
+        sites0 = deepcopy(sites)
         
         for shift in shifts:
 #             print 'shift',shift
@@ -667,18 +667,14 @@ class dynamicPack():
                 for phi in phis:
                     isearch += 1
                     Rmat = dot(
-                        array([[1,0,0],
-                        [0,cos(theta),-sin(theta)],
-                        [0, sin(theta), cos(theta)]]),
-                        array([[0,0,1],
-                        [cos(phi),-sin(phi),0],
-                        [sin(phi), cos(phi),0]]) )
-                        
+                        array([[1,0,0], [0,cos(theta),-sin(theta)],[0, sin(theta), cos(theta)]]),
+                        array([[cos(phi),-sin(phi),0],[sin(phi), cos(phi),0],[0,0,1],]) )
+                      
                     cubicLVs = dot(Rmat,cubicLVs0)
-                    for i, site in enumerate(deepcopy(sites)):
+                    for i, site in enumerate(sites0):
                         sites[i] = dot(Rmat,site)        
-                    IBZ,nInside = self.fillMesh(cubicLVs,IBZ,shift,aKcubConv,sites)
-#                     self.facetsMeshMathFile(IBZ,'IBZinit_{}'.format(isearch),None)
+                    IBZ,nInside = self.fillMesh(cubicLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
+#                    self.facetsMeshMathFile(IBZ,'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
                     if nInside > nMax: 
@@ -714,14 +710,13 @@ class dynamicPack():
         #Create the cubic mesh inside the irreducible BZ
         IBZ.mesh = []
         IBZ.weights = []
-        weightsInside = 0
         nInside = 0         
         ik = 0       
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
                     lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
-                    for iS, site in enumerate(sites):
+                    for site in sites:
                         ik+=1
                         kpoint = lvec + shift + site
                         if isInside(kpoint,IBZ.bounds,self.dw*self.wallClose):  #Can't be closer than self.dw*self.wallClose to a wall
@@ -756,7 +751,7 @@ class dynamicPack():
         
 '''
 
-        itermax = 100
+        itermax = 300
         gnormTol = 0.001
         minstep = 0.000001
         xold = x0

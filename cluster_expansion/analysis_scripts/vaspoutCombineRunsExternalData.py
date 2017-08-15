@@ -84,7 +84,7 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc',
 #           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_dw1/r0']
+paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_grid/r0']
     
 #     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams', 
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc', 
@@ -115,8 +115,8 @@ paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_dw1/r0']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
-# extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
-extpath = None
+extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
+# extpath = None
 useSym = False
 coloring = 'method'
 # coloring = 'indiv'

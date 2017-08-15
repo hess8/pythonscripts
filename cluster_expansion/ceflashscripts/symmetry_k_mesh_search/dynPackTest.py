@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -88,7 +88,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=12:40:00\n')
+    jobFile.write('#SBATCH --time=0:40:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=1G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -285,20 +285,20 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params4 =     [ 0.0, 0.5, 1.0, 2.0]
 #     params5 =     [0.5]
  
-    params0 =     [6.0] 
-    params1 =     [2,4,6] 
-    params2 =     [ 0.3]
-    params3 =     [ 0.5]
-    params4 =     [ 0.2]
-    params5 =     [0.5]
-
 #     params0 =     [6.0] 
-#     params1 =     [3,4,5] 
-#     params2 =     [ 0.1, 0.2, 0.3, 0.4]
-#     params3 =     [ 0.1, 0.2, 0.4, 0.5]
-#     params4 =     [ 0.0, 0.2, 0.5]
+#     params1 =     [6] 
+#     params2 =     [ 0.3]
+#     params3 =     [ 0.5]
+#     params4 =     [ 0.2]
 #     params5 =     [0.5]
-     
+
+    params0 =     [6.0] 
+    params1 =     [6.0] 
+    params2 =     [ 1.0]
+    params3 =     [ 0.1, 0.2, 0.5]
+    params4 =     [ 0.0]
+    params5 =     [0.02]
+#      
 #     params0 =     [ 4.0,6.0 ] 
 #     params1 =     'duplicate Power for wallPower' 
 #     params2 =     [ 0.1]
@@ -310,11 +310,13 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params5 =  [float(sys.argv[1])]
     nP =len( paramLabels)
     nPsets = len(params0)*len(params1)*len(params2)*len(params3)*len(params4)*len(params5)
+    print 'Will run {} parameter sets'.format(nPsets)
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
     iset = 0
     nRunSlots = min(100,nPsets)#run slots are directories that run a paramSet.  Should be <= nPsets
     slotsJobIDs = [[]]*nRunSlots
     slotsIsets =  zeros(nRunSlots,dtype = int32)
+    os.chdir(maindir)
     os.system('rm -r -f r*')
     for i in range(nRunSlots):
         rdir = '{}/r{}'.format(maindir,i)
@@ -368,7 +370,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                             bestParams = all[ioldSet]['params']
                             iminCost =  ioldSet
                             rdir = '{}/r{}'.format(maindir,ir)
-                            os.system('mv {}/loglog_e_vs_n.png {}/best_loglog_e_vs_n.png'.format(rdir,maindir))
+                            os.system('mv {}/loglog.png {}/best_loglog.png'.format(rdir,maindir))
                             os.system('mv {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir)) 
                             os.system('mv {}/summary.csv {}/best_summary.csv'.format(rdir,maindir))                    
                         print 'cost for set {}: {:6.2f} {}] avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)

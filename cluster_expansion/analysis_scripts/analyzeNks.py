@@ -53,7 +53,7 @@ def plotData(fig,summaryPath,datai,n,plotType,filter,doLegend,labelStr):
     if doLegend:
         legend(loc='lower left',prop={'size':12});
         # show()
-    fig.savefig('{}/{}_e_vs_n'.format(summaryPath,plotType))
+    fig.savefig('{}/{}'.format(summaryPath,plotType))
 
 def analyze(paths): #as used with the parameter search, paths will have only one entry.  But keep consistent with interactive vaspoutCombineRunsExtData
     extpath = None
@@ -283,11 +283,11 @@ def analyze(paths): #as used with the parameter search, paths will have only one
     #plots
     if maxNk > 1:
         if filter[0] == '_':filter = '' #labels can't begin with _
-        # plotTypes = ['linear','loglog'] #loglinear
+#         plotTypes = ['linear','loglog', 'loglinear'];ylabels = ['Vasp error energy/atom (eV)','Error (meV)','Error (meV)']
         # print 'plot only loglog'
-        plotTypes = ['loglog'] #loglinear
+        plotTypes = ['loglog']; ylabels = ['Error (meV)']
     #     plotTypes = [] 
-        ylabels = ['Vasp energy/atom (eV)','Error (meV)','Error (meV)']
+        
         xtext = 'N k-points'
         
         for it,plotType in enumerate(plotTypes):
