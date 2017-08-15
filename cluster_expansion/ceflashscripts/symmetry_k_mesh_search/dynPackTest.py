@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -292,13 +292,16 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params4 =     [ 0.2]
 #     params5 =     [0.5]
 
-    params0 =     [6.0] 
-    params1 =     [6.0] 
-    params2 =     [ 1.0]
-    params3 =     [ 0.1, 0.2, 0.5]
-    params4 =     [ 0.0]
-    params5 =     [0.02]
-#      
+    params0 =     [ 2.0, 3.0, 4.0, 5.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+    params1 =     [ 2.0, 3.0, 4.0, 5.0 ]   #wallPower
+    params2 =     [ 1.0 ] #wallfactor
+    params3 =     [ 0.05, 0.1, 0.2] #wallClose
+    params4 =     [ 0.0] #wallOffset
+    params5 =     [ 0.5] #dw
+    '''299    1.316    20    4    2    1    0.1    0    0.5
+               1.29 [ 4.    3.    1.    0.05  0.    0.5 ]] avg nDone 20.0'''
+
+
 #     params0 =     [ 4.0,6.0 ] 
 #     params1 =     'duplicate Power for wallPower' 
 #     params2 =     [ 0.1]
@@ -370,9 +373,9 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                             bestParams = all[ioldSet]['params']
                             iminCost =  ioldSet
                             rdir = '{}/r{}'.format(maindir,ir)
-                            os.system('mv {}/loglog.png {}/best_loglog.png'.format(rdir,maindir))
-                            os.system('mv {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir)) 
-                            os.system('mv {}/summary.csv {}/best_summary.csv'.format(rdir,maindir))                    
+                            os.system('cp -r {}/loglog.png {}/best_loglog.png'.format(rdir,maindir))
+                            os.system('cp -r {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir)) 
+                            os.system('cp -r {}/summary.csv {}/best_summary.csv'.format(rdir,maindir))                    
                         print 'cost for set {}: {:6.2f} {}] avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)
                         print 'vs. min cost {}: {:6.2f} {}] avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
                         ps = all[ioldSet]['params']

@@ -753,7 +753,7 @@ class dynamicPack():
 
         itermax = 300
         gnormTol = 0.001
-        minstep = 0.000001
+        minstep = 0.00000001
         xold = x0
         xnew = x0
         fold,gold = self.enerGrad(xold)
@@ -811,7 +811,8 @@ class dynamicPack():
         elif iIter == itermax:
             print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
         if not (fnew < fstart and gnormnew < gnormstart):
-            sys.exit('Did not find a lower energy and force norm: stop')
+#             sys.exit('Did not find a lower energy and force norm: stop')
+            print 'Did not find a lower energy and force norm: using unrelaxed packing'
         return
 
     def enerGrad(self,comps):
