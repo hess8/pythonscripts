@@ -298,7 +298,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     params2 =     [ 1.0 ] #wallfactor
     params3 =     [ 0.05, 0.1, 0.2] #wallClose
     params4 =     [ 0.0] #wallOffset
-    params5 =     [ 0.2] #dw
+    params5 =     [ 0.1] #dw
     '''299    1.316    20    4    2    1    0.1    0    0.5
                1.29 [ 4.    3.    1.    0.05  0.    0.5 ]] avg nDone 20.0'''
 
@@ -346,7 +346,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
         if len(isetsToStart) > 0:
             icurrSet = isetsToStart[0]
             for ir in range(nRunSlots):
-                if len(slotsJobIDs[ir]) == 0: #use this slot for next set
+                if len(slotsJobIDs[ir]) == 0 and not ir in toAnalyze: #use this slot for next set
                     iwait = 0; print     
                     #start new set
                     params = all[icurrSet]['params']
