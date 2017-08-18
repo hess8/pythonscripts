@@ -48,8 +48,10 @@ def plotData(datai,n,plotType,filter,doLegend,lablelStr):
         semilogy(datai['nKs'][:n],datai['errs'][:n],label=labelStr,\
               linestyle='None',color = datai['color'], marker = 'o',markeredgewidth=0.0)
     elif plotType == 'loglog':                      
+#         loglog(datai['nKs'][:n],datai['errs'][:n],label=labelStr,\
+#               linestyle='None',color = datai['color'], marker = 'o',markeredgewidth=0.0)
         loglog(datai['nKs'][:n],datai['errs'][:n],label=labelStr,\
-              linestyle='None',color = datai['color'], marker = 'o',markeredgewidth=0.0)                             
+              linestyle='-',color = datai['color'], marker = 'o',markeredgewidth=0.0)                              
     if doLegend:
         legend(loc='lower left',prop={'size':12});
         # show()
@@ -74,8 +76,11 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/vary_off06',
 #          '/fslhome/bch/cluster_expansion/vcmesh/vary_off075']
 
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_fcc',
-#          '/fslhome/bch/cluster_expansion/vcmesh/mt_bcc',
+paths = [ 
+# '/fslhome/bch/cluster_expansion/vcmesh/mt_fcc',
+        '/fslhome/bch/cluster_expansion/vcmesh/mt_bcc'
+        ]
+# ,
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_cub',
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_fo10']
 
@@ -84,7 +89,7 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc',
 #           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_cub']
 
-paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_grid/r0']
+# paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_grid/r0']
     
 #     '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_testfccParams', 
 #          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_bcc', 
@@ -115,15 +120,15 @@ paths = ['/fslhome/bch/cluster_expansion/vcmesh/mt_grid/r0']
 
 # paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
-extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_mp_data'
+extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_data'
 # extpath = None
 useSym = False
-coloring = 'method'
-# coloring = 'indiv'
-doLegend = True
+# coloring = 'method'
+coloring = 'indiv'
+doLegend = False
 doLabel = True
 smoothFactor = 2.0
-filter = '_' #string must be in dir name to be included
+filter = 'Cu_' #string must be in dir name to be included
 filter2 = None #'Cu_1' #for single structures.  set to None if using filter1 only
 summaryPath = paths[0]
 
@@ -300,7 +305,7 @@ if not extpath is None:
                 nops,IBZvolcut,nAtoms = copyData(structfile,data)
             if coloring == 'indiv':
                 if iplot < nplots -1:
-                    color = cm.jet(1.*(iplot+1)/float(nplots))
+                    color = rgb2hex(cm.jet(1.*(iplot+1)/float(nplots)))
                 else:
                     color = 'k'
             iplot += 1

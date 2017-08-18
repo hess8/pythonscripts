@@ -454,12 +454,7 @@ class dynamicPack():
 #         self.initSrch = None
 #         self.initSrch = 'target'
         self.nTarget = int(self.initFactor*targetNmesh)
-        self.path = path
-        [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
-        self.nops = len(symopsList)
-        self.symops = zeros((3,3,self.nops),dtype = float)
-        for iop in range(len(symopsList)):
-            self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))       
+        self.path = path      
         print 'Number of desired points in full BZ:', targetNmesh
         BZ = cell() #instance
         BZ.volume = vol
@@ -508,6 +503,7 @@ class dynamicPack():
         Vectors are first taken from each mesh point as the origin, 
         then displaced to their real positions in the cell for possible display'''
         allMPfacets = []
+        self.IBZ.weights = []
         for ip,point in enumerate(self.IBZ.mesh):
             print ip,
             pointCell = cell()
@@ -551,7 +547,14 @@ class dynamicPack():
         else:
             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
         self.IBZ.weights = self.IBZ.weights/self.ravg**3 #to scale them to order(1).  
-
+        pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
+        print 'Packing fraction', pf
+        meshDet = open('../meshDetails.csv','a')
+        N = len(self.IBZ.mesh)
+        meshDet.write('{},{},{:6.3f},{:6.3f},{:6.3f}\n'.format(self.nTarget,N,stdev/meanV,self.meshEnergy/float(N),pf))
+        meshDet.flush()
+        meshDet.close()
+        
     def meshInitCubic(self,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with their normals.       
@@ -738,7 +741,7 @@ class dynamicPack():
         
         epsilon = self.ravg/100
         comps = array(self.IBZ.mesh).flatten()
-        self.minSteepest(comps,self.eps) 
+        self.meshEnergy = self.minSteepest(comps,self.eps) 
         return
 
     def minSteepest(self,x0,eps):
@@ -813,7 +816,7 @@ class dynamicPack():
         if not (fnew < fstart and gnormnew < gnormstart):
 #             sys.exit('Did not find a lower energy and force norm: stop')
             print 'Did not find a lower energy and force norm: using unrelaxed packing'
-        return
+        return fnew
 
     def enerGrad(self,comps):
         '''Returns the total energy, gradient (-forces), 
