@@ -467,8 +467,8 @@ class dynamicPack():
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
         self.facetsMathFile(BZ,'BZ') 
         self.IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
-#         self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)))
-        self.nTargetIBZ = self.nTarget; print 'targets are for IBZ, not full BZ'
+        self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)));print 'targets are for IBZ, not full BZ'
+#         self.nTargetIBZ = self.nTarget
         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
         if 2 < len(self.IBZ.mesh) <= 200:

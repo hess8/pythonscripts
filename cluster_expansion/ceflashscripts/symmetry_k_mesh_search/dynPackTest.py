@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -73,8 +73,6 @@ for i in range(NnKs):
 # print 'nKtargets (before symmetry reduction):',nKtargets
 print 'nKtargets:',nKtargets
 print
-#***************************************
-#***************************************
 
 def writeJob(path,ntarget,type,params):
     """ Creates a standard job file for submitting a VASP job on the supercomputer. 
@@ -121,6 +119,7 @@ def setParams(maindir):
     #to run the gradient in parallel, we need a folder for each parameter.
     for i in range(len(params0)):
         pdir = '{}/p{}'.format(maindir,i)
+        os.system('rm -r -f r*')
         if os.path.exists(pdir):
 #             os.system('rm -r -f {}'.format(pdir))
             output = subprocess.check_output(['rm','-r','-f',pdir])
@@ -285,13 +284,6 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params4 =     [ 0.0, 0.5, 1.0, 2.0]
 #     params5 =     [0.5]
  
-#     params0 =     [6.0] 
-#     params1 =     [6] 
-#     params2 =     [ 0.3]
-#     params3 =     [ 0.5]
-#     params4 =     [ 0.2]
-#     params5 =     [0.5]
-
     params0 =     [ 2.0, 3.0, 4.0, 5.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
     params1 =     [ 2.0, 3.0, 4.0, 5.0 ]   #wallPower
     params2 =     [ 1.0 ] #wallfactor
@@ -301,13 +293,6 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     '''299    1.316    20    4    2    1    0.1    0    0.5
                1.29 [ 4.    3.    1.    0.05  0.    0.5 ]] avg nDone 20.0'''
 
-
-#     params0 =     [ 4.0,6.0 ] 
-#     params1 =     'duplicate Power for wallPower' 
-#     params2 =     [ 0.1]
-#     params3 =     [ 0.1]
-#     params4 =     [ 0.0]
-#     params5 =     [0.5]
 
 #     params5 =  [0.1]
 #     params5 =  [float(sys.argv[1])]
