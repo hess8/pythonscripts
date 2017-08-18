@@ -293,14 +293,35 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params4 =     [ 0.2]
 #     params5 =     [0.5]
 
-    params0 =     [ 2.0, 3.0, 4.0, 5.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
-    params1 =     [ 2.0, 3.0, 4.0, 5.0 ]   #wallPower
-    params2 =     [ 1.0 ] #wallfactor
-    params3 =     [ 0.05, 0.1, 0.2] #wallClose
+    params0 =     [ 4.0, 5.0, 6.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+    params1 =     [ 2.0, 3.0, 4.0]   #wallPower
+    params2 =     [ 1.3, 1.5, 1.7 ] #wallfactor
+    params3 =     [ 0.05] #wallClose
     params4 =     [ 0.0] #wallOffset
-    params5 =     [ 0.1] #dw
-    '''299    1.316    20    4    2    1    0.1    0    0.5
-               1.29 [ 4.    3.    1.    0.05  0.    0.5 ]] avg nDone 20.0'''
+    params5 =     [ 0.5,0.7] #dw
+    '''Si:     1.316  4    2    1     0.1    0    0.5    20
+               1.29 [ 4.    3.  1.    0.05   0.   0.5 ]] avg nDone 20.0
+               1.16 [ 5.    2.  1.3   0.05   0.   0.5 ]] avg nDone 20.0
+               1.269  5     3   0.7   0.05   0    0.5  20
+               1.159  5     2   1.3   0.05   0    0.5  20   
+
+      SC   need to test with other semiconductors    
+                1.359    20    4    3    1    0.05   0    0.5
+                1.411    20    5    2    1    0.05   0    0.5
+                1.412    20    5    2    1    0.1    0    0.5
+                1.475    20    4    2    1    0.1    0    0.5
+                
+      metals : 
+      1.40 [ 4.   2.   1.   0.1  0.   0.5]] avg nDone 17.6551724138      
+               *1.401    17.66    4    2    1    0.1    0    0.5
+                1.402    17.66    5    2    1    0.1    0    0.5
+                1.404    17.76    5    2    1    0.05   0    0.5
+                1.406    17.54    5    3    1    0.1    0    0.5
+                1.408    17.72    5    3    1    0.05   0    0.5
+               *1.41     17.91    4    2    1    0.05   0    0.5
+                1.417    17.76    4    3    1    0.1    0    0.5
+                1.422    17.84    4    3    1    0.05   0    0.5
+'''
 
 
 #     params0 =     [ 4.0,6.0 ] 
