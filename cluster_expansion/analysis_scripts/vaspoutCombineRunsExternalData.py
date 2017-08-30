@@ -48,10 +48,10 @@ def plotData(datai,n,plotType,filter,doLegend,lablelStr):
         semilogy(datai['nKs'][:n],datai['errs'][:n],label=labelStr,\
               linestyle='None',color = datai['color'], marker = 'o',markeredgewidth=0.0)
     elif plotType == 'loglog':                      
-#         loglog(datai['nKs'][:n],datai['errs'][:n],label=labelStr,\
-#               linestyle='None',color = datai['color'], marker = 'o',markeredgewidth=0.0)
         loglog(datai['nKs'][:n],datai['errs'][:n],label=labelStr,\
-              linestyle='-',color = datai['color'], marker = 'o',markeredgewidth=0.0)                              
+            linestyle='None',color = datai['color'], marker = 'o',markeredgewidth=0.0)
+#         loglog(datai['nKs'][:n],datai['errs'][:n],label=labelStr,\
+#               linestyle='-',color = datai['color'], marker = 'o',markeredgewidth=0.0)                              
     if doLegend:
         legend(loc='lower left',prop={'size':12});
         # show()
@@ -78,8 +78,7 @@ testfile = 'POSCAR'
 
 paths = [ 
 # '/fslhome/bch/cluster_expansion/vcmesh/mt_fcc',
-        '/fslhome/bch/cluster_expansion/vcmesh/mt_bcc'
-        ]
+        '/fslhome/bch/cluster_expansion/vcmesh/mt_grid17Aug/bestRun' ]
 # ,
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_cub',
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_fo10']
@@ -106,31 +105,23 @@ paths = [
 #           '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_fccOutOF05',
 #          '/fslhome/bch/cluster_expansion/vcmesh/sc_fOut03',
 #          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc04',
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc05',
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc06',
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc07',
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc08',
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc09', 
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc10', 
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc15',
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc20',   
-#          '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/varyTestsOld/scondvr_wc30',                           
-#          '/fslhome/bch/cluster_expansion/mpmesh/scond_mp']
 
-# paths = ['/fslhome/bch/cluster_expansion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
+# paths = ['/fslhome/bch/cluster_expransion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
-extpath = '/fslhome/bch/cluster_expansion/vcmesh/mueller_data'
+extpaths = ['/bluehome/bch/fsl_groups/fslg_datamining/Mueller']
 # extpath = None
 useSym = False
-# coloring = 'method'
-coloring = 'indiv'
-doLegend = False
+coloring = 'method'
+# coloring = 'indiv'
+doLegend = True
 doLabel = True
+collateMeshMat = True  #gather the mathematica plotting code for the spheres and IBZ for each calculation in a file for each method. 
 smoothFactor = 2.0
-filter = 'Cu_' #string must be in dir name to be included
+filter = '_' #string must be in dir name to be included
 filter2 = None #'Cu_1' #for single structures.  set to None if using filter1 only
 summaryPath = paths[0]
+
+
 
 #count the number of plots:
 iplot = 0
@@ -138,41 +129,60 @@ maxCalcs = 0
 maxNk = 0
 methods = []
 for ipath,path in enumerate(paths):
-    method = path.split('_')[-1]
+    method = path.split('_')[-1].split('/')[0]
     methods.append(method)
     os.chdir(path)
+    if collateMeshMat:
+        meshPlots = open('IBZmeshPlots','w')
     if filter2 == None:
         structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and filter in d])
     else:
         structs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and d==filter2])
     for struct in structs:
+        if collateMeshMat:meshPlots.write('(* {} *)\n'.format(struct))
         os.chdir(struct)
         iplot += 1
         calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
-        if len(calcs)>maxCalcs: maxCalcs = len(calcs)
+        if len(calcs) > maxCalcs: maxCalcs = len(calcs)
+        if collateMeshMat:
+            for calc in calcs:
+                os.chdir(calc)
+                if os.path.exists('cell_IBZmesh.m'):
+                    meshPlots.write('\t(* {} *)\n'.format(calc))
+                    lines = readfile('cell_IBZmesh.m')
+                    lines.append( '\n\n')
+                    meshPlots.writelines(lines)
+                os.chdir('../')          
         os.chdir(path)
-
-#external data is of the form extpath/atom_method/struct.csv.  The csv has energies vs nK
-if not extpath is None:
-    os.chdir(extpath)
-    atoms_methods = sorted([d for d in os.listdir(extpath) if os.path.isdir(d) and filter in d])# os.chdir(extpath)
-    for atom_method in atoms_methods:
-        atom = atom_method.split('_')[0]
-        os.chdir(atom_method)
-        os.system('rm -r .*lock*')
-        for structfile in os.listdir(os.getcwd()):
-            if atom not in structfile:
-                os.system('mv {} {}_{}'.format(structfile,atom,structfile)) #so that file has atom name at beginning
-        if filter2 == None:
-            structfiles = sorted([d for d in os.listdir(os.getcwd()) if os.path.getsize(d)>0])
-        else:
-            structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2 and os.path.getsize(d)>0])
-        for structfile in structfiles:
-            iplot += 1
-            #count number of points in this structfile
-            lines = readfile(structfile)
-            if len(lines)>maxCalcs: maxCalcs = len(lines)     
+    if collateMeshMat:
+        meshPlots.close()
+        
+#external run paths are of the form extmethodpath/atom_convergence/11_atom 
+if not extpaths is None:
+    for ipath,extpath in enumerate(extpaths):
         os.chdir(extpath)
+        method = extpath.split('/')[0]
+        atomdirs = sorted([d for d in os.listdir(extpath) if os.path.isdir(d) and filter in d])# os.chdir(extpath)
+        for dir in atomdirs:
+            atom = dir.split('_')[0]
+            os.chdir(dir)
+#             os.system('rm -r .*lock*')
+            structs = []
+            for item in os.listdir(os.getcwd()): 
+                if os.path.isdir(item):
+                    if item[0].isdigit():
+                        os.system('mv {} {}_{}'.format(item,atom,item.split('_')[0])) #rename to format 'Cu_11' instead of 11_atom
+            for item in os.listdir(os.getcwd()): 
+                if os.path.isdir(item) and (filter2 == None or filter2 in struct):
+                    structs.append(item)
+            for struct in structs:
+                if collateMeshMat: meshPlots.write('(* {} *)'.format(struct))
+                os.chdir(struct)
+                iplot += 1
+                calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
+                if len(calcs)>maxCalcs: maxCalcs = len(calcs)        
+                os.chdir(path)                 
+            os.chdir(extpath)
 
 nplots = iplot 
 if nplots < len(paths): sys.exit('Stop.  Structures do not match filter')      
@@ -181,6 +191,7 @@ data = zeros(nplots,dtype = [('ID', 'S25'),('color', 'S15'),('method', 'S15'),\
                              ('IBZvolcut','float'),('IBZvol','float'),\
                              ('eners', '{}float'.format(maxCalcs)), ('errs', '{}float'.format(maxCalcs)),\
                              ('nKs', '{}int16'.format(maxCalcs)),('ns', '{}int8'.format(maxCalcs))])
+    
 
 # colorsList = []
 # style.use('bmh')
@@ -276,21 +287,25 @@ for ipath, path in enumerate(paths): #my data
             data[iplot]['nKs'][:nDone] = nKs
             data[iplot]['ns'][:nDone] = ns
             data[iplot]['color'] = color
-            method = path.split('_')[-1]
+            method = path.split('_')[-1].split('/')[0]
             data[iplot]['method'] = method
         os.chdir(path)
+        
+        
 # os.chdir(extpath)
 if not extpath is None:
     os.chdir(extpath)
     print; print atoms_methods
     for atom_method in atoms_methods:
         os.chdir(atom_method)
+        if collateMeshMat:
+            meshPlots = open('IBZmeshPlots','w')
+            allMeshesLocal = readfile('{}/IBZmeshPlots'.format(paths[0]))
         if coloring == 'method':
             color = None
             if 'MP' in atom_method: 
 #                 color = colorsList[len(paths)]
                 method = 'MP'
-                
             elif 'Mueller' in atom_method:
 #                 color = colorsList[len(paths)+1]
                 method = 'Mueller'
@@ -301,6 +316,12 @@ if not extpath is None:
         else:
             structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2 and os.path.getsize(d)>0])
         for structfile in structfiles:
+#             if collateMeshMat:
+#                 #read IBZ facets info from local data
+#                 for line in lines:
+#                     if 
+#                 #read KPOINTS file 
+#                 #write facets and spheres to IBZmeshPlots
             if useSym:
                 nops,IBZvolcut,nAtoms = copyData(structfile,data)
             if coloring == 'indiv':
@@ -338,6 +359,8 @@ if not extpath is None:
             data[iplot]['color'] = color
             data[iplot]['method'] = method
         os.chdir(extpath)
+    if collateMeshMat:
+        meshPlots.close()
 nplots = iplot+1 
 
 lines = [' ID , nKIBZ , ener , err, nAtoms, nops,IBZcut\n']  
@@ -388,7 +411,9 @@ for it,plotType in enumerate(plotTypes):
 if coloring == 'method':
     print 'Averaging, plotting method errors'
     nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
-    nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
+    nKstart = 4
+    nKbins = array([(nKstart*(10.0**(1/10.0))**i) for i in range(nbins)])
+    print 'Nkbins',nKbins
     fig = figure()
     ax1 = fig.add_subplot(111)
     xlabel('N k-points (smoothed by factor {})'.format(int(smoothFactor)))
@@ -397,37 +422,48 @@ if coloring == 'method':
     for im,method in enumerate(methods):
         methnKmax = 0 
         binCounts = zeros(nbins,dtype = int32)
-        binErrs = zeros(nbins,dtype = float)
+        binErrsLog = zeros(nbins,dtype = float)
+        binErrsWorst = zeros((nbins,nplots),dtype = float)
         costLogs = zeros(nbins,dtype = float) # "Costs" relative to Si Monkhorst Pack, which has err = 10^3/nK^3 + 10^-3 meV.         
         for iplot in range(nplots):
             if data[iplot]['method'] == method:
                 for icalc in range(data[iplot]['nDone']-1):
                     nK = data[iplot]['nKs'][icalc]
                     if nK>methnKmax: methnKmax = nK
-                    if nK>1:
+                    if nK>=nKstart:
                         for ibin in range(nbins):
                             if abs(log10(nK/nKbins[ibin])) <= log10(smoothFactor)\
                               and nKbins[ibin]<= maxNk:
-                                binErrs[ibin] += data[iplot]['errs'][icalc]
-                                costLogs[ibin] += log10(data[iplot]['errs'][icalc]/(10**3/(nK**3.0)+0.001))
+                                err = data[iplot]['errs'][icalc]
+                                if err > binErrsWorst[ibin,iplot]:
+                                    binErrsWorst[ibin,iplot] = err
+                                binErrsLog[ibin] += log10(err)
+                                costLogs[ibin] += log10(err/(10**3/(nK**3.0)+0.001))
                                 binCounts[ibin] += 1
+#         binErrsWorst2 = binErrsWorst[where(binErrsWorst>0)[0]]
+        binErrsWorstMean = array([mean(binErrsWorst[ibin,:]) for ibin in range(nbins)])
+        mask = where(binErrsWorstMean>0)
+        binErrsWorst2 = binErrsWorstMean[mask[0]]
         mask = where(binCounts>0)
-        binErrs2 = binErrs[mask[0]]
+        binErrsLog2 = binErrsLog[mask[0]]
         binCounts2 = binCounts[mask[0]]
         nKbins2 = nKbins[mask[0]]
         costLogs2 = costLogs[mask[0]]
         nbins2 = len(nKbins2)
-        avgErrs = [binErrs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+        avgErrs = [binErrsLog2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+        avgErrsLins = [10**avgErrs[ibin] for ibin in range(nbins2)]
         avgCostLogs =  [costLogs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
         avgCostLins = [10**avgCostLogs[ibin] for ibin in range(nbins2)]
         methodCostsLogs.append(mean(avgCostLogs))
-        loglog(nKbins2,avgErrs,label = method,\
+        loglog(nKbins2,avgErrsLins,label = method,\
               color = colorsList[im], marker = None)
         loglog(nKbins2,avgCostLins,label = None,\
               color = colorsList[im], marker = None,linestyle=':')
+        loglog(nKbins2,binErrsWorst2,label = None,\
+              color = colorsList[im], marker = None,linestyle='dashed')
         print 'Method',method, 'nKmax',methnKmax, 'avgLogCost', mean(avgCostLogs)
 #         print 'nKs',nKbins2
-#         print 'errs',binErrs2
+#         print 'errs',binErrsLog2
 #         print 'counts',binCounts2
         print 'avgErrs',avgErrs
     legend(loc='lower left',prop={'size':12});
@@ -458,17 +494,19 @@ if useSym:
     writefile(lines,'{}/summaryScaled.csv'.format(summaryPath))    
     print '\nAveraging, plotting with nK scaling of symmetry and nAtoms'
     nbins = int(10*ceil(log10(maxNk)))# 10 bins per decade
-    nKbins = array([(10.0**(1/10.0))**i for i in range(nbins)])
+    nKstart = 4
+    nKbins = array([(nKstart*10.0**(1/10.0))**i for i in range(nbins)])
     fig = figure()
     ax1 = fig.add_subplot(111)
-    smoothFactor *= 2
+    smoothFactor *= 2 #double smoothFactor
     xlabel('N k-points (smoothed by factor {}, scaled by N-atoms and N-sym)'.format(int(smoothFactor)))
     ylabel('Error (meV)')
     methodCostsLogs = []
     for im,method in enumerate(methods):
         methnKmax = 0 
         binCounts = zeros(nbins,dtype = int32)
-        binErrs = zeros(nbins,dtype = float)
+        binErrsLog = zeros(nbins,dtype = float)
+        binErrsWorst = zeros(nbins,dtype = float)
         costLogs = zeros(nbins,dtype = float) # "Costs" relative to Si Monkhorst Pack, which has err = 10^3/nK^3 + 10^-3 meV.         
         for iplot in range(nplots):
             if data[iplot]['method'] == method:
@@ -479,16 +517,20 @@ if useSym:
                         for ibin in range(nbins):
                             if abs(log10(nK/nKbins[ibin])) <= log10(smoothFactor)\
                               and nKbins[ibin]<= maxNk:
-                                binErrs[ibin] += data[iplot]['errs'][icalc]
-                                costLogs[ibin] += log10(data[iplot]['errs'][icalc]/(10**3/(nK**3.0)+0.001))
+                                err = data[iplot]['errs'][icalc]
+                                if err > binErrsWorst[ibin]:
+                                    binErrsWorst[ibin] = err
+                                binErrsLog[ibin] += err
+                                costLogs[ibin] += log10(err/(10**3/(nK**3.0)+0.001))
                                 binCounts[ibin] += 1
         mask = where(binCounts>0)
-        binErrs2 = binErrs[mask[0]]
+        binErrsLog2 = binErrsLog[mask[0]]
+        binErrsWorst2 = binErrsWorst[mask[0]]
         binCounts2 = binCounts[mask[0]]
         nKbins2 = nKbins[mask[0]]
         costLogs2 = costLogs[mask[0]]
         nbins2 = len(nKbins2)
-        avgErrs = [binErrs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
+        avgErrs = [binErrsLog2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
         avgCostLogs =  [costLogs2[ibin]/binCounts2[ibin] for ibin in range(nbins2)]
         avgCostLins = [10**avgCostLogs[ibin] for ibin in range(nbins2)]
         methodCostsLogs.append(mean(avgCostLogs))
@@ -496,9 +538,10 @@ if useSym:
               color = colorsList[im], marker = None)
         loglog(nKbins2,avgCostLins,label = None,\
               color = colorsList[im], marker = None,linestyle=':')
+
         print 'Method',method, 'nKmax',methnKmax, 'avgLogCost', mean(avgCostLogs)
 #         print 'nKs',nKbins2
-#         print 'errs',binErrs2
+#         print 'errs',binErrsLog2
 #         print 'counts',binCounts2
 #         print 'avgErrs',avgErrs
     legend(loc='lower left',prop={'size':12});
