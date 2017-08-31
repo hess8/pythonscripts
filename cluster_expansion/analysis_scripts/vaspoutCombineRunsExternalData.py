@@ -31,9 +31,8 @@ def readSym(dir):
     IBZvol = None
     return nops, IBZvolCut, IBZvol
 
-def copyData(structfile,data):
-    struct = '_'.join(structfile.split('_')[:2])
-    n = structfile.split('_')[1]
+def copyData(struct,data):
+    n = struct.split('_')[1]
     for i,ID in enumerate(data['ID']):
         if struct in ID and n in ID:
             icopy = i
@@ -117,11 +116,9 @@ doLegend = True
 doLabel = True
 collateMeshMat = True  #gather the mathematica plotting code for the spheres and IBZ for each calculation in a file for each method. 
 smoothFactor = 2.0
-filter = '_' #string must be in dir name to be included
+filter = 'Al_' #string must be in dir name to be included
 filter2 = None #'Cu_1' #for single structures.  set to None if using filter1 only
 summaryPath = paths[0]
-
-
 
 #count the number of plots:
 iplot = 0
@@ -166,7 +163,6 @@ if not extpaths is None:
         for dir in atomdirs:
             atom = dir.split('_')[0]
             os.chdir(dir)
-#             os.system('rm -r .*lock*')
             structs = []
             for item in os.listdir(os.getcwd()): 
                 if os.path.isdir(item):
@@ -176,13 +172,12 @@ if not extpaths is None:
                 if os.path.isdir(item) and (filter2 == None or filter2 in struct):
                     structs.append(item)
             for struct in structs:
-                if collateMeshMat: meshPlots.write('(* {} *)'.format(struct))
                 os.chdir(struct)
                 iplot += 1
                 calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
                 if len(calcs)>maxCalcs: maxCalcs = len(calcs)        
-                os.chdir(path)                 
-            os.chdir(extpath)
+                os.chdir('../')
+            os.chdir(extpath)               
 
 nplots = iplot 
 if nplots < len(paths): sys.exit('Stop.  Structures do not match filter')      
@@ -213,8 +208,9 @@ rcParams['axes.edgecolor'] = 'black' # axisbg=axescolor
 rcParams['savefig.facecolor'] = 'white' # axisbg=axescolor
 rcParams['lines.markersize'] = 4.5
 #read all the data 
+#local data
 iplot = -1
-for ipath, path in enumerate(paths): #my data
+for ipath, path in enumerate(paths): 
     print;print path
 #     meshMethod = path.split('/')[-3][:3]+path.split('/')[-1][-3:]
     tag = path.split('/')[-1][-7:]
@@ -229,6 +225,15 @@ for ipath, path in enumerate(paths): #my data
 #         print 'test', istruct, struct
 #         print 'struct',struct
         os.chdir(struct)
+        if collateMeshMat:
+            for calc in calcs:
+                os.chdir(calc)
+                if os.path.exists('cell_IBZmesh.m'):
+                    meshPlots.write('\t(* {} *)\n'.format(calc))
+                    lines = readfile('cell_IBZmesh.m')
+                    lines.append( '\n\n')
+                    meshPlots.writelines(lines)
+                os.chdir('../')          
         if coloring == 'indiv':
 #             if iplot < nplots -1:
             color = rgb2hex(cm.jet(1.*(iplot+1)/float(nplots)))
@@ -289,18 +294,14 @@ for ipath, path in enumerate(paths): #my data
             data[iplot]['color'] = color
             method = path.split('_')[-1].split('/')[0]
             data[iplot]['method'] = method
-        os.chdir(path)
-        
-        
+        os.chdir(path) 
 # os.chdir(extpath)
-if not extpath is None:
-    os.chdir(extpath)
-    print; print atoms_methods
-    for atom_method in atoms_methods:
-        os.chdir(atom_method)
-        if collateMeshMat:
-            meshPlots = open('IBZmeshPlots','w')
-            allMeshesLocal = readfile('{}/IBZmeshPlots'.format(paths[0]))
+
+
+if not extpaths is None:
+    for ipath,extpath in enumerate(extpaths):
+        os.chdir(extpath)
+        method = extpath.split('/')[0]
         if coloring == 'method':
             color = None
             if 'MP' in atom_method: 
@@ -311,56 +312,154 @@ if not extpath is None:
                 method = 'Mueller'
             if method not in methods:
                 methods.append(method)
-        if filter2 == None:
-            structfiles = sorted([d for d in os.listdir(os.getcwd()) if os.path.getsize(d)>0])
-        else:
-            structfiles = sorted([d for d in os.listdir(os.getcwd()) if '_'.join(d.split('_')[:2])==filter2 and os.path.getsize(d)>0])
-        for structfile in structfiles:
-#             if collateMeshMat:
-#                 #read IBZ facets info from local data
-#                 for line in lines:
-#                     if 
-#                 #read KPOINTS file 
-#                 #write facets and spheres to IBZmeshPlots
-            if useSym:
-                nops,IBZvolcut,nAtoms = copyData(structfile,data)
-            if coloring == 'indiv':
-                if iplot < nplots -1:
-                    color = rgb2hex(cm.jet(1.*(iplot+1)/float(nplots)))
-                else:
-                    color = 'k'
-            iplot += 1
-            energies = []
-            nKs = []
-            lines = readfile(structfile)
-            for line in lines:
-                nK = int(line.split('\t')[0])
-                if nK > maxNk: maxNk = nK
-                nKs.append(nK)
-                energies.append(-float(line.split('\t')[1].split('\r')[0]))
-            nKs = array(nKs)
-            energies = array(energies)
-            nDone = len(energies)
-            order = argsort(nKs)
-            energies = energies[order]
-            eref = energies[-1]#the last energy of each struct is that of the most kpoints
-            nKs = sort(nKs)
-            errs = abs(energies-eref)*1000 + 1e-4 #now in meV 
-            struct = '_'.join(structfile.split('_')[:2])
-            data[iplot]['ID'] = atom_method + struct
-            data[iplot]['nAtoms'] = nAtoms
-            if useSym:
-                data[iplot]['nops'] = nops
-                data[iplot]['IBZvolcut'] = IBZvolcut
-            data[iplot]['nDone'] = len(energies)
-            data[iplot]['eners'][:nDone] = energies
-            data[iplot]['errs'][:nDone] = errs
-            data[iplot]['nKs'][:nDone] = nKs
-            data[iplot]['color'] = color
-            data[iplot]['method'] = method
-        os.chdir(extpath)
-    if collateMeshMat:
-        meshPlots.close()
+        if collateMeshMat:
+            meshPlots = open('IBZmeshPlots','w')
+            allMeshesLocal = readfile('{}/IBZmeshPlots'.format(paths[0]))                      
+        atomdirs = sorted([d for d in os.listdir(extpath) if os.path.isdir(d) and filter in d])# os.chdir(extpath)
+        for dir in atomdirs:
+            atom = dir.split('_')[0]
+            os.chdir(dir)
+            structs = []
+            for item in os.listdir(os.getcwd()): 
+                if os.path.isdir(item):
+                    if item[0].isdigit():
+                        os.system('mv {} {}_{}'.format(item,atom,item.split('_')[0])) #rename to format 'Cu_11' instead of 11_atom
+            for item in os.listdir(os.getcwd()): 
+                if os.path.isdir(item) and (filter2 == None or filter2 in struct):
+                    structs.append(item)
+            for struct in structs:
+                if collateMeshMat:
+                    #read sym operators
+                    [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
+                #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
+                    os.chdir(dir)
+                    totatoms = sum(natoms)
+                    atype = 1
+                    aTypes = []
+                    for natom in natoms:
+                        for i in range(natom):
+                            aTypes.append(atype)
+                        atype += 1
+                    aTypes = array(aTypes)
+                    [symopsList, fracsList] = get_spaceGroup(transpose(latticevecs),aTypes,transpose(positions),1e-3,postype.lower()[0] == 'd')
+                    self.nops = len(symopsList)
+                    self.symops = zeros((3,3,self.nops),dtype = float)
+                    for iop in range(len(symopsList)):
+                        self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))
+                    bounds = [[],[]]
+                    blines = readfile('bounds')
+                    for line in blines:
+                        bounds[0].append([float(str) for str in lines.split()[:3]])
+                        bounds[1].append(lines.split()[4]) 
+                    for i, line in allMeshesLocal:
+                        if struct in line:
+                            ilineStruct = i
+                            break
+                os.chdir(struct)
+                iplot += 1
+                energies = []
+                nKs = []
+                ns = [] #the base n of the run run
+                nDone = 0
+                if useSym:
+#                     try:
+                    nops,IBZvolcut,nAtoms = copyData(structfile,data)
+#                     except:
+#                         sys.exit('Stopping. copyData failed. Set useSym to False')
+                for calc in calcs:  
+                    if electronicConvergeFinish(calc):
+                        ener = getEnergy(calc) #in energy/atom
+                        if not areEqual(ener,0,1e-5):
+                            nDone +=1
+                            energies.append(ener)
+#                             if 'vc' in path:
+                            nK = getNkIBZ(calc,'KPOINTS')
+#                             else:
+#                                 nK = getNkIBZ(calc,'IBZKPT')
+                            if nK > maxNk: maxNk = nK
+                            nKs.append(nK)
+                            ns.append(int(calc.split('_')[-1]))
+                    if collateMeshMat:
+                        for j,line in allMeshesLocal[ilineStruct:]:
+                            if calc in line.split():
+                                IBZfacets = allMeshesLocal[ilineStruct+j+1]
+                                meshPlots.write(IBZfacets)
+                                break
+                        klines = readfile('KPOINTS')
+                        ravg = (det(reciplatt)/float(nK))**(1/3.0)
+                        eps = ravg/200
+                        meshPoints = zeros((nK,3),dtype = float)
+                        for i,line in enumerate(klines[3:3+nK]):
+                            meshPointDirect0 = [float(string) for string in line.split()[:3]]
+                            meshPointDirect1 = meshPointDirect0
+                            for j in meshPointDirect1: #get into first BZ
+                                while meshPointDirect1[j] > 0.5: 
+                                    meshPointDirect1[j] -= 1.0
+                                while meshPointDirect1[j] < -0.5:
+                                    meshPointDirect1[j] += 1.0
+                            meshPoint0 = cartFromDirect(meshPointDirect1)
+                            for iop in range(nops):
+                                meshPoint = dot(self.symops[:,:,iop],meshPoint0)
+                                if isOutside(meshPoint,bounds,eps):
+                                    continue
+                                else:
+                                    break
+                            else:
+                                sys.exit('Symmetry operations did not bring kpoint {} {} {} into the IBZ'.format(meshPointDirect0[0],meshPointDirect0[1],meshPointDirect0[2]))   
+                            meshPoints[i,:] = meshPoint  
+
+                            def facetsMeshMathFile(self,cell,tag,color):
+                                '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point'''
+                                strOut = ''
+                                strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
+                                strOut += ';\n p=Graphics3D[{'
+                                cell.mesh = list(trimSmall(array(cell.mesh)))
+                                for ipoint,point in enumerate(cell.mesh):
+                                    if color != None:
+                                        strOut += '{},'.format(color)
+                                    strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
+                                    if ipoint < len(cell.mesh) -1:
+                                        strOut += ','
+                                strOut += '}];\nShow[s,p]'
+                                writefile(strOut,'cell_{}.m'.format(tag))   
+
+                            
+                                
+                #sort by increasing number of kpoints
+                if len(energies)>0: 
+                    iplot += 1
+                    nKs = array(nKs)
+                    energies = array(energies)
+                    ns = array(ns)
+                    order = argsort(nKs)
+            #         print 'struct',struct
+            #         print 'energies',energies
+                    energies = energies[order]
+                    ns = ns[order]
+                    nKs = sort(nKs)
+                    eref = energies[-1]#the last energy of each struct is that of the most kpoints   
+                    errs = abs(energies-eref)*1000 + 1e-4 #now in meV 
+                    data[iplot]['ID'] = '{} {}'.format(struct,tag)
+                    nAtoms = getNatoms('{}/POSCAR'.format(calc))
+                    data[iplot]['nAtoms'] = nAtoms
+                    if useSym:
+                        data[iplot]['nops'] = nops
+                        data[iplot]['IBZvolcut'] = IBZvolcut
+                    data[iplot]['nDone'] = nDone
+                    data[iplot]['eners'][:nDone] = energies
+                    data[iplot]['errs'][:nDone] = errs
+                    data[iplot]['nKs'][:nDone] = nKs
+                    data[iplot]['ns'][:nDone] = ns
+                    data[iplot]['color'] = color
+                    method = path.split('_')[-1].split('/')[0]
+                    data[iplot]['method'] = method
+
+                os.chdir('../')
+            os.chdir(extpath)
+        if collateMeshMat:
+            meshPlots.close()
+
+
 nplots = iplot+1 
 
 lines = [' ID , nKIBZ , ener , err, nAtoms, nops,IBZcut\n']  

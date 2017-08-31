@@ -462,6 +462,7 @@ class dynamicPack():
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
         self.facetsMathFile(BZ,'BZ') 
         self.IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
+        self.writeBounds(self.IBZ)
         self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)));print 'targets are for IBZ, not full BZ'
 #         self.nTargetIBZ = self.nTarget
         self.facetsMathFile(self.IBZ,'IBZ') 
@@ -1199,7 +1200,8 @@ class dynamicPack():
             if ipoint < len(cell.mesh) -1:
                 strOut += ','
         strOut += '}];\nShow[s,p]'
-        writefile(strOut,'cell_{}.m'.format(tag))         
+        writefile(strOut,'cell_{}.m'.format(tag))   
+              
     def facetsMeshVCMathFile(self,BZ,meshFacets):
         '''Output for Mathematica graphics drawing the facets of each mesh point
         cell, as well as the borders of the BZ'''
@@ -1233,3 +1235,10 @@ class dynamicPack():
             if iu < len(bounds[0])-1:
                 print '&&'
         print ', {x, -2, 2}, {y, -2, 2}, {z, -2, 2}, PlotStyle -> Opacity[0.3]]\n'
+        
+        
+    def writeBounds(self,cell):
+        lines = []
+        for ib, u in cell.bounds[0]:
+            lines.append('{} {} {} {}\n'.format(u[0],u[1],u[2],cell.bounds[1][ib]))
+        writefile(lines,'bounds')
