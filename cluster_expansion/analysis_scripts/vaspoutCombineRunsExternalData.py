@@ -159,6 +159,8 @@ if not extpaths is None:
     for ipath,extpath in enumerate(extpaths):
         os.chdir(extpath)
         method = extpath.split('/')[0]
+        if collateMeshMat:
+            meshPlots = open('IBZmeshPlots','w')
         atomdirs = sorted([d for d in os.listdir(extpath) if os.path.isdir(d) and filter in d])# os.chdir(extpath)
         for dir in atomdirs:
             atom = dir.split('_')[0]
@@ -178,7 +180,8 @@ if not extpaths is None:
                 if len(calcs)>maxCalcs: maxCalcs = len(calcs)        
                 os.chdir('../')
             os.chdir(extpath)               
-
+        if collateMeshMat:
+            meshPlots.close()
 nplots = iplot 
 if nplots < len(paths): sys.exit('Stop.  Structures do not match filter')      
 data = zeros(nplots,dtype = [('ID', 'S25'),('color', 'S15'),('method', 'S15'),\
@@ -225,15 +228,7 @@ for ipath, path in enumerate(paths):
 #         print 'test', istruct, struct
 #         print 'struct',struct
         os.chdir(struct)
-        if collateMeshMat:
-            for calc in calcs:
-                os.chdir(calc)
-                if os.path.exists('cell_IBZmesh.m'):
-                    meshPlots.write('\t(* {} *)\n'.format(calc))
-                    lines = readfile('cell_IBZmesh.m')
-                    lines.append( '\n\n')
-                    meshPlots.writelines(lines)
-                os.chdir('../')          
+        calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and os.path.exists('{}/OUTCAR'.format(d))])        
         if coloring == 'indiv':
 #             if iplot < nplots -1:
             color = rgb2hex(cm.jet(1.*(iplot+1)/float(nplots)))
@@ -242,7 +237,7 @@ for ipath, path in enumerate(paths):
         elif coloring == 'method':
 #             color =  colorsList[ipath]     
             color = None
-        calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and os.path.exists('{}/OUTCAR'.format(d))])
+        
         energies = []
         nKs = []
         ns = [] #the base n of the run run
@@ -304,12 +299,12 @@ if not extpaths is None:
         method = extpath.split('/')[0]
         if coloring == 'method':
             color = None
-            if 'MP' in atom_method: 
-#                 color = colorsList[len(paths)]
-                method = 'MP'
-            elif 'Mueller' in atom_method:
-#                 color = colorsList[len(paths)+1]
-                method = 'Mueller'
+#             if 'MP' in method: 
+# #                 color = colorsList[len(paths)]
+#                 method = 'MP'
+#             elif 'Mueller' in method:
+# #                 color = colorsList[len(paths)+1]
+#                 method = 'Mueller'
             if method not in methods:
                 methods.append(method)
         if collateMeshMat:
@@ -328,11 +323,14 @@ if not extpaths is None:
                 if os.path.isdir(item) and (filter2 == None or filter2 in struct):
                     structs.append(item)
             for struct in structs:
+                os.chdir(struct)
                 if collateMeshMat:
                     #read sym operators
-                    [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
+                    #get first run folder
+                    dir1 = os.listdir(os.getcwd())[0]
+                    [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir1)
                 #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
-                    os.chdir(dir)
+                    
                     totatoms = sum(natoms)
                     atype = 1
                     aTypes = []
@@ -341,11 +339,12 @@ if not extpaths is None:
                             aTypes.append(atype)
                         atype += 1
                     aTypes = array(aTypes)
-                    [symopsList, fracsList] = get_spaceGroup(transpose(latticevecs),aTypes,transpose(positions),1e-3,postype.lower()[0] == 'd')
-                    self.nops = len(symopsList)
-                    self.symops = zeros((3,3,self.nops),dtype = float)
+                    [symopsList, fracsList] = get_spaceGroup(transpose(latticevecs),aTypes,positions,1e-3,postype.lower()[0] == 'd')
+#                                               get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
+                    nops = len(symopsList)
+                    symops = zeros((3,3,nops),dtype = float)
                     for iop in range(len(symopsList)):
-                        self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))
+                        symops[:,:,iop] = array(symopsList[iop])
                     bounds = [[],[]]
                     blines = readfile('bounds')
                     for line in blines:
@@ -354,8 +353,7 @@ if not extpaths is None:
                     for i, line in allMeshesLocal:
                         if struct in line:
                             ilineStruct = i
-                            break
-                os.chdir(struct)
+                            break   
                 iplot += 1
                 energies = []
                 nKs = []
@@ -399,7 +397,7 @@ if not extpaths is None:
                                     meshPointDirect1[j] += 1.0
                             meshPoint0 = cartFromDirect(meshPointDirect1)
                             for iop in range(nops):
-                                meshPoint = dot(self.symops[:,:,iop],meshPoint0)
+                                meshPoint = dot(symops[:,:,iop],meshPoint0)
                                 if isOutside(meshPoint,bounds,eps):
                                     continue
                                 else:
