@@ -4,13 +4,13 @@ Comparison plot for different k mesh methods.  Allows reading external data from
 '''
 
 import sys,os,subprocess
-from numpy import zeros,transpose,array,sum,float64,rint,mean,sort,argsort,ceil,log10,int8,int32,where
-from numpy.linalg import norm
+from numpy import zeros,transpose,dot,array,sum,float64,rint,mean,sort,argsort,ceil,log10,int8,int32,where
+from numpy.linalg import norm,det
 from analysisToolsVasp import getEnergy, getNkIBZ,getNatoms, readfile, writefile,electronicConvergeFinish
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 from symmetry import get_lattice_pointGroup, get_spaceGroup #these have vectors as ROWS
-from kmeshroutines import readposcar
+from kmeshroutines import readposcar,cartFromDirect,intoVoronoi
 
 # from plotTools import plotxy
 from pylab import figure,cm,plot,xlabel,ylabel,title,loglog,semilogy,legend,rcParams,style,rc
@@ -20,6 +20,13 @@ from copy import deepcopy
 
 def areEqual(x,y,eps):
     return abs(x-y)<eps
+
+def isOutside(vec,boundaries,eps):
+    for iplane, uvec in enumerate(boundaries[0]): 
+        pvec = uvec*boundaries[1][iplane]           
+        if dot(vec,uvec) > boundaries[1][iplane] + eps: #point is outside this plane
+            return True
+    return False
 
 # def writeSym(self):
 #         writefile(['nops: {}\n'.format(self.nops),'IBZvolCut: {}\n'.format(self.IBZvolCut)],'sym.out')
@@ -142,8 +149,9 @@ for ipath,path in enumerate(paths):
         calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
         if len(calcs) > maxCalcs: maxCalcs = len(calcs)
         if collateMeshMat:
-            for calc in calcs:
+            for ic, calc in enumerate(calcs):
                 os.chdir(calc)
+                if ic == 0: os.system('cp bounds ../')
                 if os.path.exists('cell_IBZmesh.m'):
                     meshPlots.write('\t(* {} *)\n'.format(calc))
                     lines = readfile('cell_IBZmesh.m')
@@ -323,14 +331,19 @@ if not extpaths is None:
                 if os.path.isdir(item) and (filter2 == None or filter2 in struct):
                     structs.append(item)
             for struct in structs:
+                print 'struct',struct
                 os.chdir(struct)
                 if collateMeshMat:
+                    #get bounds from local data
+                    bounds = [[],[]]
+                    blines = readfile('{}/{}/bounds'.format(paths[0],struct))
+                    for line in blines:
+                        bounds[0].append(array([float(str) for str in line.split()[:3]]))
+                        bounds[1].append(float(line.split()[3]) )
                     #read sym operators
                     #get first run folder
                     dir1 = os.listdir(os.getcwd())[0]
                     [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir1)
-                #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
-                    
                     totatoms = sum(natoms)
                     atype = 1
                     aTypes = []
@@ -345,16 +358,10 @@ if not extpaths is None:
                     symops = zeros((3,3,nops),dtype = float)
                     for iop in range(len(symopsList)):
                         symops[:,:,iop] = array(symopsList[iop])
-                    bounds = [[],[]]
-                    blines = readfile('bounds')
-                    for line in blines:
-                        bounds[0].append([float(str) for str in lines.split()[:3]])
-                        bounds[1].append(lines.split()[4]) 
-                    for i, line in allMeshesLocal:
+                    for i, line in enumerate(allMeshesLocal):
                         if struct in line:
                             ilineStruct = i
                             break   
-                iplot += 1
                 energies = []
                 nKs = []
                 ns = [] #the base n of the run run
@@ -364,40 +371,36 @@ if not extpaths is None:
                     nops,IBZvolcut,nAtoms = copyData(structfile,data)
 #                     except:
 #                         sys.exit('Stopping. copyData failed. Set useSym to False')
-                for calc in calcs:  
-                    if electronicConvergeFinish(calc):
-                        ener = getEnergy(calc) #in energy/atom
-                        if not areEqual(ener,0,1e-5):
-                            nDone +=1
-                            energies.append(ener)
+                calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and os.path.exists('{}/OUTCAR'.format(d))])        
+                for ic,calc in enumerate(calcs):
+#                     print 'calc',ic,calc
+#                     if electronicConvergeFinish(calc):
+                    ener = getEnergy(calc) #in energy/atom
+                    if not areEqual(ener,0,1e-5):
+                        nDone +=1
+                        energies.append(ener)
 #                             if 'vc' in path:
-                            nK = getNkIBZ(calc,'KPOINTS')
+                        nK = getNkIBZ(calc,'KPOINTS')
 #                             else:
 #                                 nK = getNkIBZ(calc,'IBZKPT')
-                            if nK > maxNk: maxNk = nK
-                            nKs.append(nK)
-                            ns.append(int(calc.split('_')[-1]))
+                        if nK > maxNk: maxNk = nK
+                        nKs.append(nK)
                     if collateMeshMat:
-                        for j,line in allMeshesLocal[ilineStruct:]:
+                        for j,line in enumerate(allMeshesLocal[ilineStruct:]):
                             if calc in line.split():
                                 IBZfacets = allMeshesLocal[ilineStruct+j+1]
                                 meshPlots.write(IBZfacets)
                                 break
-                        klines = readfile('KPOINTS')
+                        klines = readfile('{}/KPOINTS'.format(calc))
                         ravg = (det(reciplatt)/float(nK))**(1/3.0)
                         eps = ravg/200
                         meshPoints = zeros((nK,3),dtype = float)
                         for i,line in enumerate(klines[3:3+nK]):
                             meshPointDirect0 = [float(string) for string in line.split()[:3]]
-                            meshPointDirect1 = meshPointDirect0
-                            for j in meshPointDirect1: #get into first BZ
-                                while meshPointDirect1[j] > 0.5: 
-                                    meshPointDirect1[j] -= 1.0
-                                while meshPointDirect1[j] < -0.5:
-                                    meshPointDirect1[j] += 1.0
-                            meshPoint0 = cartFromDirect(meshPointDirect1)
+                            meshPoint0 = cartFromDirect(meshPointDirect0,reciplatt)
+                            meshPoint1 = intoVoronoi(meshPointDirect0,reciplatt)                           
                             for iop in range(nops):
-                                meshPoint = dot(symops[:,:,iop],meshPoint0)
+                                meshPoint = dot(symops[:,:,iop],meshPoint1)
                                 if isOutside(meshPoint,bounds,eps):
                                     continue
                                 else:
@@ -419,21 +422,16 @@ if not extpaths is None:
                                     if ipoint < len(cell.mesh) -1:
                                         strOut += ','
                                 strOut += '}];\nShow[s,p]'
-                                writefile(strOut,'cell_{}.m'.format(tag))   
-
-                            
-                                
+                                writefile(strOut,'cell_{}.m'.format(tag))             
                 #sort by increasing number of kpoints
                 if len(energies)>0: 
                     iplot += 1
                     nKs = array(nKs)
                     energies = array(energies)
-                    ns = array(ns)
                     order = argsort(nKs)
             #         print 'struct',struct
             #         print 'energies',energies
                     energies = energies[order]
-                    ns = ns[order]
                     nKs = sort(nKs)
                     eref = energies[-1]#the last energy of each struct is that of the most kpoints   
                     errs = abs(energies-eref)*1000 + 1e-4 #now in meV 
@@ -447,7 +445,6 @@ if not extpaths is None:
                     data[iplot]['eners'][:nDone] = energies
                     data[iplot]['errs'][:nDone] = errs
                     data[iplot]['nKs'][:nDone] = nKs
-                    data[iplot]['ns'][:nDone] = ns
                     data[iplot]['color'] = color
                     method = path.split('_')[-1].split('/')[0]
                     data[iplot]['method'] = method
@@ -464,8 +461,8 @@ lines = [' ID , nKIBZ , ener , err, nAtoms, nops,IBZcut\n']
 for iplot in range(nplots):
     n = data[iplot]['nDone']
     for icalc in range(n):#data[iplot]['eners'][:n].tolist()
-        lines.append('{}_n{},{},{:15.12f},{:15.12f},{},{},{}\n'.format(data[iplot]['ID'],\
-          data[iplot]['ns'][icalc], data[iplot]['nKs'][icalc],\
+        lines.append('{},{},{:15.12f},{:15.12f},{},{},{}\n'.format(data[iplot]['ID'],\
+          data[iplot]['nKs'][icalc],\
           data[iplot]['eners'][icalc],data[iplot]['errs'][icalc],\
           data[iplot]['nAtoms'],data[iplot]['nops'],data[iplot]['IBZvolcut']))
 writefile(lines,'{}/summary.csv'.format(summaryPath)) 

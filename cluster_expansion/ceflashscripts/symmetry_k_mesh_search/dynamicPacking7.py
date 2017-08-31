@@ -462,7 +462,7 @@ class dynamicPack():
         BZ = getVorCell(braggVecs,BZ,'BZ',eps)
         self.facetsMathFile(BZ,'BZ') 
         self.IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
-        self.writeBounds(self.IBZ)
+        self.writeBounds()
         self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)));print 'targets are for IBZ, not full BZ'
 #         self.nTargetIBZ = self.nTarget
         self.facetsMathFile(self.IBZ,'IBZ') 
@@ -1235,10 +1235,9 @@ class dynamicPack():
             if iu < len(bounds[0])-1:
                 print '&&'
         print ', {x, -2, 2}, {y, -2, 2}, {z, -2, 2}, PlotStyle -> Opacity[0.3]]\n'
-        
-        
-    def writeBounds(self,cell):
+            
+    def writeBounds(self):
         lines = []
-        for ib, u in cell.bounds[0]:
-            lines.append('{} {} {} {}\n'.format(u[0],u[1],u[2],cell.bounds[1][ib]))
+        for ib, u in enumerate(self.IBZ.bounds[0]):
+            lines.append('{:12.8f} {:12.8f} {:12.8f} {:12.8f}\n'.format(u[0],u[1],u[2],self.IBZ.bounds[1][ib]))
         writefile(lines,'bounds')
