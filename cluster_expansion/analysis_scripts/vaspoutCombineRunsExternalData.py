@@ -9,8 +9,10 @@ from numpy.linalg import norm,det
 from analysisToolsVasp import getEnergy, getNkIBZ,getNatoms, readfile, writefile,electronicConvergeFinish
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
+sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 from symmetry import get_lattice_pointGroup, get_spaceGroup #these have vectors as ROWS
 from kmeshroutines import readposcar,cartFromDirect,intoVoronoi
+import vorCells
 
 # from plotTools import plotxy
 from pylab import figure,cm,plot,xlabel,ylabel,title,loglog,semilogy,legend,rcParams,style,rc
@@ -218,6 +220,8 @@ rcParams['axes.linewidth'] = 1.0
 rcParams['axes.edgecolor'] = 'black' # axisbg=axescolor
 rcParams['savefig.facecolor'] = 'white' # axisbg=axescolor
 rcParams['lines.markersize'] = 4.5
+
+
 #read all the data 
 #local data
 iplot = -1
@@ -299,23 +303,16 @@ for ipath, path in enumerate(paths):
             data[iplot]['method'] = method
         os.chdir(path) 
 # os.chdir(extpath)
-
-
 if not extpaths is None:
     for ipath,extpath in enumerate(extpaths):
         os.chdir(extpath)
         method = extpath.split('/')[0]
         if coloring == 'method':
             color = None
-#             if 'MP' in method: 
-# #                 color = colorsList[len(paths)]
-#                 method = 'MP'
-#             elif 'Mueller' in method:
-# #                 color = colorsList[len(paths)+1]
-#                 method = 'Mueller'
             if method not in methods:
                 methods.append(method)
         if collateMeshMat:
+            vc = vorCells.vcells()
             meshPlots = open('IBZmeshPlots','w')
             allMeshesLocal = readfile('{}/IBZmeshPlots'.format(paths[0]))                      
         atomdirs = sorted([d for d in os.listdir(extpath) if os.path.isdir(d) and filter in d])# os.chdir(extpath)
@@ -331,9 +328,10 @@ if not extpaths is None:
                 if os.path.isdir(item) and (filter2 == None or filter2 in struct):
                     structs.append(item)
             for struct in structs:
-                print 'struct',struct
+                if collateMeshMat:meshPlots.write('(* {} *)\n'.format(struct))
                 os.chdir(struct)
                 if collateMeshMat:
+                    print struct,
                     #get bounds from local data
                     bounds = [[],[]]
                     blines = readfile('{}/{}/bounds'.format(paths[0],struct))
@@ -374,6 +372,8 @@ if not extpaths is None:
                 calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and os.path.exists('{}/OUTCAR'.format(d))])        
                 for ic,calc in enumerate(calcs):
 #                     print 'calc',ic,calc
+                    if calc == '5_kpoints':
+                        'pause'
 #                     if electronicConvergeFinish(calc):
                     ener = getEnergy(calc) #in energy/atom
                     if not areEqual(ener,0,1e-5):
@@ -386,19 +386,20 @@ if not extpaths is None:
                         if nK > maxNk: maxNk = nK
                         nKs.append(nK)
                     if collateMeshMat:
-                        for j,line in enumerate(allMeshesLocal[ilineStruct:]):
-                            if calc in line.split():
-                                IBZfacets = allMeshesLocal[ilineStruct+j+1]
-                                meshPlots.write(IBZfacets)
-                                break
+                        meshPlots.write('\t(* {} *)\nWeights:\n'.format(calc))
+                        IBZfacets = allMeshesLocal[ilineStruct+2] #just use the first calc's
+                        meshPlots.write(IBZfacets)
                         klines = readfile('{}/KPOINTS'.format(calc))
-                        ravg = (det(reciplatt)/float(nK))**(1/3.0)
-                        eps = ravg/200
-                        meshPoints = zeros((nK,3),dtype = float)
+                        ravg = (det(reciplatt)/nK/nops)**(1/3.0)
+                        rpacking = ravg*(0.52/0.74)**(1/3.0) #chosen for best packing possible
+                        eps = rpacking/100
+#                         meshPoints = zeros((nK,3),dtype = float)
+                        mesh = []
+                        extWeights = []
                         for i,line in enumerate(klines[3:3+nK]):
                             meshPointDirect0 = [float(string) for string in line.split()[:3]]
                             meshPoint0 = cartFromDirect(meshPointDirect0,reciplatt)
-                            meshPoint1 = intoVoronoi(meshPointDirect0,reciplatt)                           
+                            meshPoint1 = intoVoronoi(meshPoint0,reciplatt)                       
                             for iop in range(nops):
                                 meshPoint = dot(symops[:,:,iop],meshPoint1)
                                 if isOutside(meshPoint,bounds,eps):
@@ -407,22 +408,21 @@ if not extpaths is None:
                                     break
                             else:
                                 sys.exit('Symmetry operations did not bring kpoint {} {} {} into the IBZ'.format(meshPointDirect0[0],meshPointDirect0[1],meshPointDirect0[2]))   
-                            meshPoints[i,:] = meshPoint  
-
-                            def facetsMeshMathFile(self,cell,tag,color):
-                                '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point'''
-                                strOut = ''
-                                strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-                                strOut += ';\n p=Graphics3D[{'
-                                cell.mesh = list(trimSmall(array(cell.mesh)))
-                                for ipoint,point in enumerate(cell.mesh):
-                                    if color != None:
-                                        strOut += '{},'.format(color)
-                                    strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
-                                    if ipoint < len(cell.mesh) -1:
-                                        strOut += ','
-                                strOut += '}];\nShow[s,p]'
-                                writefile(strOut,'cell_{}.m'.format(tag))             
+                            mesh.append(meshPoint)
+                            wght = float(line.split()[3])
+                            extWeights.append(wght)
+                            meshPlots.write('orig {} {:8.6f}\n'.format(i,wght))
+                        vweights = vc.vc(mesh,bounds,rpacking,eps)
+                        for i,point in enumerate(mesh):
+                            meshPlots.write('vcll {} {:8.6f}\n'.format(i,vweights[i]))       
+                        strOut = 'p=Graphics3D[{Blue,'
+                        for ipoint,point in enumerate(mesh):
+                            strOut += 'Opacity[0.3],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'\
+                            .format(point[0],point[1],point[2])+ '},'+'{}]'.format(rpacking)
+                            if ipoint < len(mesh) -1:
+                                strOut += ','
+                        strOut += '}];\nShow[s,p]\n\n'
+                        meshPlots.write(strOut)           
                 #sort by increasing number of kpoints
                 if len(energies)>0: 
                     iplot += 1
