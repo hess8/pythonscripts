@@ -236,7 +236,7 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
                             addVec(intersPt,allVerts,eps)
                             addPlane(planesu3[0],planesmag3[0],allPlanes,eps)
                             addPlane(planesu3[1],planesmag3[1],allPlanes,eps)
-                            addPlane(planesu3[2],planesmag3[2],allPlanes,eps)                                 
+                            addPlane(planesu3[2],planesmag3[2],allPlanes,eps)                                                                
     if len(allVerts)>0:
         #keep only the vertices that can be reached without crossing any plane
         newVerts = []
