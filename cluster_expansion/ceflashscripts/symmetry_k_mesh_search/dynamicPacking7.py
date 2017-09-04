@@ -516,9 +516,9 @@ class dynamicPack():
             for j, jpoint in enumerate(neighs):
                 vec = (jpoint - point)/2
                 mag = norm(vec)
+#                 print 'neighs',j,jpoint, vec, norm(vec)
                 boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
                 boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
-#                 print 'neighs',j,jpoint, vec, norm(vec)
             boundVecs.sort(order = 'mag') 
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
             self.IBZ.weights.append(pointCell.volume)
