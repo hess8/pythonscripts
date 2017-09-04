@@ -60,6 +60,15 @@ def trimSmall(list_mat):
     list_mat[low_values_indices] = 0.0
     return list_mat
 
+def addPlane(u,mag,planeList,eps):
+    '''Add plane to a list that is of the form [[u's],[mags]]'''
+    for ip,u2 in enumerate(planeList[0]):
+        if allclose(u,u2,eps) and areEqual(mag,planeList[1][ip],eps):
+            break
+    else:
+        planeList[0].append(u)
+        planeList[1].append(mag)
+
 def addVec(vec,list,eps):
     '''adds a vector to a list of vectors if it's not in the list '''
     if among(vec,list,eps):
@@ -86,25 +95,42 @@ def cartFromDirect(self,Lvs,dirvec):
     operation'''
     return dot(Lvs, transpose(dirvec))
 
-def threePlaneIntersect(rRows):  
+def threePlaneIntersect(uRows,mags):  
     '''This routine is for three planes that will intersect at only one point, 
     as borders of facets, as we have for the Voronoi cell boundaries. 
     Planes are given by normals to ro, at the point ro.  All points r in the
-    plane obey dot(r,ro) = ro^2 = dot(ro,ro)
+    plane obey dot(r,ro) = dot(ro,ro) = ro^2 
       If they intersect, then 
-        inv[[[xo,yo,zo]
+        inv([[xo,yo,zo]
         [x1,y1,z1]
-        [x2,y2,z2]] }  (ro^2,r1^2,r2^2) has a solution
+        [x2,y2,z2]] }  is not singular
+        
+    Or, more useful when we have some ro's that are zero:
+      dot(r,uo) = ro defines points on the plane
+      If they intersect, then 
+        [[uxo,uyo,uzo]
+        [ux1,uy1,uz1]
+        [ux2,uy2,uz2]] } * [rx,ry,yz] = [ro1,ro2,ro3]
+        
+        Then the intersection point is
+        
+        [rx,ry,rz]  = 
+      
+        inv([[uxo,uyo,uzo]
+        [ux1,uy1,uz1]
+        [ux2,uy2,uz2]] } * (ro,r1,r2).  
+        This should work even when ro = r1 = r2 =0, 
+        which returns (0,0,0), the origin
+      
     '''
-    rSq = array([dot(rRows[0],rRows[0]),dot(rRows[1],rRows[1]),dot(rRows[2],rRows[2])])
     try:
-        invrRows = inv(rRows)
+        invuMat = inv(array(uRows))
         invOK = True
     except:
         invOK = False
         return None
     if invOK:
-        point = trimSmall(dot(invrRows,rSq))  
+        point = trimSmall(dot(invuMat,mags))  
         if norm(point) < 100:
             return point
         else:
@@ -190,54 +216,49 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
     '''
     keepLabels = []
     checkNext = True
-    allPlanes = [cell.bounds[0][i]*cell.bounds[1][i] for i in range(len(cell.bounds[0]))]
+    allPlanes = [[cell.bounds[0][i] for i in range(len(cell.bounds[0]))], [cell.bounds[1][i] for i in range(len(cell.bounds[0]))]]
     allVerts = deepcopy(cell.fpoints)
     for ig  in grp:
         bndsLabels.append(ig)
     pairs = list(combinations(bndsLabels,2))
     for ig in grp:
         for pair in pairs:
-            planes3 = [boundVecs[ig]['vec']]
-            if not ig in pair:# or ig in keepLabels):
-                planes3.append(boundVecs[pair[0]]['vec'])
-                planes3.append(boundVecs[pair[1]]['vec'])
-                intersPt = threePlaneIntersect(planes3)   
+            planesu3 = [boundVecs[ig]['uvec']]
+            planesmag3 = [boundVecs[ig]['mag']]
+            if not ig in pair:
+                planesu3.append(boundVecs[pair[0]]['uvec'])
+                planesmag3.append(boundVecs[pair[0]]['mag'])
+                planesu3.append(boundVecs[pair[1]]['uvec'])
+                planesmag3.append(boundVecs[pair[1]]['mag'])
+                intersPt = threePlaneIntersect(planesu3,planesmag3) 
                 if not intersPt is None:
                     if not isOutside(intersPt,cell.bounds,eps)\
                         and not among(intersPt,allVerts,eps):
                             addVec(intersPt,allVerts,eps)
-                            addVec(planes3[0],allPlanes,eps)
-                            addVec(planes3[1],allPlanes,eps)
-                            addVec(planes3[2],allPlanes,eps)                                
-                                     
+                            addPlane(planesu3[0],planesmag3[0],allPlanes,eps)
+                            addPlane(planesu3[1],planesmag3[1],allPlanes,eps)
+                            addPlane(planesu3[2],planesmag3[2],allPlanes,eps)                                 
     if len(allVerts)>0:
         #keep only the vertices that can be reached without crossing any plane
         newVerts = []
         for vert in allVerts:
-            for plane in allPlanes:
-                if dot(vert,plane)>dot(plane,plane)+eps:
+            for ip,u in enumerate(allPlanes[0]):
+                if dot(vert,u)>allPlanes[1][ip]+eps: 
                     break
             else: 
-                if norm(vert)>30:
-                    'pause'
                 newVerts.append(vert)
         #Start new to remove planes that don't host a vertex.
-        newPlanes = []
         tryPlanes = deepcopy(allPlanes)
-        for ip,plane in enumerate(tryPlanes):
-            for vert in newVerts:
-                if areEqual(dot(vert,plane),dot(plane,plane),eps):
-                    addVec(plane,newPlanes,eps)              
-                    break
         cell.bounds = [[],[]]
-        for plane in newPlanes:
-            normPlane = norm(plane)
-            cell.bounds[0].append(plane/normPlane)
-            cell.bounds[1].append(normPlane)
+        for ip,u in enumerate(tryPlanes[0]):
+            for vert in newVerts:
+                if areEqual(dot(vert,u),tryPlanes[1][ip],eps):
+                    addPlane(u,tryPlanes[1][ip],cell.bounds,eps)         
+                    break
         cell.fpoints = newVerts
 #     self.mathPrintPlanes(allPlanes)
     if len(cell.fpoints) >= 3 and type == 'BZ':
-            checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) 
+        checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) 
     else:
         checkNext = True
     return checkNext,bndsLabels,cell
@@ -316,29 +337,6 @@ def makesDups(op,cell,eps):
 #         else:
 #             print points[i],i,'no map'
     return False,'',''
-
-# def makesAllDups(op,cell,eps):
-#     '''Applies symmetry operator to all facet points. If all facet points are 
-#     moved on top of other facet points, then return true'''
-#     dups = zeros(len(cell.fpoints),dtype = bool)
-#     points = cell.fpoints
-#     print len(points),'points'
-#     for i in range(len(points)):
-#         rpoint = dot(op,points[i])
-#         if allclose(points[i],rpoint,atol=eps):
-# #             print points[i],i,'on axis or mirror'
-#             dups[i] = True
-#             break #no rotation effect...point is on axis or mirror
-#         otherLabels = range(len(points))
-#         otherLabels.pop(i)
-#         for j in otherLabels:
-#             if allclose(rpoint,points[j],atol=eps):
-# #                 print points[i],i,'maps to',j,rpoint
-#                 dups[i] = True
-#                 break
-# #         else:
-# #             print points[i],i,'no map'
-#     return all(dups)
 
 def getVorCell(boundPlanesVecs,cell,type,eps):
     '''Boundaries and vertices of Voronoi cell'''   
@@ -498,9 +496,8 @@ class dynamicPack():
 
     def weightPoints(self,eps):
         '''Find the volume of the Voronoi cell around each point, and use it to weight the point.
-        Search a sphere of radius a few df for neighbors.  Use the half vectors to these points 
+        Search a sphere of radius a few packing radii for neighbors.  Use the half vectors to these points 
         and the vectors to the walls to define the bounding planes.
-        
         Vectors are first taken from each mesh point as the origin, 
         then displaced to their real positions in the cell for possible display'''
         allMPfacets = []
@@ -510,28 +507,28 @@ class dynamicPack():
             pointCell = cell()
             neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
 #             print 'neighLbls',neighLbls
-            boundVecs = zeros(len(neighs)+ len(self.IBZ.bounds[0]),dtype = [('vec', '3float'),('mag', 'float')]) 
+            boundVecs = zeros(len(neighs)+ len(self.IBZ.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')]) 
             for iw, u in enumerate(self.IBZ.bounds[0]):    
                 ro = self.IBZ.bounds[1][iw]
-                d = ro-dot(point,u) 
-                vec = d*u
-                boundVecs[iw]['vec'] = vec  #vector from point to wall
-                boundVecs[iw]['mag'] = norm(vec)
+                d = ro-dot(point,u)
+                boundVecs[iw]['uvec'] = u  #vector from point to wall
+                boundVecs[iw]['mag'] = d
 #                 print 'wall',iw,u, vec, norm(vec)
             for j, jpoint in enumerate(neighs):
                 vec = (jpoint - point)/2
-                boundVecs[j+len(self.IBZ.bounds[0])]['vec'] = vec
+                boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec
                 boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = norm(vec)
 #                 print 'neighs',j,jpoint, vec, norm(vec)
-            boundVecs.sort(order = 'mag')
+            boundVecs.sort(order = 'mag') 
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
             self.IBZ.weights.append(pointCell.volume)
-            
+             
             #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
-
+ 
             allMPfacets.append(pointCell.facets)
-
+ 
         print
+        self.IBZ.weights = [vol/min(self.IBZ.weights) for vol in self.IBZ.weights]
         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
         wtot = sum(self.IBZ.weights)
         stdev = std(self.IBZ.weights)
@@ -539,7 +536,7 @@ class dynamicPack():
         volCheck = 0.1
         volErr = wtot - self.IBZ.volume        
         volErrRel = volErr/self.IBZ.volume
-        
+         
         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
         print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):

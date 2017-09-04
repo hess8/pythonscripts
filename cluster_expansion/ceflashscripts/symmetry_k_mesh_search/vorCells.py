@@ -61,8 +61,8 @@ def trimSmall(list_mat):
 
 def addPlane(u,mag,planeList,eps):
     '''Add plane to a list that is of the form [[u's],[mags]]'''
-    for ip,u2 in enumerate(allPlanes[0]):
-        if allclose(u,u2,eps) and areEqual(mag,allPlanes[1][ip]):
+    for ip,u2 in enumerate(planeList[0]):
+        if allclose(u,u2,eps) and areEqual(mag,planeList[1][ip],eps):
             break
     else:
         planeList[0].append(u)
@@ -94,7 +94,7 @@ def cartFromDirect(self,Lvs,dirvec):
     operation'''
     return dot(Lvs, transpose(dirvec))
 
-def threePlaneIntersect(uRows,invruMat):  
+def threePlaneIntersect(uRows,mags):  
     '''This routine is for three planes that will intersect at only one point, 
     as borders of facets, as we have for the Voronoi cell boundaries. 
     Planes are given by normals to ro, at the point ro.  All points r in the
@@ -123,13 +123,13 @@ def threePlaneIntersect(uRows,invruMat):
       
     '''
     try:
-        invruMat = inv(array(uRows))
+        invuMat = inv(array(uRows))
         invOK = True
     except:
         invOK = False
         return None
     if invOK:
-        point = trimSmall(dot(invruMat,invruMat))  
+        point = trimSmall(dot(invuMat,mags))  
         if norm(point) < 100:
             return point
         else:
@@ -234,33 +234,26 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
                     if not isOutside(intersPt,cell.bounds,eps)\
                         and not among(intersPt,allVerts,eps):
                             addVec(intersPt,allVerts,eps)
-                            addPlane(planesu3[0],planesumag3[0],allPlanes,eps)
-                            addPlane(planesu3[1],planesumag3[1],allPlanes,eps)
-                            addPlane(planesu3[2],planesumag3[2],allPlanes,eps)                                 
+                            addPlane(planesu3[0],planesmag3[0],allPlanes,eps)
+                            addPlane(planesu3[1],planesmag3[1],allPlanes,eps)
+                            addPlane(planesu3[2],planesmag3[2],allPlanes,eps)                                 
     if len(allVerts)>0:
         #keep only the vertices that can be reached without crossing any plane
         newVerts = []
         for vert in allVerts:
             for ip,u in enumerate(allPlanes[0]):
-                if dot(vert,u)>allPlanes[0][ip]+eps:
+                if dot(vert,u)>allPlanes[1][ip]+eps: 
                     break
             else: 
                 newVerts.append(vert)
         #Start new to remove planes that don't host a vertex.
-#         newPlanes = []
         tryPlanes = deepcopy(allPlanes)
-#         for ip,plane in enumerate(tryPlanes):
         cell.bounds = [[],[]]
         for ip,u in enumerate(tryPlanes[0]):
             for vert in newVerts:
-                if areEqual(dot(vert,u),tryPlanes[0][ip],eps):
-                    addPlane(u,tryPlanes[2][ip],cell.bounds,eps)         
+                if areEqual(dot(vert,u),tryPlanes[1][ip],eps):
+                    addPlane(u,tryPlanes[1][ip],cell.bounds,eps)         
                     break
-        
-#         for plane in newPlanes:
-#             normPlane = norm(plane)
-#             cell.bounds[0].append(plane/normPlane)
-#             cell.bounds[1].append(normPlane)
         cell.fpoints = newVerts
 #     self.mathPrintPlanes(allPlanes)
     if len(cell.fpoints) >= 3 and type == 'BZ':
@@ -472,6 +465,7 @@ class vcells():
             allMPfacets.append(pointCell.facets)
  
         print
+        self.IBZ.weights = [vol/min(self.IBZ.weights) for vol in self.IBZ.weights]
         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
         wtot = sum(self.IBZ.weights)
         stdev = std(self.IBZ.weights)
