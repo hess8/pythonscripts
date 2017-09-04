@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -280,18 +280,24 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
  
 #     params0 =     [ 4.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
 #     params1 =     [ 2.0]   #wallPower
-#     params2 =     [ 1.3] #wallfactor
+#     params2 =     [ 0.5, 1.0,1.5] #wallfactor
+#     params3 =     [ 0.05] #wallClose
+#     params4 =     [ 0.0] #wallOffset
+#     params5 =     [0.1, 0.25, 0.5] #dw
+
+#     params0 =     [ 3.5, 4.0, 4.5 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+#     params1 =     [ 1.8, 2.0, 2.5]   #wallPower
+#     params2 =     [ 1.0, 1.3, 1.5] #wallfactor
 #     params3 =     [ 0.05] #wallClose
 #     params4 =     [ 0.0] #wallOffset
 #     params5 =     [ 0.5] #dw
 
-
-    params0 =     [ 3.5, 4.0, 4.5 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
-    params1 =     [ 1.8, 2.0, 2.5]   #wallPower
-    params2 =     [ 1.0, 1.3, 1.5] #wallfactor
+    params0 =     [ 4.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+    params1 =     [ 2.0]   #wallPower
+    params2 =     [ 0.5] #wallfactor
     params3 =     [ 0.05] #wallClose
     params4 =     [ 0.0] #wallOffset
-    params5 =     [ 0.5] #dw
+    params5 =     [0.1] #dw
 
     '''Si:     1.316  4    2    1     0.1    0    0.5    20
                1.29 [ 4.    3.  1.    0.05   0.   0.5 ]] avg nDone 20.0
@@ -374,6 +380,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                     if len(slotsJobIDs[-1]) > 0: #slots have all started work
                         print '\twait', 
                     break #submit one set at a time
+        iminCost = None
         if len(toAnalyze) > 0:
             for ir in range(nRunSlots):
                 if len(slotsJobIDs[ir]) == 0: 
@@ -395,7 +402,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                             if os.path.exists('{}/bestRun'.format(rdir,maindir)):
                                 os.system('rm -r -f {}/bestRun'.format(rdir,maindir))
                             os.system('cp -r {} {}/bestRun'.format(rdir,maindir))
-                                                
+                        if iminCost is None: sys.exit('No minimum cost run found.  All runs likely failed')                        
                         print 'cost for set {}: {:6.2f} {}] avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)
                         print 'vs. min cost {}: {:6.2f} {}] avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
                         ps = all[ioldSet]['params']

@@ -13,11 +13,11 @@ sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/s
 #import kmeshroutines as km
 from kmeshroutines import readposcar
 
-import dynamicPacking6
+import dynamicPacking7
 
-def getVCmesh(dir,method,targetNmesh,meshtype):
+def getVCmesh(dir,targetNmesh,meshtype):
     lastDir = os.getcwd()   
-    meshc = dynamicPacking6.dynamicPack() #instance
+    meshc = dynamicPacking7.dynamicPack() #instance
     [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
 #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
     os.chdir(dir)
@@ -29,7 +29,7 @@ def getVCmesh(dir,method,targetNmesh,meshtype):
             aTypes.append(atype)
         atype += 1
     aTypes = array(aTypes)
-    statusOK = meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,method)
+    statusOK = meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,params)
     os.chdir(lastDir)
     return statusOK
     
@@ -85,6 +85,9 @@ dirs= sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d)])
 meshDet = open('meshDetails.csv','w')
 meshDet.write('Ntarget,Nmesh,std/mean,energy/N,pack frac\n')
 meshDet.close()
+ntarget = int(sys.argv[1])
+type = sys.argv[2]
+params = sys.argv[3:]
 for dir in dirs:
     os.chdir(maindir)
     if testfile in os.listdir(dir): 
@@ -119,7 +122,7 @@ for dir in dirs:
                 print '==============================================' 
                 print
                 newdir = createdir(currdir,n,type) 
-                statusOK = getVCmesh(newdir,method,n,type)
+                statusOK = getVCmesh(newdir,n,type)
                 if not statusOK: #no points or too many in IBZ
                     print 'Zero or too many points in IBZ...skip this n'
 #                     os.system('rm -r {}'.format(newdir))

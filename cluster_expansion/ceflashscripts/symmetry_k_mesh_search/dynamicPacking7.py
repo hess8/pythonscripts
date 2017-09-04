@@ -362,7 +362,7 @@ def getVorCell(boundPlanesVecs,cell,type,eps):
 def getBraggVecs(LVs):
     '''The Bragg vectors are halfway from the origin to a lattice point.
     The planes normal to some of these will be bounding planes of the Voronoi cell '''
-    braggVecs = zeros(5*5*5-1,dtype = [('vec', '3float'),('mag', 'float'),('dep', 'S15')])  
+    braggVecs = zeros(5*5*5-1,dtype = [('uvec', '3float'),('mag', 'float')])  
     #Exclude (0,0,0) in array dimensions (-1)
     ipoint = 0
     for i in range(-2,3):
@@ -371,10 +371,9 @@ def getBraggVecs(LVs):
                 if not (i==j==k==0):
                     vec = trimSmall(0.5*(i*LVs[:,0] + j*LVs[:,1] + k*LVs[:,2]))
 #                     vec = trimSmall(0.5*dot(LVs,array([i,j,k])))
-                    
-                    braggVecs[ipoint]['vec'] = vec
-                    braggVecs[ipoint]['dep'] = '{},{},{}'.format(i,j,k)
-                    braggVecs[ipoint]['mag'] = norm(vec)
+                    mag = norm(vec)
+                    braggVecs[ipoint]['uvec'] = vec/mag
+                    braggVecs[ipoint]['mag'] = mag
                     ipoint+=1
     braggVecs.sort(order = 'mag')
 #     for vec in braggVecs['vec']:
@@ -511,13 +510,14 @@ class dynamicPack():
             for iw, u in enumerate(self.IBZ.bounds[0]):    
                 ro = self.IBZ.bounds[1][iw]
                 d = ro-dot(point,u)
-                boundVecs[iw]['uvec'] = u  #vector from point to wall
+                boundVecs[iw]['uvec'] = u #unit vector stays the same for the plane
                 boundVecs[iw]['mag'] = d
 #                 print 'wall',iw,u, vec, norm(vec)
             for j, jpoint in enumerate(neighs):
                 vec = (jpoint - point)/2
-                boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec
-                boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = norm(vec)
+                mag = norm(vec)
+                boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
+                boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
 #                 print 'neighs',j,jpoint, vec, norm(vec)
             boundVecs.sort(order = 'mag') 
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
@@ -528,7 +528,6 @@ class dynamicPack():
             allMPfacets.append(pointCell.facets)
  
         print
-        self.IBZ.weights = [vol/min(self.IBZ.weights) for vol in self.IBZ.weights]
         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
         wtot = sum(self.IBZ.weights)
         stdev = std(self.IBZ.weights)
