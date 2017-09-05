@@ -460,28 +460,7 @@ class vcells():
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
             self.IBZ.weights.append(pointCell.volume)
         print
-             
-            #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
- 
-#             allMPfacets.append(pointCell.facets)
- 
-#         print
-#         self.IBZ.weights = [vol/min(self.IBZ.weights) for vol in self.IBZ.weights]
-#         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
-#         wtot = sum(self.IBZ.weights)
-#         stdev = std(self.IBZ.weights)
-#         meanV = mean(self.IBZ.weights)
-#         volCheck = 0.1
-#         volErr = wtot - self.IBZ.volume        
-#         volErrRel = volErr/self.IBZ.volume
-#          
-#         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
-#         print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
-#         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
-# #             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
-#             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
-#         else:
-#             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
+       
 #         pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
 #         print 'Packing fraction', pf
 #         meshDet = open('../meshDetails.csv','a')

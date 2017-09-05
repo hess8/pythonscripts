@@ -4,9 +4,11 @@ Comparison plot for different k mesh methods.  Allows reading external data from
 '''
 
 import sys,os,subprocess
-from numpy import zeros,transpose,dot,array,sum,float64,rint,mean,sort,argsort,ceil,log10,int8,int32,where
+from numpy import zeros,transpose,dot,array,sum,float64,rint,mean,sort,argsort,ceil,log10,int8,int32,where,\
+                    std,mean
 from numpy.linalg import norm,det
 from analysisToolsVasp import getEnergy, getNkIBZ,getNatoms, readfile, writefile,electronicConvergeFinish
+from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi, ConvexHull as convexH
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/analysis_scripts/plotting/') 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
@@ -411,10 +413,14 @@ if not extpaths is None:
                             mesh.append(meshPoint)
                             wght = float(line.split()[3])
                             extWeights.append(wght)
-                            meshPlots.write('orig {} {:8.6f}\n'.format(i,wght))
+#                             meshPlots.write('orig {} {:8.6f}\n'.format(i,wght))
+#                         meshPlots.write('Sum: {:8.6f}\n\n'.format(sum(extWeights)))
+                        IBZvol = convexH(mesh).volume
                         vweights = vc.vc(mesh,bounds,rpacking,eps)
+                        meshPlots.write('orig weight vs vorcell:\n')
                         for i,point in enumerate(mesh):
-                            meshPlots.write('vcll {} {:8.6f}\n'.format(i,vweights[i]))       
+                            meshPlots.write('{} \t{:12.8f} {:12.8f}\n'.format(i,extWeights[i],vweights[i]))
+                        meshPlots.write('Sum \t{:12.8f} {:12.8f}\n\n'.format(sum(extWeights),sum(vweights)))     
                         strOut = 'p=Graphics3D[{Blue,'
                         for ipoint,point in enumerate(mesh):
                             strOut += 'Opacity[0.3],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'\
@@ -422,8 +428,22 @@ if not extpaths is None:
                             if ipoint < len(mesh) -1:
                                 strOut += ','
                         strOut += '}];\nShow[s,p]\n\n'
-                        meshPlots.write(strOut)           
-                #sort by increasing number of kpoints
+                        meshPlots.write(strOut) 
+                        wtot = sum(vweights)
+                        stdev = std(vweights)
+                        meanV = mean(vweights)
+                        volCheck = 0.1
+                        volErr = wtot - IBZvol        
+                        volErrRel = volErr/IBZvol
+                        vweights = [vol/min(vweights) for vol in vweights]          
+                        print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZvol
+                        print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
+                        if not areEqual(wtot, IBZvol, volCheck*IBZvol):
+                            print 'orig weight vs vorcell:\n'
+                            for i,w in enumerate(vweights):
+                                print '{} \t{:12.8f} {:12.8f}'.format(i,extWeights[i],vweights[i])
+                            print 'Sum \t{:12.8f} {:12.8f}'.format(sum(extWeights),sum(vweights))
+                            sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.\n ')
                 if len(energies)>0: 
                     iplot += 1
                     nKs = array(nKs)

@@ -60,7 +60,7 @@ search = 'all'
 # nKlims = [2,200]
 # nKdecade = 10 # N per decade
 
-nKlims = [1,800] #fix actual bounds in dynamicPacking 
+nKlims = [1,200] #fix actual bounds in dynamicPacking 
 nKdecade = 10 # N per decade
 
 NnKs = int(ceil(nKdecade*log10(nKlims[1]/nKlims[0])))# 
@@ -303,7 +303,10 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                1.29 [ 4.    3.  1.    0.05   0.   0.5 ]] avg nDone 20.0
                1.16 [ 5.    2.  1.3   0.05   0.   0.5 ]] avg nDone 20.0
                1.269  5     3   0.7   0.05   0    0.5  20
-               1.159  5     2   1.3   0.05   0    0.5  20   
+               1.27 [ 6.    2.    1.    0.05  0.    0.5 ]] avg nDone 20.0
+
+               1.159  5     2   1.3   0.05   0    0.5  20 
+                 
 
       SC   need to test with other semiconductors    
                 1.359    20    4    3    1    0.05   0    0.5
