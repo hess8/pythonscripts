@@ -278,12 +278,12 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     print '\tdw held at {}'.format(sys.argv[1])
 
  
-#     params0 =     [ 4.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
-#     params1 =     [ 2.0]   #wallPower
-#     params2 =     [ 0.5, 1.0,1.5] #wallfactor
-#     params3 =     [ 0.05] #wallClose
-#     params4 =     [ 0.0] #wallOffset
-#     params5 =     [0.1, 0.25, 0.5] #dw
+    params0 =     [ 4.0,6.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+    params1 =     [ 2.0,4.0]   #wallPower
+    params2 =     [ 0.5, 1.0,1.5] #wallfactor
+    params3 =     [ 0.05] #wallClose
+    params4 =     [ 0.0,0.5] #wallOffset
+    params5 =     [0.25, 0.5, 1.0] #dw
 
 #     params0 =     [ 3.5, 4.0, 4.5 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
 #     params1 =     [ 1.8, 2.0, 2.5]   #wallPower
@@ -292,12 +292,12 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params4 =     [ 0.0] #wallOffset
 #     params5 =     [ 0.5] #dw
 
-    params0 =     [ 4.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
-    params1 =     [ 2.0]   #wallPower
-    params2 =     [ 0.5] #wallfactor
-    params3 =     [ 0.05] #wallClose
-    params4 =     [ 0.0] #wallOffset
-    params5 =     [0.1] #dw
+#     params0 =     [ 4.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+#     params1 =     [ 2.0]   #wallPower
+#     params2 =     [ 0.5] #wallfactor
+#     params3 =     [ 0.05] #wallClose
+#     params4 =     [ 0.0] #wallOffset
+#     params5 =     [0.1] #dw
 
     '''Si:     1.316  4    2    1     0.1    0    0.5    20
                1.29 [ 4.    3.  1.    0.05   0.   0.5 ]] avg nDone 20.0

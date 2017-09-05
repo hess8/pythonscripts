@@ -545,7 +545,7 @@ class dynamicPack():
             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
         self.IBZ.weights = self.IBZ.weights/self.ravg**3 #to scale them to order(1).  
         pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
-        print 'Packing fraction', pf
+        print 'Packing fraction (can be >1 from points near boundary', pf
         meshDet = open('../meshDetails.csv','a')
         N = len(self.IBZ.mesh)
         meshDet.write('{},{},{:6.3f},{:6.3f},{:6.3f}\n'.format(self.nTarget,N,stdev/meanV,self.meshEnergy/float(N),pf))

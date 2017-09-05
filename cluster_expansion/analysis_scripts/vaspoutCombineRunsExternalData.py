@@ -312,7 +312,7 @@ if not extpaths is None:
             if method not in methods:
                 methods.append(method)
         if collateMeshMat:
-            vc = vorCells.vcells()
+            vc = vorCells.vcells() #instance
             meshPlots = open('IBZmeshPlots','w')
             allMeshesLocal = readfile('{}/IBZmeshPlots'.format(paths[0]))                      
         atomdirs = sorted([d for d in os.listdir(extpath) if os.path.isdir(d) and filter in d])# os.chdir(extpath)
