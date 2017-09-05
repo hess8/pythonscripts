@@ -464,7 +464,9 @@ class dynamicPack():
 #         self.nTargetIBZ = self.nTarget
         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
-        if 2 < len(self.IBZ.mesh) <= 200:
+        nKmax = 800
+        print 'Limiting nK to {} in dynamicPacking7'.format(nKmax)
+        if 2 < len(self.IBZ.mesh) <= nKmax:
             OK = True
             self.dynamic(eps)
             self.weightPoints(eps)

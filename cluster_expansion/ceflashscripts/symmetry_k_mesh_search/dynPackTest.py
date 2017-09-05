@@ -291,13 +291,13 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params3 =     [ 0.05] #wallClose
 #     params4 =     [ 0.0] #wallOffset
 #     params5 =     [ 0.5] #dw
-
-#     params0 =     [ 4.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
-#     params1 =     [ 2.0]   #wallPower
-#     params2 =     [ 0.5] #wallfactor
-#     params3 =     [ 0.05] #wallClose
-#     params4 =     [ 0.0] #wallOffset
-#     params5 =     [0.1] #dw
+# 
+#     params0 =     [ 4.0,6.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+#     params1 =     [ 2.0 ]   #wallPower
+#     params2 =     [ 0.5 ] #wallfactor
+#     params3 =     [ 0.05 ] #wallClose
+#     params4 =     [ 0.0 ] #wallOffset
+#     params5 =     [ 0.5 ] #dw
 
     '''Si:     1.316  4    2    1     0.1    0    0.5    20
                1.29 [ 4.    3.  1.    0.05   0.   0.5 ]] avg nDone 20.0
@@ -362,6 +362,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     toAnalyze = []
     iwait = 0
     minCost = 100
+    iminCost = None
     bestParams = []
     while len(isetsDone) < nPsets:
         if len(isetsToStart) > 0:
@@ -380,7 +381,6 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                     if len(slotsJobIDs[-1]) > 0: #slots have all started work
                         print '\twait', 
                     break #submit one set at a time
-        iminCost = None
         if len(toAnalyze) > 0:
             for ir in range(nRunSlots):
                 if len(slotsJobIDs[ir]) == 0: 
