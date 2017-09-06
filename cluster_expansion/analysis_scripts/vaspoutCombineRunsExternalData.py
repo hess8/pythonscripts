@@ -118,7 +118,8 @@ paths = [
 
 # paths = ['/fslhome/bch/cluster_expransion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
-extpaths = ['/bluehome/bch/fsl_groups/fslg_datamining/Mueller']
+# extpaths = ['/bluehome/bch/fsl_groups/fslg_datamining/Mueller']
+extpaths = ['/bluehome/bch/fsl_groups/fslg_datamining/Hess']
 # extpath = None
 useSym = False
 coloring = 'method'
@@ -333,7 +334,7 @@ if not extpaths is None:
                 if collateMeshMat:meshPlots.write('(* {} *)\n'.format(struct))
                 os.chdir(struct)
                 if collateMeshMat:
-                    print;print struct,
+                    print;print '(* {} *)'.format(struct),
                     #get bounds from local data
                     bounds = [[],[]]
                     blines = readfile('{}/{}/bounds'.format(paths[0],struct))
@@ -373,6 +374,7 @@ if not extpaths is None:
 #                         sys.exit('Stopping. copyData failed. Set useSym to False')
                 calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and os.path.exists('{}/OUTCAR'.format(d))])        
                 for ic,calc in enumerate(calcs):
+                    print;print '({})'.format(ic), calc
                     ener = getEnergy(calc) #in energy/atom
                     if not areEqual(ener,0,1e-5):
                         nDone +=1
@@ -420,10 +422,10 @@ if not extpaths is None:
 #                         meshPlots.write('Sum: {:8.6f}\n\n'.format(sum(extWeights)))
                         IBZvol = convexH(fpoints).volume
                         vweights = vc.vc(mesh,bounds,rpacking,eps)
-                        meshPlots.write('orig weight vs vorcell:\n')
+                        meshPlots.write('orig weight vs vorcell-normalized:\n')
                         for i,point in enumerate(mesh):
-                            meshPlots.write('{} \t{:12.8f} {:12.8f}\n'.format(i,extWeights[i],vweights[i]))
-                        meshPlots.write('Sum \t{:12.8f} {:12.8f}\n\n'.format(sum(extWeights),sum(vweights)))     
+                            meshPlots.write('{} \t{:12.8f} {:12.8f}\n'.format(i,extWeights[i],vweights[i]/min(vweights)*min(extWeights)))
+                        meshPlots.write('Sum \t{:12.8f} {:12.8f}\n\n'.format(sum(extWeights),sum(vweights)/min(vweights)*min(extWeights)))     
                         strOut = 'p=Graphics3D[{Blue,'
                         for ipoint,point in enumerate(mesh):
                             strOut += 'Opacity[0.3],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'\
@@ -435,7 +437,7 @@ if not extpaths is None:
                         wtot = sum(vweights)
                         stdev = std(vweights)
                         meanV = mean(vweights)
-                        volCheck = 0.1
+                        volCheck = 0.01
                         volErr = wtot - IBZvol        
                         volErrRel = volErr/IBZvol
                         vweights = [vol/min(vweights) for vol in vweights]          
