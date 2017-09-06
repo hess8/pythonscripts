@@ -333,7 +333,7 @@ if not extpaths is None:
                 if collateMeshMat:meshPlots.write('(* {} *)\n'.format(struct))
                 os.chdir(struct)
                 if collateMeshMat:
-                    print struct,
+                    print;print struct,
                     #get bounds from local data
                     bounds = [[],[]]
                     blines = readfile('{}/{}/bounds'.format(paths[0],struct))
@@ -373,10 +373,6 @@ if not extpaths is None:
 #                         sys.exit('Stopping. copyData failed. Set useSym to False')
                 calcs = sorted([d for d in os.listdir(os.getcwd()) if os.path.isdir(d) and os.path.exists('{}/OUTCAR'.format(d))])        
                 for ic,calc in enumerate(calcs):
-#                     print 'calc',ic,calc
-                    if calc == '5_kpoints':
-                        'pause'
-#                     if electronicConvergeFinish(calc):
                     ener = getEnergy(calc) #in energy/atom
                     if not areEqual(ener,0,1e-5):
                         nDone +=1
@@ -388,9 +384,16 @@ if not extpaths is None:
                         if nK > maxNk: maxNk = nK
                         nKs.append(nK)
                     if collateMeshMat:
-                        meshPlots.write('\t(* {} *)\nWeights:\n'.format(calc))
                         IBZfacets = allMeshesLocal[ilineStruct+2] #just use the first calc's
                         meshPlots.write(IBZfacets)
+                        #extract volume from facet points
+                        fpoints = []
+                        flist = IBZfacets.replace('}}],Line[{{','},{').split('},{')
+                        fpoints.append(array([float(comp.replace(',','')) for comp in flist[0].split()[-3:]]))
+                        for string in flist[1:-1]:
+                            fpoints.append(array([float(comp.replace(',','')) for comp in string.split()]))
+                        fpoints.append(array([float(comp.replace(',','')) for comp in flist[-1].split('}')[0].split()[:3]]))
+                        #read kpoints
                         klines = readfile('{}/KPOINTS'.format(calc))
                         ravg = (det(reciplatt)/nK/nops)**(1/3.0)
                         rpacking = ravg*(0.52/0.74)**(1/3.0) #chosen for best packing possible
@@ -415,7 +418,7 @@ if not extpaths is None:
                             extWeights.append(wght)
 #                             meshPlots.write('orig {} {:8.6f}\n'.format(i,wght))
 #                         meshPlots.write('Sum: {:8.6f}\n\n'.format(sum(extWeights)))
-                        IBZvol = convexH(mesh).volume
+                        IBZvol = convexH(fpoints).volume
                         vweights = vc.vc(mesh,bounds,rpacking,eps)
                         meshPlots.write('orig weight vs vorcell:\n')
                         for i,point in enumerate(mesh):
