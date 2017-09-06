@@ -456,11 +456,11 @@ class vcells():
                 mag = norm(vec)
 #                 print 'neighs',j,jpoint, vec, norm(vec)
                 boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
-                boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
-            boundVecs.sort(order = 'mag')
+                boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag           
             verticesOK = False
             while not verticesOK: 
                 verticesOK = True
+                boundVecs.sort(order = 'mag')
                 pointCell = getVorCell(boundVecs,pointCell,'point',eps)
                 for ifac,fpoint in enumerate(pointCell.fpoints):
                     mag = norm(fpoint)

@@ -422,10 +422,6 @@ if not extpaths is None:
 #                         meshPlots.write('Sum: {:8.6f}\n\n'.format(sum(extWeights)))
                         IBZvol = convexH(fpoints).volume
                         vweights = vc.vc(mesh,bounds,rpacking,eps)
-                        meshPlots.write('orig weight vs vorcell-normalized:\n')
-                        for i,point in enumerate(mesh):
-                            meshPlots.write('{} \t{:12.8f} {:12.8f}\n'.format(i,extWeights[i],vweights[i]/min(vweights)*min(extWeights)))
-                        meshPlots.write('Sum \t{:12.8f} {:12.8f}\n\n'.format(sum(extWeights),sum(vweights)/min(vweights)*min(extWeights)))     
                         strOut = 'p=Graphics3D[{Blue,'
                         for ipoint,point in enumerate(mesh):
                             strOut += 'Opacity[0.3],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'\
@@ -433,7 +429,11 @@ if not extpaths is None:
                             if ipoint < len(mesh) -1:
                                 strOut += ','
                         strOut += '}];\nShow[s,p]\n\n'
-                        meshPlots.write(strOut) 
+                        meshPlots.write(strOut)
+                        meshPlots.write('orig weight vs vorcell-normalized:\n')
+                        for i,point in enumerate(mesh):
+                            meshPlots.write('{} \t{:12.8f} {:12.8f}\n'.format(i,extWeights[i],vweights[i]/min(vweights)*min(extWeights)))
+                        meshPlots.write('Sum \t{:12.8f} {:12.8f}\n\n'.format(sum(extWeights),sum(vweights)/min(vweights)*min(extWeights)))      
                         wtot = sum(vweights)
                         stdev = std(vweights)
                         meanV = mean(vweights)

@@ -503,6 +503,7 @@ class dynamicPack():
         then displaced to their real positions in the cell for possible display'''
         allMPfacets = []
         self.IBZ.weights = []
+        maxVertDist = sqrt(3)
         for ip,point in enumerate(self.IBZ.mesh):
             print ip,
             pointCell = cell()
@@ -522,7 +523,26 @@ class dynamicPack():
                 boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
                 boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
             boundVecs.sort(order = 'mag') 
-            pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+#             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+            
+            
+            verticesOK = False
+            while not verticesOK: 
+                verticesOK = True
+                boundVecs.sort(order = 'mag')
+                pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+                for ifac,fpoint in enumerate(pointCell.fpoints):
+                    mag = norm(fpoint)
+                    if mag > maxVertDist *self.rpacking:
+                        print 'vertex point {} > {}) * rpack'.format(ifac,maxVertDist)
+                        verticesOK = False
+                        addPlane(fpoint/mag,mag/2,pointCell.bounds,eps)
+                if not verticesOK:
+                    boundVecs = zeros(len(pointCell.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')])
+                    for ib, u in enumerate(pointCell.bounds[0]):
+#                         print 'ib',ib
+                        boundVecs[ib]['uvec'] = u
+                        boundVecs[ib]['mag'] = pointCell.bounds[1][ib]            
             self.IBZ.weights.append(pointCell.volume)
              
             #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
@@ -540,14 +560,14 @@ class dynamicPack():
          
         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
         print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
-        if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
-#             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
-            sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
-        else:
-            print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
+#         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
+# #             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
+#             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
+#         else:
+#             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
         self.IBZ.weights = self.IBZ.weights/self.ravg**3 #to scale them to order(1).  
         pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
-        print 'Packing fraction (can be >1 from points near boundary', pf
+        print 'Packing fraction (can be >1 from points near boundary):', pf
         meshDet = open('../meshDetails.csv','a')
         N = len(self.IBZ.mesh)
         meshDet.write('{},{},{:6.3f},{:6.3f},{:6.3f}\n'.format(self.nTarget,N,stdev/meanV,self.meshEnergy/float(N),pf))
