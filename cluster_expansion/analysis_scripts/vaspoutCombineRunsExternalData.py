@@ -441,14 +441,14 @@ if not extpaths is None:
                         volErr = wtot - IBZvol        
                         volErrRel = volErr/IBZvol
                         vweights = [vol/min(vweights) for vol in vweights]          
-                        print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZvol
-                        print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
-                        if not areEqual(wtot, IBZvol, volCheck*IBZvol):
-                            print 'orig weight vs vorcell:\n'
-                            for i,w in enumerate(vweights):
-                                print '{} \t{:12.8f} {:12.8f}'.format(i,extWeights[i],vweights[i])
-                            print 'Sum \t{:12.8f} {:12.8f}'.format(sum(extWeights),sum(vweights))
-                            sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.\n ')
+#                         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', IBZvol
+#                         print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
+#                         if not areEqual(wtot, IBZvol, volCheck*IBZvol):
+                        print 'orig weight vs vorcell:'
+                        for i,w in enumerate(vweights):
+                            print '{} \t{:12.8f} {:12.8f}'.format(i,extWeights[i],vweights[i]/min(vweights)*min(extWeights))
+                        print 'Sum \t{:12.8f} {:12.8f}'.format(sum(extWeights),sum(vweights)/min(vweights)*min(extWeights))
+#                             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.\n ')
                 if len(energies)>0: 
                     iplot += 1
                     nKs = array(nKs)

@@ -438,6 +438,7 @@ class vcells():
         then displaced to their real positions in the cell for possible display'''
         allMPfacets = []
         self.IBZ.weights = []
+        maxVertDist = sqrt(3)
         for ip,point in enumerate(self.IBZ.mesh):
             print ip,
             pointCell = cell()
@@ -456,8 +457,23 @@ class vcells():
 #                 print 'neighs',j,jpoint, vec, norm(vec)
                 boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
                 boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
-            boundVecs.sort(order = 'mag') 
-            pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+            boundVecs.sort(order = 'mag')
+            verticesOK = False
+            while not verticesOK: 
+                verticesOK = True
+                pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+                for ifac,fpoint in enumerate(pointCell.fpoints):
+                    mag = norm(fpoint)
+                    if mag > maxVertDist *self.rpacking:
+                        print 'vertex point {} > {}) * rpack'.format(ifac,maxVertDist)
+                        verticesOK = False
+                        addPlane(fpoint/mag,mag/2,pointCell.bounds,eps)
+                if not verticesOK:
+                    boundVecs = zeros(len(pointCell.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')])
+                    for ib, u in enumerate(pointCell.bounds[0]):
+                        print 'ib',ib
+                        boundVecs[ib]['uvec'] = u
+                        boundVecs[ib]['mag'] = pointCell.bounds[1][ib]
             self.IBZ.weights.append(pointCell.volume)
         print
        
