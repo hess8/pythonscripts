@@ -460,14 +460,6 @@ class vcells():
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
             self.IBZ.weights.append(pointCell.volume)
         print
-       
-#         pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
-#         print 'Packing fraction', pf
-#         meshDet = open('../meshDetails.csv','a')
-#         N = len(self.IBZ.mesh)
-#         meshDet.write('{},{},{:6.3f},{:6.3f},{:6.3f}\n'.format(self.nTarget,N,stdev/meanV,self.meshEnergy/float(N),pf))
-#         meshDet.flush()
-#         meshDet.close()
         
     def meshInitCubic(self,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
