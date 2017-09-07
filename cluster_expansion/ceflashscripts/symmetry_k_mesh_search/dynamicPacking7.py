@@ -640,11 +640,9 @@ class dynamicPack():
         else:
             shift = array([1,1,1])/8.0 * aKcubConv
             self.IBZ,nInside = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
-        
-        #Search over shift and rotation to find the most possible points inside
 
     def searchNmax(self,cubicLVs,aKcubConv,sites):
-        '''Test an entire grid of init values'''
+        '''Test an entire grid of init shift and rotation values'''
         cubicLVs0 = cubicLVs
         nShift = 5
         nTh = 10
@@ -721,7 +719,9 @@ class dynamicPack():
                     for site in sites:
                         ik+=1
                         kpoint = lvec + shift + site
-                        if isInside(kpoint,IBZ.bounds,self.dw*self.wallClose):  #Can't be closer than self.dw*self.wallClose to a wall
+                        ds = [norm(fpoint-kpoint) for fpoint in self.IBZ.fpoints]
+#                         if isInside(kpoint,IBZ.bounds,self.dw*self.wallClose) and min(ds)>=self.rpacking:  #keep points away from fixed vertices
+                        if isInside(kpoint,IBZ.bounds,self.dw*self.wallClose):
                             nInside += 1
                             IBZ.mesh.append(kpoint) 
 #         print 'Points inside', nInside
@@ -1191,11 +1191,12 @@ class dynamicPack():
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
         strOut += ';\n p=Graphics3D[{'
         cell.mesh = list(trimSmall(array(cell.mesh)))
-        for ipoint,point in enumerate(cell.mesh):
+        allMesh = cell.mesh + cell.fpoints
+        for ipoint,point in enumerate(allMesh):
             if color != None:
                 strOut += '{},'.format(color)
             strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
-            if ipoint < len(cell.mesh) -1:
+            if ipoint < len(allMesh) -1:
                 strOut += ','
         strOut += '}];\nShow[s,p]'
         writefile(strOut,'cell_{}.m'.format(tag))   
