@@ -224,7 +224,6 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
     allPlanes = [[cell.bounds[0][i] for i in range(len(cell.bounds[0]))], [cell.bounds[1][i] for i in range(len(cell.bounds[0]))]]
     allVerts = deepcopy(cell.fpoints)
     allSAngles = copy(cell.SAngles)
-#     allcornerUs = copy(cell.cornerUs)
     for ig  in grp:
         bndsLabels.append(ig)
     pairs = list(combinations(bndsLabels,2))
@@ -245,8 +244,6 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
                             sA = solidAngle(planesu3)
                             allSAngles.append(sA)
                             sumUs = -planesu3[0]-planesu3[1]-planesu3[2]
-#                             cornerU = sumUs/norm(sumUs)
-#                             allcornerUs.append(cornerU)
 #                             print 'solid angle factor', 4*pi/sA
                             addPlane(planesu3[0],planesmag3[0],allPlanes,eps)
                             addPlane(planesu3[1],planesmag3[1],allPlanes,eps)
@@ -263,7 +260,6 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
             else: 
                 newVerts.append(vert)
                 newSAngles.append(allSAngles[iv])
-#                 newCUs.append(allcornerUs[iv])
         #Start new to remove planes that don't host a vertex.
         tryPlanes = deepcopy(allPlanes)
         cell.bounds = [[],[]]
@@ -274,7 +270,6 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
                     break
         cell.fpoints = newVerts
         cell.SAngles = newSAngles
-#         cell.cornerUs = newCUs
 #     self.mathPrintPlanes(allPlanes)
     if len(cell.fpoints) >= 3 and type == 'BZ':
         checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) 
@@ -770,7 +765,12 @@ class dynamicPack():
         else:
             sys.exit('stop. Type error in meshCubic.')
         for i,fpoint in enumerate(self.IBZ.fpoints):
-            self.IBZ.cpoints.append(fpoint + self.IBZ.cornerUs[i]*self.rpacking)        
+            cornerPoint = fpoint + self.IBZ.cornerUs[i]*self.rpacking
+            ds = [100]
+            if i > 0:
+                ds = [norm(cpoint-cornerPoint) for cpoint in self.IBZ.cpoints]
+            if min(ds) >= 2.0*self.rpacking:
+                self.IBZ.cpoints.append(cornerPoint)        
         if self.initSrch is not None:
             self.IBZ = self.searchNmax(cubicLVs,aKcubConv,sites) 
         else:
@@ -995,7 +995,7 @@ class dynamicPack():
 #                 self.forces[i] += -self.vertexPull*(d/self.df)**(-p)*(ri-vert)/d #pull not push
 #                 etot +=  self.vertexPull*self.df/abs(-p+1)*(d/self.df)**(-p+1)
 #            inter-point forces
-            for j, rj in enumerate(IBZvecs):
+            for j, rj in enumerate(IBZvecs+self.IBZ.cpoints):
                 if i!=j:
                     d = norm(ri-rj)
 #                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
