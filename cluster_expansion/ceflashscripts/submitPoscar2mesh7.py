@@ -3,7 +3,7 @@
 '''Define relaxed incommensurate kpoint mesh for this directory, and write INCAR'''
     
 import sys,os,subprocess
-from numpy import zeros,transpose,array,sum,float64,rint
+from numpy import zeros,transpose,array,sum,float64,rint,pi
 from copy import copy, deepcopy
 from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
