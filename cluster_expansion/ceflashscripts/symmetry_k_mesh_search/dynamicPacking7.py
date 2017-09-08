@@ -580,6 +580,7 @@ class dynamicPack():
         and the vectors to the walls to define the bounding planes.
         Vectors are first taken from each mesh point as the origin, 
         then displaced to their real positions in the cell for possible display'''
+        maxVertDist = sqrt(3)
         pointCell = cell()
         neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
         #             print 'neighLbls',neighLbls
@@ -596,13 +597,40 @@ class dynamicPack():
         #                 print 'neighs',j,jpoint, vec, norm(vec)
             boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
             boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
-        boundVecs.sort(order = 'mag') 
-        pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+        #use this for no corner rounding: 
+#         boundVecs.sort(order = 'mag') 
+#         pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+
+        #corner rounding code:
+        verticesOK = False
+        while not verticesOK: 
+            verticesOK = True
+            boundVecs.sort(order = 'mag')
+            pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+            for ifac,fpoint in enumerate(pointCell.fpoints):
+                mag = norm(fpoint)
+                if mag > maxVertDist *self.rpacking:
+                    print 'vertex point {} > {}) * rpack'.format(ifac,maxVertDist)
+                    verticesOK = False
+                    addPlane(fpoint/mag,mag/2,pointCell.bounds,eps)
+            if not verticesOK:
+                boundVecs = zeros(len(pointCell.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')])
+                for ib, u in enumerate(pointCell.bounds[0]):
+#                         print 'ib',ib
+                    boundVecs[ib]['uvec'] = u
+                    boundVecs[ib]['mag'] = pointCell.bounds[1][ib]         
+
+
+
+
 #         print 'VC volume',pointCell.volume, 'for ',point
         pfCubic = 0.5235987755982988
         volGenPoint = (2.0*self.rpacking)**3*pfCubic/self.pf
         return pointCell.volume/volGenPoint * self.nops
-        
+
+
+
+                    
     def weightPoints(self,eps):
         '''Vertex points weighted by solid angle and symmetry partners.  All others by nops'''
         self.IBZ.weights = []
