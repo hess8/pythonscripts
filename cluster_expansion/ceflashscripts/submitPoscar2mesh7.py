@@ -36,7 +36,7 @@ os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17/r
 ntarget = 3
 type = 'bcc'
 #        ['power','wallPower-force','wallfactor','wallClose','wallOffset','dw' ]
-params =    ['4.00',   '2.0 ',        '0.5',      '0.05',      '0.00',   '1.0']
+params =    ['4.00',   '2.0 ',        '0.1',      '0.05',      '0.00',   '1.0']
 statusOK,nops = getVCmesh(os.getcwd(),ntarget,type,params) 
 if statusOK:
     writefile([],'OK')  

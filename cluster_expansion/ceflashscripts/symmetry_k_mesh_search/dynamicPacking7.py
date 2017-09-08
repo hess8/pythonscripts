@@ -773,9 +773,13 @@ class dynamicPack():
                 self.IBZ.cpoints.append(cornerPoint)        
         if self.initSrch is not None:
             self.IBZ = self.searchNmax(cubicLVs,aKcubConv,sites) 
+            print 'Allowing corner points to relax'
+            self.IBZ.mesh = self.IBZ.mesh + self.IBZ.cpoints
+            self.IBZ.cpoints = []
         else:
             shift = array([1,1,1])/8.0 * aKcubConv
             self.IBZ,nInside = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
+            
 
     def searchNmax(self,cubicLVs,aKcubConv,sites):
         '''Test an entire grid of init shift and rotation values'''
