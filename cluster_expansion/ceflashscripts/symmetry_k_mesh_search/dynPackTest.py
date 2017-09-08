@@ -86,7 +86,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=0:40:00\n')
+    jobFile.write('#SBATCH --time=2:00:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=1G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -282,7 +282,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     params1 =     [ 2.0,4.0]   #wallPower
     params2 =     [ 0.5, 1.0,1.5] #wallfactor
     params3 =     [ 0.05] #wallClose
-    params4 =     [ 0.0,0.5] #wallOffset
+    params4 =     [ 0.0] #wallOffset
     params5 =     [0.25, 0.5, 1.0] #dw
 
 #     params0 =     [ 3.5, 4.0, 4.5 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
