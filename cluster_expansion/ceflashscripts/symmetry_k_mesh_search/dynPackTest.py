@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -288,29 +288,30 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 
 
 # 
-    params0 =     [ 6.0]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
-    params1 =     [ 4.0, 3.0]   #wallPower
-    params2 =     [ 0.2, 0.5, 1.0] #wallfactor
-    params3 =     [ 0.05] #wallClose
-    params4 =     [ 0.0] #wallOffset
-    params5 =     [ 0.5] #dw
+#     params0 =     [ 6.0]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+#     params1 =     [ 4.0, 3.0]   #wallPower
+#     params2 =     [ 0.2, 0.5, 1.0] #wallfactor
+#     params3 =     [ 0.05] #wallClose
+#     params4 =     [ 0.0] #wallOffset
+#     params5 =     [ 0.5] #dw
 
-# ['4.00',   '2.0 ',        '0.1',      '0.05',      '0.00',   '1.0']
-#     params0 =     [ 4.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
-#     params1 =     [ 2.0 ]   #wallPower
-#     params2 =     [ 0.5 ] #wallfactor
-#     params3 =     [ 0.05 ] #wallClose
-#     params4 =     [ 0.0 ] #wallOffset
-#     params5 =     [ 1.0 ] #dw
+    params0 =     [ 5.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+    params1 =     [ 2.0 ]   #wallPower
+    params2 =     [ 1.3 ] #wallfactor
+    params3 =     [ 0.05, 0.1, 0.2,0.5,1.0 ] #wallClose
+    params4 =     [ 0.0 ] #wallOffset
+    params5 =     [ 0.5 ] #dw
+    
 
-    '''Si:     1.316  4    2    1     0.1    0    0.5    20
+    '''Si:     1.00 [ 5.    2.    1.3   0.05  0.    0.5 ]] avg nDone 18.0
+
+    *1.16 [ 5.    2.  1.3   0.05   0.   0.5 ]] avg nDone 20.0
+                1.316  4    2    1     0.1    0    0.5    20
                1.29 [ 4.    3.  1.    0.05   0.   0.5 ]] avg nDone 20.0
-               1.16 [ 5.    2.  1.3   0.05   0.   0.5 ]] avg nDone 20.0
+               
                1.269  5     3   0.7   0.05   0    0.5  20
                1.27 [ 6.    2.    1.    0.05  0.    0.5 ]] avg nDone 20.0
-
-               1.159  5     2   1.3   0.05   0    0.5  20 
-                 
+               1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0
 
       SC   need to test with other semiconductors    
                 1.359    20    4    3    1    0.05   0    0.5
