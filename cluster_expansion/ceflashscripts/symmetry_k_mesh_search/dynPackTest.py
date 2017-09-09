@@ -344,6 +344,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     nP =len( paramLabels)
     nPsets = len(params0)*len(params1)*len(params2)*len(params3)*len(params4)*len(params5)
     print 'Will run {} parameter sets'.format(nPsets)
+    print 'Initial packing is {}'.format(type) 
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
     iset = 0
     nRunSlots = min(100,nPsets)#run slots are directories that run a paramSet.  Should be <= nPsets

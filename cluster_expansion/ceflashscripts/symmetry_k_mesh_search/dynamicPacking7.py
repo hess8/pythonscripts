@@ -446,13 +446,14 @@ class dynamicPack():
 #        self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/300
         self.eps = eps
+        self.meshEnergy = 0.0
         self.searchInitFactor = 0.0
         self.initSrch = 'max'
 #         self.initSrch = None
 #         self.initSrch = 'target'
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path      
-        print 'Number of desired points in full BZ:', targetNmesh
+        print 'Number of desired points in full BZ:', targetNmesh, 'with initial packing', meshtype
         BZ = cell() #instance
         BZ.volume = vol
         braggVecs = getBraggVecs(self.B)
@@ -729,9 +730,10 @@ class dynamicPack():
 
     def dynamic(self,eps):
         ''' '''
-        self.facetsMeshMathFile(self.IBZ,'IBZmeshInit',None)
-        self.relax()
-        self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
+        self.facetsMeshMathFile(self.IBZ,'IBZmeshInit',None) 
+        print 'Relaxation is blocked!!!'
+#         self.relax()
+#         self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
         return
 
     def relax(self):
