@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -60,7 +60,7 @@ search = 'all'
 # nKlims = [2,200]
 # nKdecade = 10 # N per decade
 
-nKlims = [1,200] #fix actual bounds in dynamicPacking 
+nKlims = [1,150] #fix actual bounds in dynamicPacking 
 nKdecade = 10 # N per decade
 
 NnKs = int(ceil(nKdecade*log10(nKlims[1]/nKlims[0])))# 
@@ -86,7 +86,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=2:00:00\n')
+    jobFile.write('#SBATCH --time=0:20:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=1G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -277,27 +277,31 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     print '\twallPower equals power'
 #     print '\tdw held at {}'.format(sys.argv[1])
 
- 
-    params0 =     [ 4.0,6.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
-    params1 =     [ 2.0,4.0]   #wallPower
-    params2 =     [ 0.5, 1.0,1.5] #wallfactor
+# #  
+#     params0 =     [ 4.0,6.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+#     params1 =     [ 2.0,4.0]   #wallPower
+#     params2 =     [ 0.1,0.3,1.0] #wallfactor
+#     params3 =     [ 0.05] #wallClose
+#     params4 =     [ 0] #wallOffset
+#     params5 =     [0.5, 1.0] #dw
+#  best: 1.57 [ 6.    4.    1.    0.05  0.    0.5 ]] avg nDone 19.0
+
+
+# 
+    params0 =     [ 6.0]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+    params1 =     [ 4.0, 3.0]   #wallPower
+    params2 =     [ 0.2, 0.5, 1.0] #wallfactor
     params3 =     [ 0.05] #wallClose
     params4 =     [ 0.0] #wallOffset
     params5 =     [0.25, 0.5, 1.0] #dw
 
-#     params0 =     [ 3.5, 4.0, 4.5 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
-#     params1 =     [ 1.8, 2.0, 2.5]   #wallPower
-#     params2 =     [ 1.0, 1.3, 1.5] #wallfactor
-#     params3 =     [ 0.05] #wallClose
-#     params4 =     [ 0.0] #wallOffset
-#     params5 =     [ 0.5] #dw
-# 
-#     params0 =     [ 6.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+# ['4.00',   '2.0 ',        '0.1',      '0.05',      '0.00',   '1.0']
+#     params0 =     [ 4.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
 #     params1 =     [ 2.0 ]   #wallPower
-#     params2 =     [ 1.0 ] #wallfactor
+#     params2 =     [ 0.5 ] #wallfactor
 #     params3 =     [ 0.05 ] #wallClose
 #     params4 =     [ 0.0 ] #wallOffset
-#     params5 =     [ 0.5 ] #dw
+#     params5 =     [ 1.0 ] #dw
 
     '''Si:     1.316  4    2    1     0.1    0    0.5    20
                1.29 [ 4.    3.  1.    0.05   0.   0.5 ]] avg nDone 20.0
