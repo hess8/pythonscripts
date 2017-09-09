@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -86,7 +86,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=0:20:00\n')
+    jobFile.write('#SBATCH --time=2:00:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=1G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -293,7 +293,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     params2 =     [ 0.2, 0.5, 1.0] #wallfactor
     params3 =     [ 0.05] #wallClose
     params4 =     [ 0.0] #wallOffset
-    params5 =     [ 0.2,0.5,1.0] #dw
+    params5 =     [ 0.5] #dw
     
 # 1.31 [ 5.    4.    0.5   0.05  0.    0.5 ]] avg nDone 18.0
 
