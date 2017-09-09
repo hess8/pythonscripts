@@ -293,7 +293,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     params2 =     [ 0.2, 0.5, 1.0] #wallfactor
     params3 =     [ 0.05] #wallClose
     params4 =     [ 0.0] #wallOffset
-    params5 =     [0.25, 0.5, 1.0] #dw
+    params5 =     [ 0.5] #dw
 
 # ['4.00',   '2.0 ',        '0.1',      '0.05',      '0.00',   '1.0']
 #     params0 =     [ 4.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
