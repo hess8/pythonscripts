@@ -1,5 +1,5 @@
 '''
-This version is passed parameters from posca2mesh7, which is called by dynPackTest 
+This version is passed parameters from poscar2mesh7, which is called by dynPackTest 
 for searching method parameter space.
 '''
 import os, subprocess,sys,re,time
@@ -257,7 +257,7 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
                     break
         cell.fpoints = newVerts
 #     self.mathPrintPlanes(allPlanes)
-    if len(cell.fpoints) >= 3 and type == 'BZ':
+    if len(cell.fpoints) >= 3 and type in ['BZ','MP']:
         checkNext = not areEqual(convexH(newVerts).volume,cell.volume,eps/4.0) 
     else:
         checkNext = True
@@ -315,6 +315,13 @@ def isOutside(vec,boundaries,eps):
         if dot(vec,uvec) > boundaries[1][iplane] + eps: #point is outside this plane
             return True
     return False
+
+# def isJustOutside(vec,boundaries,dmax,eps):
+#     for iplane, uvec in enumerate(boundaries[0]): 
+#         pvec = uvec*boundaries[1][iplane]           
+#         if  boundaries[1][iplane] + eps < dot(vec,uvec) < boundaries[1][iplane] + dmax + eps: #point is outside this plane
+#             return True
+#     return False
 
 def onPlane(vec,planevec,eps):
     return abs(dot(vec,planevec) - dot(planevec,planevec)) < eps #point is inside this plane
@@ -414,14 +421,13 @@ class cell():
         self.weights = None
         self.vorVols = []
     
-class dynamicPack(): 
+class voidWeight(): 
     ''''''
     from numpy import zeros,array,mod
     from numpy.random import rand, uniform
-    from conjGradMin2 import (fmin_cg,minimize_cg,line_search_wolfe1,scalar_search_wolfe1)
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
-        paramLabels = ['power','wallPower','wallFactor','wallClose','wallOffset','dw' ]
+        paramLabels = ['']
         
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
@@ -435,26 +441,14 @@ class dynamicPack():
         IBZvol = vol/float(self.nops)
 #         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
-        self.power = float(params[0]) #6.0
-        self.wallPower = float(params[1]) #6.0
-        self.wallFactor = float(params[2]) #1.0  #probably needs to be bigger than interFactor by about the average number of nearest neighbors
-        self.wallClose = float(params[3]) #0.5 #to allow initial points closer to the wall set to less than 1. 
-        self.wallOffset = float(params[4]) #0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
-        self.interFactor = 1.0        
-        self.initFactor = 1.0
-        self.df = 1.00 * self.ravg #inter-point force scale distance
-        self.dw = float(params[5]) * self.df  #0.5 * self.df #wall force scale distance
-#        self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
+        self.wallClose = float(params[0])
+        self.initSrch = 'max'
         eps = self.ravg/300
         self.eps = eps
-        self.meshEnergy = 0.0
-        self.searchInitFactor = 0.0
-        self.initSrch = 'max'
 #         self.initSrch = None
 #         self.initSrch = 'target'
-        self.nTarget = int(self.initFactor*targetNmesh)
+        self.nTargetIBZ = targetNmesh; print 'targets are for IBZ, not full BZ'
         self.path = path      
-        print 'Number of desired points in full BZ:', targetNmesh, 'with initial packing', meshtype
         BZ = cell() #instance
         BZ.volume = vol
         braggVecs = getBraggVecs(self.B)
@@ -462,15 +456,12 @@ class dynamicPack():
         self.facetsMathFile(BZ,'BZ') 
         self.IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
         self.writeBounds()
-        self.nTargetIBZ = int(rint(self.nTarget/float(self.nops)));print 'targets are for IBZ, not full BZ'
-#         self.nTargetIBZ = self.nTarget
-        self.facetsMathFile(self.IBZ,'IBZ') 
+#         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
-        nKmax = 200
-        print 'Limiting nK to {} in dynamicPacking7'.format(nKmax)
+        nKmax = 150
+        print 'Limiting nK to {}'.format(nKmax)
         if 2 < len(self.IBZ.mesh) <= nKmax:
             OK = True
-            self.dynamic(eps)
             self.weightPoints(eps)
             self.writeKpoints()
             self.writeSym()
@@ -498,84 +489,139 @@ class dynamicPack():
                    'IBZvol: {}\n'.format(self.IBZ.volume)],'sym.out')
 
     def weightPoints(self,eps):
-        '''Find the volume of the Voronoi cell around each point, and use it to weight the point.
-        Search a sphere of radius a few packing radii for neighbors.  Use the half vectors to these points 
-        and the vectors to the walls to define the bounding planes.
-        Vectors are first taken from each mesh point as the origin, 
-        then displaced to their real positions in the cell for possible display'''
+        '''
+        
+        xMake a standard voronoi cell for each mesh point. 
+        xFind the max distance rmaxMP between a MP cell center an a vertex. 
+        xIf a MP has a facet outside the IBZ bounds, it is cut.
+        Find the voids near the surface (min d_planes < rmaxMP).
+        Use sym and translation to find all IBZ points that have partners outside
+        but are close to the surface. 
+        void weights are distributed among IBZ points that are close to it. 
+        
+        '''
         allMPfacets = []
+        surfPoints = []
         self.IBZ.weights = []
         for ip,point in enumerate(self.IBZ.mesh):
             print ip,
-            pointCell = cell()
-            neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
-#             print 'neighLbls',neighLbls
-            boundVecs = zeros(len(neighs)+ len(self.IBZ.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')]) 
-            for iw, u in enumerate(self.IBZ.bounds[0]):    
-                ro = self.IBZ.bounds[1][iw]
-                d = ro-dot(point,u)
-                boundVecs[iw]['uvec'] = u #unit vector stays the same for the plane
-                boundVecs[iw]['mag'] = d
-#                 print 'wall',iw,u, vec, norm(vec)
-            for j, jpoint in enumerate(neighs):
-                vec = (jpoint - point)/2
-                mag = norm(vec)
-#                 print 'neighs',j,jpoint, vec, norm(vec)
-                boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
-                boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
-            boundVecs.sort(order = 'mag') 
-            pointCell = getVorCell(boundVecs,pointCell,'point',eps)
-            self.IBZ.weights.append(pointCell.volume)
-            self.IBZ.vorVols.append(pointCell.volume)
-             
-            #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
- 
-            allMPfacets.append(pointCell.facets)
- 
-        print
+            ibzMP = self.prepMP(point)
+            for fpoint in ibzMP.fpoints:
+                cut = False
+                for iplane, uvec in enumerate(self.IBZ.bounds[0]):
+                    d = abs(dot(uvec,fpoint))
+                    if d < self.rmaxMP:
+                        cut = True
+                        surfPoints.append(point)
+                        ro = self.IBZ.bounds[1][iplane]                                      
+                        ibzMP = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
+                if cut:
+                    allMPfacets.append(ibzMP.facets)
+            self.IBZ.vorVols.append(ibzMP.volume)
+                
         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
         wtot = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
         meanV = mean(self.IBZ.vorVols)
-        volCheck = 0.1
+        volCheck = 0.01
         volErr = wtot - self.IBZ.volume        
         volErrRel = volErr/self.IBZ.volume
-         
         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
         print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
 #             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
-            sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
+#             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
+            print 'Warning: point Voronoi cells do not sum to the IBZ volume.'
         else:
             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)  
         pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
         print 'Packing fraction (can be >1 from points near boundary', pf
-        meshDet = open('../meshDetails.csv','a')
-        N = len(self.IBZ.mesh)
-        meshDet.write('{},{},{:6.3f},{:6.3f},{:6.3f}\n'.format(self.nTarget,N,stdev/meanV,self.meshEnergy/float(N),pf))
-        meshDet.flush()
-        meshDet.close()
-        self.redistrWghts()
+        self.IBZ.weights = self.IBZ.vorVols
+        voidsW = 0
+        #find void centers, which are portions of points on the original packing lattice
+#         that lie outside the IBZ 
+        for io, point in enumerate(self.outPoints):
+            ds = [norm(point-surfpoint) for surfpoint in surfPoints]
+            if min(ds) < 2*self.rmaxMP: #candidate to host an IBZ void: it's "just outside"
+                joMP = self.prepMP(point)
+                for fpoint in joMP.fpoints:
+                    for iplane, uvec in enumerate(self.IBZ.bounds[0]):
+                        d = abs(dot(uvec,fpoint))
+                        if d < self.rmaxMP:
+                            ro = self.IBZ.bounds[1][iplane]                                      
+                            joMP = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u
+#                             print 'Surf point vol', point, joMP.volume
+                voidsW += joMP.volume
+        print 'Total volume Vor cells plus voids:',wtot+voidsW,'vs IBZ volume', self.IBZ.volume 
+                                    
         
-    def redistrWghts(self):
-        surfPts = []
-        lostVolFactors = []
-        for im,mpoint in enumerate(self.IBZ.mesh):
-#             if self.IBZ.vorVols[im] < self.MPvol:
-                frac = (self.IBZ.vorVols[im] - self.MPvol)/self.MPvol
-                for ip,u in enumerate(self.IBZ.bounds[0]):
-                    d = dot(mpoint,u)
-                    if d < self.IBZ.bounds[1][ip] - self.rpacking: #This is a surface point
-                    #note we could get more detailed with voronoi cell as we did in meshConstruct5
-                        surfPts.append(mpoint)
-                        lostVolFactors.append(frac)
-        print 'surfPts',surfPts
-        print 'lostVols', lostVolFactors
-        self.IBZ.weights = self.IBZ.weights/self.ravg**3 #to scale them to order(1).
-        #find other surface points that are connected to 
-        for ip,spoint in enumerate(surfPts):
-            
+
         return
+                    
+            
+            
+#             pointCell = cell()
+#             neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
+# #             print 'neighLbls',neighLbls
+#             boundVecs = zeros(len(neighs)+ len(self.IBZ.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')]) 
+#             for iw, u in enumerate(self.IBZ.bounds[0]):    
+#                 ro = self.IBZ.bounds[1][iw]
+#                 d = ro-dot(point,u)
+#                 boundVecs[iw]['uvec'] = u #unit vector stays the same for the plane
+#                 boundVecs[iw]['mag'] = d
+# #                 print 'wall',iw,u, vec, norm(vec)
+#             for j, jpoint in enumerate(neighs):
+#                 vec = (jpoint - point)/2
+#                 mag = norm(vec)
+# #                 print 'neighs',j,jpoint, vec, norm(vec)
+#                 boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
+#                 boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
+#             boundVecs.sort(order = 'mag') 
+#             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+#             self.IBZ.weights.append(pointCell.volume)
+#             self.IBZ.vorVols.append(pointCell.volume)
+#              
+#             #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
+#  
+#             allMPfacets.append(pointCell.facets)
+#  
+#         print
+#         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
+#         wtot = sum(self.IBZ.vorVols)
+#         stdev = std(self.IBZ.vorVols)
+#         meanV = mean(self.IBZ.vorVols)
+#         volCheck = 0.1
+#         volErr = wtot - self.IBZ.volume        
+#         volErrRel = volErr/self.IBZ.volume
+#          
+#         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
+#         print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
+#         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
+# #             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
+#             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
+#         else:
+#             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)  
+#         pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
+#         print 'Packing fraction (can be >1 from points near boundary', pf
+#         meshDet = open('../meshDetails.csv','a')
+#         N = len(self.IBZ.mesh)
+#         meshDet.write('{},{},{:6.3f},{:6.3f},{:6.3f}\n'.format(self.nTargetIBZ,N,stdev/meanV,self.meshEnergy/float(N),pf))
+#         meshDet.flush()
+#         meshDet.close()
+
+
+    def prepMP(self,kpoint):
+        cutMP = deepcopy(self.MP)
+        for ifac, facet in enumerate(self.MP.facets):
+            temp = []
+            for point in facet:
+                temp.append(point + kpoint)
+            cutMP.facets[ifac] = temp
+        cutMP.fpoints = []
+        for ipoint, point in enumerate(self.MP.fpoints):
+            cutMP.fpoints.append(point + kpoint)
+        cutMP.center = kpoint
+        return cutMP
 
     def meshInitCubic(self,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
@@ -584,25 +630,25 @@ class dynamicPack():
         a = 1.0
         cubicLVs = identity(3)
         #test facet points for orthogonality
-        rs = []
-        pairs = []
-        triples = []
-        uvecs = self.IBZ.bounds[0]
-        for i in range(len(uvecs)):
-            if areEqual(norm(uvecs[i]),0.0,eps): break
-            rs.append(norm(uvecs[i]))
-            for j in range(i,len(uvecs)):
-                if areEqual(norm(uvecs[j]),0.0,eps): break
-                if areEqual(dot(uvecs[i],uvecs[j]),0.0,eps):
-                    pairs.append([uvecs[i],uvecs[j]])
-        for ip,pair in enumerate(pairs):
-            for i in range(len(uvecs)):
-                if areEqual(norm(uvecs[i]),0.0,eps): break
-                if areEqual(dot(pair[0],uvecs[i]),0.0,eps) and areEqual(dot(pair[1],uvecs[i]),0.0,eps):
-                    triple = deepcopy(pair)
-                    triple.append(uvecs[i])
-                    triples.append(triple)
-                    break
+#         rs = []
+#         pairs = []
+#         triples = []
+#         uvecs = self.IBZ.bounds[0]
+#         for i in range(len(uvecs)):
+#             if areEqual(norm(uvecs[i]),0.0,eps): break
+#             rs.append(norm(uvecs[i]))
+#             for j in range(i,len(uvecs)):
+#                 if areEqual(norm(uvecs[j]),0.0,eps): break
+#                 if areEqual(dot(uvecs[i],uvecs[j]),0.0,eps):
+#                     pairs.append([uvecs[i],uvecs[j]])
+#         for ip,pair in enumerate(pairs):
+#             for i in range(len(uvecs)):
+#                 if areEqual(norm(uvecs[i]),0.0,eps): break
+#                 if areEqual(dot(pair[0],uvecs[i]),0.0,eps) and areEqual(dot(pair[1],uvecs[i]),0.0,eps):
+#                     triple = deepcopy(pair)
+#                     triple.append(uvecs[i])
+#                     triples.append(triple)
+#                     break
         #Define basis vectors for cubic lattice:
 #         if len(triples)>0:
 #             print 'At least one triplet of orthogonal plane normals found:',triples[0]
@@ -630,7 +676,7 @@ class dynamicPack():
 #         else:
 #             print 'no orthogonal plane normals pairs found.'
         if type == 'fcc':    
-            volKcubConv = det(self.B)/self.nTarget*4/float(self.nops)
+            volKcubConv = self.IBZ.volume/self.nTargetIBZ*4
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
@@ -639,7 +685,7 @@ class dynamicPack():
             self.rpacking = 1/2.0/sqrt(2)*aKcubConv
             pf = 4*4/3.0*pi*(1/2.0/sqrt(2))**3  #0.74
         elif type == 'bcc':
-            volKcubConv = det(self.B)/self.nTarget*2/float(self.nops)
+            volKcubConv = self.IBZ.volume/self.nTargetIBZ*2
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
@@ -649,7 +695,7 @@ class dynamicPack():
             self.rpacking = sqrt(3)/4.0*aKcubConv
             pf = 2*4/3.0*pi*(sqrt(3)/4.0)**3 #0.68
         elif type == 'cub':
-            volKcubConv = det(self.B)/self.nTarget/float(self.nops)
+            volKcubConv = self.IBZ.volume/self.nTargetIBZ
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0])]
@@ -661,15 +707,16 @@ class dynamicPack():
        
         
         MPbraggVecs = getBraggVecs(primLVs)
-        MP = cell()
-        MP = getVorCell(MPbraggVecs,MP,'MP',eps)
-        MP.volume = convexH(MP.fpoints).volume
-        self.MPvol = MP.volume 
+        self.MP = cell()
+        self.MP.volume = self.IBZ.volume/self.nTargetIBZ
+        self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
+        self.rmaxMP = max([norm(point) for point in self.MP.fpoints])
+        self.Vsphere = 4/3.0*pi*self.rpacking**3
         if self.initSrch is not None:
-            self.IBZ = self.searchNmax(cubicLVs,aKcubConv,sites) 
+            self.IBZ,self.outPoints = self.searchNmax(cubicLVs,aKcubConv,sites) 
         else:
             shift = array([1,1,1])/8.0 * aKcubConv
-            self.IBZ,nInside = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
+            self.IBZ,self.outPoints = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
         
         #Search over shift and rotation to find the most possible points inside
 
@@ -677,8 +724,16 @@ class dynamicPack():
         '''Test an entire grid of init values'''
         cubicLVs0 = cubicLVs
         nShift = 5
-        nTh = 10
-        nPh = 20
+        
+#         nTh = 10
+#         nPh = 20
+        
+               
+        nTh = 3
+        nPh = 3
+# 
+
+
         shiftDiv = 0.5*sqrt(3)/float(nShift)
         thDiv = 90/float(nTh) #deg
         phDiv = 180/float(nPh)
@@ -705,7 +760,7 @@ class dynamicPack():
                     cubicLVs = dot(Rmat,cubicLVs0)
                     for i, site in enumerate(sites0):
                         sites[i] = dot(Rmat,site)        
-                    IBZ,nInside = self.fillMesh(cubicLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
+                    IBZ,nInside,outPoints = self.fillMesh(cubicLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
 #                    self.facetsMeshMathFile(IBZ,'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
@@ -713,20 +768,22 @@ class dynamicPack():
                         nMax = nInside
                         if self.initSrch == 'max':
                             bestN = nInside
+                            bestOutside = outPoints
                             bestIBZ = deepcopy(IBZ)
                             besti = isearch
                         print 'Step {}: Nmax'.format(isearch),nMax, shift, theta, phi
                     if self.initSrch != 'max':
-                        closeLog = abs(log(nInside/(self.searchInitFactor*self.nTargetIBZ)))
+                        closeLog = abs(log(nInside/(self.nTargetIBZ)))
                         if closeLog < closestLog:
                             closestLog = closeLog
+                            bestOutside = outPoints
                             bestN = nInside
                             bestIBZ = deepcopy(IBZ)
         if self.initSrch == 'max':
             print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
         else:
-            print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.searchInitFactor*self.nTargetIBZ)
-        return bestIBZ
+            print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.nTargetIBZ)
+        return bestIBZ,bestOutside
         
     def fillMesh(self,cubicLVs,IBZ,shift,aKcubConv,sites):
         #Find the extremes in each cubLV direction:
@@ -741,6 +798,7 @@ class dynamicPack():
             intMins.append(int(floor(min(projs)))-1)#optimize: Is -1 required?       
         #Create the cubic mesh inside the irreducible BZ
         IBZ.mesh = []
+        outPoints = []
         nInside = 0         
         ik = 0       
         for i in range(intMins[0],intMaxs[0]):
@@ -750,147 +808,15 @@ class dynamicPack():
                     for site in sites:
                         ik+=1
                         kpoint = lvec + shift + site
-                        if isInside(kpoint,IBZ.bounds,self.dw*self.wallClose):  #Can't be closer than self.dw*self.wallClose to a wall
+                        if isOutside(kpoint,IBZ.bounds,self.eps):
+                            outPoints.append(kpoint)
+                        else:
                             nInside += 1
                             IBZ.mesh.append(kpoint) 
+                            
 #         print 'Points inside', nInside
-        return IBZ,nInside
+        return IBZ,nInside,outPoints
 
-    def dynamic(self,eps):
-        ''' '''
-        self.facetsMeshMathFile(self.IBZ,'IBZmeshInit',None) 
-        print 'Relaxation is blocked!!!'
-#         self.relax()
-#         self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
-        return
-
-    def relax(self):
-        '''Minimization of the potential energy.
-        The energy must be a function of 1-D inputs, so we flatten the points into components '''
-        
-        epsilon = self.ravg/100
-        comps = array(self.IBZ.mesh).flatten()
-        self.meshEnergy = self.minSteepest(comps,self.eps) 
-        return
-
-    def minSteepest(self,x0,eps):
-        ''' Steepest descent works better in tests than sophisticated methods such as 
-        conjugate gradient or using a Hessian method (see intro to P. Pulay, Chem. Phys. Lett. 73, 393 (1980)). 
-        We move in the direction of -gradient, starting with a default step, and decreasing it by 2 until
-        a lower energy and lower norm(gradient) is found.   The default step is increased if the previous step succeeded without adjustment.
-        If the step must be lowered to find a lower energy and lower norm(gradient), the default is lowered. This worked
-        better than the Barzilai-Borwein method that tries to predict an optimal step.    
-        
-'''
-
-        itermax = 300
-        gnormTol = 0.001
-        minstep = 0.00000001
-        xold = x0
-        xnew = x0
-        fold,gold = self.enerGrad(xold)
-        gnew = gold
-        fnew = fold
-        gnormold = norm(gold)
-        gnormnew = gnormold
-        fstart = fold; gstart = gold; gnormstart = gnormold
-        method = 'steepest'
-#         xolder =  xold + 0.01*gold #go backwards
-#         golder = dot(H,(xolder-xold))
-#         folder = dot(gold,(xolder-xold))
-        print 'energy_0',fold, 'gnorm',gnormold #,'grad', gold
-        iIter = 0
-        step = 1.0 #* minstep
-        atMinStep = False
-        while iIter < itermax and gnormold > gnormTol and not atMinStep:
-            print iIter, #progress bar
-            method = 'steepest'
-            lower = False
-            while not lower:
-                if step < minstep:
-                    print 'minimum step reached: {}'.format(step) 
-                    atMinStep = True
-                    break
-                if method == 'steepest':
-                    xnew = xold - step*gold
-                currPoints = xnew.reshape((len(self.IBZ.mesh),3))
-                inside = True
-                for point in currPoints:
-                    if not isInside(point,self.IBZ.bounds,eps):
-                        print 'point is outside IBZ...reduce step size:',point
-                        inside = False
-                        break                   
-                if inside:
-                    fnew,gnew = self.enerGrad(xnew)
-                    gnormnew = norm(gnew)
-                    if fnew<fold and gnormnew < gnormold:
-                        lower = True
-                        self.IBZ.mesh = currPoints.tolist()
-                step /= 2
-            step *= 4
-            xold = xnew
-            fold = fnew
-            gold = gnew
-            gnormold = gnormnew
-            iIter += 1                   
-        self.IBZ.mesh = currPoints.tolist()
-        print 'For {} points in IBZ and {} steps'.format(len(self.IBZ.mesh),iIter)
-        print '\tStarting energy',fstart, 'gnorm',gnormstart
-        print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
-        print 'Energy/N',fnew/len(self.IBZ.mesh)
-        if gnormnew <= gnormTol:
-            print '\nSuccess after {} iterations'.format(iIter)
-        elif iIter == itermax:
-            print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
-        if not (fnew < fstart and gnormnew < gnormstart):
-#             sys.exit('Did not find a lower energy and force norm: stop')
-            print 'Did not find a lower energy and force norm: using unrelaxed packing'
-        return fnew
-
-    def enerGrad(self,comps):
-        '''Returns the total energy, gradient (-forces), 
-        using comps, which are the flattened components of the current positions  '''
-#         print 'oldindvecs',self.oldindVecs
-        self.forces = zeros((len(self.IBZ.mesh),3))
-        self.wallForce = zeros(len(self.IBZ.facets))
-#         self.wallPress = zeros(len(self.IBZ.facets))
-        IBZvecs = comps.reshape((len(self.IBZ.mesh),3))
-        p = self.power
-        wp = self.wallPower
-        wallfact = self.wallFactor
-        interfact = self.interFactor
-        etot = 0
-        for i,ri in enumerate(IBZvecs):
-            #wall forces
-            for iw, u in enumerate(self.IBZ.bounds[0]):
-                ro = self.IBZ.bounds[1][iw]
-                d = ro-dot(ri,u)+ self.wallOffset*self.dw #distance from plane to ri offset factor allows points to move closer to walls. 
-                if d<0:
-                    print '\nri,ro,u, dot(ri,u),d'
-                    print ri,ro,u, dot(ri,u), d 
-                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(i+1))
-                fmag = wallfact*(d/self.dw)**(-wp)  #dimensionless
-                etot += wallfact*self.dw/abs(-wp+1)*(d/self.dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
-                self.forces[i] += -u*fmag
-                self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudesrce',-u*fmag,fmag
-            #vertext pull forces
-#             for vert in self.IBZ.fpoints:
-#                 d = norm(ri-vert)
-#                 self.forces[i] += -self.vertexPull*(d/self.df)**(-p)*(ri-vert)/d #pull not push
-#                 etot +=  self.vertexPull*self.df/abs(-p+1)*(d/self.df)**(-p+1)
-#            inter-point forces
-            for j, rj in enumerate(IBZvecs):
-                if i!=j:
-                    d = norm(ri-rj)
-#                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
-                    self.forces[i] += interfact*(d/self.df)**(-p)*(ri-rj)/d
-                    if j>i: #don't overcount
-                        etot += interfact*self.df/abs(-p+1)*(d/self.df)**(-p+1)
-#         for i,fac in enumerate(self.facets):
-#             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
-#             self.wallPress[i] = self.wallForce[i]/area
-#         print 'Pressure avg', mean(self.wallPress)
-        return etot, -self.forces.flatten() #gradient is opposite the forces.
         
     def writeKpoints(self):
         nk = len(self.IBZ.mesh)
@@ -1007,8 +933,15 @@ class dynamicPack():
             if len(cell.fpoints)== 0:
                 cell.volume = 0
             else:
-                cell.center = sum(cell.fpoints)/len(cell.fpoints)                    
+                cell.center = sum(cell.fpoints)/len(cell.fpoints)
+                try:
+                    cell.volume = convexH(cell.fpoints).volume    
+                except:
+                     cell.volume = 0                
         return cell      
+#         else:
+#             cell.volume = 0
+#             return cell
 
     def getIBZ(self,BZ,eps):
         '''

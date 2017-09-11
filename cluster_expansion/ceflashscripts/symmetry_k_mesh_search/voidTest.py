@@ -2,29 +2,8 @@
 '''Test looping structure for finding testing 
 convergence vs parameters
 
-All parameters: (Implement search on *'s
-        *self.power = 6.0
-        *self.wallPower = 6.0
-        *self.wallfactor = 1.0  #probably needs to be bigger than interfactor by about the average number of nearest neighbors
-        *self.wallClose = 0.1 #0.5 #to allow initial points closer to the wall set to less than 1. 
-        *self.wallOffset = 0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
-        self.interfactor = 1.0        
-        self.initFactor = 1.0
-        self.df = 1.00 * self.ravg #inter-point force scale distance
-        *self.dw = 0.5 * self.df #wall force scale distance
-        eps = self.ravg/300
-        *self.searchInitFactor = 0.0
-        self.initSrch = 'max'
-        self.initSrch = None
-        nShift = 5
-        nTh = 10
-        nPh = 20        
-        itermax = 100
-        gnormTol = 0.001
-        minstep = 0.000001
-        step = 1.0 #* minstep
-        step /= 2
-        neighR = 8.0*self.rpacking'''
+*'s
+'''
     
 import sys,os,subprocess,time
 from numpy import (zeros,transpose,array,sum,float64,rint,divide,multiply,argmin,
@@ -44,7 +23,7 @@ import voidWeighting, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -271,7 +250,7 @@ def submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nKtargets):
 
 def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     '''Set up a N-dimensional grid of parameters, and run through all of it''' 
-    paramLabels = ['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+    paramLabels = ['wallClose']
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
 #     print '\twallPower equals power'
@@ -285,59 +264,12 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params4 =     [ 0] #wallOffset
 #     params5 =     [0.5, 1.0] #dw
 #  best: 1.57 [ 6.    4.    1.    0.05  0.    0.5 ]] avg nDone 19.0
-
-
-# 
-#     params0 =     [ 6.0]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
-#     params1 =     [ 4.0, 3.0]   #wallPower
-#     params2 =     [ 0.2, 0.5, 1.0] #wallfactor
-#     params3 =     [ 0.05] #wallClose
-#     params4 =     [ 0.0] #wallOffset
-#     params5 =     [ 0.5] #dw
-
-    params0 =     [ 0.0 ]   #wallClose
+    params0 =     [ 0.0]   #wallClose
     
-
-    '''Si:     1.00 [ 5.    2.    1.3   0.05  0.    0.5 ]] avg nDone 18.0
-
-    *1.16 [ 5.    2.  1.3   0.05   0.   0.5 ]] avg nDone 20.0
-                1.316  4    2    1     0.1    0    0.5    20
-               1.29 [ 4.    3.  1.    0.05   0.   0.5 ]] avg nDone 20.0
-               
-               1.269  5     3   0.7   0.05   0    0.5  20
-               1.27 [ 6.    2.    1.    0.05  0.    0.5 ]] avg nDone 20.0
-               1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0
-
-      SC   need to test with other semiconductors    
-                1.359    20    4    3    1    0.05   0    0.5
-                1.411    20    5    2    1    0.05   0    0.5
-                1.412    20    5    2    1    0.1    0    0.5
-                1.475    20    4    2    1    0.1    0    0.5
-                
-      metals : 
-           
-                1.383    17.87    4    2    1.5    0.05    0    0.5
-                1.384    17.86    4    2    1.3    0.05    0    0.5
-                1.392    17.94    4    2    1.7    0.05    0    0.5
-                1.395    17.6    5    2    1.3    0.05    0    0.5
-                1.403    17.56    5    2    1.5    0.05    0    0.5
-                1.409    17.69    5    3    1.3    0.05    0    0.5
-
-               *1.401    17.66    4    2    1    0.1    0    0.5
-                1.402    17.66    5    2    1    0.1    0    0.5
-                1.404    17.76    5    2    1    0.05   0    0.5
-                1.406    17.54    5    3    1    0.1    0    0.5
-                1.408    17.72    5    3    1    0.05   0    0.5
-               *1.41     17.91    4    2    1    0.05   0    0.5
-                1.417    17.76    4    3    1    0.1    0    0.5
-                1.422    17.84    4    3    1    0.05   0    0.5
-'''
-
-
 #     params5 =  [0.1]
 #     params5 =  [float(sys.argv[1])]
-    nP =len( paramLabels)
-    nPsets = len(params0)*len(params1)*len(params2)*len(params3)*len(params4)*len(params5)
+    nP =len(paramLabels)
+    nPsets = len(params0) #* other len's
     print 'Will run {} parameter sets'.format(nPsets)
     print 'Initial packing is {}'.format(type) 
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
@@ -353,13 +285,18 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     isetsToStart = range(nPsets)
     isetsDone = []
     for p0 in params0:
-        for p1 in params1:
-            for p2 in params2:
-                for p3 in params3:
-                    for p4 in params4:
-                        for p5 in params5:
-                            params = [p0,p1,p2,p3,p4,p5]                      
-                            all[iset]['params'] = params
+#         for p1 in params1:
+#             for p2 in params2:
+#                 for p3 in params3:
+#                     for p4 in params4:
+#                         for p5 in params5:
+#                             params = [p0,p1,p2,p3,p4,p5]   
+                            params = [p0]   
+                            if nP ==1: 
+                                all[iset]['params']   
+                            else:
+                                params = [p0,p1,p2,p3,p4,p5]               
+                                all[iset]['params'] = params
                             iset += 1
     summary = open('{}/summaryGrid.csv'.format(maindir),'w')
     summary.write('iset,cost,avgDone,power,wallPower,wallfactor,wallClose,wallOffset,dw\n')
@@ -375,7 +312,10 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                 if len(slotsJobIDs[ir]) == 0 and not ir in toAnalyze: #use this slot for next set
                     iwait = 0; print     
                     #start new set
-                    params = all[icurrSet]['params']
+                    if nP ==1:
+                        params = [all[icurrSet]['params']]
+                    else:
+                        params = all[icurrSet]['params']
                     jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nKtargets)
                     subprocess.call(['echo', '\tFor set {} in slot {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,ir,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
                     slotsJobIDs[ir] = jobIDs
@@ -410,9 +350,9 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                         print 'cost for set {}: {:6.2f} {}] avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)
                         print 'vs. min cost {}: {:6.2f} {}] avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
                         ps = all[ioldSet]['params']
-                        summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
-                                                    ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
-                        summary.flush()
+#                         summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
+#                                                     ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
+#                         summary.flush()
                         toAnalyze.remove(ir)
                         isetsDone.append(ioldSet) 
                         break #analyze one set at a tome
