@@ -808,11 +808,19 @@ class voidWeight():
                     for site in sites:
                         ik+=1
                         kpoint = lvec + shift + site
-                        if isOutside(kpoint,IBZ.bounds,self.eps):
-                            outPoints.append(kpoint)
-                        else:
+#                         if isOutside(kpoint,IBZ.bounds,self.eps):
+#                             outPoints.append(kpoint)
+#                         else:
+#                             nInside += 1
+#                             IBZ.mesh.append(kpoint) 
+                        if isInside(kpoint,IBZ.bounds,self.eps):
                             nInside += 1
                             IBZ.mesh.append(kpoint) 
+                        else:
+                            outPoints.append(kpoint)
+
+
+
                             
 #         print 'Points inside', nInside
         return IBZ,nInside,outPoints
