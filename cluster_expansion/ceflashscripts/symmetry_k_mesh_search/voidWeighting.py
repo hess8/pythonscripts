@@ -420,6 +420,7 @@ class cell():
         self.mesh = None #centers of each voronoi cell, or kpoints
         self.weights = None
         self.vorVols = []
+        self.details = None
     
 class voidWeight(): 
     ''''''
@@ -428,7 +429,6 @@ class voidWeight():
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
         paramLabels = ['']
-        
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
@@ -458,6 +458,7 @@ class voidWeight():
         self.writeBounds()
 #         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
+        self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
         nKmax = 150
         print 'Limiting nK to {}'.format(nKmax)
         if 2 < len(self.IBZ.mesh) <= nKmax:
@@ -683,7 +684,6 @@ class voidWeight():
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
                      1/2.0*(cubicLVs[:,0]+cubicLVs[:,2]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1])]
-            primLVs = transpose(array(sites[1:]))
             self.rpacking = 1/2.0/sqrt(2)*aKcubConv
             pf = 4*4/3.0*pi*(1/2.0/sqrt(2))**3  #0.74
         elif type == 'bcc':
@@ -691,9 +691,6 @@ class voidWeight():
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
-            primLVs = transpose(array([array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
-                        array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
-                        array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]))
             self.rpacking = sqrt(3)/4.0*aKcubConv
             pf = 2*4/3.0*pi*(sqrt(3)/4.0)**3 #0.68
         elif type == 'cub':
@@ -701,25 +698,41 @@ class voidWeight():
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0])]
-            primLVs = cubicLVs
             self.rpacking = aKcubConv/2
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubic.')
-       
-        
+
+        if self.initSrch is not None:
+            self.IBZ,self.outPoints = self.searchNmax(cubicLVs,aKcubConv,sites) 
+            [shift,theta,phi] = self.IBZ.details
+            Rmat = dot(
+                array([[1,0,0], [0,cos(theta),-sin(theta)],[0, sin(theta), cos(theta)]]),
+                array([[cos(phi),-sin(phi),0],[sin(phi), cos(phi),0],[0,0,1],]) )
+            cubicLVs = dot(Rmat,cubicLVs)
+            if type == 'fcc':    
+                sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
+                         1/2.0*(cubicLVs[:,0]+cubicLVs[:,2]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1])]
+                primLVs = transpose(array(sites[1:]))
+            elif type == 'bcc':
+                sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
+                primLVs = transpose(array([array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
+                            array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
+                            array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]))
+            elif type == 'cub':
+                sites = [array([0, 0 , 0])]
+                primLVs = cubicLVs        
+        else:
+            shift = array([1,1,1])/8.0 * aKcubConv
+            self.IBZ,self.outPoints = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
+
+
         MPbraggVecs = getBraggVecs(primLVs)
         self.MP = cell()
         self.MP.volume = self.IBZ.volume/self.nTargetIBZ
         self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
         self.rmaxMP = max([norm(point) for point in self.MP.fpoints])
-        self.Vsphere = 4/3.0*pi*self.rpacking**3
-        if self.initSrch is not None:
-            self.IBZ,self.outPoints = self.searchNmax(cubicLVs,aKcubConv,sites) 
-        else:
-            shift = array([1,1,1])/8.0 * aKcubConv
-            self.IBZ,self.outPoints = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
-        
+        self.Vsphere = 4/3.0*pi*self.rpacking**3        
         #Search over shift and rotation to find the most possible points inside
 
     def searchNmax(self,cubicLVs,aKcubConv,sites):
@@ -763,7 +776,7 @@ class voidWeight():
                     for i, site in enumerate(sites0):
                         sites[i] = dot(Rmat,site)        
                     IBZ,nInside,outPoints = self.fillMesh(cubicLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
-#                    self.facetsMeshMathFile(IBZ,'IBZinit_{}'.format(isearch),None)
+#                     self.facetsMeshMathFile(IBZ,'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
                     if nInside > nMax: 
@@ -772,6 +785,7 @@ class voidWeight():
                             bestN = nInside
                             bestOutside = outPoints
                             bestIBZ = deepcopy(IBZ)
+                            bestIBZ.details = [shift,theta,phi]
                             besti = isearch
                         print 'Step {}: Nmax'.format(isearch),nMax, shift, theta, phi
                     if self.initSrch != 'max':
@@ -781,6 +795,7 @@ class voidWeight():
                             bestOutside = outPoints
                             bestN = nInside
                             bestIBZ = deepcopy(IBZ)
+                            bestIBZ.details = [shift,theta,phi]
         if self.initSrch == 'max':
             print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
         else:
