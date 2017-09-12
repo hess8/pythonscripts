@@ -498,8 +498,7 @@ class voidWeight():
         Find the voids near the surface (min d_planes < rmaxMP).
         Use sym and translation to find all IBZ points that have partners outside
         but are close to the surface. 
-        void weights are distributed among IBZ points that are close to it. 
-        
+        void weights are distributed among IBZ points that are close to it.   
         '''
         allMPfacets = []
         surfPoints = []
@@ -549,9 +548,9 @@ class voidWeight():
                 joMP = self.prepMP(point)
                 for fpoint in joMP.fpoints:
                     for iplane, uvec in enumerate(self.IBZ.bounds[0]):
-                        d = abs(dot(uvec,fpoint))
-                        if d < self.rmaxMP:
-                            ro = self.IBZ.bounds[1][iplane]                                      
+                        ro = self.IBZ.bounds[1][iplane]
+                        d = ro - dot(uvec,fpoint)
+                        if d < self.rmaxMP:                                    
                             joMP = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u
 #                             print 'Surf point vol', point, joMP.volume
                 voidsW += joMP.volume
