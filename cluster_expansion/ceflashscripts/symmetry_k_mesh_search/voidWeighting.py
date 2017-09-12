@@ -521,7 +521,7 @@ class voidWeight():
             self.IBZ.vorVols.append(ibzMP.volume)
                    
                  
-        self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
+#         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
         wtot = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
         meanV = mean(self.IBZ.vorVols)
@@ -530,12 +530,6 @@ class voidWeight():
         volErrRel = volErr/self.IBZ.volume
         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
         print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
-        if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
-#             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
-#             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
-            print 'Warning: point Voronoi cells do not sum to the IBZ volume.'
-        else:
-            print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)  
         pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
         print 'Packing fraction (can be >1 from points near boundary', pf
         self.IBZ.weights = self.IBZ.vorVols
@@ -554,12 +548,13 @@ class voidWeight():
                             joMP = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u
 #                             print 'Surf point vol', point, joMP.volume
                 voidsW += joMP.volume
+                allMPfacets.append(joMP.facets)
         print 'Total volume Vor cells plus voids:',wtot+voidsW,'vs IBZ volume', self.IBZ.volume 
-                                    
-        
-
+        self.facetsMeshVCMathFile(self.IBZ,allMPfacets)                      
+        if not areEqual(wtot+voidsW, self.IBZ.volume, volCheck*self.IBZ.volume):
+            sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.')        
         return
-                    
+        
             
             
 #             pointCell = cell()
