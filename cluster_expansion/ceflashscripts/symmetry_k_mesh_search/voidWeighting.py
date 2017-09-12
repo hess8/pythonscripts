@@ -449,12 +449,12 @@ class voidWeight():
 #         self.initSrch = 'target'
         self.nTargetIBZ = targetNmesh; print 'targets are for IBZ, not full BZ'
         self.path = path      
-        BZ = cell() #instance
-        BZ.volume = vol
+        self.BZ = cell() #instance
+        self.BZ.volume = vol
         braggVecs = getBraggVecs(self.B)
-        BZ = getVorCell(braggVecs,BZ,'BZ',eps)
-        self.facetsMathFile(BZ,'BZ') 
-        self.IBZ = self.getIBZ(BZ,eps) #now irreducible BZ
+        self.BZ = getVorCell(braggVecs,self.BZ,'BZ',eps)
+        self.facetsMathFile(self.BZ,'BZ') 
+        self.IBZ = self.getIBZ(deepcopy(self.BZ),eps) #now irreducible BZ
         self.writeBounds()
 #         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
@@ -514,11 +514,13 @@ class voidWeight():
                         cut = True
                         surfPoints.append(point)
                         ro = self.IBZ.bounds[1][iplane]                                      
-                        ibzMP = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
-                if cut:
-                    allMPfacets.append(ibzMP.facets)
+#                         ibzMP = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
+#             if cut:
+#                 allMPfacets.append(ibzMP.facets)
+            allMPfacets.append(ibzMP.facets)
             self.IBZ.vorVols.append(ibzMP.volume)
-                
+                   
+                 
         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
         wtot = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
@@ -1171,26 +1173,20 @@ class voidWeight():
         strOut += '}];\nShow[s,p]'
         writefile(strOut,'cell_{}.m'.format(tag))   
               
-    def facetsMeshVCMathFile(self,BZ,meshFacets):
+    def facetsMeshVCMathFile(self,IBZ,allMeshFacets):
         '''Output for Mathematica graphics drawing the facets of each mesh point
-        cell, as well as the borders of the BZ'''
+        cell, as well as the borders of the IBZ'''
         strOut = ''
-        strOut = self.facetsMathToStr(strOut,BZ,'s','True','Red');  
+        strOut = self.facetsMathToStr(strOut,IBZ,'s','True','Red');  
         showCommand = 'Show[s,'  
         strOut += ';\n'
-        for ipoint,point in enumerate(BZ.mesh):
+        for i,facets in enumerate(allMeshFacets):
             tCell = cell()
-            tCell.facets = [[]]*len(meshFacets[ipoint])
-            for ifac,facet in enumerate(meshFacets[ipoint]):
-                facet = list(trimSmall(array(facet)))
-                temp = []
-                for facetPoint in facet:
-                    temp.append(facetPoint + point)
-                tCell.facets[ifac] = temp
-            strOut = self.facetsMathToStr(strOut,tCell,'v{}'.format(ipoint),False,'RandomColor[]')
+            tCell.facets = facets
+            strOut = self.facetsMathToStr(strOut,tCell,'v{}'.format(i),False,'RandomColor[]')
             strOut+=';'
-            showCommand += 'v{}'.format(ipoint)
-            if ipoint < len(BZ.mesh)-1:
+            showCommand += 'v{}'.format(i)
+            if i < len(IBZ.mesh)-1:
                 showCommand += ','
         showCommand += ']'
 #         strOut+=';'
