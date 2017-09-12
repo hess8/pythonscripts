@@ -510,12 +510,12 @@ class voidWeight():
             for fpoint in ibzMP.fpoints:
                 cut = False
                 for iplane, uvec in enumerate(self.IBZ.bounds[0]):
-                    d = abs(dot(uvec,fpoint))
+                    ro = self.IBZ.bounds[1][iplane]
+                    d = ro - dot(uvec,fpoint)
                     if d < self.rmaxMP:
                         cut = True
-                        surfPoints.append(point)
-                        ro = self.IBZ.bounds[1][iplane]                                      
-#                         ibzMP = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
+                        surfPoints.append(point)                                      
+                        ibzMP = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
 #             if cut:
 #                 allMPfacets.append(ibzMP.facets)
             allMPfacets.append(ibzMP.facets)
