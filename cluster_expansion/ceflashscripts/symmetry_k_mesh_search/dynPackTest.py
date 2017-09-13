@@ -44,7 +44,7 @@ import dynamicPacking7, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -77,7 +77,7 @@ print
 def writeJob(path,ntarget,type,params):
     """ Creates a standard job file for submitting a VASP job on the supercomputer. 
     The job file calls python for mesh definition.
-    Writes name and and ntarget."""  
+    Writes name and ntarget and parameters."""  
     paramStr = ''
     for param in params:
        paramStr += ' {:6.2f}'.format(param)
@@ -295,10 +295,10 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params4 =     [ 0.0] #wallOffset
 #     params5 =     [ 0.5] #dw
 
-    params0 =     [ 5.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
+    params0 =     [ 0.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
     params1 =     [ 2.0 ]   #wallPower
     params2 =     [ 1.3 ] #wallfactor
-    params3 =     [ 0.05, 0.1, 0.2,0.5,1.0 ] #wallClose
+    params3 =     [ 0.0 ] #wallClose
     params4 =     [ 0.0 ] #wallOffset
     params5 =     [ 0.5 ] #dw
     
