@@ -300,11 +300,12 @@ def getFacetsPoints(cell,eps):
 #             sys.exit('stop. Plane {} has less than three facetvecs')
     return cell
 
-def isInside(vec,bounds,eps):
-    '''Inside means on opposite side of the plane vs its normal vector'''
+def isInside(vec,bounds,eps,extra = 0):
+    '''Inside means on opposite side of the plane vs its normal vector.  Extra shifts the test plane
+    outward, for an expanded inside volume'''
     inside = zeros(len(bounds[0]),dtype = bool)
     for iplane, uvec in enumerate(bounds[0]):
-        if dot(vec,uvec) < bounds[1][iplane] - eps: #point is inside this plane
+        if dot(vec,uvec) - extra < bounds[1][iplane] - eps: #point is inside this plane
             inside[iplane] = True
     return all(inside)
 
@@ -441,7 +442,7 @@ class voidWeight():
         IBZvol = vol/float(self.nops)
 #         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
-        self.wallClose = float(params[0])
+        self.wallClose = float(params[0]) #
         self.initSrch = 'max'
         eps = self.ravg/300
         self.eps = eps
@@ -458,7 +459,7 @@ class voidWeight():
         self.writeBounds()
 #         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
-        self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
+        self.facetsMeshMathFile(self.IBZ,self.IBZ.mesh,'IBZmesh',None)
         nKmax = 150
         print 'Limiting nK to {}'.format(nKmax)
         if 2 < len(self.IBZ.mesh) <= nKmax:
@@ -529,7 +530,7 @@ class voidWeight():
             self.IBZ.vorVols.append(ibzMP.volume)
                    
                  
-#         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
+#         self.facetsMeshVCMathFile(self.IBZ,allMPfacets,'IBZMesh')
         vMPs = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
         meanV = mean(self.IBZ.vorVols)
@@ -538,6 +539,8 @@ class voidWeight():
         volDiffRel = volDiff/self.IBZ.volume
         print 'Total volume of point Vor cells',vMPs,'vs IBZ volume', self.IBZ.volume
         print 'Relative volume in MP Vor cells', volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
+        self.IBZ.weights = self.IBZ.vorVols
+        
         #find void centers, which are portions of points on the original packing lattice
 #         that lie outside the IBZ 
         self.voids = cell()
@@ -545,7 +548,7 @@ class voidWeight():
         for io, point in enumerate(self.outPoints):
             ds = [norm(point-surfpoint) for surfpoint in surfPoints]
             if min(ds) < 2*self.rmaxMP: #candidate to host an IBZ void: it's "just outside"
-                joMP = self.prepMP(point)
+                joMP = self.prepMP(point) # point just outside the IBZ on the mesh lattice
                 for fpoint in joMP.fpoints:
                     for iplane, uvec in enumerate(self.IBZ.bounds[0]):
                         ro = self.IBZ.bounds[1][iplane]
@@ -554,13 +557,14 @@ class voidWeight():
                             joMP = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u
                             
 #                             print 'Surf point vol', point, joMP.volume
-                self.voids.facets.append(joMP.facets)
-                self.voids.volume += joMP.volume
-                self.voids.volumes.append(joMP.volume)
-                self.voids.mesh.append(joMP.center)
-                allMPfacets.append(joMP.facets)
+                if joMP.volume > self.eps**3:
+                    self.voids.facets.append(joMP.facets)
+                    self.voids.volume += joMP.volume
+                    self.voids.volumes.append(joMP.volume)
+                    self.voids.mesh.append(joMP.center)
         print 'Total volume Vor cells plus voids:',vMPs+self.voids.volume,'vs IBZ volume', self.IBZ.volume 
-        self.facetsMeshVCMathFile(self.IBZ,allMPfacets)                      
+        self.facetsMeshVCMathFile(self.IBZ,allMPfacets,'IBZmesh') 
+        self.facetsMeshVCMathFile(self.IBZ,self.voids.facets,'voids')                     
         if not areEqual(vMPs+self.voids.volume, self.IBZ.volume, volCheck*self.IBZ.volume):
             sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
         #find distances of each void point to IBZ mesh points and their symmetry partners.    
@@ -571,52 +575,51 @@ class voidWeight():
             for i in [-1,0,1]:
                 for j in [-1,0,1]:
                     for k in [-1,0,1]:
-                    #includes inside points
-                        transPoint = point + i*self.meshPrimLVs[0] + j*self.meshPrimLVs[1] + k*self.meshPrimLVs[2]
-                        if isInside(transPoint,self.IBZ.bounds,rCutoff):
+                    #includes IBZ points
+                        transPoint = point + i*self.B[0] + j*self.B[1] + k*self.B[2]
+#                         print 'transpoint',transPoint
+                        if isInside(transPoint,self.IBZ.bounds,self.eps,rCutoff):
+                            print 'inside',transPoint
                             expandedMesh[iIBZ].append(transPoint)
+            temp = deepcopy(expandedMesh[iIBZ])
             for iop in range(self.nops):
                 op = self.symops[:,:,iop]
                 symPoint = dot(op,point)
-                expandedMesh[iIBZ] = addVec(symPoint,expandedMesh[iIBZ],self.eps) #add only if unique 
+                temp = addVec(symPoint,temp,self.eps) #add only if unique 
+            expandedMesh[iIBZ] = deepcopy(temp)
+            self.facetsMeshMathFile(self.IBZ,expandedMesh[iIBZ],'expmesh_{}'.format(iIBZ),None)
         # Divide the volume of each void and add it to the volume of each mesh point, 
         # according to how close expandedMesh points (that are partners of the mesh point) 
         # is to the void point      
-        power = 1.0
-        self.IBZ.weights = self.IBZ.vorVols
         for iv, vpoint in enumerate(self.voids.mesh):
             dweights = zeros(len(self.IBZ.mesh),dtype = float)
-            
             for iIBZ in range(len(self.IBZ.mesh)):
                 ds = [norm(epoint-vpoint) for epoint in expandedMesh[iIBZ]]
+                print 'ds',sorted(ds)
                 dmin = min(ds)
                 imin = argmin(ds)
-                if dmin > 1/self.eps:
+                if dmin > self.eps:
                     for d in ds:
                         dweights[iIBZ] += dmin/d # this keeps weights all at one or below
                 else: #one point gets all the weight
                     dweights = zeros(len(self.IBZ.mesh),dtype = float)
                     dweights[iIBZ] = 1.0
-                    break
-                
+                    break                
             dweights = dweights/sum(dweights) #now weights sum to 1
             #Divide volume in void:
             for iIBZ in range(len(self.IBZ.mesh)):
-                self.IBZ.weights[iIBZ] += self.voids.volumes[iv] *  dweights[iIBZ]             
+                self.IBZ.weights[iIBZ] += self.voids.volumes[iv] * dweights[iIBZ]             
         wtot = sum(self.IBZ.weights)
         print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
             sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
- 
-            
-            
-            
-            
-                
+        #normalize the seights so that a full interior point gets weight nops of symmetry
+        self.IBZ.weights =  array(self.IBZ.weights)/self.MP.volume * self.nops
+        print 'Weights:'
+        for i, weight in enumerate(self.IBZ.weights):
+            print i, weight
+        print 'Sum', sum(self.IBZ.weights)                
         return
-    
-
-
 
     def prepMP(self,kpoint):
         cutMP = deepcopy(self.MP)
@@ -637,52 +640,6 @@ class voidWeight():
         Remove any points within self.dw*self.wallClose from any wall        '''
         a = 1.0
         cubicLVs = identity(3)
-        #test facet points for orthogonality
-#         rs = []
-#         pairs = []
-#         triples = []
-#         uvecs = self.IBZ.bounds[0]
-#         for i in range(len(uvecs)):
-#             if areEqual(norm(uvecs[i]),0.0,eps): break
-#             rs.append(norm(uvecs[i]))
-#             for j in range(i,len(uvecs)):
-#                 if areEqual(norm(uvecs[j]),0.0,eps): break
-#                 if areEqual(dot(uvecs[i],uvecs[j]),0.0,eps):
-#                     pairs.append([uvecs[i],uvecs[j]])
-#         for ip,pair in enumerate(pairs):
-#             for i in range(len(uvecs)):
-#                 if areEqual(norm(uvecs[i]),0.0,eps): break
-#                 if areEqual(dot(pair[0],uvecs[i]),0.0,eps) and areEqual(dot(pair[1],uvecs[i]),0.0,eps):
-#                     triple = deepcopy(pair)
-#                     triple.append(uvecs[i])
-#                     triples.append(triple)
-#                     break
-        #Define basis vectors for cubic lattice:
-#         if len(triples)>0:
-#             print 'At least one triplet of orthogonal plane normals found:',triples[0]
-#             if len(triples)>1: #find the one with most total vector length
-#                 sums = zeros(len(triples))
-#                 for it, triple in enumerate(triples):
-#                     for i in range(3):
-#                         sums[it] += norm(triple[i])
-#                 triples = [triple for (sum1,triple) in sorted(zip(sums,triples),key = lambda x: x[0])] #sorted by lowest sum  
-#             for i in range(3):
-#                 vec = triples[-1][i]
-#                 cubicLVs[:,i] = vec/norm(vec)
-#         elif len(pairs)>0:
-#             print 'At least one pair of orthogonal plane normals found:', pairs[0]
-#             if len(pairs)>1:
-#                 sums = zeros(len(pairs))
-#                 for ip, pair in enumerate(pairs):
-#                     for i in range(2):
-#                         sums[ip] += norm(pairs[i])
-#                 pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
-#             for i in range(2):        
-#                 vec = pairs[-1][i]
-#                 cubicLVs[:,i] = vec/norm(vec)
-#             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
-#         else:
-#             print 'no orthogonal plane normals pairs found.'
         if type == 'fcc':    
             volKcubConv = self.IBZ.volume/self.nTargetIBZ*4
             aKcubConv = volKcubConv**(1/3.0)
@@ -781,7 +738,7 @@ class voidWeight():
                     for i, site in enumerate(sites0):
                         sites[i] = dot(Rmat,site)        
                     IBZ,nInside,outPoints = self.fillMesh(cubicLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
-#                     self.facetsMeshMathFile(IBZ,'IBZinit_{}'.format(isearch),None)
+#                     self.facetsMeshMathFile(IBZ,IBZ.mesh'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
                     if nInside > nMax: 
@@ -835,7 +792,7 @@ class voidWeight():
 #                         else:
 #                             nInside += 1
 #                             IBZ.mesh.append(kpoint) 
-                        if isInside(kpoint,IBZ.bounds,self.eps):
+                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):
                             nInside += 1
                             IBZ.mesh.append(kpoint) 
                         else:
@@ -1178,22 +1135,22 @@ class voidWeight():
 #         strOut += '}];'
         writefile(strOut,'cell_{}.m'.format(tag))     
             
-    def facetsMeshMathFile(self,cell,tag,color):
+    def facetsMeshMathFile(self,cell,points,tag,color):
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
         strOut += ';\n p=Graphics3D[{'
-        cell.mesh = list(trimSmall(array(cell.mesh)))
-        for ipoint,point in enumerate(cell.mesh):
+        list(trimSmall(array(points)))
+        for ipoint,point in enumerate(list(trimSmall(array(points)))):
             if color != None:
                 strOut += '{},'.format(color)
             strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
-            if ipoint < len(cell.mesh) -1:
+            if ipoint < len(points) -1:
                 strOut += ','
         strOut += '}];\nShow[s,p]'
         writefile(strOut,'cell_{}.m'.format(tag))   
               
-    def facetsMeshVCMathFile(self,IBZ,allMeshFacets):
+    def facetsMeshVCMathFile(self,IBZ,allMeshFacets,tag):
         '''Output for Mathematica graphics drawing the facets of each mesh point
         cell, as well as the borders of the IBZ'''
         strOut = ''
@@ -1206,12 +1163,12 @@ class voidWeight():
             strOut = self.facetsMathToStr(strOut,tCell,'v{}'.format(i),False,'RandomColor[]')
             strOut+=';'
             showCommand += 'v{}'.format(i)
-            if i < len(IBZ.mesh)-1:
+            if i < len(allMeshFacets)-1:
                 showCommand += ','
         showCommand += ']'
 #         strOut+=';'
         strOut+=showCommand
-        writefile(strOut,'IBZmeshFacets.m')
+        writefile(strOut,'facets_{}.m'.format(tag))
 
     def mathPrintPlanes(self,bounds):
         print 'r=RegionPlot3D[',
