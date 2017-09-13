@@ -234,7 +234,7 @@ def newBounds(boundVecs,bndsLabels,grp,cell,type,eps):
                 if not intersPt is None:
                     if not isOutside(intersPt,cell.bounds,eps)\
                         and not among(intersPt,allVerts,eps):
-                            addVec(intersPt,allVerts,eps)
+                            allVerts = addVec(intersPt,allVerts,eps)
                             addPlane(planesu3[0],planesmag3[0],allPlanes,eps)
                             addPlane(planesu3[1],planesmag3[1],allPlanes,eps)
                             addPlane(planesu3[2],planesmag3[2],allPlanes,eps)                                 
@@ -281,7 +281,6 @@ def getInterscPoints(planes,eps):
     return interscPoints
 
 def getFacetsPoints(cell,eps):
-    cell.facets = []
 #     facetsPoints = []
 #     for point in interscPoints:
 #         if not isOutside(point,cell.bounds,eps):
@@ -413,11 +412,12 @@ def getBoundsFacets(cell,eps,rpacking = None):
 class cell():
     def __init__(self):
         self.bounds = [[],[]] #planes, written as normals and distances from origin [u's] , [ro's]
-        self.facets = None #points arranged in facets
+        self.facets = [] #points arranged in facets
         self.fpoints = [] #points as a set (but a list)
         self.volume = None
+        self.volumes = []
         self.center = None #body center of cell
-        self.mesh = None #centers of each voronoi cell, or kpoints
+        self.mesh = [] #centers of each voronoi cell, or kpoints
         self.weights = None
         self.vorVols = []
         self.details = None
@@ -495,10 +495,18 @@ class voidWeight():
         xMake a standard voronoi cell for each mesh point. 
         xFind the max distance rmaxMP between a MP cell center an a vertex. 
         xIf a MP has a facet outside the IBZ bounds, it is cut.
-        Find the voids near the surface (min d_planes < rmaxMP).
-        Use sym and translation to find all IBZ points that have partners outside
+        xFind the voids near the surface (min d_planes < rmaxMP).
+        xUse sym and translation to find all IBZ points that have partners outside
         but are close to the surface. 
         void weights are distributed among IBZ points that are close to it.   
+        
+        Etot = sum(E_i*vol_i)/volIBZ  =  [sum(E_IBZMP_m*vol_m) + sum(E_void_q*vol_q)]/volIBZ.
+        But we assume that each E_void can be interpolated from the calculated E_IBZMP's.  
+        
+        ****So we use some kind of interpolation...*** Linear at first.  
+        
+        
+        E_void = sum(E_MPclose_i*
         '''
         allMPfacets = []
         surfPoints = []
@@ -522,20 +530,18 @@ class voidWeight():
                    
                  
 #         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
-        wtot = sum(self.IBZ.vorVols)
+        vMPs = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
         meanV = mean(self.IBZ.vorVols)
         volCheck = 0.01
-        volErr = wtot - self.IBZ.volume        
+        volErr = vMPs - self.IBZ.volume        
         volErrRel = volErr/self.IBZ.volume
-        print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
+        print 'Total volume of point Vor cells',vMPs,'vs IBZ volume', self.IBZ.volume
         print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
-        pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
-        print 'Packing fraction (can be >1 from points near boundary', pf
-        self.IBZ.weights = self.IBZ.vorVols
-        voidsW = 0
         #find void centers, which are portions of points on the original packing lattice
 #         that lie outside the IBZ 
+        self.voids = cell()
+        self.voids.volume = 0.0
         for io, point in enumerate(self.outPoints):
             ds = [norm(point-surfpoint) for surfpoint in surfPoints]
             if min(ds) < 2*self.rmaxMP: #candidate to host an IBZ void: it's "just outside"
@@ -546,65 +552,70 @@ class voidWeight():
                         d = ro - dot(uvec,fpoint)
                         if d < self.rmaxMP:                                    
                             joMP = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u
+                            
 #                             print 'Surf point vol', point, joMP.volume
-                voidsW += joMP.volume
+                self.voids.facets.append(joMP.facets)
+                self.voids.volume += joMP.volume
+                self.voids.volumes.append(joMP.volume)
+                self.voids.mesh.append(joMP.center)
                 allMPfacets.append(joMP.facets)
-        print 'Total volume Vor cells plus voids:',wtot+voidsW,'vs IBZ volume', self.IBZ.volume 
+        print 'Total volume Vor cells plus voids:',vMPs+self.voids.volume,'vs IBZ volume', self.IBZ.volume 
         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)                      
-        if not areEqual(wtot+voidsW, self.IBZ.volume, volCheck*self.IBZ.volume):
-            sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.')        
+        if not areEqual(vMPs+self.voids.volume, self.IBZ.volume, volCheck*self.IBZ.volume):
+            sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
+        #find distances of each void point to IBZ mesh points and their symmetry partners.    
+        #find symmetry parterns (expandedMesh), which includes themselves
+        rCutoff = 4.0*self.rpacking
+        expandedMesh = [[]]*len(self.IBZ.mesh)
+        for iIBZ,point in enumerate(self.IBZ.mesh):
+            for i in [-1,0,1]:
+                for j in [-1,0,1]:
+                    for k in [-1,0,1]:
+                    #includes inside points
+                        transPoint = point + i*self.meshPrimLVS[0] + j*self.meshPrimLVS[1] + k*self.meshPrimLVS[2]
+                        if isInside(transPoint,self.IBZ,rCutoff):
+                            expandedMesh[iIBZ].append(transPoint)
+            for iop in range(self.nops):
+                op = self.symops[:,:,iop]
+                symPoint = dot(op,point)
+                expandedMesh[iIBZ] = addVec(symPoint,expandedMesh[ipoint],self.eps) #add only if unique 
+        # Divide the volume of each void and add it to the volume of each mesh point, 
+        # according to how close expandedMesh points (that are partners of the mesh point) 
+        # is to the void point      
+        power = 1.0
+        self.IBZ.weights = self.IBZ.vorVols
+        for iv, vpoint in enumerate(self.voids.mesh):
+            dweights = zeros(len(self.IBZ.mesh),dtype = float)
+            
+            for iIBZ in range(len(self.IBZ.mesh)):
+                ds = [norm(epoint-vpoint) for epoint in expandedMesh[iIBZ]]
+                dmin = min(ds)
+                imin = argmin(ds)
+                if dmin > 1/self.eps:
+                    for d in ds:
+                        dweights[iIBZ] += dmin/d # this keeps weights all at one or below
+                else: #one point gets all the weight
+                    dweights = zeros(len(self.IBZ.mesh),dtype = float)
+                    dweights[iIBZ] = 1.0
+                    break
+                
+            dweights = dweights/sum(dweights) #now weights sum to 1
+            #Divide volume in void:
+            for iIBZ in range(len(self.IBZ.mesh)):
+                self.IBZ.weights[IBZ] += self.voids.volumes[iv] *  dweights[IBZ]             
+        wtot = sum(self.IBZ.weights)
+        print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
+        if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
+            sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
+ 
+            
+            
+            
+            
+                
         return
-        
-            
-            
-#             pointCell = cell()
-#             neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
-# #             print 'neighLbls',neighLbls
-#             boundVecs = zeros(len(neighs)+ len(self.IBZ.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')]) 
-#             for iw, u in enumerate(self.IBZ.bounds[0]):    
-#                 ro = self.IBZ.bounds[1][iw]
-#                 d = ro-dot(point,u)
-#                 boundVecs[iw]['uvec'] = u #unit vector stays the same for the plane
-#                 boundVecs[iw]['mag'] = d
-# #                 print 'wall',iw,u, vec, norm(vec)
-#             for j, jpoint in enumerate(neighs):
-#                 vec = (jpoint - point)/2
-#                 mag = norm(vec)
-# #                 print 'neighs',j,jpoint, vec, norm(vec)
-#                 boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
-#                 boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
-#             boundVecs.sort(order = 'mag') 
-#             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
-#             self.IBZ.weights.append(pointCell.volume)
-#             self.IBZ.vorVols.append(pointCell.volume)
-#              
-#             #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
-#  
-#             allMPfacets.append(pointCell.facets)
-#  
-#         print
-#         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
-#         wtot = sum(self.IBZ.vorVols)
-#         stdev = std(self.IBZ.vorVols)
-#         meanV = mean(self.IBZ.vorVols)
-#         volCheck = 0.1
-#         volErr = wtot - self.IBZ.volume        
-#         volErrRel = volErr/self.IBZ.volume
-#          
-#         print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
-#         print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
-#         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
-# #             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
-#             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
-#         else:
-#             print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)  
-#         pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
-#         print 'Packing fraction (can be >1 from points near boundary', pf
-#         meshDet = open('../meshDetails.csv','a')
-#         N = len(self.IBZ.mesh)
-#         meshDet.write('{},{},{:6.3f},{:6.3f},{:6.3f}\n'.format(self.nTargetIBZ,N,stdev/meanV,self.meshEnergy/float(N),pf))
-#         meshDet.flush()
-#         meshDet.close()
+    
+
 
 
     def prepMP(self,kpoint):
@@ -707,21 +718,21 @@ class voidWeight():
             if type == 'fcc':    
                 sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
                          1/2.0*(cubicLVs[:,0]+cubicLVs[:,2]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1])]
-                primLVs = transpose(array(sites[1:]))
+                self.meshPrimLVs = transpose(array(sites[1:]))
             elif type == 'bcc':
                 sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
-                primLVs = transpose(array([array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
+                self.meshPrimLVs = transpose(array([array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
                             array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
                             array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]))
             elif type == 'cub':
                 sites = [array([0, 0 , 0])]
-                primLVs = cubicLVs        
+                self.meshPrimLVs = cubicLVs        
         else:
             shift = array([1,1,1])/8.0 * aKcubConv
             self.IBZ,self.outPoints = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
 
 
-        MPbraggVecs = getBraggVecs(primLVs)
+        MPbraggVecs = getBraggVecs(self.meshPrimLVs)
         self.MP = cell()
         self.MP.volume = self.IBZ.volume/self.nTargetIBZ
         self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
