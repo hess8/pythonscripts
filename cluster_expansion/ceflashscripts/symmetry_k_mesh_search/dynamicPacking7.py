@@ -443,12 +443,13 @@ class dynamicPack():
         self.initFactor = 1.0
         self.df = 1.00 * self.ravg #inter-point force scale distance
         self.dw = float(params[5]) * self.df  #0.5 * self.df #wall force scale distance
-#        self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
+        self.nKmax = 200
+        self.nKmin = 2
         eps = self.ravg/300
         self.eps = eps
         self.meshEnergy = 0.0
         self.searchInitFactor = 0.0
-        self.initSrch = 'max'
+        self.initSrch = 'min'
 #         self.initSrch = None
 #         self.initSrch = 'target'
         self.nTarget = int(self.initFactor*targetNmesh)
@@ -465,9 +466,8 @@ class dynamicPack():
 #         self.nTargetIBZ = self.nTarget
         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
-        nKmax = 200
-        print 'Limiting nK to {} in dynamicPacking7'.format(nKmax)
-        if 2 < len(self.IBZ.mesh) <= nKmax:
+        print 'Limiting nK to {} in dynamicPacking7'.format(self.nKmin,self.nKmax)
+        if self.nKmin < len(self.IBZ.mesh) <= self.nKmax:
             OK = True
             self.dynamic(eps)
             self.weightPoints(eps)
@@ -637,14 +637,14 @@ class dynamicPack():
         else:
             sys.exit('stop. Type error in meshCubic.')
         if self.initSrch is not None:
-            self.IBZ = self.searchNmax(cubicLVs,aKcubConv,sites) 
+            self.IBZ = self.searchInit(cubicLVs,aKcubConv,sites) 
         else:
             shift = array([1,1,1])/8.0 * aKcubConv
             self.IBZ,nInside = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
         
         #Search over shift and rotation to find the most possible points inside
 
-    def searchNmax(self,cubicLVs,aKcubConv,sites):
+    def searchInit(self,cubicLVs,aKcubConv,sites):
         '''Test an entire grid of init values'''
         cubicLVs0 = cubicLVs
         nShift = 5
@@ -656,7 +656,8 @@ class dynamicPack():
         shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(nShift)]
         thetas = [i*thDiv for i in range(nTh)]
         phis = [i*phDiv for i in range(nPh)]
-        nMax = 0
+        nKeep = 1e10
+        bestEner = 1e10
         closestLog = 10
         isearch = 0
         bestN = 0
@@ -680,21 +681,23 @@ class dynamicPack():
 #                    self.facetsMeshMathFile(IBZ,'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
-                    if nInside > nMax: 
-                        nMax = nInside
-                        if self.initSrch == 'max':
+                    if self.nKmin <= nInside <= nKeep: 
+                        ener = self.energy(IBZ.mesh) #wall energy only
+                        nKeep = nInside
+                        if self.initSrch == 'min' and ener < bestEner:
+                            bestEner = ener
                             bestN = nInside
                             bestIBZ = deepcopy(IBZ)
                             besti = isearch
-                        print 'Step {}: Nmax'.format(isearch),nMax, shift, theta, phi
-                    if self.initSrch != 'max':
+                            print 'Step {}: nKeep {} at energy {}'.format(isearch,nKeep,bestEner),shift, theta, phi
+                    if self.initSrch != 'min':
                         closeLog = abs(log(nInside/(self.searchInitFactor*self.nTargetIBZ)))
                         if closeLog < closestLog:
                             closestLog = closeLog
                             bestN = nInside
                             bestIBZ = deepcopy(IBZ)
-        if self.initSrch == 'max':
-            print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
+        if self.initSrch == 'min':
+            print 'Least nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
         else:
             print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.searchInitFactor*self.nTargetIBZ)
         return bestIBZ
@@ -818,6 +821,21 @@ class dynamicPack():
 #             sys.exit('Did not find a lower energy and force norm: stop')
             print 'Did not find a lower energy and force norm: using unrelaxed packing'
         return fnew
+    
+    def energy(self,mesh):
+        wp = self.wallPower
+        etot = 0
+        for i,ri in enumerate(mesh):
+            #wall forces
+            for iw, u in enumerate(self.IBZ.bounds[0]):
+                ro = self.IBZ.bounds[1][iw]
+                d = ro-dot(ri,u)+ self.wallOffset*self.dw #distance from plane to ri offset factor allows points to move closer to walls. 
+                if d<0:
+                    print '\nri,ro,u, dot(ri,u),d'
+                    print ri,ro,u, dot(ri,u), d 
+                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(i+1))
+                etot += self.dw/abs(-wp+1)*(d/self.dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+        return etot
 
     def enerGrad(self,comps):
         '''Returns the total energy, gradient (-forces), 
