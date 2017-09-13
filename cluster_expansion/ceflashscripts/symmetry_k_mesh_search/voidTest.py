@@ -23,10 +23,17 @@ import voidWeighting, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepMPonly'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
+
+
+''' MPs only, ignoring voids: 2.21 0.0] avg nDone 19.0
+    MPs + void weights using only inside points
+                               2.19 0.0] avg nDone 19.0  !progress!
+'''  
+
 
 #maindir default is os.getcwd()
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)

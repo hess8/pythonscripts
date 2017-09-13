@@ -527,9 +527,7 @@ class voidWeight():
 #             if cut:
 #                 allMPfacets.append(ibzMP.facets)
             allMPfacets.append(ibzMP.facets)
-            self.IBZ.vorVols.append(ibzMP.volume)
-                   
-                 
+            self.IBZ.vorVols.append(ibzMP.volume)               
 #         self.facetsMeshVCMathFile(self.IBZ,allMPfacets,'IBZMesh')
         vMPs = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
@@ -540,6 +538,7 @@ class voidWeight():
         print 'Total volume of point Vor cells',vMPs,'vs IBZ volume', self.IBZ.volume
         print 'Relative volume in MP Vor cells', volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
         self.IBZ.weights = self.IBZ.vorVols
+        
         
         #find void centers, which are portions of points on the original packing lattice
 #         that lie outside the IBZ 
@@ -554,8 +553,7 @@ class voidWeight():
                         ro = self.IBZ.bounds[1][iplane]
                         d = ro - dot(uvec,fpoint)
                         if d < self.rmaxMP:                                    
-                            joMP = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u
-                            
+                            joMP = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u                 
 #                             print 'Surf point vol', point, joMP.volume
                 if joMP.volume > self.eps**3:
                     self.voids.facets.append(joMP.facets)
@@ -572,6 +570,7 @@ class voidWeight():
         rCutoff = 4.0*self.rpacking
         expandedMesh = [[]]*len(self.IBZ.mesh)
         for iIBZ,point in enumerate(self.IBZ.mesh):
+            temp = []
             for i in [-1,0,1]:
                 for j in [-1,0,1]:
                     for k in [-1,0,1]:
@@ -580,13 +579,17 @@ class voidWeight():
 #                         print 'transpoint',transPoint
                         if isInside(transPoint,self.IBZ.bounds,self.eps,rCutoff):
                             print 'inside',transPoint
-                            expandedMesh[iIBZ].append(transPoint)
-            temp = deepcopy(expandedMesh[iIBZ])
-            for iop in range(self.nops):
-                op = self.symops[:,:,iop]
-                symPoint = dot(op,point)
-                temp = addVec(symPoint,temp,self.eps) #add only if unique 
-            expandedMesh[iIBZ] = deepcopy(temp)
+                            temp.append(transPoint)
+            expandedMesh[iIBZ]= deepcopy(temp)
+                             
+                             
+#             temp = deepcopy(expandedMesh[iIBZ])
+#             for iop in range(self.nops):
+#                 op = self.symops[:,:,iop]
+#                 symPoint = dot(op,point)
+#                 temp = addVec(symPoint,temp,self.eps) #add only if unique 
+#             expandedMesh[iIBZ] = deepcopy(temp)
+             
             self.facetsMeshMathFile(self.IBZ,expandedMesh[iIBZ],'expmesh_{}'.format(iIBZ),None)
         # Divide the volume of each void and add it to the volume of each mesh point, 
         # according to how close expandedMesh points (that are partners of the mesh point) 
@@ -614,6 +617,8 @@ class voidWeight():
         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
             sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
         #normalize the seights so that a full interior point gets weight nops of symmetry
+       
+        
         self.IBZ.weights =  array(self.IBZ.weights)/self.MP.volume * self.nops
         print 'Weights:'
         for i, weight in enumerate(self.IBZ.weights):
