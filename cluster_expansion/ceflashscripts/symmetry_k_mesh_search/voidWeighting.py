@@ -534,10 +534,10 @@ class voidWeight():
         stdev = std(self.IBZ.vorVols)
         meanV = mean(self.IBZ.vorVols)
         volCheck = 0.01
-        volErr = vMPs - self.IBZ.volume        
-        volErrRel = volErr/self.IBZ.volume
+        volDiff = vMPs - self.IBZ.volume        
+        volDiffRel = volDiff/self.IBZ.volume
         print 'Total volume of point Vor cells',vMPs,'vs IBZ volume', self.IBZ.volume
-        print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
+        print 'Relative volume in MP Vor cells', volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
         #find void centers, which are portions of points on the original packing lattice
 #         that lie outside the IBZ 
         self.voids = cell()
@@ -572,13 +572,13 @@ class voidWeight():
                 for j in [-1,0,1]:
                     for k in [-1,0,1]:
                     #includes inside points
-                        transPoint = point + i*self.meshPrimLVS[0] + j*self.meshPrimLVS[1] + k*self.meshPrimLVS[2]
-                        if isInside(transPoint,self.IBZ,rCutoff):
+                        transPoint = point + i*self.meshPrimLVs[0] + j*self.meshPrimLVs[1] + k*self.meshPrimLVs[2]
+                        if isInside(transPoint,self.IBZ.bounds,rCutoff):
                             expandedMesh[iIBZ].append(transPoint)
             for iop in range(self.nops):
                 op = self.symops[:,:,iop]
                 symPoint = dot(op,point)
-                expandedMesh[iIBZ] = addVec(symPoint,expandedMesh[ipoint],self.eps) #add only if unique 
+                expandedMesh[iIBZ] = addVec(symPoint,expandedMesh[iIBZ],self.eps) #add only if unique 
         # Divide the volume of each void and add it to the volume of each mesh point, 
         # according to how close expandedMesh points (that are partners of the mesh point) 
         # is to the void point      
@@ -602,7 +602,7 @@ class voidWeight():
             dweights = dweights/sum(dweights) #now weights sum to 1
             #Divide volume in void:
             for iIBZ in range(len(self.IBZ.mesh)):
-                self.IBZ.weights[IBZ] += self.voids.volumes[iv] *  dweights[IBZ]             
+                self.IBZ.weights[iIBZ] += self.voids.volumes[iv] *  dweights[iIBZ]             
         wtot = sum(self.IBZ.weights)
         print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
