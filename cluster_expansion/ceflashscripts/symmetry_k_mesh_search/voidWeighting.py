@@ -567,29 +567,25 @@ class voidWeight():
             sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
         #find distances of each void point to IBZ mesh points and their symmetry partners.    
         #find symmetry parterns (expandedMesh), which includes themselves
-        rCutoff = 4.0*self.rpacking
+        rCutoff = 3.0*self.rpacking
         expandedMesh = [[]]*len(self.IBZ.mesh)
         for iIBZ,point in enumerate(self.IBZ.mesh):
-            temp = []
-            for i in [-1,0,1]:
-                for j in [-1,0,1]:
-                    for k in [-1,0,1]:
-                    #includes IBZ points
-                        transPoint = point + i*self.B[0] + j*self.B[1] + k*self.B[2]
-#                         print 'transpoint',transPoint
-                        if isInside(transPoint,self.IBZ.bounds,self.eps,rCutoff):
-                            print 'inside',transPoint
-                            temp.append(transPoint)
-            expandedMesh[iIBZ]= deepcopy(temp)
-                             
-                             
-#             temp = deepcopy(expandedMesh[iIBZ])
-#             for iop in range(self.nops):
-#                 op = self.symops[:,:,iop]
-#                 symPoint = dot(op,point)
-#                 temp = addVec(symPoint,temp,self.eps) #add only if unique 
-#             expandedMesh[iIBZ] = deepcopy(temp)
-             
+            BZpartners = []
+            for iop in range(self.nops):
+                op = self.symops[:,:,iop]
+                symPoint = dot(op,point)
+                BZpartners.append(symPoint)  #includes IBZ points
+            allPartners = deepcopy(BZpartners)
+            for BZpoint in BZpartners:
+                for i in [-1,0,1]:
+                    for j in [-1,0,1]:
+                        for k in [-1,0,1]:
+                            if not i==j==k==0:
+                                transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
+        #                         print 'transpoint',transPoint
+                                if isInside(transPoint,self.IBZ.bounds,self.eps,rCutoff):
+                                    allPartners.append(transPoint)
+            expandedMesh[iIBZ]= deepcopy(allPartners)            
             self.facetsMeshMathFile(self.IBZ,expandedMesh[iIBZ],'expmesh_{}'.format(iIBZ),None)
         # Divide the volume of each void and add it to the volume of each mesh point, 
         # according to how close expandedMesh points (that are partners of the mesh point) 

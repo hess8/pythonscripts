@@ -31,10 +31,10 @@ maindir = os.getcwd()
 
 ''' MPs only, ignoring voids: 2.21 0.0] avg nDone 19.0
     MPs + void weights using only inside points
-                               2.19 0.0] avg nDone 19.0  !progress!
+                              2.19 0.0] avg nDone 19.0  !progress!
+    MPs + void weights using all points, but not dealing with close clusters:
+                              2.25 
 '''  
-
-
 #maindir default is os.getcwd()
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
@@ -271,7 +271,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params4 =     [ 0] #wallOffset
 #     params5 =     [0.5, 1.0] #dw
 #  best: 1.57 [ 6.    4.    1.    0.05  0.    0.5 ]] avg nDone 19.0
-    params0 =     [ 0.0]   #wallClose
+    params0 =     [ 0.1, 0.2, 0.5]   #wallClose
     
 #     params5 =  [0.1]
 #     params5 =  [float(sys.argv[1])]
@@ -300,7 +300,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #                             params = [p0,p1,p2,p3,p4,p5]   
                             params = [p0]   
                             if nP ==1: 
-                                all[iset]['params']   
+                                all[iset]['params']  =  p0
                             else:
                                 params = [p0,p1,p2,p3,p4,p5]               
                                 all[iset]['params'] = params
