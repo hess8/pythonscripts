@@ -9,12 +9,14 @@ from numpy.linalg import norm
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/symmetry_k_mesh_search')
 #import kmeshroutines as km
 from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile
-import dynamicPacking7
+# import dynamicPacking7
+import voidWeighting
 
 def getVCmesh(dir,targetNmesh,meshtype,params) :
 
     lastDir = os.getcwd()   
-    meshc = dynamicPacking7.dynamicPack() #instance
+#     meshc = dynamicPacking7.dynamicPack() #instance
+    meshc = voidWeighting.voidWeight() #instance
     [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
 #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
     os.chdir(dir)
@@ -36,7 +38,8 @@ os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17/r
 ntarget = 3
 type = 'fcc'
 #        ['power','wallPower-force','wallfactor','wallClose','wallOffset','dw' ]
-params =  ['4.00',   '2.0 ',        '0.5',      '0.05',      '0.00',   '1.0']
+# params =  ['4.00',   '2.0 ',        '0.5',      '0.05',      '0.00',   '1.0']
+params =  ['0.0']
 statusOK,nops = getVCmesh(os.getcwd(),ntarget,type,params) 
 if statusOK:
     writefile([],'OK')  

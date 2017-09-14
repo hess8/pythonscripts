@@ -501,13 +501,35 @@ class voidWeight():
         but are close to the surface. 
         void weights are distributed among IBZ points that are close to it.   
         
-        Etot = sum(E_i*vol_i)/volIBZ  =  [sum(E_IBZMP_m*vol_m) + sum(E_void_q*vol_q)]/volIBZ.
-        But we assume that each E_void can be interpolated from the calculated E_IBZMP's.  
+        Etot = sum(f_i*vol_i)/volIBZ  =  [sum(E_IBZMP_m*vol_m) + sum(f_void_q*vol_q)]/volIBZ.
+        f_i involves the band energy sum_n(E_n(k_i)*occ((E_n(k_i))
+        We assume that each f_void can be interpolated from the calculated f_IBZMP's.  
         
-        ****So we use some kind of interpolation...*** Linear at first.  
-        
-        
-        E_void = sum(E_MPclose_i*
+        Interpolation:  We choose 4 points near the void that don't lie close to each other.
+         f_v = f_1 + g*(kv-k1).  We get the local gradient g (a vector) by solving: 
+         f2 = f1 + grad .dot. (k2-k2), and similar for f3 and f4. 
+         or 
+         f2 = f1 + (k2x-k1x)gx + (k2y-k1y)gy + (k2z-k1z)gz
+         if we form the matrix DK = [k2-k1 : k3-k1:k4-k1]  shown as columns, then 
+         transpose(DK) * g = DF,  where DF = [f2-f1,f3-f1,f4-f1] a vector. 
+         Then g_v = inv(trans(DK_v)) * DF_v, for each void v
+         Solving in terms of the f's:  
+         gvx = a*f1 + b*f2 + c*f3 + d*f4
+         gvy = e*f1 + f*f2 + g*f3 + h*f4
+         gvz = i*f1 + j*f2 + k*f3 + l*f4, and we get these 12 parameters 
+         in terms of the k-components of the points 1-4 from Mathematica algebra.
+         
+         So fv = f1 + gv .dot. (kv-k1).  
+           In terms of the parameters a to l, which we put into
+           a 3x4 matrix P, gv = P * [f1,f2,f3,f4].  
+           So fv = f1 + gv .dot. (kv-k1)  = f1 + (P * [f1,f2,f3,f4]) .dot (kv - k1)
+         
+         So the void weights are distributed among the IBZ points that are partners to the four points:
+         del_w_1 = vol_void * [1 + a*(kvx-k1x) + e*(kvy-k1y) + i*(kvz-k1z)]
+         del_w_2 = vol_void * [b*(kvx-k1x) + f(kvy-k1y) + j*(kvz-k1z)]
+         del_w_3 = vol_void * [c*(kvx-k1x) + g(kvy-k1y) + k*(kvz-k1z)]
+         del_w_4 = vol_void * [d*(kvx-k1x) + h(kvy-k1y) + l*(kvz-k1z)]
+
         '''
         allMPfacets = []
         surfPoints = []
@@ -570,11 +592,12 @@ class voidWeight():
         rCutoff = 3.0*self.rpacking
         expandedMesh = [[]]*len(self.IBZ.mesh)
         for iIBZ,point in enumerate(self.IBZ.mesh):
-            BZpartners = []
+            BZpartners = [point]
             for iop in range(self.nops):
                 op = self.symops[:,:,iop]
                 symPoint = dot(op,point)
-                BZpartners.append(symPoint)  #includes IBZ points
+                addVec(symPoint,BZpartners,self.eps)
+#                 addVec(symPoint,BZpartners,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
             allPartners = deepcopy(BZpartners)
             for BZpoint in BZpartners:
                 for i in [-1,0,1]:
@@ -594,7 +617,7 @@ class voidWeight():
             dweights = zeros(len(self.IBZ.mesh),dtype = float)
             for iIBZ in range(len(self.IBZ.mesh)):
                 ds = [norm(epoint-vpoint) for epoint in expandedMesh[iIBZ]]
-                print 'ds',sorted(ds)
+#                 print 'ds',sorted(ds)
                 dmin = min(ds)
                 imin = argmin(ds)
                 if dmin > self.eps:
@@ -621,6 +644,34 @@ class voidWeight():
             print i, weight
         print 'Sum', sum(self.IBZ.weights)                
         return
+
+    def distrVoidWeights(self,vpoint,allPartners):
+        '''
+         del_w_1 = vol_void * [1 + a*(kvx-k1x) + e*(kvy-k1y) + i*(kvz-k1z)]
+         del_w_2 = vol_void * [b*(kvx-k1x) + f(kvy-k1y) + j*(kvz-k1z)]
+         del_w_3 = vol_void * [c*(kvx-k1x) + g(kvy-k1y) + k*(kvz-k1z)]
+         del_w_4 = vol_void * [d*(kvx-k1x) + h(kvy-k1y) + l*(kvz-k1z)]'''
+        #Find three partner points close to the void center that are not within 2*rpacking of each other
+        Q =(k1z*k2y*k3x - k1y*k2z*k3x - k1z*k2x*k3y + k1x*k2z*k3y + k1y*k2x*k3z - 
+            k1x*k2y*k3z - k1z*k2y*k4x + k1y*k2z*k4x + k1z*k3y*k4x - k2z*k3y*k4x -
+            k1y*k3z*k4x + k2y*k3z*k4x + k1z*k2x*k4y - k1x*k2z*k4y - 
+            k1z*k3x*k4y + k2z*k3x*k4y + k1x*k3z*k4y - k2x*k3z*k4y - k1y*k2x*k4z +
+            k1x*k2y*k4z + k1y*k3x*k4z - k2y*k3x*k4z - k1x*k3y*k4z + k2x*k3y*k4z) 
+        a = k2z*k3y - k2y*k3z - k2z*k4y + k3z*k4y + k2y*k4z - k3y*k4z
+        b = -k1z*k2y + k1y*k2z + k1z*k3y - k2z*k3y - k1y*k3z + k2y*k3z
+        c = k1z*k2y - k1y*k2z - k1z*k4y + k2z*k4y + k1y*k4z - k2y*k4z
+        d = -k1z*k3y + k1y*k3z + k1z*k4y - k3z*k4y - k1y*k4z + k3y*k4z
+        e = -k1z*k3y + k1y*k3z + k1z*k4y - k3z*k4y - k1y*k4z + k3y*k4z
+        f = k1z*k2x - k1x*k2z - k1z*k3x + k2z*k3x + k1x*k3z - k2x*k3z
+        g = -k1z*k2x + k1x*k2z + k1z*k4x - k2z*k4x - k1x*k4z + k2x*k4z
+        h = k1z*k3x - k1x*k3z - k1z*k4x + k3z*k4x + k1x*k4z - k3x*k4z
+        ii = k2y*k3x - k2x*k3y - k2y*k4x + k3y*k4x + k2x*k4y - k3x*k4y
+        jj = -k1y*k2x + k1x*k2y + k1y*k3x - k2y*k3x - k1x*k3y + k2x*k3y
+        kk = k1y*k2x - k1x*k2y - k1y*k4x + k2y*k4x + k1x*k4y - k2x*k4y
+        ll = -k1y*k3x + k1x*k3y + k1y*k4x - k3y*k4x - k1x*k4y + k3x*k4y
+        
+        
+        
 
     def prepMP(self,kpoint):
         cutMP = deepcopy(self.MP)

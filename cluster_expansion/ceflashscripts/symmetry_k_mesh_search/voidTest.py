@@ -23,17 +23,24 @@ import voidWeighting, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepMPonly'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
 
-''' MPs only, ignoring voids: 2.21 0.0] avg nDone 19.0
+''' Silicon:
+    MPs only, ignoring voids: 2.21 0.0] avg nDone 19.0
     MPs + void weights using only inside points
                               2.19 0.0] avg nDone 19.0  !progress!
     MPs + void weights using all points, but not dealing with close clusters:
                               2.25 
+    MPs + void weights using all points, allowing partner points to be no closer than 2rpacking from each other:
+                              2.30 
+    !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
+    !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0
+                         
+    
 '''  
 #maindir default is os.getcwd()
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
@@ -271,7 +278,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params4 =     [ 0] #wallOffset
 #     params5 =     [0.5, 1.0] #dw
 #  best: 1.57 [ 6.    4.    1.    0.05  0.    0.5 ]] avg nDone 19.0
-    params0 =     [ 0.1, 0.2, 0.5]   #wallClose
+    params0 =     [ 0.0 ]   #wallClose
     
 #     params5 =  [0.1]
 #     params5 =  [float(sys.argv[1])]

@@ -557,26 +557,6 @@ class dynamicPack():
         meshDet.close()
         self.redistrWghts()
         
-    def redistrWghts(self):
-        surfPts = []
-        lostVolFactors = []
-        for im,mpoint in enumerate(self.IBZ.mesh):
-#             if self.IBZ.vorVols[im] < self.MPvol:
-                frac = (self.IBZ.vorVols[im] - self.MPvol)/self.MPvol
-                for ip,u in enumerate(self.IBZ.bounds[0]):
-                    d = dot(mpoint,u)
-                    if d < self.IBZ.bounds[1][ip] - self.rpacking: #This is a surface point
-                    #note we could get more detailed with voronoi cell as we did in meshConstruct5
-                        surfPts.append(mpoint)
-                        lostVolFactors.append(frac)
-        print 'surfPts',surfPts
-        print 'lostVols', lostVolFactors
-        self.IBZ.weights = self.IBZ.weights/self.ravg**3 #to scale them to order(1).
-        #find other surface points that are connected to 
-        for ip,spoint in enumerate(surfPts):
-            
-        return
-
     def meshInitCubic(self,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
         orthogonal, align the cubic mesh with their normals.       
