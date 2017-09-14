@@ -614,23 +614,16 @@ class voidWeight():
         # according to how close expandedMesh points (that are partners of the mesh point) 
         # is to the void point      
         for iv, vpoint in enumerate(self.voids.mesh):
-            dweights = zeros(len(self.IBZ.mesh),dtype = float)
-            for iIBZ in range(len(self.IBZ.mesh)):
-                ds = [norm(epoint-vpoint) for epoint in expandedMesh[iIBZ]]
-#                 print 'ds',sorted(ds)
-                dmin = min(ds)
-                imin = argmin(ds)
-                if dmin > self.eps:
-                    for d in ds:
-                        dweights[iIBZ] += dmin/d # this keeps weights all at one or below
-                else: #one point gets all the weight
-                    dweights = zeros(len(self.IBZ.mesh),dtype = float)
-                    dweights[iIBZ] = 1.0
-                    break                
-            dweights = dweights/sum(dweights) #now weights sum to 1
+            #Find three partner points close to the void center that are not within 2*rpacking of each other
+            closePoints = []
+            ibzCloseLabels = [] #which IBZ point does each connect with
+            ...
+            dweights = distrVoidWeights(self,vpoint,closePoints):
+            if not areEqual(dweights,1.0):
+                sys.exit('Stop.  dweights do not sum to 1')
             #Divide volume in void:
-            for iIBZ in range(len(self.IBZ.mesh)):
-                self.IBZ.weights[iIBZ] += self.voids.volumes[iv] * dweights[iIBZ]             
+            for iw,weight in dweights:
+                self.IBZ.weights[ibzCloseLabels[iw]] += self.voids.volumes[iv] * weight             
         wtot = sum(self.IBZ.weights)
         print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
@@ -645,13 +638,18 @@ class voidWeight():
         print 'Sum', sum(self.IBZ.weights)                
         return
 
-    def distrVoidWeights(self,vpoint,allPartners):
+    def distrVoidWeights(self,vpoint,closePoints):
         '''
          del_w_1 = vol_void * [1 + a*(kvx-k1x) + e*(kvy-k1y) + i*(kvz-k1z)]
          del_w_2 = vol_void * [b*(kvx-k1x) + f(kvy-k1y) + j*(kvz-k1z)]
          del_w_3 = vol_void * [c*(kvx-k1x) + g(kvy-k1y) + k*(kvz-k1z)]
          del_w_4 = vol_void * [d*(kvx-k1x) + h(kvy-k1y) + l*(kvz-k1z)]'''
-        #Find three partner points close to the void center that are not within 2*rpacking of each other
+        kvx = vpoint[0]; kvy = vpoint[1]; kvz = vpoint[2]       
+        #Assign the weights to the four partner points
+        k1x = closePoints[0][0]; k1y = closePoints[0][1]; k1z = closePoints[0][2]
+        k2x = closePoints[1][0]; k1y = closePoints[1][1]; k1z = closePoints[1][2]
+        k3x = closePoints[2][0]; k1y = closePoints[2][1]; k1z = closePoints[2][2]
+        k4x = closePoints[3][0]; k1y = closePoints[3][1]; k1z = closePoints[3][2]
         Q =(k1z*k2y*k3x - k1y*k2z*k3x - k1z*k2x*k3y + k1x*k2z*k3y + k1y*k2x*k3z - 
             k1x*k2y*k3z - k1z*k2y*k4x + k1y*k2z*k4x + k1z*k3y*k4x - k2z*k3y*k4x -
             k1y*k3z*k4x + k2y*k3z*k4x + k1z*k2x*k4y - k1x*k2z*k4y - 
@@ -669,7 +667,11 @@ class voidWeight():
         jj = -k1y*k2x + k1x*k2y + k1y*k3x - k2y*k3x - k1x*k3y + k2x*k3y
         kk = k1y*k2x - k1x*k2y - k1y*k4x + k2y*k4x + k1x*k4y - k2x*k4y
         ll = -k1y*k3x + k1x*k3y + k1y*k4x - k3y*k4x - k1x*k4y + k3x*k4y
-        
+        del_w_1 = vol_void * [1 + a*(kvx-k1x) + e*(kvy-k1y) + i*(kvz-k1z)]
+        del_w_2 = vol_void * [b*(kvx-k1x) + f(kvy-k1y) + j*(kvz-k1z)]
+        del_w_3 = vol_void * [c*(kvx-k1x) + g(kvy-k1y) + k*(kvz-k1z)]
+        del_w_4 = vol_void * [d*(kvx-k1x) + h(kvy-k1y) + l*(kvz-k1z)]
+        return [1.0 + del_w_1, del_w_2, del_w_3, del_w_4]      
         
         
 
