@@ -35,7 +35,7 @@ def getVCmesh(dir,targetNmesh,meshtype,params) :
 #script:
 os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17/r0/Si_/bcc_8')
 
-ntarget = 3
+ntarget = 9
 type = 'fcc'
 #        ['power','wallPower-force','wallfactor','wallClose','wallOffset','dw' ]
 # params =  ['4.00',   '2.0 ',        '0.5',      '0.05',      '0.00',   '1.0']

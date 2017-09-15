@@ -510,7 +510,7 @@ class voidWeight():
          f2 = f1 + grad .dot. (k2-k2), and similar for f3 and f4. 
          or 
          f2 = f1 + (k2x-k1x)gx + (k2y-k1y)gy + (k2z-k1z)gz
-         if we form the matrix DK = [k2-k1 : k3-k1:k4-k1]  shown as columns, then 
+         if we form the matrix DK = [k2-k1:k3-k1:k4-k1]  shown as columns, then 
          transpose(DK) * g = DF,  where DF = [f2-f1,f3-f1,f4-f1] a vector. 
          Then g_v = inv(trans(DK_v)) * DF_v, for each void v
          Solving in terms of the f's:  
@@ -590,16 +590,16 @@ class voidWeight():
         #find distances of each void point to IBZ mesh points and their symmetry partners.    
         #find symmetry parterns (expandedMesh), which includes themselves
         rCutoff = 3.0*self.rpacking
-        expandedMesh = [[]]*len(self.IBZ.mesh)
+        expandedMesh = []
+        expandediIBZz = []
         for iIBZ,point in enumerate(self.IBZ.mesh):
-            BZpartners = [point]
+            tempPoints = [point]
             for iop in range(self.nops):
                 op = self.symops[:,:,iop]
                 symPoint = dot(op,point)
-                addVec(symPoint,BZpartners,self.eps)
+                tempPoints = addVec(symPoint,tempPoints,self.eps)
 #                 addVec(symPoint,BZpartners,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
-            allPartners = deepcopy(BZpartners)
-            for BZpoint in BZpartners:
+            for BZpoint in deepcopy(tempPoints):
                 for i in [-1,0,1]:
                     for j in [-1,0,1]:
                         for k in [-1,0,1]:
@@ -607,23 +607,23 @@ class voidWeight():
                                 transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
         #                         print 'transpoint',transPoint
                                 if isInside(transPoint,self.IBZ.bounds,self.eps,rCutoff):
-                                    allPartners.append(transPoint)
-            expandedMesh[iIBZ]= deepcopy(allPartners)            
-            self.facetsMeshMathFile(self.IBZ,expandedMesh[iIBZ],'expmesh_{}'.format(iIBZ),None)
+                                    tempPoints.append(transPoint)
+            expandedMesh += tempPoints  
+            expandediIBZz += [iIBZ]*len(expandedMesh)             
+            self.facetsMeshMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None)
         # Divide the volume of each void and add it to the volume of each mesh point, 
         # according to how close expandedMesh points (that are partners of the mesh point) 
         # is to the void point      
         for iv, vpoint in enumerate(self.voids.mesh):
-            #Find three partner points close to the void center that are not within 2*rpacking of each other
-            closePoints = []
-            ibzCloseLabels = [] #which IBZ point does each connect with
-            ...
-            dweights = distrVoidWeights(self,vpoint,closePoints):
-            if not areEqual(dweights,1.0):
-                sys.exit('Stop.  dweights do not sum to 1')
+            closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
+            dweights = self.distrVoidWeights(vpoint,closePoints)
+            print 'Sum of dweights',sum(dweights),dweights
+            if not areEqual(sum(dweights),1.0,0.01):
+#                 sys.exit('Stop.  dweights do not sum to 1')
+               print('Warning.  dweights do not sum to 1')
             #Divide volume in void:
-            for iw,weight in dweights:
-                self.IBZ.weights[ibzCloseLabels[iw]] += self.voids.volumes[iv] * weight             
+            for iw,weight in enumerate(dweights):
+                self.IBZ.weights[closePoints[iw]['iIBZ']] += self.voids.volumes[iv] * weight             
         wtot = sum(self.IBZ.weights)
         print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
@@ -638,6 +638,32 @@ class voidWeight():
         print 'Sum', sum(self.IBZ.weights)                
         return
 
+    def fourPointsVoid(self,vpoint,expandedMesh,expandediIBZz):
+        '''Find four partner points close to the void center that are not within 
+        2*rpacking of each other'''
+#         allPoints = zeros(l,dtype = [('vec', '3float'),('iIBZ', 'int')])
+        mags = [norm(vpoint-vec) for vec in expandedMesh]
+        order = argsort(array(mags))
+        mags = array(mags)[order]
+        expandedMesh = array(expandedMesh)[order]
+        expandediIBZz = array(expandediIBZz)[order]
+        closePoints = zeros(4,dtype = [('vec', '3float'),('iIBZ', 'int')]) 
+        icount = 0
+        tempPoints = []
+        tempiIBZs = []
+        for iExp, evec in enumerate(expandedMesh):
+            if not among(evec,tempPoints,2.0*self.rpacking):
+                tempPoints.append(evec)
+                tempiIBZs.append(expandediIBZz[iExp])
+                print 'added point',iExp,'at distance',mags[iExp]
+                icount += 1
+                if icount ==4:
+                    break
+        for ic in range(4):
+            closePoints[ic]['vec'] = tempPoints[ic]
+            closePoints[ic]['iIBZ'] = tempiIBZs[ic]
+        return closePoints
+
     def distrVoidWeights(self,vpoint,closePoints):
         '''
          del_w_1 = vol_void * [1 + a*(kvx-k1x) + e*(kvy-k1y) + i*(kvz-k1z)]
@@ -646,10 +672,10 @@ class voidWeight():
          del_w_4 = vol_void * [d*(kvx-k1x) + h(kvy-k1y) + l*(kvz-k1z)]'''
         kvx = vpoint[0]; kvy = vpoint[1]; kvz = vpoint[2]       
         #Assign the weights to the four partner points
-        k1x = closePoints[0][0]; k1y = closePoints[0][1]; k1z = closePoints[0][2]
-        k2x = closePoints[1][0]; k1y = closePoints[1][1]; k1z = closePoints[1][2]
-        k3x = closePoints[2][0]; k1y = closePoints[2][1]; k1z = closePoints[2][2]
-        k4x = closePoints[3][0]; k1y = closePoints[3][1]; k1z = closePoints[3][2]
+        k1x = closePoints[0]['vec'][0]; k1y = closePoints[0]['vec'][1]; k1z = closePoints[0]['vec'][2]
+        k2x = closePoints[1]['vec'][0]; k2y = closePoints[1]['vec'][1]; k2z = closePoints[1]['vec'][2]
+        k3x = closePoints[2]['vec'][0]; k3y = closePoints[2]['vec'][1]; k3z = closePoints[2]['vec'][2]
+        k4x = closePoints[3]['vec'][0]; k4y = closePoints[3]['vec'][1]; k4z = closePoints[3]['vec'][2]
         Q =(k1z*k2y*k3x - k1y*k2z*k3x - k1z*k2x*k3y + k1x*k2z*k3y + k1y*k2x*k3z - 
             k1x*k2y*k3z - k1z*k2y*k4x + k1y*k2z*k4x + k1z*k3y*k4x - k2z*k3y*k4x -
             k1y*k3z*k4x + k2y*k3z*k4x + k1z*k2x*k4y - k1x*k2z*k4y - 
@@ -667,11 +693,11 @@ class voidWeight():
         jj = -k1y*k2x + k1x*k2y + k1y*k3x - k2y*k3x - k1x*k3y + k2x*k3y
         kk = k1y*k2x - k1x*k2y - k1y*k4x + k2y*k4x + k1x*k4y - k2x*k4y
         ll = -k1y*k3x + k1x*k3y + k1y*k4x - k3y*k4x - k1x*k4y + k3x*k4y
-        del_w_1 = vol_void * [1 + a*(kvx-k1x) + e*(kvy-k1y) + i*(kvz-k1z)]
-        del_w_2 = vol_void * [b*(kvx-k1x) + f(kvy-k1y) + j*(kvz-k1z)]
-        del_w_3 = vol_void * [c*(kvx-k1x) + g(kvy-k1y) + k*(kvz-k1z)]
-        del_w_4 = vol_void * [d*(kvx-k1x) + h(kvy-k1y) + l*(kvz-k1z)]
-        return [1.0 + del_w_1, del_w_2, del_w_3, del_w_4]      
+        del_w_1 = 1.0 + a*(kvx-k1x) + e*(kvy-k1y) + ii*(kvz-k1z)
+        del_w_2 = b*(kvx-k1x) + f*(kvy-k1y) + jj*(kvz-k1z)
+        del_w_3 = c*(kvx-k1x) + g*(kvy-k1y) + kk*(kvz-k1z)
+        del_w_4 = d*(kvx-k1x) + h*(kvy-k1y) + ll*(kvz-k1z)
+        return [del_w_1, del_w_2, del_w_3, del_w_4]      
         
         
 
