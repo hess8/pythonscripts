@@ -512,7 +512,7 @@ class voidWeight():
             q = -(-k1z k3y k4x + k1y k3z k4x + k1z k3x k4y - k1x k3z k4y - k1y k3x k4z +  k1x k3y k4z)/Q  
             r = -(k1z k2y k4x - k1y k2z k4x - k1z k2x k4y + k1x k2z k4y + k1y k2x k4z -   k1x k2y k4z)/Q   
             s = -(-k1z k2y k3x + k1y k2z k3x + k1z k2x k3y - k1x k2z k3y - k1y k2x k3z + k1x k2y k3z)/Q
-        Q is a function also of the k1 to k4 componenets. But we can ignore it because we are normalizing. 
+        Q is a function also of the k1 to k4 componenets. But we can remove it because we are normalizing. 
         
         t = p+q+r+s
         
@@ -549,8 +549,6 @@ class voidWeight():
         print 'Total volume of point Vor cells',vMPs,'vs IBZ volume', self.IBZ.volume
         print 'Relative volume in MP Vor cells', volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
         self.IBZ.weights = self.IBZ.vorVols
-        
-        
         #find void centers, which are portions of points on the original packing lattice
 #         that lie outside the IBZ 
         self.voids = cell()
@@ -598,15 +596,19 @@ class voidWeight():
                                 if isInside(transPoint,self.IBZ.bounds,self.eps,rCutoff):
                                     tempPoints.append(transPoint)
             expandedMesh += tempPoints  
-            expandediIBZz += [iIBZ]*len(expandedMesh)             
+            expandediIBZz += [iIBZ]*len(tempPoints)             
             self.facetsMeshMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None)
+        self.facetsMeshMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None)
         # Divide the volume of each void and add it to the volume of each mesh point, 
         # according to how close expandedMesh points (that are partners of the mesh point) 
         # is to the void point      
         for iv, vpoint in enumerate(self.voids.mesh):
+            if iv == 2:
+                'pause'
             closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
+            self.facetsMeshOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
             dweights = self.distrVoidWeights(vpoint,closePoints)
-            print 'Sum of dweights',sum(dweights),dweights
+            print iv,'Sum of dweights',sum(dweights),dweights
             if not areEqual(sum(dweights),1.0,0.01):
 #                 sys.exit('Stop.  dweights do not sum to 1')
                print('Warning.  dweights do not sum to 1')
@@ -629,7 +631,7 @@ class voidWeight():
 
     def fourPointsVoid(self,vpoint,expandedMesh,expandediIBZz):
         '''Find four partner points close to the void center that are not within 
-        2*rpacking of each other'''
+        2*rpacking of each other, and are not close to coplanar'''
 #         allPoints = zeros(l,dtype = [('vec', '3float'),('iIBZ', 'int')])
         mags = [norm(vpoint-vec) for vec in expandedMesh]
         order = argsort(array(mags))
@@ -641,10 +643,15 @@ class voidWeight():
         tempPoints = []
         tempiIBZs = []
         for iExp, evec in enumerate(expandedMesh):
-            if not among(evec,tempPoints,2.0*self.rpacking):
+            if not among(evec,tempPoints,1.0*self.rpacking): #Ignores clusters of points that are very close by symmetry
+                if icount == 3: #make sure this is not coplanar with the previous 3
+                    plane = plane3pts(tempPoints,self.eps) 
+                    pvec = plane[0]*plane[1]
+                    if onPlane(evec,pvec,self.eps):
+                        continue #skip this one
                 tempPoints.append(evec)
                 tempiIBZs.append(expandediIBZz[iExp])
-                print 'added point',iExp,'at distance',mags[iExp]
+                print 'added point',iExp,'at distance',mags[iExp], 'iIBZ',expandediIBZz[iExp]
                 icount += 1
                 if icount ==4:
                     break
@@ -1204,6 +1211,23 @@ class voidWeight():
                 strOut += ','
         strOut += '}];\nShow[s,p]'
         writefile(strOut,'cell_{}.m'.format(tag))   
+        
+        
+    def facetsMeshOneUnique(self,cell,others,unique,tag,color):
+        '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point, coloring one uniquely'''
+        strOut = ''
+        strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
+        strOut += ';\np=Graphics3D[{'
+        list(trimSmall(array(unique)))
+        for ipoint,point in enumerate(list(trimSmall(array(others)))):
+            strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
+            if ipoint < len(others) -1:
+                strOut += ','
+        strOut += '}];\n'
+        strOut += 'q=Graphics3D[{'
+        strOut += color + ',Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(unique[0],unique[1],unique[2])+ '},'+'{}]'.format(self.rpacking)
+        strOut += '}];\nShow[s,p,q]'
+        writefile(strOut,'cell_{}.m'.format(tag))         
               
     def facetsMeshVCMathFile(self,IBZ,allMeshFacets,tag):
         '''Output for Mathematica graphics drawing the facets of each mesh point
