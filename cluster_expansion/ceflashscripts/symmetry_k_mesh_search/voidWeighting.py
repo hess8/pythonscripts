@@ -493,11 +493,11 @@ class voidWeight():
     def weightPoints(self,eps):
         '''
         
-        xMake a standard voronoi cell for each mesh point. 
-        xFind the max distance rmaxMP between a MP cell center an a vertex. 
-        xIf a MP has a facet outside the IBZ bounds, it is cut.
-        xFind the voids near the surface (min d_planes < rmaxMP).
-        xUse sym and translation to find all IBZ points that have partners outside
+        Make a standard voronoi cell for each mesh point. 
+        Find the max distance rmaxMP between a MP cell center an a vertex. 
+        If a MP has a facet outside the IBZ bounds, it is cut.
+        Find the voids near the surface (min d_planes < rmaxMP).
+        Use sym and translation to find all IBZ points that have partners outside
         but are close to the surface. 
         void weights are distributed among IBZ points that are close to it.   
         
@@ -505,30 +505,19 @@ class voidWeight():
         f_i involves the band energy sum_n(E_n(k_i)*occ((E_n(k_i))
         We assume that each f_void can be interpolated from the calculated f_IBZMP's.  
         
-        Interpolation:  We choose 4 points near the void that don't lie close to each other.
-         f_v = f_1 + g*(kv-k1).  We get the local gradient g (a vector) by solving: 
-         f2 = f1 + grad .dot. (k2-k2), and similar for f3 and f4. 
-         or 
-         f2 = f1 + (k2x-k1x)gx + (k2y-k1y)gy + (k2z-k1z)gz
-         if we form the matrix DK = [k2-k1:k3-k1:k4-k1]  shown as columns, then 
-         transpose(DK) * g = DF,  where DF = [f2-f1,f3-f1,f4-f1] a vector. 
-         Then g_v = inv(trans(DK_v)) * DF_v, for each void v
-         Solving in terms of the f's:  
-         gvx = a*f1 + b*f2 + c*f3 + d*f4
-         gvy = e*f1 + f*f2 + g*f3 + h*f4
-         gvz = i*f1 + j*f2 + k*f3 + l*f4, and we get these 12 parameters 
-         in terms of the k-components of the points 1-4 from Mathematica algebra.
-         
-         So fv = f1 + gv .dot. (kv-k1).  
-           In terms of the parameters a to l, which we put into
-           a 3x4 matrix P, gv = P * [f1,f2,f3,f4].  
-           So fv = f1 + gv .dot. (kv-k1)  = f1 + (P * [f1,f2,f3,f4]) .dot (kv - k1)
-         
-         So the void weights are distributed among the IBZ points that are partners to the four points:
-         del_w_1 = vol_void * [1 + a*(kvx-k1x) + e*(kvy-k1y) + i*(kvz-k1z)]
-         del_w_2 = vol_void * [b*(kvx-k1x) + f(kvy-k1y) + j*(kvz-k1z)]
-         del_w_3 = vol_void * [c*(kvx-k1x) + g(kvy-k1y) + k*(kvz-k1z)]
-         del_w_4 = vol_void * [d*(kvx-k1x) + h(kvy-k1y) + l*(kvz-k1z)]
+        Interpolation: Write the kvectors with origin at k_void.  We choose 4 points near the void that don't lie close to each other, 
+        and fit a 4-d plane to them. f = a kx + b ky + c kz + d.
+        Then d is f_void = p*f1 + q*f2 + r*f3 + s*f4
+            p = -(k2z k3y k4x - k2y k3z k4x - k2z k3x k4y + k2x k3z k4y + k2y k3x k4z - k2x k3y k4z)/Q
+            q = -(-k1z k3y k4x + k1y k3z k4x + k1z k3x k4y - k1x k3z k4y - k1y k3x k4z +  k1x k3y k4z)/Q  
+            r = -(k1z k2y k4x - k1y k2z k4x - k1z k2x k4y + k1x k2z k4y + k1y k2x k4z -   k1x k2y k4z)/Q   
+            s = -(-k1z k2y k3x + k1y k2z k3x + k1z k2x k3y - k1x k2z k3y - k1y k2x k3z + k1x k2y k3z)/Q
+        Q is a function also of the k1 to k4 componenets. But we can ignore it because we are normalizing. 
+        
+        t = p+q+r+s
+        
+        so we assign void_vol * p/t to the IBZ point connected to point 1, void_vol * q/t, etc.  
+
 
         '''
         allMPfacets = []
@@ -666,41 +655,27 @@ class voidWeight():
 
     def distrVoidWeights(self,vpoint,closePoints):
         '''
-         del_w_1 = vol_void * [1 + a*(kvx-k1x) + e*(kvy-k1y) + i*(kvz-k1z)]
-         del_w_2 = vol_void * [b*(kvx-k1x) + f(kvy-k1y) + j*(kvz-k1z)]
-         del_w_3 = vol_void * [c*(kvx-k1x) + g(kvy-k1y) + k*(kvz-k1z)]
-         del_w_4 = vol_void * [d*(kvx-k1x) + h(kvy-k1y) + l*(kvz-k1z)]'''
+        p = -(k2z k3y k4x - k2y k3z k4x - k2z k3x k4y + k2x k3z k4y + k2y k3x k4z - k2x k3y k4z)/Q
+        q = -(-k1z k3y k4x + k1y k3z k4x + k1z k3x k4y - k1x k3z k4y - k1y k3x k4z +  k1x k3y k4z)/Q  
+        r = -(k1z k2y k4x - k1y k2z k4x - k1z k2x k4y + k1x k2z k4y + k1y k2x k4z -   k1x k2y k4z)/Q   
+        s = -(-k1z k2y k3x + k1y k2z k3x + k1z k2x k3y - k1x k2z k3y - k1y k2x k3z + k1x k2y k3z)/Q'''
         kvx = vpoint[0]; kvy = vpoint[1]; kvz = vpoint[2]       
         #Assign the weights to the four partner points
-        k1x = closePoints[0]['vec'][0]; k1y = closePoints[0]['vec'][1]; k1z = closePoints[0]['vec'][2]
-        k2x = closePoints[1]['vec'][0]; k2y = closePoints[1]['vec'][1]; k2z = closePoints[1]['vec'][2]
-        k3x = closePoints[2]['vec'][0]; k3y = closePoints[2]['vec'][1]; k3z = closePoints[2]['vec'][2]
-        k4x = closePoints[3]['vec'][0]; k4y = closePoints[3]['vec'][1]; k4z = closePoints[3]['vec'][2]
-        Q =(k1z*k2y*k3x - k1y*k2z*k3x - k1z*k2x*k3y + k1x*k2z*k3y + k1y*k2x*k3z - 
-            k1x*k2y*k3z - k1z*k2y*k4x + k1y*k2z*k4x + k1z*k3y*k4x - k2z*k3y*k4x -
-            k1y*k3z*k4x + k2y*k3z*k4x + k1z*k2x*k4y - k1x*k2z*k4y - 
-            k1z*k3x*k4y + k2z*k3x*k4y + k1x*k3z*k4y - k2x*k3z*k4y - k1y*k2x*k4z +
-            k1x*k2y*k4z + k1y*k3x*k4z - k2y*k3x*k4z - k1x*k3y*k4z + k2x*k3y*k4z) 
-        a = k2z*k3y - k2y*k3z - k2z*k4y + k3z*k4y + k2y*k4z - k3y*k4z
-        b = -k1z*k2y + k1y*k2z + k1z*k3y - k2z*k3y - k1y*k3z + k2y*k3z
-        c = k1z*k2y - k1y*k2z - k1z*k4y + k2z*k4y + k1y*k4z - k2y*k4z
-        d = -k1z*k3y + k1y*k3z + k1z*k4y - k3z*k4y - k1y*k4z + k3y*k4z
-        e = -k1z*k3y + k1y*k3z + k1z*k4y - k3z*k4y - k1y*k4z + k3y*k4z
-        f = k1z*k2x - k1x*k2z - k1z*k3x + k2z*k3x + k1x*k3z - k2x*k3z
-        g = -k1z*k2x + k1x*k2z + k1z*k4x - k2z*k4x - k1x*k4z + k2x*k4z
-        h = k1z*k3x - k1x*k3z - k1z*k4x + k3z*k4x + k1x*k4z - k3x*k4z
-        ii = k2y*k3x - k2x*k3y - k2y*k4x + k3y*k4x + k2x*k4y - k3x*k4y
-        jj = -k1y*k2x + k1x*k2y + k1y*k3x - k2y*k3x - k1x*k3y + k2x*k3y
-        kk = k1y*k2x - k1x*k2y - k1y*k4x + k2y*k4x + k1x*k4y - k2x*k4y
-        ll = -k1y*k3x + k1x*k3y + k1y*k4x - k3y*k4x - k1x*k4y + k3x*k4y
-        del_w_1 = 1.0 + a*(kvx-k1x) + e*(kvy-k1y) + ii*(kvz-k1z)
-        del_w_2 = b*(kvx-k1x) + f*(kvy-k1y) + jj*(kvz-k1z)
-        del_w_3 = c*(kvx-k1x) + g*(kvy-k1y) + kk*(kvz-k1z)
-        del_w_4 = d*(kvx-k1x) + h*(kvy-k1y) + ll*(kvz-k1z)
+        k1x = closePoints[0]['vec'][0]-kvx; k1y = closePoints[0]['vec'][1]-kvy; k1z = closePoints[0]['vec'][2]-kvz
+        k2x = closePoints[1]['vec'][0]-kvx; k2y = closePoints[1]['vec'][1]-kvy; k2z = closePoints[1]['vec'][2]-kvz
+        k3x = closePoints[2]['vec'][0]-kvx; k3y = closePoints[2]['vec'][1]-kvy; k3z = closePoints[2]['vec'][2]-kvz
+        k4x = closePoints[3]['vec'][0]-kvx; k4y = closePoints[3]['vec'][1]-kvy; k4z = closePoints[3]['vec'][2]-kvz
+        p = -k2z*k3y*k4x + k2y*k3z*k4x + k2z*k3x*k4y - k2x*k3z*k4y - k2y*k3x*k4z + k2x*k3y*k4z
+        q =  k1z*k3y*k4x - k1y*k3z*k4x - k1z*k3x*k4y + k1x*k3z*k4y + k1y*k3x*k4z - k1x*k3y*k4z   
+        r = -k1z*k2y*k4x + k1y*k2z*k4x + k1z*k2x*k4y - k1x*k2z*k4y - k1y*k2x*k4z + k1x*k2y*k4z    
+        s =  k1z*k2y*k3x - k1y*k2z*k3x - k1z*k2x*k3y + k1x*k2z*k3y + k1y*k2x*k3z - k1x*k2y*k3z
+        t = p + q + r + s
+        del_w_1 = p/t
+        del_w_2 = q/t
+        del_w_3 = r/t
+        del_w_4 = s/t
         return [del_w_1, del_w_2, del_w_3, del_w_4]      
-        
-        
-
+              
     def prepMP(self,kpoint):
         cutMP = deepcopy(self.MP)
         for ifac, facet in enumerate(self.MP.facets):
