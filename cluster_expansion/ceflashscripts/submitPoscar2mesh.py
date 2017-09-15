@@ -31,12 +31,10 @@ def getVCmesh(dir,targetNmesh,meshtype,params) :
     statusOK,nops = meshc.pack(latticevecs,reciplatt,totatoms,aTypes,postype,transpose(positions),targetNmesh,meshtype,dir,params)
     os.chdir(lastDir)
     return statusOK,nops
-
 #script:
 os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17/r0/Si_/bcc_8')
-
-ntarget = 9
-type = 'fcc'
+ntarget = 4
+type = 'bcc'
 #        ['power','wallPower-force','wallfactor','wallClose','wallOffset','dw' ]
 # params =  ['4.00',   '2.0 ',        '0.5',      '0.05',      '0.00',   '1.0']
 params =  ['0.0']

@@ -281,23 +281,16 @@ def getInterscPoints(planes,eps):
     return interscPoints
 
 def getFacetsPoints(cell,eps):
-#     facetsPoints = []
-#     for point in interscPoints:
-#         if not isOutside(point,cell.bounds,eps):
-#             facetsPoints.append(point)
     #arrange intersection points in each plane according to their angular order in the plane
     for iplane, uvec in enumerate(cell.bounds[0]):
-        pvec = uvec*cell.bounds[1][iplane]
-        facetvecs = []
-        
+        facetvecs = []       
         for i, vec in  enumerate(cell.fpoints):
-            if onPlane(vec,pvec,eps) and not isOutside(vec,cell.bounds,eps):
+            if onPlane(vec,uvec,cell.bounds[1][iplane],eps) and not isOutside(vec,cell.bounds,eps):
                 facetvecs = addVec(vec,facetvecs,eps)
         if len(facetvecs)> 3:          
             cell.facets.append(orderAngle(facetvecs,eps))
         elif len(facetvecs)==3:
             cell.facets.append(facetvecs)
-#             sys.exit('stop. Plane {} has less than three facetvecs')
     return cell
 
 def isInside(vec,bounds,eps,extra = 0):
@@ -323,8 +316,8 @@ def isOutside(vec,boundaries,eps):
 #             return True
 #     return False
 
-def onPlane(vec,planevec,eps):
-    return abs(dot(vec,planevec) - dot(planevec,planevec)) < eps #point is inside this plane
+def onPlane(vec,uvec,ro,eps):
+    return areEqual(dot(vec,uvec),ro,eps) #point is inside this plane
                     
 def makesDups(op,cell,eps):
     '''Applies symmetry operator to all facet points. If any facet points are 
@@ -603,7 +596,7 @@ class voidWeight():
         # according to how close expandedMesh points (that are partners of the mesh point) 
         # is to the void point      
         for iv, vpoint in enumerate(self.voids.mesh):
-            if iv == 2:
+            if iv == 7:
                 'pause'
             closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
             self.facetsMeshOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
@@ -642,12 +635,12 @@ class voidWeight():
         icount = 0
         tempPoints = []
         tempiIBZs = []
+        self.facetsMeshOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
         for iExp, evec in enumerate(expandedMesh):
             if not among(evec,tempPoints,1.0*self.rpacking): #Ignores clusters of points that are very close by symmetry
                 if icount == 3: #make sure this is not coplanar with the previous 3
                     plane = plane3pts(tempPoints,self.eps) 
-                    pvec = plane[0]*plane[1]
-                    if onPlane(evec,pvec,self.eps):
+                    if onPlane(evec,plane[0],plane[1],0.25*self.rpacking):
                         continue #skip this one
                 tempPoints.append(evec)
                 tempiIBZs.append(expandediIBZz[iExp])

@@ -37,6 +37,8 @@ maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights
                               2.25 
     MPs + void weights using all points, allowing partner points to be no closer than 2rpacking from each other:
                               2.30 
+    MPs + void weights with 4-d plane fitting 15Sep17, , so this is *slightly better* than init search and full voronoi cell volumes, no relaxation
+                              1.74
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0
                          
