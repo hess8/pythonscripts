@@ -266,7 +266,7 @@ def submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nKtargets):
 
 def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     '''Set up a N-dimensional grid of parameters, and run through all of it''' 
-    paramLabels = ['wallClose']
+    paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
 #     print '\twallPower equals power'
@@ -279,13 +279,22 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params3 =     [ 0.05] #wallClose
 #     params4 =     [ 0] #wallOffset
 #     params5 =     [0.5, 1.0] #dw
-#  best: 1.57 [ 6.    4.    1.    0.05  0.    0.5 ]] avg nDone 19.0
-    params0 =     [ 0.0 ]   #wallClose
+
+
+    params0 =     [ 0.0,0.2,0.5 ]   #wallClose
+    params1 =     [ 2.5,3.0,3.5 ]   #rcutoff
+    params2 =     [ 0.5,1.0,1.5 ]   #tooClose
+    params3 =     [ 0.1,0.25,0.5 ]  #tooPlanar
+
+#     params0 =     [ 0.0 ]   #wallClose
+#     params1 =     [ 3.0]   #rcutoff
+#     params2 =     [ 1.0 ]   #tooClose
+#     params3 =     [ 0.25 ]  #tooPlanar
     
 #     params5 =  [0.1]
 #     params5 =  [float(sys.argv[1])]
     nP =len(paramLabels)
-    nPsets = len(params0) #* other len's
+    nPsets = len(params0)*len(params1)*len(params2)*len(params3) #* other len's
     print 'Will run {} parameter sets'.format(nPsets)
     print 'Initial packing is {}'.format(type) 
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
@@ -301,17 +310,18 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     isetsToStart = range(nPsets)
     isetsDone = []
     for p0 in params0:
-#         for p1 in params1:
-#             for p2 in params2:
-#                 for p3 in params3:
+        for p1 in params1:
+            for p2 in params2:
+                for p3 in params3:
 #                     for p4 in params4:
 #                         for p5 in params5:
 #                             params = [p0,p1,p2,p3,p4,p5]   
-                            params = [p0]   
+#                             params = [p0]   
                             if nP ==1: 
                                 all[iset]['params']  =  p0
                             else:
-                                params = [p0,p1,p2,p3,p4,p5]               
+#                                 params = [p0,p1,p2,p3,p4,p5]  
+                                params = [p0,p1,p2,p3]              
                                 all[iset]['params'] = params
                             iset += 1
     summary = open('{}/summaryGrid.csv'.format(maindir),'w')
@@ -324,23 +334,24 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     while len(isetsDone) < nPsets:
         if len(isetsToStart) > 0:
             icurrSet = isetsToStart[0]
-            for ir in range(nRunSlots):
-                if len(slotsJobIDs[ir]) == 0 and not ir in toAnalyze: #use this slot for next set
-                    iwait = 0; print     
-                    #start new set
-                    if nP ==1:
-                        params = [all[icurrSet]['params']]
-                    else:
-                        params = all[icurrSet]['params']
-                    jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nKtargets)
-                    subprocess.call(['echo', '\tFor set {} in slot {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,ir,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
-                    slotsJobIDs[ir] = jobIDs
-                    isetsToStart.pop(0)
-                    toAnalyze.append(ir)
-                    slotsIsets[ir] = icurrSet
-                    if len(slotsJobIDs[-1]) > 0: #slots have all started work
-                        print '\twait', 
-                    break #submit one set at a time
+#             for ir in range(nRunSlots): #Use this if we want to recycle the rdirs to save disk space
+            ir = icurrSet
+            if len(slotsJobIDs[ir]) == 0 and not ir in toAnalyze: #use this slot for next set
+                iwait = 0; print     
+                #start new set
+                if nP ==1:
+                    params = [all[icurrSet]['params']]
+                else:
+                    params = all[icurrSet]['params']
+                jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nKtargets)
+                subprocess.call(['echo', '\tFor set {} in slot {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,ir,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
+                slotsJobIDs[ir] = jobIDs
+                isetsToStart.pop(0)
+                toAnalyze.append(ir)
+                slotsIsets[ir] = icurrSet
+                if len(slotsJobIDs[-1]) > 0: #slots have all started work
+                    print '\twait', 
+#                 break #submit one set at a time #Use this if we want to recycle the rdirs to save disk space
         if len(toAnalyze) > 0:
             for ir in range(nRunSlots):
                 if len(slotsJobIDs[ir]) == 0: 
@@ -359,8 +370,8 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                             os.system('cp -r {}/loglog.png {}/best_loglog.png'.format(rdir,maindir))
                             os.system('cp -r {}/methodErrs.png {}/best_methodErrs.png'.format(rdir,maindir)) 
                             os.system('cp -r {}/summary.csv {}/best_summary.csv'.format(rdir,maindir))
-                            if os.path.exists('{}/bestRun'.format(rdir,maindir)):
-                                os.system('rm -r -f {}/bestRun'.format(rdir,maindir))
+                            if os.path.exists('{}/bestRun'.format(maindir)):
+                                os.system('rm -r -f {}/bestRun'.format(maindir))
                             os.system('cp -r {} {}/bestRun'.format(rdir,maindir))
                         if iminCost is None: sys.exit('No minimum cost run found.  All runs likely failed')                        
                         print 'cost for set {}: {:6.2f} {}] avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)

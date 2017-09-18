@@ -422,7 +422,6 @@ class voidWeight():
     from numpy.random import rand, uniform
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
-        paramLabels = ['']
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
@@ -435,7 +434,12 @@ class voidWeight():
         IBZvol = vol/float(self.nops)
 #         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
+        paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
         self.wallClose = float(params[0]) #
+        self.rcutoff = float(params[1])
+        self.tooClose = float(params[2])
+        self.tooPlanar = float(params[3])
+        
         self.initSrch = 'max'
         eps = self.ravg/300
         self.eps = eps
@@ -487,11 +491,12 @@ class voidWeight():
         '''
         
         Make a standard voronoi cell for each mesh point. 
-        Find the max distance rmaxMP between a MP cell center an a vertex. 
+        Find the max distance rmaxMP between a MP cell center and a vertex. 
         If a MP has a facet outside the IBZ bounds, it is cut.
-        Find the voids near the surface (min d_planes < rmaxMP).
         Use sym and translation to find all IBZ points that have partners outside
-        but are close to the surface. 
+        that are close to the surface (min d_planes < rmaxMP). 
+        Find the voids, which are portions of a vor cell of points outside that
+        jut into the IBZ.
         void weights are distributed among IBZ points that are close to it.   
         
         Etot = sum(f_i*vol_i)/volIBZ  =  [sum(E_IBZMP_m*vol_m) + sum(f_void_q*vol_q)]/volIBZ.
@@ -514,7 +519,7 @@ class voidWeight():
 
         '''
         allMPfacets = []
-        surfPoints = []
+#         surfPoints = []
         self.IBZ.weights = []
         for ip,point in enumerate(self.IBZ.mesh):
             print ip,
@@ -526,7 +531,7 @@ class voidWeight():
                     d = ro - dot(uvec,fpoint)
                     if d < self.rmaxMP:
                         cut = True
-                        surfPoints.append(point)                                      
+#                         surfPoints.append(point)                                      
                         ibzMP = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
 #             if cut:
 #                 allMPfacets.append(ibzMP.facets)
@@ -540,14 +545,17 @@ class voidWeight():
         volDiff = vMPs - self.IBZ.volume        
         volDiffRel = volDiff/self.IBZ.volume
         print 'Total volume of point Vor cells',vMPs,'vs IBZ volume', self.IBZ.volume
-        print 'Relative volume in MP Vor cells', volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
+        print 'Relative volume in MP Vor cells', -volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
         self.IBZ.weights = self.IBZ.vorVols
         #find void centers, which are portions of points on the original packing lattice
 #         that lie outside the IBZ 
         self.voids = cell()
         self.voids.volume = 0.0
         for io, point in enumerate(self.outPoints):
-            ds = [norm(point-surfpoint) for surfpoint in surfPoints]
+            ds = []
+            for iplane,u in enumerate(self.IBZ.bounds[0]):
+                ro = self.IBZ.bounds[1][iplane]
+                ds.append(dot(u,point) - ro)
             if min(ds) < 2*self.rmaxMP: #candidate to host an IBZ void: it's "just outside"
                 joMP = self.prepMP(point) # point just outside the IBZ on the mesh lattice
                 for fpoint in joMP.fpoints:
@@ -569,7 +577,7 @@ class voidWeight():
             sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
         #find distances of each void point to IBZ mesh points and their symmetry partners.    
         #find symmetry parterns (expandedMesh), which includes themselves
-        rCutoff = 3.0*self.rpacking
+#         self.rCutoff = 3.0*self.rpacking
         expandedMesh = []
         expandediIBZz = []
         for iIBZ,point in enumerate(self.IBZ.mesh):
@@ -586,7 +594,7 @@ class voidWeight():
                             if not i==j==k==0:
                                 transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
         #                         print 'transpoint',transPoint
-                                if isInside(transPoint,self.IBZ.bounds,self.eps,rCutoff):
+                                if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking):
                                     tempPoints.append(transPoint)
             expandedMesh += tempPoints  
             expandediIBZz += [iIBZ]*len(tempPoints)             
@@ -637,10 +645,10 @@ class voidWeight():
         tempiIBZs = []
         self.facetsMeshOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
         for iExp, evec in enumerate(expandedMesh):
-            if not among(evec,tempPoints,1.0*self.rpacking): #Ignores clusters of points that are very close by symmetry
+            if not among(evec,tempPoints,self.tooClose*self.rpacking): #Ignores clusters of points that are very close by symmetry
                 if icount == 3: #make sure this is not coplanar with the previous 3
                     plane = plane3pts(tempPoints,self.eps) 
-                    if onPlane(evec,plane[0],plane[1],0.25*self.rpacking):
+                    if onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):
                         continue #skip this one
                 tempPoints.append(evec)
                 tempiIBZs.append(expandediIBZz[iExp])
