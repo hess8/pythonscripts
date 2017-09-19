@@ -607,7 +607,11 @@ class voidWeight():
                 'pause'
             closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
             self.facetsMeshOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
-            dweights = self.distrVoidWeights(vpoint,closePoints)
+#             dweights = self.distrVoidWeights(vpoint,closePoints)
+            dweights = self.distrVoidWeights2Points(vpoint,closePoints)
+            
+#             print 'Giving all void weight to the nearest point'
+#             dweights = [1.0,0,0,0] #Give all the weight to the closest point
             print iv,'Sum of dweights',sum(dweights),dweights
             if not areEqual(sum(dweights),1.0,0.01):
 #                 sys.exit('Stop.  dweights do not sum to 1')
@@ -641,26 +645,26 @@ class voidWeight():
         tempPoints = []
         tempiIBZs = []
         self.facetsMeshOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
-        for iExp, evec in enumerate(expandedMesh):
-            if not among(evec,tempPoints,self.tooClose*self.rpacking): #Ignores clusters of points that are very close by symmetry
-                if icount == 1:
-                   if dot(evec-vpoint,tempPoints[0]-vpoint) > 0:
-                        continue #skip this one
-                if icount == 2:
-                    tSum = tempPoints[0] + tempPoints[1]
-                    if dot(evec-vpoint,tSum-vpoint) > 0:  #need to  have at least one point on the "other side"
-                        continue #skip this one
-                elif icount == 3: #make sure this is not coplanar with the previous 3
-                    plane = plane3pts(tempPoints,self.eps) 
-#                     if onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):
-                    tSum = tempPoints[0] + tempPoints[1] + tempPoints[2]
-                    if dot(evec-vpoint,tSum-vpoint) > 0 or  onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):  #need to  have at least one point on the "other side"
-                        continue #skip this one
-                tempPoints.append(evec)
-                tempiIBZs.append(expandediIBZz[iExp])
-                print 'added point',iExp,'at distance',mags[iExp], 'iIBZ',expandediIBZz[iExp]
-                icount += 1
-                if icount ==4:
+        while icount < 4: #so that we retry points that were skipped earlier
+            for iExp, evec in enumerate(expandedMesh):
+                if not among(evec,tempPoints,self.tooClose*self.rpacking): #Ignores clusters of points that are very close by symmetry
+                    if icount == 1:
+                       if dot(evec-vpoint,tempPoints[0]-vpoint) > 0:
+                            continue #skip this one
+                    if icount == 2:
+                        tSum = tempPoints[0] + tempPoints[1]
+                        if dot(evec-vpoint,tSum-vpoint) > 0:  #need to  have at least one point on the "other side"
+                            continue #skip this one
+                    elif icount == 3: #make sure this is not coplanar with the previous 3
+                        plane = plane3pts(tempPoints,self.eps) 
+    #                     if onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):
+                        tSum = tempPoints[0] + tempPoints[1] + tempPoints[2]
+                        if dot(evec-vpoint,tSum-vpoint) > 0 or  onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):  #need to  have at least one point on the "other side"
+                            continue #skip this one
+                    tempPoints.append(evec)
+                    tempiIBZs.append(expandediIBZz[iExp])
+                    print 'added point',iExp,'at distance',mags[iExp], 'iIBZ',expandediIBZz[iExp]
+                    icount += 1
                     break
         for ic in range(4):
             closePoints[ic]['vec'] = tempPoints[ic]
@@ -688,7 +692,21 @@ class voidWeight():
         del_w_2 = q/t
         del_w_3 = r/t
         del_w_4 = s/t
-        return [del_w_1, del_w_2, del_w_3, del_w_4]      
+        return [del_w_1, del_w_2, del_w_3, del_w_4]    
+
+    def distrVoidWeights2Points(self,vpoint,closePoints):
+        '''
+        The norms 
+        k1 = norm(cpoint1 - vpoint)
+        k2 = norm(cpoint2 - vpoint)
+        fv = (f2 x)/(k1 + k2) + (f1 (k1 + k2 - x))/(k1 + k2)
+        '''
+        k1 = norm( closePoints[0]['vec'] - vpoint)
+        k2 = norm( closePoints[1]['vec'] - vpoint)
+        p = k2/(k1+k2)
+        q = k1/(k1+k2)
+        return [p, q, 0, 0]   
+ 
               
     def prepMP(self,kpoint):
         cutMP = deepcopy(self.MP)
