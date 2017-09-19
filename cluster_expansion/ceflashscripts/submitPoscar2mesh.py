@@ -32,8 +32,10 @@ def getVCmesh(dir,targetNmesh,meshtype,params) :
     os.chdir(lastDir)
     return statusOK,nops
 #script:
-os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights/bestRun/Si_/bcc_6')
-ntarget = 100
+# os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/19SepFullWeights/bestRun/Si_/bcc_6')
+os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17/r0/Si_/bcc_6')
+
+ntarget = 5
 type = 'bcc'
 paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
 params =         ['0.5',       '3',     '1.0',     '0.5']    #0.50   3.00   1.00   0.50

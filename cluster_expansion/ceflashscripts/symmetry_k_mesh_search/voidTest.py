@@ -23,12 +23,13 @@ import voidWeighting, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
 ''' Silicon:
+    paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
     MPs only, ignoring voids: 2.21 0.0] avg nDone 19.0
     MPs + void weights using only inside points
                               2.19 0.0] avg nDone 19.0  !progress!
@@ -36,8 +37,16 @@ maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights
                               2.25 
     MPs + void weights using all points, allowing partner points to be no closer than 2rpacking from each other:
                               2.30 
+    MPs + void weights with assigning all void weight to nearest point  
+                                1.98 [ 0.   3.5  0.5  0.5] avg nDone 19.0
+                                1.84 [ 0.5   2.5   1.5   0.25] avg nDone 16.0
+                                
+    MPs + void weights with assigning all void weight to two nearest points:
+                                1.86 [ 0.   3.5  0.5  0.1] avg nDone 19.0 *so better than just one point given the weight*                             
+                                2.15 for many with wallClose = 0.5 *worse for these than just one*
+                                2.12 for many with wallClose = 0.25 *worse for these than just one* 
     MPs + void weights with 4-d plane fitting 15Sep17, , so this is *slightly better* than init search and full voronoi cell volumes, no relaxation
-                              1.74
+                              1.74 But some Nks failed with infinite or negative weights!!!!
     1.69 [ 0.   2.5  1.   0.5]] avg nDone 19.0
     
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
