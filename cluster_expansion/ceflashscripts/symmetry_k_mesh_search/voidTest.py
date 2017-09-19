@@ -28,7 +28,6 @@ maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
-
 ''' Silicon:
     MPs only, ignoring voids: 2.21 0.0] avg nDone 19.0
     MPs + void weights using only inside points
@@ -39,6 +38,8 @@ maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights
                               2.30 
     MPs + void weights with 4-d plane fitting 15Sep17, , so this is *slightly better* than init search and full voronoi cell volumes, no relaxation
                               1.74
+    1.69 [ 0.   2.5  1.   0.5]] avg nDone 19.0
+    
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0
                          
@@ -286,6 +287,8 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     params2 =     [ 0.5,1.0,1.5 ]   #tooClose
     params3 =     [ 0.1,0.25,0.5 ]  #tooPlanar
 
+
+
 #     params0 =     [ 0.0 ]   #wallClose
 #     params1 =     [ 3.0]   #rcutoff
 #     params2 =     [ 1.0 ]   #tooClose
@@ -374,8 +377,8 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                                 os.system('rm -r -f {}/bestRun'.format(maindir))
                             os.system('cp -r {} {}/bestRun'.format(rdir,maindir))
                         if iminCost is None: sys.exit('No minimum cost run found.  All runs likely failed')                        
-                        print 'cost for set {}: {:6.2f} {}] avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)
-                        print 'vs. min cost {}: {:6.2f} {}] avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
+                        print 'cost for set {}: {:6.2f} {} avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)
+                        print 'vs. min cost {}: {:6.2f} {} avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
                         ps = all[ioldSet]['params']
 #                         summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
 #                                                     ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
@@ -383,7 +386,6 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
                         toAnalyze.remove(ir)
                         isetsDone.append(ioldSet) 
                         break #analyze one set at a tome
-    
         #update slotsJobIDs
         output = []
         while len(output) in [0]: #[0,8]:

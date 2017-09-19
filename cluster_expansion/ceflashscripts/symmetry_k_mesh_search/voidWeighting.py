@@ -457,15 +457,16 @@ class voidWeight():
 #         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
         self.facetsMeshMathFile(self.IBZ,self.IBZ.mesh,'IBZmesh',None)
-        nKmax = 150
-        print 'Limiting nK to {}'.format(nKmax)
-        if 2 < len(self.IBZ.mesh) <= nKmax:
+        self.nKmax = 150
+        self.nKmin = 2
+        if self.nKmin < len(self.IBZ.mesh) <= self.nKmax:
             OK = True
             self.weightPoints(eps)
             self.writeKpoints()
             self.writeSym()
             return OK,self.nops
         else: 
+            print 'Limiting nK to {},{}'.format(self.nKmin,self.nKmax)
             OK = False
             return OK,self.nops
     
@@ -515,8 +516,6 @@ class voidWeight():
         t = p+q+r+s
         
         so we assign void_vol * p/t to the IBZ point connected to point 1, void_vol * q/t, etc.  
-
-
         '''
         allMPfacets = []
 #         surfPoints = []
@@ -604,7 +603,7 @@ class voidWeight():
         # according to how close expandedMesh points (that are partners of the mesh point) 
         # is to the void point      
         for iv, vpoint in enumerate(self.voids.mesh):
-            if iv == 7:
+            if iv == 158:
                 'pause'
             closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
             self.facetsMeshOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
@@ -621,8 +620,6 @@ class voidWeight():
         if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
             sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
         #normalize the seights so that a full interior point gets weight nops of symmetry
-       
-        
         self.IBZ.weights =  array(self.IBZ.weights)/self.MP.volume * self.nops
         print 'Weights:'
         for i, weight in enumerate(self.IBZ.weights):
@@ -646,9 +643,18 @@ class voidWeight():
         self.facetsMeshOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
         for iExp, evec in enumerate(expandedMesh):
             if not among(evec,tempPoints,self.tooClose*self.rpacking): #Ignores clusters of points that are very close by symmetry
-                if icount == 3: #make sure this is not coplanar with the previous 3
+                if icount == 1:
+                   if dot(evec-vpoint,tempPoints[0]-vpoint) > 0:
+                        continue #skip this one
+                if icount == 2:
+                    tSum = tempPoints[0] + tempPoints[1]
+                    if dot(evec-vpoint,tSum-vpoint) > 0:  #need to  have at least one point on the "other side"
+                        continue #skip this one
+                elif icount == 3: #make sure this is not coplanar with the previous 3
                     plane = plane3pts(tempPoints,self.eps) 
-                    if onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):
+#                     if onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):
+                    tSum = tempPoints[0] + tempPoints[1] + tempPoints[2]
+                    if dot(evec-vpoint,tSum-vpoint) > 0 or  onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):  #need to  have at least one point on the "other side"
                         continue #skip this one
                 tempPoints.append(evec)
                 tempiIBZs.append(expandediIBZz[iExp])
