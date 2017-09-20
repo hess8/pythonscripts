@@ -439,7 +439,7 @@ class voidWeight():
         self.rcutoff = float(params[1])
         self.tooClose = float(params[2])
         self.tooPlanar = float(params[3])
-        self.NvoidPoints = int(params[4])
+        self.NvoidPoints = int(float(params[4]))
         self.vwPower = float(params[5])
         
         self.initSrch = 'max'
@@ -883,12 +883,12 @@ class voidWeight():
         cubicLVs0 = cubicLVs
         nShift = 5
         
-#         nTh = 10
-#         nPh = 20
+        nTh = 10
+        nPh = 20
         
                
-        nTh = 3
-        nPh = 3
+#         nTh = 3
+#         nPh = 3
 # 
 
 

@@ -25,7 +25,7 @@ import voidWeighting, analyzeNks
 maindir = os.getcwd()
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/Sitest'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
 
@@ -298,13 +298,12 @@ Silicon:
     MPs + void weights with assigning all void weight to three nearest points:
                                 1.81 [ 0.   2.5  1.   0.1] avg nDone 19.0  
     
-    MPs + void weights with 4-d plane fitting 15Sep17, , so this is *slightly better* than init search and full voronoi cell volumes, no relaxation
+    MPs + void weights with 4-d plane fitting 15Sep17, so this is *slightly better* than init search and full voronoi cell volumes, no relaxation
                               1.74 But some Nks failed with infinite or negative weights!!!!
     1.69 [ 0.   2.5  1.   0.5]] avg nDone 19.0
     
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0    
-    
     '''
     
     paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
@@ -322,32 +321,40 @@ Silicon:
 #     params5 =     [0.5, 1.0] #dw
 
 # 
-#     params0 =     [ 0.0,0.2,0.5 ]   #wallClose
-#     params1 =     [ 2.5,3.0,3.5 ]   #rcutoff
-#     params2 =     [ 0.5,1.0,1.5 ]   #tooClose
-#     params3 =     [ 0.1,0.25,0.5 ]  #tooPlanar
-#     params4 =     [ 0.1,0.25,0.5 ]  #NvoidPoints
-#     params5 =     [ 0.1,0.25,0.5 ]  #vwPower
-
-
-
     params0 =     [ 0.0 ]   #wallClose
-    params1 =     [ 3.0]   #rcutoff
-    params2 =     [ 1.0 ]   #tooClose
+    params1 =     [ 2.0 ]   #rcutoff
+    params2 =     [ 0.5 ]   #tooClose
     params3 =     [ 0.25 ]  #tooPlanar
-    params4 =     [ 3 ]  #NvoidPoints
-    params5 =     [ 1.0 ]  #vwPower
+    params4 =     [ 2 ]  #NvoidPoints
+    params5 =     [ 2.0 ]  #vwPower
 
+
+# 
+#     params0 =     [ 0.0,0.5 ]   #wallClose
+#     params1 =     [ 2.0,2.5,3.0]   #rcutoff
+#     params2 =     [ 0.5,1.0,1.5 ]   #tooClose
+#     params3 =     [ 0.25,0.5,1.0 ]  #tooPlanar
+#     params4 =     [ 2,3,5,7,9 ]  #NvoidPoints
+#     params5 =     [ 1.0,2.0,3.0 ]  #vwPower
+
+
+# [ 0.    2.    0.5   0.25  2.    2.  ]
     
 #     params5 =  [0.1]
 #     params5 =  [float(sys.argv[1])]
     nP =len(paramLabels)
-    nPsets = len(params0)*len(params1)*len(params2)*len(params3) #* other len's
+    nPsets = len(params0)*len(params1)*len(params2)*len(params3)*len(params4)*len(params5) #* other len's
     print 'Will run {} parameter sets'.format(nPsets)
     print 'Initial packing is {}'.format(type) 
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
     iset = 0
-    nRunSlots = min(100,nPsets)#run slots are directories that run a paramSet.  Should be <= nPsets
+    nmaxDirs = 100
+    if nPsets > nmaxDirs:
+        reuseSlots =  True
+        nRunSlots = nmaxDirs
+    else:
+        reuseSlots =  False
+        nRunSlots = nPsets #run slots are directories that run a paramSet.  Should be <= nPsets
     slotsJobIDs = [[]]*nRunSlots
     slotsIsets =  zeros(nRunSlots,dtype = int32)
     os.chdir(maindir)
@@ -361,19 +368,18 @@ Silicon:
         for p1 in params1:
             for p2 in params2:
                 for p3 in params3:
-#                     for p4 in params4:
-#                         for p5 in params5:
-#                             params = [p0,p1,p2,p3,p4,p5]   
-#                             params = [p0]   
+                    for p4 in params4:
+                        for p5 in params5: 
                             if nP ==1: 
                                 all[iset]['params']  =  p0
                             else:
-#                                 params = [p0,p1,p2,p3,p4,p5]  
-                                params = [p0,p1,p2,p3]              
+                                params = [p0,p1,p2,p3,p4,p5]  
+#                                 params = [p0,p1,p2,p3]              
                                 all[iset]['params'] = params
                             iset += 1
+    #['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
     summary = open('{}/summaryGrid.csv'.format(maindir),'w')
-    summary.write('iset,cost,avgDone,power,wallPower,wallfactor,wallClose,wallOffset,dw\n')
+    summary.write('iset,cost,avgDone,wallClose,rcutoff,tooClose,tooPlanar,NvoidPoints,vwPower\n')
     toAnalyze = []
     iwait = 0
     minCost = 100
@@ -382,24 +388,41 @@ Silicon:
     while len(isetsDone) < nPsets:
         if len(isetsToStart) > 0:
             icurrSet = isetsToStart[0]
-#             for ir in range(nRunSlots): #Use this if we want to recycle the rdirs to save disk space
-            ir = icurrSet
-            if len(slotsJobIDs[ir]) == 0 and not ir in toAnalyze: #use this slot for next set
-                iwait = 0; print     
-                #start new set
-                if nP ==1:
-                    params = [all[icurrSet]['params']]
-                else:
-                    params = all[icurrSet]['params']
-                jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nKtargets)
-                subprocess.call(['echo', '\tFor set {} in slot {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,ir,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
-                slotsJobIDs[ir] = jobIDs
-                isetsToStart.pop(0)
-                toAnalyze.append(ir)
-                slotsIsets[ir] = icurrSet
-                if len(slotsJobIDs[-1]) > 0: #slots have all started work
-                    print '\twait', 
-#                 break #submit one set at a time #Use this if we want to recycle the rdirs to save disk space
+            if reuseSlots:
+                for ir in range(nRunSlots): #Use this if we want to recycle the rdirs to save disk space
+                    if len(slotsJobIDs[ir]) == 0 and not ir in toAnalyze: #use this slot for next set
+                        iwait = 0; print     
+                        #start new set
+                        if nP ==1:
+                            params = [all[icurrSet]['params']]
+                        else:
+                            params = all[icurrSet]['params']
+                        jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nKtargets)
+                        subprocess.call(['echo', '\tFor set {} in slot {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,ir,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
+                        slotsJobIDs[ir] = jobIDs
+                        isetsToStart.pop(0)
+                        toAnalyze.append(ir)
+                        slotsIsets[ir] = icurrSet
+                        if len(slotsJobIDs[-1]) > 0: #slots have all started work
+                            print '\twait', 
+                        break #submit one set at a time #Use this if we want to recycle the rdirs to save disk space
+            else:
+                ir = icurrSet
+                if len(slotsJobIDs[ir]) == 0 and not ir in toAnalyze: #use this slot for next set
+                    iwait = 0; print     
+                    #start new set
+                    if nP ==1:
+                        params = [all[icurrSet]['params']]
+                    else:
+                        params = all[icurrSet]['params']
+                    jobIDs = submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nKtargets)
+                    subprocess.call(['echo', '\tFor set {} in slot {}, submitted {} jobs, ID range {} , {}'.format(icurrSet+1,ir,len(jobIDs),jobIDs[0],jobIDs[-1],icurrSet)])
+                    slotsJobIDs[ir] = jobIDs
+                    isetsToStart.pop(0)
+                    toAnalyze.append(ir)
+                    slotsIsets[ir] = icurrSet
+                    if len(slotsJobIDs[-1]) > 0: #slots have all started work
+                        print '\twait', 
         if len(toAnalyze) > 0:
             for ir in range(nRunSlots):
                 if len(slotsJobIDs[ir]) == 0: 
@@ -425,9 +448,10 @@ Silicon:
                         print 'cost for set {}: {:6.2f} {} avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)
                         print 'vs. min cost {}: {:6.2f} {} avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
                         ps = all[ioldSet]['params']
-#                         summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
-#                                                     ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
-#                         summary.flush()
+                         #['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
+                        summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
+                                                    ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
+                        summary.flush()
                         toAnalyze.remove(ir)
                         isetsDone.append(ioldSet) 
                         break #analyze one set at a tome
