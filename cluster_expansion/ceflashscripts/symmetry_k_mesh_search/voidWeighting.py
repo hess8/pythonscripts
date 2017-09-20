@@ -755,7 +755,6 @@ class voidWeight():
         k2 = norm( closePoints[1]['vec'] - vpoint)
         p = k2/(k1+k2)
         q = k1/(k1+k2)
-<<<<<<< HEAD
         return [p, q, 0, 0]  
     
     def distrVoidWeights3Points(self,vpoint,closePoints):
@@ -802,10 +801,6 @@ class voidWeight():
             else:
                 dweights[i] = sum(Ls[:i])
         return dweights/(N-1)/sumLs  
-=======
-        return [p, q, 0, 0]   
- 
->>>>>>> 0e9cf7655a96061c24ca54dafb99a9807d2cec92
               
     def prepMP(self,kpoint):
         cutMP = deepcopy(self.MP)
