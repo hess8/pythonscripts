@@ -28,30 +28,7 @@ maindir = os.getcwd()
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
-''' Silicon:
-    paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
-    MPs only, ignoring voids: 2.21 0.0] avg nDone 19.0
-    MPs + void weights using only inside points
-                              2.19 0.0] avg nDone 19.0  !progress!
-    MPs + void weights using all points, but not dealing with close clusters:
-                              2.25 
-    MPs + void weights using all points, allowing partner points to be no closer than 2rpacking from each other:
-                              2.30 
-    MPs + void weights with assigning all void weight to nearest point  
-                                1.98 [ 0.   3.5  0.5  0.5] avg nDone 19.0
-                                1.84 [ 0.5   2.5   1.5   0.25] avg nDone 16.0
-                                
-    MPs + void weights with assigning all void weight to two nearest points:
-                                1.86 [ 0.   3.5  0.5  0.1] avg nDone 19.0 *so better than just one point given the weight*                             
-                                2.15 for many with wallClose = 0.5 *worse for these than just one*
-                                2.12 for many with wallClose = 0.25 *worse for these than just one* 
-    MPs + void weights with 4-d plane fitting 15Sep17, , so this is *slightly better* than init search and full voronoi cell volumes, no relaxation
-                              1.74 But some Nks failed with infinite or negative weights!!!!
-    1.69 [ 0.   2.5  1.   0.5]] avg nDone 19.0
-    
-    !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
-    !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0
-                         
+'''                        
     
 '''  
 #maindir default is os.getcwd()
@@ -275,8 +252,38 @@ def submitSet(ir,params,maindir,poscarsDir,vaspinputdir,nKtargets):
     return jobIDs 
 
 def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
-    '''Set up a N-dimensional grid of parameters, and run through all of it''' 
+    '''Set up a N-dimensional grid of parameters, and run through all of it
+
+Silicon:
     paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
+    MPs only, ignoring voids: 2.21 0.0] avg nDone 19.0
+    MPs + void weights using only inside points
+                              2.19 0.0] avg nDone 19.0  !progress!
+    MPs + void weights using all points, but not dealing with close clusters:
+                              2.25 
+    MPs + void weights using all points, allowing partner points to be no closer than 2rpacking from each other:
+                              2.30 
+    MPs + void weights with assigning all void weight to nearest point  
+                                1.98 [ 0.   3.5  0.5  0.5] avg nDone 19.0
+                                1.84 [ 0.5   2.5   1.5   0.25] avg nDone 16.0
+                                
+    MPs + void weights with assigning all void weight to two nearest points:
+                                1.86 [ 0.   3.5  0.5  0.1] avg nDone 19.0 *so better than just one point given the weight*                             
+                                2.15 for many with wallClose = 0.5 *worse for these than just one*
+                                2.12 for many with wallClose = 0.25 *worse for these than just one* 
+    MPs + void weights with assigning all void weight to three nearest points:
+                                1.81 [ 0.   2.5  1.   0.1] avg nDone 19.0  
+    
+    MPs + void weights with 4-d plane fitting 15Sep17, , so this is *slightly better* than init search and full voronoi cell volumes, no relaxation
+                              1.74 But some Nks failed with infinite or negative weights!!!!
+    1.69 [ 0.   2.5  1.   0.5]] avg nDone 19.0
+    
+    !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
+    !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0    
+    
+    '''
+    
+    paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
 #     print '\twallPower equals power'
@@ -290,18 +297,23 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
 #     params4 =     [ 0] #wallOffset
 #     params5 =     [0.5, 1.0] #dw
 
+# 
+#     params0 =     [ 0.0,0.2,0.5 ]   #wallClose
+#     params1 =     [ 2.5,3.0,3.5 ]   #rcutoff
+#     params2 =     [ 0.5,1.0,1.5 ]   #tooClose
+#     params3 =     [ 0.1,0.25,0.5 ]  #tooPlanar
+#     params4 =     [ 0.1,0.25,0.5 ]  #NvoidPoints
+#     params5 =     [ 0.1,0.25,0.5 ]  #vwPower
 
-    params0 =     [ 0.0,0.2,0.5 ]   #wallClose
-    params1 =     [ 2.5,3.0,3.5 ]   #rcutoff
-    params2 =     [ 0.5,1.0,1.5 ]   #tooClose
-    params3 =     [ 0.1,0.25,0.5 ]  #tooPlanar
 
 
+    params0 =     [ 0.0 ]   #wallClose
+    params1 =     [ 3.0]   #rcutoff
+    params2 =     [ 1.0 ]   #tooClose
+    params3 =     [ 0.25 ]  #tooPlanar
+    params4 =     [ 3 ]  #NvoidPoints
+    params5 =     [ 1.0 ]  #vwPower
 
-#     params0 =     [ 0.0 ]   #wallClose
-#     params1 =     [ 3.0]   #rcutoff
-#     params2 =     [ 1.0 ]   #tooClose
-#     params3 =     [ 0.25 ]  #tooPlanar
     
 #     params5 =  [0.1]
 #     params5 =  [float(sys.argv[1])]

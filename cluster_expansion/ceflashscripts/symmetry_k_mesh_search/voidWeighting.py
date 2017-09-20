@@ -434,11 +434,13 @@ class voidWeight():
         IBZvol = vol/float(self.nops)
 #         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
-        paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
+        paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
         self.wallClose = float(params[0]) #
         self.rcutoff = float(params[1])
         self.tooClose = float(params[2])
         self.tooPlanar = float(params[3])
+        self.NvoidPoints = int(params[4])
+        self.vwPower = float(params[5])
         
         self.initSrch = 'max'
         eps = self.ravg/300
@@ -602,14 +604,16 @@ class voidWeight():
         # Divide the volume of each void and add it to the volume of each mesh point, 
         # according to how close expandedMesh points (that are partners of the mesh point) 
         # is to the void point      
+        N = self.NvoidPoints
         for iv, vpoint in enumerate(self.voids.mesh):
-            if iv == 158:
+            if iv == 2:
                 'pause'
-            closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
+#             closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
+            closePoints = self.NPointsNearVoid(N,vpoint,expandedMesh,expandediIBZz)
             self.facetsMeshOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
 #             dweights = self.distrVoidWeights(vpoint,closePoints)
-            dweights = self.distrVoidWeights2Points(vpoint,closePoints)
-            
+#             dweights = self.distrVoidWeights4Points(vpoint,closePoints) 
+            dweights = self.distrVoidWeightsNPoints(N,vpoint,closePoints)
 #             print 'Giving all void weight to the nearest point'
 #             dweights = [1.0,0,0,0] #Give all the weight to the closest point
             print iv,'Sum of dweights',sum(dweights),dweights
@@ -670,6 +674,52 @@ class voidWeight():
             closePoints[ic]['vec'] = tempPoints[ic]
             closePoints[ic]['iIBZ'] = tempiIBZs[ic]
         return closePoints
+    
+    def NPointsNearVoid(self,N,vpoint,expandedMesh,expandediIBZz):
+        '''Find N partner points close to the void center that are not within 
+        2*rpacking of each other, and are not close to coplanar'''
+#         allPoints = zeros(l,dtype = [('vec', '3float'),('iIBZ', 'int')])
+        mags = [norm(vpoint-vec) for vec in expandedMesh]
+        order = argsort(array(mags))
+        mags = array(deepcopy(mags))[order]
+        expandedMesh = array(deepcopy(expandedMesh))[order]
+        expandediIBZz = array(deepcopy(expandediIBZz))[order]
+        closePoints = zeros(N,dtype = [('vec', '3float'),('iIBZ', 'int')]) 
+        icount = 0
+        tempPoints = []
+        tempiIBZs = []
+        self.facetsMeshOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
+        while icount < N: #so that we retry points that were skipped earlier
+            for iExp, evec in enumerate(expandedMesh):
+                if not among(evec,tempPoints,self.tooClose*self.rpacking): #Ignores clusters of points that are very close by symmetry
+                    if icount == 1:
+                       if dot(evec-vpoint,tempPoints[0]-vpoint) > 0:
+                            continue #skip this one
+                    elif icount == 2:
+                        tSum = tempPoints[0] + tempPoints[1]
+                        if dot(evec-vpoint,tSum-vpoint) > 0:  #need to  have at least one point on the "other side"
+                            continue #skip this one
+                    elif icount == 3: #make sure this is not coplanar with the previous 3
+                        plane = plane3pts(tempPoints,self.eps) 
+    #                     if onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):
+                        tSum = tempPoints[0] + tempPoints[1] + tempPoints[2]
+                        if dot(evec-vpoint,tSum-vpoint) > 0 or  onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):  #need to  have at least one point on the "other side"
+                            continue #skip this one
+                    elif icount != 0:
+                        tSum = zeros(3)
+                        for i in range(icount):
+                            tSum += tempPoints[i]
+                        if dot(evec-vpoint,tSum-vpoint) > 0:
+                            continue      
+                    tempPoints.append(evec)
+                    tempiIBZs.append(expandediIBZz[iExp])
+                    print 'added point',iExp,'at distance',mags[iExp], 'iIBZ',expandediIBZz[iExp]
+                    icount += 1
+                    break
+        for ic in range(N):
+            closePoints[ic]['vec'] = tempPoints[ic]
+            closePoints[ic]['iIBZ'] = tempiIBZs[ic]
+        return closePoints
 
     def distrVoidWeights(self,vpoint,closePoints):
         '''
@@ -705,8 +755,52 @@ class voidWeight():
         k2 = norm( closePoints[1]['vec'] - vpoint)
         p = k2/(k1+k2)
         q = k1/(k1+k2)
-        return [p, q, 0, 0]   
- 
+        return [p, q, 0, 0]  
+    
+    def distrVoidWeights3Points(self,vpoint,closePoints):
+        '''
+        Analogous to the 2Points routine above. The weights are the given by the distances from
+        the origin to the corners of a triangle formed by the three points. 
+        '''
+        k1 = norm( closePoints[0]['vec'] - vpoint)
+        k2 = norm( closePoints[1]['vec'] - vpoint)
+        k3 = norm( closePoints[2]['vec'] - vpoint)
+        p = (k2+k3)/(k1+k2+k3)/2.0
+        q = (k1+k3)/(k1+k2+k3)/2.0
+        r = (k1+k2)/(k1+k2+k3)/2.0
+        return [p, q, r, 0]    
+    
+    def distrVoidWeights4Points(self,vpoint,closePoints):
+        '''
+        Analogous to the 2Points routine above. The weights are the given by the distances from
+        the origin to the corners of a rectangle formed by the four points. 
+        '''
+        k1 = norm( closePoints[0]['vec'] - vpoint)
+        k2 = norm( closePoints[1]['vec'] - vpoint)
+        k3 = norm( closePoints[2]['vec'] - vpoint)
+        k4 = norm( closePoints[2]['vec'] - vpoint)
+        p = (k2+k3+k4)/(k1+k2+k3+k4)/3.0
+        q = (k1+k3+k4)/(k1+k2+k3+k4)/3.0
+        r = (k1+k2+k4)/(k1+k2+k3+k4)/3.0
+        s = (k1+k2+k3)/(k1+k2+k3+k4)/3.0
+        return [p, q, r, s]   
+    
+        
+    def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
+        '''
+        Analogous to the 2Points routine above. The weights are the given by the distances (Ls) from
+        the origin to the corners of a polygon formed by the N points. Inital weight
+        of the point i the sum of all the other Ls besides i. 
+        '''
+        dweights = zeros(N,dtype=float)
+        Ls = [norm(closePoint-vpoint)**self.vwPower for closePoint in closePoints['vec']]
+        sumLs = sum(Ls)
+        for i in range(N):
+            if i<N-1:
+                dweights[i] = sum(Ls[:i] + Ls[i+1:])
+            else:
+                dweights[i] = sum(Ls[:i])
+        return dweights/(N-1)/sumLs  
               
     def prepMP(self,kpoint):
         cutMP = deepcopy(self.MP)
