@@ -432,13 +432,21 @@ class voidWeight():
         IBZvol = vol/float(self.nops)
 #         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
-        paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
+        paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vweightPower']
         self.wallClose = float(params[0]) #
         self.rcutoff = float(params[1])
         self.tooClose = float(params[2])
         self.tooPlanar = float(params[3])
         self.NvoidPoints = int(float(params[4]))
-        self.vwPower = float(params[5])
+        self.vweightPower = float(params[5])
+        self.power = float(params[6]) #6.0
+        self.wallPower = float(params[7]) #6.0
+        self.wallFactor = float(params[8]) #1.0  #probably needs to be bigger than interFactor by about the average number of nearest neighbors
+        self.wallOffset = float(params[9]) #0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.interFactor = 1.0        
+        self.df = 1.00 * self.ravg #inter-point force scale distance
+        self.dw = float(params[5]) * self.df 
+
         
         self.initSrch = 'lowE'
         eps = self.ravg/300
@@ -461,6 +469,7 @@ class voidWeight():
         self.nKmin = 2
         if self.nKmin < len(self.IBZ.mesh) <= self.nKmax:
             OK = True
+            self.dynamic(eps)
             self.weightPoints(eps)
             self.writeKpoints()
             self.writeSym()
@@ -795,7 +804,7 @@ class voidWeight():
         of the point i the sum of all the other Ls besides i. 
         '''
         dweights = zeros(N,dtype=float)
-        Ls = [norm(closePoint-vpoint)**self.vwPower for closePoint in closePoints['vec']]
+        Ls = [norm(closePoint-vpoint)**self.vweightPower for closePoint in closePoints['vec']]
         sumLs = sum(Ls)
         for i in range(N):
             if i<N-1:
@@ -1017,16 +1026,18 @@ class voidWeight():
                             IBZ.mesh.append(kpoint) 
                         else:
                             outPoints.append(kpoint)
-
-
-
-                            
-#         print 'Points inside', nInside
         return IBZ,nInside,outPoints
-
+ def dynamic(self,eps):
+        ''' '''
+        self.facetsMeshMathFile(self.IBZ,'IBZmeshInit',None) 
+        print 'Relaxation is blocked!!!'
+#         self.relax()
+#         self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
+        return
+    
     def energy(self,mesh):
         dw = self.rpacking/2
-        wp = 4.0
+        wp = self.wallPower
         etot = 0
         for i,ri in enumerate(mesh):
             #wall forces
@@ -1039,6 +1050,124 @@ class voidWeight():
                     sys.exit('Error. Point {} in energy() is not in the IBZ.'.format(i+1))
                 etot += dw/abs(-wp+1)*(d/dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
         return etot
+    def minSteepest(self,x0,eps):
+        ''' Steepest descent works better in tests than sophisticated methods such as 
+        conjugate gradient or using a Hessian method (see intro to P. Pulay, Chem. Phys. Lett. 73, 393 (1980)). 
+        We move in the direction of -gradient, starting with a default step, and decreasing it by 2 until
+        a lower energy and lower norm(gradient) is found.   The default step is increased if the previous step succeeded without adjustment.
+        If the step must be lowered to find a lower energy and lower norm(gradient), the default is lowered. This worked
+        better than the Barzilai-Borwein method that tries to predict an optimal step.    
+        
+'''
+
+        itermax = 300
+        gnormTol = 0.001
+        minstep = 0.00000001
+        xold = x0
+        xnew = x0
+        fold,gold = self.enerGrad(xold)
+        gnew = gold
+        fnew = fold
+        gnormold = norm(gold)
+        gnormnew = gnormold
+        fstart = fold; gstart = gold; gnormstart = gnormold
+        method = 'steepest'
+#         xolder =  xold + 0.01*gold #go backwards
+#         golder = dot(H,(xolder-xold))
+#         folder = dot(gold,(xolder-xold))
+        print 'energy_0',fold, 'gnorm',gnormold #,'grad', gold
+        iIter = 0
+        step = 1.0 #* minstep
+        atMinStep = False
+        while iIter < itermax and gnormold > gnormTol and not atMinStep:
+            print iIter, #progress bar
+            method = 'steepest'
+            lower = False
+            while not lower:
+                if step < minstep:
+                    print 'minimum step reached: {}'.format(step) 
+                    atMinStep = True
+                    break
+                if method == 'steepest':
+                    xnew = xold - step*gold
+                currPoints = xnew.reshape((len(self.IBZ.mesh),3))
+                inside = True
+                for point in currPoints:
+                    if not isInside(point,self.IBZ.bounds,eps):
+                        print 'point is outside IBZ...reduce step size:',point
+                        inside = False
+                        break                   
+                if inside:
+                    fnew,gnew = self.enerGrad(xnew)
+                    gnormnew = norm(gnew)
+                    if fnew<fold and gnormnew < gnormold:
+                        lower = True
+                        self.IBZ.mesh = currPoints.tolist()
+                step /= 2
+            step *= 4
+            xold = xnew
+            fold = fnew
+            gold = gnew
+            gnormold = gnormnew
+            iIter += 1                   
+        self.IBZ.mesh = currPoints.tolist()
+        print 'For {} points in IBZ and {} steps'.format(len(self.IBZ.mesh),iIter)
+        print '\tStarting energy',fstart, 'gnorm',gnormstart
+        print '\tEnding energy',fnew,'gnorm',gnormnew, 'step',step#, 'grad', gnew
+        print 'Energy/N',fnew/len(self.IBZ.mesh)
+        if gnormnew <= gnormTol:
+            print '\nSuccess after {} iterations'.format(iIter)
+        elif iIter == itermax:
+            print '\nExceeded maximum number of iterations ({}), while gnorm {} is greater than the tolerance {}'.format(itermax,gnormnew,gnormTol)
+        if not (fnew < fstart and gnormnew < gnormstart):
+#             sys.exit('Did not find a lower energy and force norm: stop')
+            print 'Did not find a lower energy and force norm: using unrelaxed packing'
+        return fnew
+
+    def enerGrad(self,comps):
+        '''Returns the total energy, gradient (-forces), 
+        using comps, which are the flattened components of the current positions  '''
+#         print 'oldindvecs',self.oldindVecs
+        self.forces = zeros((len(self.IBZ.mesh),3))
+        self.wallForce = zeros(len(self.IBZ.facets))
+#         self.wallPress = zeros(len(self.IBZ.facets))
+        IBZvecs = comps.reshape((len(self.IBZ.mesh),3))
+        p = self.power
+        wp = self.wallPower
+        wallfact = self.wallFactor
+        interfact = self.interFactor
+        etot = 0
+        for i,ri in enumerate(IBZvecs):
+            #wall forces
+            for iw, u in enumerate(self.IBZ.bounds[0]):
+                ro = self.IBZ.bounds[1][iw]
+                d = ro-dot(ri,u)+ self.wallOffset*self.dw #distance from plane to ri offset factor allows points to move closer to walls. 
+                if d<0:
+                    print '\nri,ro,u, dot(ri,u),d'
+                    print ri,ro,u, dot(ri,u), d 
+                    sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(i+1))
+                fmag = wallfact*(d/self.dw)**(-wp)  #dimensionless
+                etot += wallfact*self.dw/abs(-wp+1)*(d/self.dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+                self.forces[i] += -u*fmag
+                self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudesrce',-u*fmag,fmag
+            #vertext pull forces
+#             for vert in self.IBZ.fpoints:
+#                 d = norm(ri-vert)
+#                 self.forces[i] += -self.vertexPull*(d/self.df)**(-p)*(ri-vert)/d #pull not push
+#                 etot +=  self.vertexPull*self.df/abs(-p+1)*(d/self.df)**(-p+1)
+#            inter-point forces
+            for j, rj in enumerate(IBZvecs):
+                if i!=j:
+                    d = norm(ri-rj)
+#                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
+                    self.forces[i] += interfact*(d/self.df)**(-p)*(ri-rj)/d
+                    if j>i: #don't overcount
+                        etot += interfact*self.df/abs(-p+1)*(d/self.df)**(-p+1)
+#         for i,fac in enumerate(self.facets):
+#             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
+#             self.wallPress[i] = self.wallForce[i]/area
+#         print 'Pressure avg', mean(self.wallPress)
+        return etot, -self.forces.flatten() #gradient is opposite the forces.
         
     def writeKpoints(self):
         nk = len(self.IBZ.mesh)
