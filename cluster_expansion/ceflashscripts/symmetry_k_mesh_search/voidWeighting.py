@@ -19,11 +19,11 @@ from matplotlib.pyplot import (subplots,savefig,imshow,close,plot,title,xlabel,
                                ylabel,figure,show,scatter,triplot)
 import matplotlib.image as mpimg
 from scipy.spatial import Voronoi
-from __builtin__ import True
-from _symtable import CELL
-# import datetime
-# from _ast import operator
-# from pip._vendor.html5lib.constants import rcdataElements
+# from __builtin__ import True
+# from _symtable import CELL
+
+from timeit import default_timer as timer
+
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
 sys.path.append('/fslhome/bch/graphener/graphener')
 
@@ -332,10 +332,7 @@ def makesDups(op,cell,eps):
         otherLabels.pop(i)
         for j in otherLabels:
             if allclose(rpoint,points[j],atol=eps):
-#                 print points[i],i,'maps to',j,rpoint
                 return True,rpoint,points[j] 
-#         else:
-#             print points[i],i,'no map'
     return False,'',''
 
 def getVorCell(boundPlanesVecs,cell,type,eps):
@@ -422,6 +419,7 @@ class voidWeight():
     from numpy.random import rand, uniform
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
+        startTime = timer() 
         [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
@@ -442,7 +440,7 @@ class voidWeight():
         self.NvoidPoints = int(float(params[4]))
         self.vwPower = float(params[5])
         
-        self.initSrch = 'max'
+        self.initSrch = 'lowE'
         eps = self.ravg/300
         self.eps = eps
 #         self.initSrch = None
@@ -466,10 +464,14 @@ class voidWeight():
             self.weightPoints(eps)
             self.writeKpoints()
             self.writeSym()
+            endTime = timer()
+            print 'Elapsed time: {:10.3f}'.format(endTime-startTime)
             return OK,self.nops
         else: 
             print 'Limiting nK to {},{}'.format(self.nKmin,self.nKmax)
             OK = False
+            endTime = timer()
+            print 'Elapsed time: {:10.3f}'.format(endTime-startTime)
             return OK,self.nops
     
     def sortfpoints(self,cell):
@@ -847,7 +849,7 @@ class voidWeight():
             sys.exit('stop. Type error in meshCubic.')
 
         if self.initSrch is not None:
-            self.IBZ,self.outPoints = self.searchNmax(cubicLVs,aKcubConv,sites) 
+            self.IBZ,self.outPoints = self.searchInitMesh(cubicLVs,aKcubConv,sites) 
             [shift,theta,phi] = self.IBZ.details
             Rmat = dot(
                 array([[1,0,0], [0,cos(theta),-sin(theta)],[0, sin(theta), cos(theta)]]),
@@ -878,7 +880,7 @@ class voidWeight():
         self.Vsphere = 4/3.0*pi*self.rpacking**3        
         #Search over shift and rotation to find the most possible points inside
 
-    def searchNmax(self,cubicLVs,aKcubConv,sites):
+    def searchInitMesh(self,cubicLVs,aKcubConv,sites):
         '''Test an entire grid of init values'''
         cubicLVs0 = cubicLVs
         nShift = 5
@@ -898,14 +900,15 @@ class voidWeight():
         shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(nShift)]
         thetas = [i*thDiv for i in range(nTh)]
         phis = [i*phDiv for i in range(nPh)]
-        nMax = 0
+        nKeep = 0
+        bestEner = 1e10
         closestLog = 10
         isearch = 0
         bestN = 0
         IBZ = deepcopy(self.IBZ)
         bestIBZ = deepcopy(self.IBZ)
         sites0 = deepcopy(sites)
-        
+
         for shift in shifts:
 #             print 'shift',shift
             for theta in thetas:
@@ -922,16 +925,52 @@ class voidWeight():
 #                     self.facetsMeshMathFile(IBZ,IBZ.mesh'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
-                    if nInside > nMax: 
-                        nMax = nInside
-                        if self.initSrch == 'max':
+                    if self.initSrch == 'lowE':
+                        if nInside > bestN and nInside > 0:
+                            ener = self.energy(IBZ.mesh)/nInside
+                            bestEner = ener
                             bestN = nInside
                             bestOutside = outPoints
                             bestIBZ = deepcopy(IBZ)
                             bestIBZ.details = [shift,theta,phi]
-                            besti = isearch
-                        print 'Step {}: Nmax'.format(isearch),nMax, shift, theta, phi
-                    if self.initSrch != 'max':
+                            besti = isearch                            
+                        elif nInside == bestN and nInside > 0:                        
+                            ener = self.energy(IBZ.mesh)/nInside
+                            if ener < bestEner:
+                                bestEner = ener
+                                bestN = nInside
+                                bestOutside = outPoints
+                                bestIBZ = deepcopy(IBZ)
+                                bestIBZ.details = [shift,theta,phi]
+                                besti = isearch
+                                print 'Step {}: bestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi  
+                    elif self.initSrch == 'highE':
+                        if nInside > bestN and nInside > 0:
+                            ener = self.energy(IBZ.mesh)/nInside
+                            bestEner = ener
+                            bestN = nInside
+                            bestOutside = outPoints
+                            bestIBZ = deepcopy(IBZ)
+                            bestIBZ.details = [shift,theta,phi]
+                            besti = isearch                            
+                        elif nInside == bestN and nInside > 0:                        
+                            ener = self.energy(IBZ.mesh)/nInside
+                            if ener > bestEner:
+                                bestEner = ener
+                                bestN = nInside
+                                bestOutside = outPoints
+                                bestIBZ = deepcopy(IBZ)
+                                bestIBZ.details = [shift,theta,phi]
+                                besti = isearch
+                                print 'Step {}: bestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi    
+                    elif self.initSrch == 'max' and nInside >= bestN :
+                        bestN = nInside
+                        bestOutside = outPoints
+                        bestIBZ = deepcopy(IBZ)
+                        bestIBZ.details = [shift,theta,phi]
+                        besti = isearch
+                        print 'Step {}: Nmax {}'.format(isearch,bestN), shift, theta, phi
+                    elif not self.initSrch in ['highE','lowE','max']:
                         closeLog = abs(log(nInside/(self.nTargetIBZ)))
                         if closeLog < closestLog:
                             closestLog = closeLog
@@ -941,7 +980,7 @@ class voidWeight():
                             bestIBZ.details = [shift,theta,phi]
         if self.initSrch == 'max':
             print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
-        else:
+        elif not self.initSrch in ['lowE','max']:
             print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.nTargetIBZ)
         return bestIBZ,bestOutside
         
@@ -985,6 +1024,21 @@ class voidWeight():
 #         print 'Points inside', nInside
         return IBZ,nInside,outPoints
 
+    def energy(self,mesh):
+        dw = self.rpacking/2
+        wp = 4.0
+        etot = 0
+        for i,ri in enumerate(mesh):
+            #wall forces
+            for iw, u in enumerate(self.IBZ.bounds[0]):
+                ro = self.IBZ.bounds[1][iw]
+                d = ro-dot(ri,u) #distance from plane to ri offset factor allows points to move closer to walls. 
+                if d<0:
+                    print '\nri,ro,u, dot(ri,u),d'
+                    print ri,ro,u, dot(ri,u), d 
+                    sys.exit('Error. Point {} in energy() is not in the IBZ.'.format(i+1))
+                etot += dw/abs(-wp+1)*(d/dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+        return etot
         
     def writeKpoints(self):
         nk = len(self.IBZ.mesh)

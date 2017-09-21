@@ -25,7 +25,7 @@ import voidWeighting, analyzeNks
 maindir = os.getcwd()
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/Sitest'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/Sitest'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
 
@@ -321,21 +321,21 @@ Silicon:
 #     params5 =     [0.5, 1.0] #dw
 
 # 
-    params0 =     [ 0.0 ]   #wallClose
-    params1 =     [ 2.0 ]   #rcutoff
-    params2 =     [ 0.5 ]   #tooClose
-    params3 =     [ 0.25 ]  #tooPlanar
-    params4 =     [ 2 ]  #NvoidPoints
-    params5 =     [ 2.0 ]  #vwPower
+#     params0 =     [ 0.0 ]   #wallClose
+#     params1 =     [ 2.0 ]   #rcutoff
+#     params2 =     [ 0.5 ]   #tooClose
+#     params3 =     [ 0.25 ]  #tooPlanar
+#     params4 =     [ 2 ]  #NvoidPoints
+#     params5 =     [ 2.0 ]  #vwPower
 
 
 # 
-#     params0 =     [ 0.0,0.5 ]   #wallClose
-#     params1 =     [ 2.0,2.5,3.0]   #rcutoff
-#     params2 =     [ 0.5,1.0,1.5 ]   #tooClose
-#     params3 =     [ 0.25,0.5,1.0 ]  #tooPlanar
-#     params4 =     [ 2,3,5,7,9 ]  #NvoidPoints
-#     params5 =     [ 1.0,2.0,3.0 ]  #vwPower
+    params0 =     [ 0.0,0.5 ]   #wallClose
+    params1 =     [ 2.0,2.5,3.0]   #rcutoff
+    params2 =     [ 0.5,1.0,1.5 ]   #tooClose
+    params3 =     [ 0.25,0.5,1.0 ]  #tooPlanar
+    params4 =     [ 2,3,5,7,9 ]  #NvoidPoints
+    params5 =     [ 1.0,2.0,3.0 ]  #vwPower
 
 
 # [ 0.    2.    0.5   0.25  2.    2.  ]
@@ -359,6 +359,7 @@ Silicon:
     slotsIsets =  zeros(nRunSlots,dtype = int32)
     os.chdir(maindir)
     os.system('rm -r -f r*')
+    os.mkdir('runsCostPlots')
     for i in range(nRunSlots):
         rdir = '{}/r{}'.format(maindir,i)
         os.mkdir(rdir)
@@ -430,6 +431,7 @@ Silicon:
                         print
                         rdir = '{}/r{}'.format(maindir,ir)
                         [cost,avgnDone] = analyzeNks.analyze([rdir])
+                        os.system('cp -r {}/loglog.png {}/runsCostPlots/best_loglog_{}.png'.format(rdir,maindir,ir))
                         ioldSet = slotsIsets[ir]
                         all[ioldSet]['cost'] = cost
                         if cost < minCost: 
@@ -476,7 +478,7 @@ Silicon:
             slotsJobIDs = [[]]*nRunSlots
         if len(slotsJobIDs[-1]) > 0:
                iwait += 1   
-               time.sleep(10)
+               time.sleep(1)
                print ' {}'.format(iwait),
     summary.close()  
     print 'Finished {} sets of parameters'.format(nPsets)
