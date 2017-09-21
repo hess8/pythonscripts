@@ -433,21 +433,22 @@ class voidWeight():
 #         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vweightPower']
+        
         self.wallClose = float(params[0]) #
         self.rcutoff = float(params[1])
         self.tooClose = float(params[2])
         self.tooPlanar = float(params[3])
         self.NvoidPoints = int(float(params[4]))
         self.vweightPower = float(params[5])
-        self.power = float(params[6]) #6.0
-        self.wallPower = float(params[7]) #6.0
-        self.wallFactor = float(params[8]) #1.0  #probably needs to be bigger than interFactor by about the average number of nearest neighbors
-        self.wallOffset = float(params[9]) #0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
-        self.interFactor = 1.0        
-        self.df = 1.00 * self.ravg #inter-point force scale distance
-        self.dw = float(params[5]) * self.df 
-
-        
+        self.relax = bool(params[6])
+        if self.relax:
+            self.interPower = float(params[6]) #6.0
+            self.wallPower = float(params[7]) #6.0
+            self.wallFactor = float(params[8]) #1.0  #probably needs to be bigger than interFactor by about the average number of nearest neighbors
+            self.wallOffset = float(params[9]) #0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+            self.interFactor = 1.0        
+            self.df = 1.00 * self.ravg #inter-point force scale distance
+            self.dw = float(params[5]) * self.df        
         self.initSrch = 'lowE'
         eps = self.ravg/300
         self.eps = eps
@@ -469,7 +470,8 @@ class voidWeight():
         self.nKmin = 2
         if self.nKmin < len(self.IBZ.mesh) <= self.nKmax:
             OK = True
-            self.dynamic(eps)
+            if self.relax:
+                self.dynamic(eps)
             self.weightPoints(eps)
             self.writeKpoints()
             self.writeSym()
@@ -517,38 +519,51 @@ class voidWeight():
         f_i involves the band energy sum_n(E_n(k_i)*occ((E_n(k_i))
         We assume that each f_void can be interpolated from the calculated f_IBZMP's.  
         
-        Interpolation: Write the kvectors with origin at k_void.  We choose 4 points near the void that don't lie close to each other, 
-        and fit a 4-d plane to them. f = a kx + b ky + c kz + d.
-        Then d is f_void = p*f1 + q*f2 + r*f3 + s*f4
-            p = -(k2z k3y k4x - k2y k3z k4x - k2z k3x k4y + k2x k3z k4y + k2y k3x k4z - k2x k3y k4z)/Q
-            q = -(-k1z k3y k4x + k1y k3z k4x + k1z k3x k4y - k1x k3z k4y - k1y k3x k4z +  k1x k3y k4z)/Q  
-            r = -(k1z k2y k4x - k1y k2z k4x - k1z k2x k4y + k1x k2z k4y + k1y k2x k4z -   k1x k2y k4z)/Q   
-            s = -(-k1z k2y k3x + k1y k2z k3x + k1z k2x k3y - k1x k2z k3y - k1y k2x k3z + k1x k2y k3z)/Q
-        Q is a function also of the k1 to k4 componenets. But we can remove it because we are normalizing. 
-        
-        t = p+q+r+s
-        
-        so we assign void_vol * p/t to the IBZ point connected to point 1, void_vol * q/t, etc.  
+        Interpolation: Write the kvectors with origin at k_void.  We choose N points near the void 
+        that don't lie close to each other and aren't very coplanar, 
         '''
         allMPfacets = []
 #         surfPoints = []
         self.IBZ.weights = []
         for ip,point in enumerate(self.IBZ.mesh):
             print ip,
-            ibzMP = self.prepMP(point)
-            for fpoint in ibzMP.fpoints:
-                cut = False
-                for iplane, uvec in enumerate(self.IBZ.bounds[0]):
-                    ro = self.IBZ.bounds[1][iplane]
-                    d = ro - dot(uvec,fpoint)
-                    if d < self.rmaxMP:
-                        cut = True
-#                         surfPoints.append(point)                                      
-                        ibzMP = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
-#             if cut:
-#                 allMPfacets.append(ibzMP.facets)
-            allMPfacets.append(ibzMP.facets)
-            self.IBZ.vorVols.append(ibzMP.volume)               
+            if self.relax:
+                pointCell = cell()
+                neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
+    #             print 'neighLbls',neighLbls
+                boundVecs = zeros(len(neighs)+ len(self.IBZ.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')]) 
+                for iw, u in enumerate(self.IBZ.bounds[0]):    
+                    ro = self.IBZ.bounds[1][iw]
+                    d = ro-dot(point,u)
+                    boundVecs[iw]['uvec'] = u #unit vector stays the same for the plane
+                    boundVecs[iw]['mag'] = d
+    #                 print 'wall',iw,u, vec, norm(vec)
+                for j, jpoint in enumerate(neighs):
+                    vec = (jpoint - point)/2
+                    mag = norm(vec)
+    #                 print 'neighs',j,jpoint, vec, norm(vec)
+                    boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
+                    boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
+                boundVecs.sort(order = 'mag') 
+                pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+                allMPfacets.append(pointCell.facets)
+                self.IBZ.weights.append(pointCell.volume)
+                self.IBZ.vorVols.append(pointCell.volume)                
+            else:
+                ibzMP = self.prepMP(point)
+                for fpoint in ibzMP.fpoints:
+                    cut = False
+                    for iplane, uvec in enumerate(self.IBZ.bounds[0]):
+                        ro = self.IBZ.bounds[1][iplane]
+                        d = ro - dot(uvec,fpoint)
+                        if d < self.rmaxMP:
+                            cut = True
+    #                         surfPoints.append(point)                                      
+                            ibzMP = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
+    #             if cut:
+    #                 allMPfacets.append(ibzMP.facets)
+                allMPfacets.append(ibzMP.facets)
+                self.IBZ.vorVols.append(ibzMP.volume)               
 #         self.facetsMeshVCMathFile(self.IBZ,allMPfacets,'IBZMesh')
         vMPs = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
@@ -557,94 +572,104 @@ class voidWeight():
         volDiff = vMPs - self.IBZ.volume        
         volDiffRel = volDiff/self.IBZ.volume
         print 'Total volume of point Vor cells',vMPs,'vs IBZ volume', self.IBZ.volume
-        print 'Relative volume in MP Vor cells', -volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
-        self.IBZ.weights = self.IBZ.vorVols
-        #find void centers, which are portions of points on the original packing lattice
-#         that lie outside the IBZ 
-        self.voids = cell()
-        self.voids.volume = 0.0
-        for io, point in enumerate(self.outPoints):
-            ds = []
-            for iplane,u in enumerate(self.IBZ.bounds[0]):
-                ro = self.IBZ.bounds[1][iplane]
-                ds.append(dot(u,point) - ro)
-            if min(ds) < 2*self.rmaxMP: #candidate to host an IBZ void: it's "just outside"
-                joMP = self.prepMP(point) # point just outside the IBZ on the mesh lattice
-                for fpoint in joMP.fpoints:
-                    for iplane, uvec in enumerate(self.IBZ.bounds[0]):
-                        ro = self.IBZ.bounds[1][iplane]
-                        d = ro - dot(uvec,fpoint)
-                        if d < self.rmaxMP:                                    
-                            joMP = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u                 
-#                             print 'Surf point vol', point, joMP.volume
-                if joMP.volume > self.eps**3:
-                    self.voids.facets.append(joMP.facets)
-                    self.voids.volume += joMP.volume
-                    self.voids.volumes.append(joMP.volume)
-                    self.voids.mesh.append(joMP.center)
-        print 'Total volume Vor cells plus voids:',vMPs+self.voids.volume,'vs IBZ volume', self.IBZ.volume 
-        self.facetsMeshVCMathFile(self.IBZ,allMPfacets,'IBZmesh') 
-        self.facetsMeshVCMathFile(self.IBZ,self.voids.facets,'voids')                     
-        if not areEqual(vMPs+self.voids.volume, self.IBZ.volume, volCheck*self.IBZ.volume):
-            sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
-        #find distances of each void point to IBZ mesh points and their symmetry partners.    
-        #find symmetry parterns (expandedMesh), which includes themselves
-#         self.rCutoff = 3.0*self.rpacking
-        expandedMesh = []
-        expandediIBZz = []
-        for iIBZ,point in enumerate(self.IBZ.mesh):
-            tempPoints = [point]
-            for iop in range(self.nops):
-                op = self.symops[:,:,iop]
-                symPoint = dot(op,point)
-                tempPoints = addVec(symPoint,tempPoints,self.eps)
-#                 addVec(symPoint,BZpartners,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
-            for BZpoint in deepcopy(tempPoints):
-                for i in [-1,0,1]:
-                    for j in [-1,0,1]:
-                        for k in [-1,0,1]:
-                            if not i==j==k==0:
-                                transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
-        #                         print 'transpoint',transPoint
-                                if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking):
-                                    tempPoints.append(transPoint)
-            expandedMesh += tempPoints  
-            expandediIBZz += [iIBZ]*len(tempPoints)             
-            self.facetsMeshMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None)
-        self.facetsMeshMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None)
-        # Divide the volume of each void and add it to the volume of each mesh point, 
-        # according to how close expandedMesh points (that are partners of the mesh point) 
-        # is to the void point      
-        N = self.NvoidPoints
-        for iv, vpoint in enumerate(self.voids.mesh):
-            if iv == 2:
-                'pause'
-#             closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
-            closePoints = self.NPointsNearVoid(N,vpoint,expandedMesh,expandediIBZz)
-            self.facetsMeshOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
-#             dweights = self.distrVoidWeights(vpoint,closePoints)
-#             dweights = self.distrVoidWeights4Points(vpoint,closePoints) 
-            dweights = self.distrVoidWeightsNPoints(N,vpoint,closePoints)
-#             print 'Giving all void weight to the nearest point'
-#             dweights = [1.0,0,0,0] #Give all the weight to the closest point
-            print iv,'Sum of dweights',sum(dweights),dweights
-            if not areEqual(sum(dweights),1.0,0.01):
-#                 sys.exit('Stop.  dweights do not sum to 1')
-               print('Warning.  dweights do not sum to 1')
-            #Divide volume in void:
-            for iw,weight in enumerate(dweights):
-                self.IBZ.weights[closePoints[iw]['iIBZ']] += self.voids.volumes[iv] * weight             
-        wtot = sum(self.IBZ.weights)
-        print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
-        if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
-            sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
-        #normalize the seights so that a full interior point gets weight nops of symmetry
-        self.IBZ.weights =  array(self.IBZ.weights)/self.MP.volume * self.nops
-        print 'Weights:'
-        for i, weight in enumerate(self.IBZ.weights):
-            print i, weight
-        print 'Sum', sum(self.IBZ.weights)                
-        return
+        if self.relax:
+            print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
+            print 'Relative volume error', volErrRel,'Abs volume error', volErr, 'Std dev/mean',stdev/meanV
+            if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
+    #             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
+                sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
+            else:
+                print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)  
+        else:
+            print 'Relative volume in MP Vor cells', -volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
+            
+            self.IBZ.weights = self.IBZ.vorVols
+            #find void centers, which are portions of points on the original packing lattice
+    #         that lie outside the IBZ 
+            self.voids = cell()
+            self.voids.volume = 0.0
+            for io, point in enumerate(self.outPoints):
+                ds = []
+                for iplane,u in enumerate(self.IBZ.bounds[0]):
+                    ro = self.IBZ.bounds[1][iplane]
+                    ds.append(dot(u,point) - ro)
+                if min(ds) < 2*self.rmaxMP: #candidate to host an IBZ void: it's "just outside"
+                    joMP = self.prepMP(point) # point just outside the IBZ on the mesh lattice
+                    for fpoint in joMP.fpoints:
+                        for iplane, uvec in enumerate(self.IBZ.bounds[0]):
+                            ro = self.IBZ.bounds[1][iplane]
+                            d = ro - dot(uvec,fpoint)
+                            if d < self.rmaxMP:                                    
+                                joMP = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u                 
+    #                             print 'Surf point vol', point, joMP.volume
+                    if joMP.volume > self.eps**3:
+                        self.voids.facets.append(joMP.facets)
+                        self.voids.volume += joMP.volume
+                        self.voids.volumes.append(joMP.volume)
+                        self.voids.mesh.append(joMP.center)
+            print 'Total volume Vor cells plus voids:',vMPs+self.voids.volume,'vs IBZ volume', self.IBZ.volume 
+            self.facetsMeshVCMathFile(self.IBZ,allMPfacets,'IBZmesh') 
+            self.facetsMeshVCMathFile(self.IBZ,self.voids.facets,'voids')                     
+            if not areEqual(vMPs+self.voids.volume, self.IBZ.volume, volCheck*self.IBZ.volume):
+                sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
+            #find distances of each void point to IBZ mesh points and their symmetry partners.    
+            #find symmetry parterns (expandedMesh), which includes themselves
+    #         self.rCutoff = 3.0*self.rpacking
+            expandedMesh = []
+            expandediIBZz = []
+            for iIBZ,point in enumerate(self.IBZ.mesh):
+                tempPoints = [point]
+                for iop in range(self.nops):
+                    op = self.symops[:,:,iop]
+                    symPoint = dot(op,point)
+                    tempPoints = addVec(symPoint,tempPoints,self.eps)
+    #                 addVec(symPoint,BZpartners,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
+                for BZpoint in deepcopy(tempPoints):
+                    for i in [-1,0,1]:
+                        for j in [-1,0,1]:
+                            for k in [-1,0,1]:
+                                if not i==j==k==0:
+                                    transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
+            #                         print 'transpoint',transPoint
+                                    if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking):
+                                        tempPoints.append(transPoint)
+                expandedMesh += tempPoints  
+                expandediIBZz += [iIBZ]*len(tempPoints)             
+                self.facetsMeshMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None)
+            self.facetsMeshMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None)
+            # Divide the volume of each void and add it to the volume of each mesh point, 
+            # according to how close expandedMesh points (that are partners of the mesh point) 
+            # is to the void point      
+            N = self.NvoidPoints
+            for iv, vpoint in enumerate(self.voids.mesh):
+                if iv == 2:
+                    'pause'
+    #             closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
+                closePoints = self.NPointsNearVoid(N,vpoint,expandedMesh,expandediIBZz)
+                self.facetsMeshOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
+    #             dweights = self.distrVoidWeights(vpoint,closePoints)
+    #             dweights = self.distrVoidWeights4Points(vpoint,closePoints) 
+                dweights = self.distrVoidWeightsNPoints(N,vpoint,closePoints)
+    #             print 'Giving all void weight to the nearest point'
+    #             dweights = [1.0,0,0,0] #Give all the weight to the closest point
+                print iv,'Sum of dweights',sum(dweights),dweights
+                if not areEqual(sum(dweights),1.0,0.01):
+    #                 sys.exit('Stop.  dweights do not sum to 1')
+                   print('Warning.  dweights do not sum to 1')
+                #Divide volume in void:
+                for iw,weight in enumerate(dweights):
+                    self.IBZ.weights[closePoints[iw]['iIBZ']] += self.voids.volumes[iv] * weight             
+            wtot = sum(self.IBZ.weights)
+            print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
+            if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
+                sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
+            #normalize the seights so that a full interior point gets weight nops of symmetry
+            self.IBZ.weights =  array(self.IBZ.weights)/self.MP.volume * self.nops
+            print 'Weights:'
+            for i, weight in enumerate(self.IBZ.weights):
+                print i, weight
+            print 'Sum', sum(self.IBZ.weights)                
+            return
 
 #     def fourPointsVoid(self,vpoint,expandedMesh,expandediIBZz):
 #         '''Find four partner points close to the void center that are not within 
@@ -731,71 +756,6 @@ class voidWeight():
             closePoints[ic]['vec'] = tempPoints[ic]
             closePoints[ic]['iIBZ'] = tempiIBZs[ic]
         return closePoints
-
-#     def distrVoidWeights(self,vpoint,closePoints):
-#         '''
-#         p = -(k2z k3y k4x - k2y k3z k4x - k2z k3x k4y + k2x k3z k4y + k2y k3x k4z - k2x k3y k4z)/Q
-#         q = -(-k1z k3y k4x + k1y k3z k4x + k1z k3x k4y - k1x k3z k4y - k1y k3x k4z +  k1x k3y k4z)/Q  
-#         r = -(k1z k2y k4x - k1y k2z k4x - k1z k2x k4y + k1x k2z k4y + k1y k2x k4z -   k1x k2y k4z)/Q   
-#         s = -(-k1z k2y k3x + k1y k2z k3x + k1z k2x k3y - k1x k2z k3y - k1y k2x k3z + k1x k2y k3z)/Q'''
-#         kvx = vpoint[0]; kvy = vpoint[1]; kvz = vpoint[2]       
-#         #Assign the weights to the four partner points
-#         k1x = closePoints[0]['vec'][0]-kvx; k1y = closePoints[0]['vec'][1]-kvy; k1z = closePoints[0]['vec'][2]-kvz
-#         k2x = closePoints[1]['vec'][0]-kvx; k2y = closePoints[1]['vec'][1]-kvy; k2z = closePoints[1]['vec'][2]-kvz
-#         k3x = closePoints[2]['vec'][0]-kvx; k3y = closePoints[2]['vec'][1]-kvy; k3z = closePoints[2]['vec'][2]-kvz
-#         k4x = closePoints[3]['vec'][0]-kvx; k4y = closePoints[3]['vec'][1]-kvy; k4z = closePoints[3]['vec'][2]-kvz
-#         p = -k2z*k3y*k4x + k2y*k3z*k4x + k2z*k3x*k4y - k2x*k3z*k4y - k2y*k3x*k4z + k2x*k3y*k4z
-#         q =  k1z*k3y*k4x - k1y*k3z*k4x - k1z*k3x*k4y + k1x*k3z*k4y + k1y*k3x*k4z - k1x*k3y*k4z   
-#         r = -k1z*k2y*k4x + k1y*k2z*k4x + k1z*k2x*k4y - k1x*k2z*k4y - k1y*k2x*k4z + k1x*k2y*k4z    
-#         s =  k1z*k2y*k3x - k1y*k2z*k3x - k1z*k2x*k3y + k1x*k2z*k3y + k1y*k2x*k3z - k1x*k2y*k3z
-#         t = p + q + r + s
-#         del_w_1 = p/t
-#         del_w_2 = q/t
-#         del_w_3 = r/t
-#         del_w_4 = s/t
-#         return [del_w_1, del_w_2, del_w_3, del_w_4]    
-# 
-#     def distrVoidWeights2Points(self,vpoint,closePoints):
-#         '''
-#         The norms 
-#         k1 = norm(cpoint1 - vpoint)
-#         k2 = norm(cpoint2 - vpoint)
-#         fv = (f2 x)/(k1 + k2) + (f1 (k1 + k2 - x))/(k1 + k2)
-#         '''
-#         k1 = norm( closePoints[0]['vec'] - vpoint)
-#         k2 = norm( closePoints[1]['vec'] - vpoint)
-#         p = k2/(k1+k2)
-#         q = k1/(k1+k2)
-#         return [p, q, 0, 0]  
-#     
-#     def distrVoidWeights3Points(self,vpoint,closePoints):
-#         '''
-#         Analogous to the 2Points routine above. The weights are the given by the distances from
-#         the origin to the corners of a triangle formed by the three points. 
-#         '''
-#         k1 = norm( closePoints[0]['vec'] - vpoint)
-#         k2 = norm( closePoints[1]['vec'] - vpoint)
-#         k3 = norm( closePoints[2]['vec'] - vpoint)
-#         p = (k2+k3)/(k1+k2+k3)/2.0
-#         q = (k1+k3)/(k1+k2+k3)/2.0
-#         r = (k1+k2)/(k1+k2+k3)/2.0
-#         return [p, q, r, 0]    
-#     
-#     def distrVoidWeights4Points(self,vpoint,closePoints):
-#         '''
-#         Analogous to the 2Points routine above. The weights are the given by the distances from
-#         the origin to the corners of a rectangle formed by the four points. 
-#         '''
-#         k1 = norm( closePoints[0]['vec'] - vpoint)
-#         k2 = norm( closePoints[1]['vec'] - vpoint)
-#         k3 = norm( closePoints[2]['vec'] - vpoint)
-#         k4 = norm( closePoints[2]['vec'] - vpoint)
-#         p = (k2+k3+k4)/(k1+k2+k3+k4)/3.0
-#         q = (k1+k3+k4)/(k1+k2+k3+k4)/3.0
-#         r = (k1+k2+k4)/(k1+k2+k3+k4)/3.0
-#         s = (k1+k2+k3)/(k1+k2+k3+k4)/3.0
-#         return [p, q, r, s]   
-    
         
     def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
         '''
@@ -1027,7 +987,7 @@ class voidWeight():
                         else:
                             outPoints.append(kpoint)
         return IBZ,nInside,outPoints
- def dynamic(self,eps):
+    def dynamic(self,eps):
         ''' '''
         self.facetsMeshMathFile(self.IBZ,'IBZmeshInit',None) 
         print 'Relaxation is blocked!!!'
@@ -1132,7 +1092,7 @@ class voidWeight():
         self.wallForce = zeros(len(self.IBZ.facets))
 #         self.wallPress = zeros(len(self.IBZ.facets))
         IBZvecs = comps.reshape((len(self.IBZ.mesh),3))
-        p = self.power
+        p = self.interPower
         wp = self.wallPower
         wallfact = self.wallFactor
         interfact = self.interFactor
