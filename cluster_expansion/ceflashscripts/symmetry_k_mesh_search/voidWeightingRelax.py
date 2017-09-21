@@ -410,6 +410,7 @@ class cell():
         self.center = None #body center of cell
         self.mesh = [] #centers of each voronoi cell, or kpoints
         self.weights = None
+        self.vorCells = []
         self.vorVols = []
         self.details = None
     
@@ -433,7 +434,6 @@ class voidWeight():
 #         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vweightPower']
-        
         self.wallClose = float(params[0]) #
         self.rcutoff = float(params[1])
         self.tooClose = float(params[2])
@@ -502,6 +502,47 @@ class voidWeight():
         writefile(['nops: {}\n'.format(self.nops),\
                    'IBZvolCut: {}\n'.format(self.IBZvolCut),\
                    'IBZvol: {}\n'.format(self.IBZ.volume)],'sym.out')
+    def getVoid(fpoint,uvec,d,allRemoved,newfacet):
+        void = cell()
+        if len(allRemoved)!= 1:
+            sys.exit('Stop. In getVoid, allRemoved does not contain just one point')
+        if not allclose(allRemoved[0],fpoint):
+            sys.exit('Stop. In getVoid, allRemoved contains a different point that the fpoint removed')
+        void.bounds = [[uvec],[d]]
+        for ip,npoint in enumerate(newfacet[:-1]):
+            threePoints = [fpoint,npoint,newfacet[ip+1]]
+            u,ro = plane3pts(points,self.eps)
+            void.bounds = addPlane(u,ro,void.bounds,self.eps)
+        void = getFacetsPoints(void,eps)
+        void.fpoints = flatVecsList(void.facets,eps)
+        void.center = sum(void.fpoints)/len(void.fpoints)
+        void.volume = convexH(void.fpoints).volume
+        return void           
+        
+    def getVoidsRelaxed(self):
+        '''We cut off only fpoints that are on the IBZ surface.  If a facet is further from the vorcell center than factor*self.rmaxMP, 
+        then cut this cell into a smaller vorcell and a void.'''
+        for i,point in enumerate(deepcopy(self.IBZ.mesh)):
+            pointCell = self.IBZ.vorCells[i]
+            needsCut = True
+#             voids = []
+            while needsCut:
+                for ifp, fpoint in enumerate(deepcopy(pointCell[i].fpoints)): 
+                    d = norm(fpoint-point)
+                    if d < self.rmaxMP and among(fpoint,self.IBZ.fpoints):
+                        uvec = (fpoint-point)/d
+                        pointCell,allRemoved,newfacet  = self.cutCell(pointCell, uvec,self.rmaxMP)
+                        voidCell = self.getVoid(fpoint,uvec,d,allRemoved,newfacet)
+                        self.voids.append(voidCell)
+                        self.voids.volumes.append(voidCell.volume)
+                        self.voids.volume += voidCell.volume
+                else:
+                    needsCut = False
+            self.IBZ.vorCells[i] = pointCell
+            self.IBZ.vorVols[i] = pointCell.volume
+        return voids
+                
+     
 
     def weightPoints(self,eps):
         '''
@@ -525,6 +566,7 @@ class voidWeight():
         allMPfacets = []
 #         surfPoints = []
         self.IBZ.weights = []
+        all
         for ip,point in enumerate(self.IBZ.mesh):
             print ip,
             if self.relax:
@@ -537,18 +579,17 @@ class voidWeight():
                     d = ro-dot(point,u)
                     boundVecs[iw]['uvec'] = u #unit vector stays the same for the plane
                     boundVecs[iw]['mag'] = d
-    #                 print 'wall',iw,u, vec, norm(vec)
                 for j, jpoint in enumerate(neighs):
                     vec = (jpoint - point)/2
                     mag = norm(vec)
-    #                 print 'neighs',j,jpoint, vec, norm(vec)
                     boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
                     boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
                 boundVecs.sort(order = 'mag') 
                 pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+                self.IBZ.vorCells.append(pointCell)
                 allMPfacets.append(pointCell.facets)
                 self.IBZ.weights.append(pointCell.volume)
-                self.IBZ.vorVols.append(pointCell.volume)                
+                self.IBZ.vorVols.append(pointCell.volume)
             else:
                 ibzMP = self.prepMP(point)
                 for fpoint in ibzMP.fpoints:
@@ -583,11 +624,14 @@ class voidWeight():
         else:
             print 'Relative volume in MP Vor cells', -volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
             
-            self.IBZ.weights = self.IBZ.vorVols
-            #find void centers, which are portions of points on the original packing lattice
-    #         that lie outside the IBZ 
-            self.voids = cell()
-            self.voids.volume = 0.0
+        self.IBZ.weights = self.IBZ.vorVols
+        #find void centers, which are portions of points on the original packing lattice
+#         that lie outside the IBZ 
+        self.voids = cell()
+        self.voids.volume = 0.0
+        if self.relax:
+            self.voids = self.getVoidsRelaxed(self.voids)
+        else:
             for io, point in enumerate(self.outPoints):
                 ds = []
                 for iplane,u in enumerate(self.IBZ.bounds[0]):
@@ -607,109 +651,65 @@ class voidWeight():
                         self.voids.volume += joMP.volume
                         self.voids.volumes.append(joMP.volume)
                         self.voids.mesh.append(joMP.center)
-            print 'Total volume Vor cells plus voids:',vMPs+self.voids.volume,'vs IBZ volume', self.IBZ.volume 
-            self.facetsMeshVCMathFile(self.IBZ,allMPfacets,'IBZmesh') 
-            self.facetsMeshVCMathFile(self.IBZ,self.voids.facets,'voids')                     
-            if not areEqual(vMPs+self.voids.volume, self.IBZ.volume, volCheck*self.IBZ.volume):
-                sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
-            #find distances of each void point to IBZ mesh points and their symmetry partners.    
-            #find symmetry parterns (expandedMesh), which includes themselves
-    #         self.rCutoff = 3.0*self.rpacking
-            expandedMesh = []
-            expandediIBZz = []
-            for iIBZ,point in enumerate(self.IBZ.mesh):
-                tempPoints = [point]
-                for iop in range(self.nops):
-                    op = self.symops[:,:,iop]
-                    symPoint = dot(op,point)
-                    tempPoints = addVec(symPoint,tempPoints,self.eps)
-    #                 addVec(symPoint,BZpartners,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
-                for BZpoint in deepcopy(tempPoints):
-                    for i in [-1,0,1]:
-                        for j in [-1,0,1]:
-                            for k in [-1,0,1]:
-                                if not i==j==k==0:
-                                    transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
-            #                         print 'transpoint',transPoint
-                                    if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking):
-                                        tempPoints.append(transPoint)
-                expandedMesh += tempPoints  
-                expandediIBZz += [iIBZ]*len(tempPoints)             
-                self.facetsMeshMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None)
-            self.facetsMeshMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None)
-            # Divide the volume of each void and add it to the volume of each mesh point, 
-            # according to how close expandedMesh points (that are partners of the mesh point) 
-            # is to the void point      
-            N = self.NvoidPoints
-            for iv, vpoint in enumerate(self.voids.mesh):
-                if iv == 2:
-                    'pause'
-    #             closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
-                closePoints = self.NPointsNearVoid(N,vpoint,expandedMesh,expandediIBZz)
-                self.facetsMeshOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
-    #             dweights = self.distrVoidWeights(vpoint,closePoints)
-    #             dweights = self.distrVoidWeights4Points(vpoint,closePoints) 
-                dweights = self.distrVoidWeightsNPoints(N,vpoint,closePoints)
-    #             print 'Giving all void weight to the nearest point'
-    #             dweights = [1.0,0,0,0] #Give all the weight to the closest point
-                print iv,'Sum of dweights',sum(dweights),dweights
-                if not areEqual(sum(dweights),1.0,0.01):
-    #                 sys.exit('Stop.  dweights do not sum to 1')
-                   print('Warning.  dweights do not sum to 1')
-                #Divide volume in void:
-                for iw,weight in enumerate(dweights):
-                    self.IBZ.weights[closePoints[iw]['iIBZ']] += self.voids.volumes[iv] * weight             
-            wtot = sum(self.IBZ.weights)
-            print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
-            if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
-                sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
-            #normalize the seights so that a full interior point gets weight nops of symmetry
-            self.IBZ.weights =  array(self.IBZ.weights)/self.MP.volume * self.nops
-            print 'Weights:'
-            for i, weight in enumerate(self.IBZ.weights):
-                print i, weight
-            print 'Sum', sum(self.IBZ.weights)                
-            return
-
-#     def fourPointsVoid(self,vpoint,expandedMesh,expandediIBZz):
-#         '''Find four partner points close to the void center that are not within 
-#         2*rpacking of each other, and are not close to coplanar'''
-# #         allPoints = zeros(l,dtype = [('vec', '3float'),('iIBZ', 'int')])
-#         mags = [norm(vpoint-vec) for vec in expandedMesh]
-#         order = argsort(array(mags))
-#         mags = array(mags)[order]
-#         expandedMesh = array(expandedMesh)[order]
-#         expandediIBZz = array(expandediIBZz)[order]
-#         closePoints = zeros(4,dtype = [('vec', '3float'),('iIBZ', 'int')]) 
-#         icount = 0
-#         tempPoints = []
-#         tempiIBZs = []
-#         self.facetsMeshOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
-#         while icount < 4: #so that we retry points that were skipped earlier
-#             for iExp, evec in enumerate(expandedMesh):
-#                 if not among(evec,tempPoints,self.tooClose*self.rpacking): #Ignores clusters of points that are very close by symmetry
-#                     if icount == 1:
-#                        if dot(evec-vpoint,tempPoints[0]-vpoint) > 0:
-#                             continue #skip this one
-#                     if icount == 2:
-#                         tSum = tempPoints[0] + tempPoints[1]
-#                         if dot(evec-vpoint,tSum-vpoint) > 0:  #need to  have at least one point on the "other side"
-#                             continue #skip this one
-#                     elif icount == 3: #make sure this is not coplanar with the previous 3
-#                         plane = plane3pts(tempPoints,self.eps) 
-#     #                     if onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):
-#                         tSum = tempPoints[0] + tempPoints[1] + tempPoints[2]
-#                         if dot(evec-vpoint,tSum-vpoint) > 0 or  onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):  #need to  have at least one point on the "other side"
-#                             continue #skip this one
-#                     tempPoints.append(evec)
-#                     tempiIBZs.append(expandediIBZz[iExp])
-#                     print 'added point',iExp,'at distance',mags[iExp], 'iIBZ',expandediIBZz[iExp]
-#                     icount += 1
-#                     break
-#         for ic in range(4):
-#             closePoints[ic]['vec'] = tempPoints[ic]
-#             closePoints[ic]['iIBZ'] = tempiIBZs[ic]
-#         return closePoints
+        print 'Total volume Vor cells plus voids:',vMPs+self.voids.volume,'vs IBZ volume', self.IBZ.volume 
+        self.facetsMeshVCMathFile(self.IBZ,allMPfacets,'IBZmesh') 
+        self.facetsMeshVCMathFile(self.IBZ,self.voids.facets,'voids')                     
+        if not areEqual(vMPs+self.voids.volume, self.IBZ.volume, volCheck*self.IBZ.volume):
+            sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
+        #find distances of each void point to IBZ mesh points and their symmetry partners.    
+        #find symmetry parterns (expandedMesh), which includes themselves
+#         self.rCutoff = 3.0*self.rpacking
+        expandedMesh = []
+        expandediIBZz = []
+        for iIBZ,point in enumerate(self.IBZ.mesh):
+            tempPoints = [point]
+            for iop in range(self.nops):
+                op = self.symops[:,:,iop]
+                symPoint = dot(op,point)
+                tempPoints = addVec(symPoint,tempPoints,self.eps)
+#                 addVec(symPoint,BZpartners,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
+            for BZpoint in deepcopy(tempPoints):
+                for i in [-1,0,1]:
+                    for j in [-1,0,1]:
+                        for k in [-1,0,1]:
+                            if not i==j==k==0:
+                                transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
+        #                         print 'transpoint',transPoint
+                                if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking):
+                                    tempPoints.append(transPoint)
+            expandedMesh += tempPoints  
+            expandediIBZz += [iIBZ]*len(tempPoints)             
+            self.facetsMeshMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None)
+        self.facetsMeshMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None)
+        # Divide the volume of each void and add it to the volume of each mesh point, 
+        # according to how close expandedMesh points (that are partners of the mesh point) 
+        # is to the void point      
+        N = self.NvoidPoints
+        for iv, vpoint in enumerate(self.voids.mesh):
+            if iv == 2:
+                'pause'
+#             closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
+            closePoints = self.NPointsNearVoid(N,vpoint,expandedMesh,expandediIBZz)
+            self.facetsMeshOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
+            dweights = self.distrVoidWeightsNPoints(N,vpoint,closePoints)
+            print iv,'Sum of dweights',sum(dweights),dweights
+            if not areEqual(sum(dweights),1.0,0.01):
+                sys.exit('Stop.  dweights do not sum to 1')
+#                print('Warning.  dweights do not sum to 1')
+            #Divide volume in void:
+            for iw,weight in enumerate(dweights):
+                self.IBZ.weights[closePoints[iw]['iIBZ']] += self.voids.volumes[iv] * weight             
+        wtot = sum(self.IBZ.weights)
+        print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
+        if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
+            sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
+        #normalize the seights so that a full interior point gets weight nops of symmetry
+        self.IBZ.weights =  array(self.IBZ.weights)/self.MP.volume * self.nops
+        print 'Weights:'
+        for i, weight in enumerate(self.IBZ.weights):
+            print i, weight
+        print 'Sum', sum(self.IBZ.weights)                
+        return
     
     def NPointsNearVoid(self,N,vpoint,expandedMesh,expandediIBZz):
         '''Find N partner points close to the void center that are not within 
@@ -1174,7 +1174,8 @@ class voidWeight():
         between the plane and the facet segments are new facet points.  If a facet
         point lies on the plane, it stays in the facet.'''
         allRemoved = [] #points that are cut out
-        bordersFacet = [] #new facet from the points of cut facets      
+        bordersFacet = [] #new facet from the points of cut facets 
+        wasteCell = cell()     
         ftemp = deepcopy(cell.facets)       
         for ifac, facet in enumerate(cell.facets):
             newfacet = []
@@ -1248,8 +1249,8 @@ class voidWeight():
                 try:
                     cell.volume = convexH(cell.fpoints).volume    
                 except:
-                     cell.volume = 0                
-        return cell      
+                     cell.volume = 0                          
+        return cell,allRemoved,newfacet    
 #         else:
 #             cell.volume = 0
 #             return cell

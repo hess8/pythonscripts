@@ -359,7 +359,7 @@ Silicon:
     slotsIsets =  zeros(nRunSlots,dtype = int32)
     os.chdir(maindir)
     os.system('rm -r -f r*')
-    os.mkdir('runsCostPlots')
+    os.mkdir('runCostPlots')
     for i in range(nRunSlots):
         rdir = '{}/r{}'.format(maindir,i)
         os.mkdir(rdir)
@@ -431,7 +431,8 @@ Silicon:
                         print
                         rdir = '{}/r{}'.format(maindir,ir)
                         [cost,avgnDone] = analyzeNks.analyze([rdir])
-                        os.system('cp -r {}/loglog.png {}/runsCostPlots/best_loglog_{}.png'.format(rdir,maindir,ir))
+                        os.system('cp -r {}/loglog.png {}/runCostPlots/loglog_{}.png'.format(rdir,maindir,ir))
+                        os.system('cp -r {}/loglog.png {}/runCostPlots/methodErrs_{}.png'.format(rdir,maindir,ir))
                         ioldSet = slotsIsets[ir]
                         all[ioldSet]['cost'] = cost
                         if cost < minCost: 
