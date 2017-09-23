@@ -10,13 +10,13 @@ sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/s
 #import kmeshroutines as km
 from kmeshroutines import nstrip, readposcar,create_poscar,readfile,writefile
 # import dynamicPacking7
-import voidWeighting
+import voidWeightingRelax
 
 def getVCmesh(dir,targetNmesh,meshtype,params) :
 
     lastDir = os.getcwd()   
 #     meshc = dynamicPacking7.dynamicPack() #instance
-    meshc = voidWeighting.voidWeight() #instance
+    meshc = voidWeightingRelax.voidWeight() #instance
     [descriptor, scale, latticevecs, reciplatt, natoms, postype, positions] = readposcar('POSCAR',dir)
 #         create_poscar('POSCAR',descriptor, scale, latticevecs, natoms, postype, positions, path) #just to remove the scale problem
     os.chdir(dir)
@@ -37,8 +37,8 @@ os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17/r
 
 ntarget = 5
 type = 'bcc'
-paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
-params =         ['0.5',       '3',     '1.0',     '0.5',       '8'      ,    '1.5']    #0.50   3.00   1.00   0.50
+paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower','wallPower',  'relax' 'interPower', 'wallFactor' , 'wallOffset']
+params =         ['0.5',       '3',     '1.0',     '0.5',       '8'      ,    '1.5' ,  '6.0' ,   'relax',       '3.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.50
 #1.69 [ 0.   2.5  1.   0.5]] avg nDone 19.0
 statusOK,nops = getVCmesh(os.getcwd(),ntarget,type,params) 
 if statusOK:

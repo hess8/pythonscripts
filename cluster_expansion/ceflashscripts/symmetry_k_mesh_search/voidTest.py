@@ -52,7 +52,14 @@ maindir = os.getcwd()
     
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0
-                         
+      
+    Metals:
+    paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
+    Distribute to N points (5 was best) ,no relaxation:
+                                1.74 [ 0.5  2.   0.5  0.5  5.   3. ] avg nDone 11.3333333333  
+                                
+                                
+    ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower', 'interPower', 'wallPower', 'wallFactor' , 'wallOffset']                                                 
    
 '''  
 #maindir default is os.getcwd()
