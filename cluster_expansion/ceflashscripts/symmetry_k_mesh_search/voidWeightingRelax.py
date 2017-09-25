@@ -537,15 +537,15 @@ class voidWeight():
         for ib,uvec in enumerate(void.bounds[0]):
             ro = void.bounds[1][ib]
             for ip,vfpoint in enumerate(void.fpoints):
-                print 'vfpoint',ip,vfpoint,uvec,ro,dot(vfpoint,uvec),onPlane(vfpoint,uvec,ro,self.eps)
+#                 print 'vfpoint',ip,vfpoint,uvec,ro,dot(vfpoint,uvec),onPlane(vfpoint,uvec,ro,self.eps)
 #                 onePlanePointsMathFile(self,uvec,ro,points,color,tag,range)
 #                 self.onePlanePointsMathFile(uvec,ro,void.fpoints,'Blue',0.5*self.rpacking,'void',.8)
                 if onPlane(vfpoint,uvec,ro,self.eps):
                     temp = addPlane(uvec,ro,temp,self.eps)
                     self.planesInsideMathFile(temp,'plane0',1.3)
                     break
-            else:
-                print 'plane with no points',ib,uvec,ro
+#             else:
+#                 print 'plane with no points',ib,uvec,ro
         void.bounds = temp
         self.planesInsideMathFile(void.bounds,'void',1.3)
         void = getFacetsPoints(void,False,self.eps)
@@ -560,19 +560,11 @@ class voidWeight():
         '''We cut off only fpoints that are on the IBZ surface.  If a facet is farther from the vorcell center than factor*self.rmaxMP, 
         then cut this cell into a smaller vorcell and a void.'''
 #         print 'IBZ.fpoints',self.IBZ.fpoints           
+        allMPfacets = []
+        allVoidsFacets = []
         iv = -1
         for i,point in enumerate(deepcopy(self.IBZ.mesh)):            
             pointCell = self.IBZ.vorCells[i]
-            
-            
-
-            
-            
-            
-            
-            
-            
-            
             needsCut = True
             print 'mesh point',point
             while needsCut:
@@ -583,53 +575,16 @@ class voidWeight():
                         print 'vertex point',ifp,fpoint,d
                         if ifp == 0:
                             'pause'
-                        pointCell = self.shiftCell(pointCell,-point) # for cutting, we must have pointCell with origin at the point
-
-
-                        #Testing
-                        temp = [[],[]]
-                        for ib,uvec in enumerate(pointCell.bounds[0]):
-                            ro = pointCell.bounds[1][ib]
-                            for ip,vfpoint in enumerate(pointCell.fpoints):
-                                print 'vfpoint',ip,vfpoint,uvec,ro,dot(vfpoint,uvec),onPlane(vfpoint,uvec,ro,self.eps)
-                #                 onePlanePointsMathFile(self,uvec,ro,points,color,tag,range)
-                #                 self.onePlanePointsMathFile(uvec,ro,void.fpoints,'Blue',0.5*self.rpacking,'void',.8)
-                                if onPlane(vfpoint,uvec,ro,self.eps):
-                                    print 'plane with points',ib
-                                    temp = addPlane(uvec,ro,temp,self.eps)
-                                    self.planesInsideMathFile(temp,'plane0',1.3)
-                                    break
-                            else:
-                                print 'plane with no points',ib,uvec,ro
-                        #end Testing            
-                        
-                        
-                        
-                        
+                        pointCell = self.shiftCell(pointCell,-point) # for cutting, we must have pointCell with origin at the point                                                
                         pointCell0 = deepcopy(pointCell)
                         newfpoint = pointCell.fpoints[ifp]                       
-#                         ###testing
-
-                   
-
-# #                         void.fpoints = pointCell.fpoints
-#                         uvec = void.bounds[0][0];ro= void.bounds[1][0]
-#                         self.onePlanePointsMathFile(uvec,ro,void.fpoints,'Blue',0.3*self.rpacking,'void',.8)
-                        self.planesInsideMathFile(pointCell.bounds,'pointCell.bounds',1.3)
-#                         for ip,fpoint in  enumerate(void.fpoints):
-#                             if onPlane(fpoint,uvec,ro,self.eps):
-#                                 print 'True'
-#                         ###end testing
-
                         uvec = newfpoint/norm(newfpoint)
                         ro = self.rmaxMP
                         void = cell()
                         void.bounds = deepcopy(pointCell.bounds) #Will add/subtract planes later                        
                         void.bounds = addPlane(uvec,ro,void.bounds,self.eps)
-#                         self.planesInsideMathFile(void.bounds,'void.bounds',1.3)                        
-#                         self.facetsMathFile(pointCell,'pointCell')
-#                         self.planesInsideMathFile(pointCell.bounds,'pointCell.bounds',1.3)
-                        pointCell,allRemoved,bordersFacet  = self.cutCell(uvec,ro,pointCell0,self.eps) 
+                        pointCell,allRemoved,bordersFacet  = self.cutCell(uvec,ro,pointCell0,self.eps)                                                 
+                        
                         if len(allRemoved)>1:
                             print; print 'Hey, you need to recut with a u that points toward the sum of allRemoved.';print                                             
                         self.facetsMathFile(pointCell,'pointCellCut')
@@ -637,32 +592,25 @@ class voidWeight():
                         self.planesInsideMathFile(void.bounds,'void.bounds',1.3)
                         void.fpoints = allRemoved + bordersFacet
                         void.center = sum(void.fpoints)/len(void.fpoints)
-                        ###testing
-#                         for ip in range(len(void.bounds[0])):
-#                             uvec = void.bounds[0][ip];ro= void.bounds[1][ip]
                         self.planesPointsMathFile(void.bounds,void.fpoints,'Blue',0.3*self.rpacking,'void_{}'.format(iv),.8)
                         self.facetsPointsMathFile(pointCell,void.fpoints,'void.fpoints','Blue',self.rpacking/10)
-#                         self.planesInsideMathFile(void.bounds,'pointCell.bounds',1.3)
-#                         for ip,fpoint in  enumerate(void.fpoints):
-#                             if onPlane(fpoint,uvec,ro,self.eps):
-#                                 print 'True'
-                        ###end testing 
-#                         void = self.shiftCell(void,-void.center)  
-                                          
                         void = self.getVoid(void,uvec,d)
-                        pointCell = self.shiftCell(pointCell,point) #shift back to 
                         void = self.shiftCell(void,point)
+                        allVoidsFacets.append(void.facets)     
                         self.voids.facets.append(void.facets)
                         self.voids.mesh.append(void.center)
                         self.voids.vorCells.append(void)
                         self.voids.volumes.append(void.volume)
-                        self.voids.volume += void.volume
-                        
+                        self.voids.volume += void.volume 
+                        pointCell = self.shiftCell(pointCell,point) #shift back to IBZ origin
                         break
                 else:
                     needsCut = False
             self.IBZ.vorCells[i] = deepcopy(pointCell)
-            self.IBZ.vorVols[i] = pointCell.volume
+            allMPfacets.append(pointCell.facets)
+            self.IBZ.vorVols.append(pointCell.volume)
+        self.facetsManyFacetsMathFile(self.IBZ,allMPfacets,'IBZmeshAfterVoidCuts')
+        self.facetsManyFacetsMathFile(self.IBZ,allVoidsFacets,'allVoids')             
         return
 
     def weightPoints(self,eps):
@@ -710,8 +658,6 @@ class voidWeight():
                 #shift origin of cell points to IBZ origin, and adjust bounds to reflect the change
                 pointCell = self.shiftCell(pointCell,point)
                 self.IBZ.vorCells.append(deepcopy(pointCell))
-                allMPfacets.append(pointCell.facets)
-                self.IBZ.weights.append(pointCell.volume)
                 self.IBZ.vorVols.append(pointCell.volume)
             else:
                 ibzMP = self.prepMP(point)
@@ -724,8 +670,9 @@ class voidWeight():
                             cut = True                                     
                             ibzMP,dummy1,dummy2 = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
                 allMPfacets.append(ibzMP.facets)
-                self.IBZ.vorVols.append(ibzMP.volume)               
-#         self.facetsManyFacetsMathFile(self.IBZ,allMPfacets,'IBZMesh')
+                self.IBZ.vorVols.append(ibzMP.volume)
+                self.IBZ.weights.append(ibzMP.volume)               
+        self.facetsManyFacetsMathFile(self.IBZ,allMPfacets,'IBZMesh')
         vMPs = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
         meanV = mean(self.IBZ.vorVols)
@@ -736,7 +683,6 @@ class voidWeight():
         if self.relax:
             print 'Relative volume error', volDiffRel,'Abs volume error', volDiff, 'Std dev/mean',stdev/meanV
             if not areEqual(vMPs, self.IBZ.volume, volCheck*self.IBZ.volume):
-    #             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
                 sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
             else:
                 print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)  
@@ -749,6 +695,8 @@ class voidWeight():
         self.voids = cell()
         self.voids.volume = 0.0
         if self.relax:
+            self.IBZ.weights = []
+            self.IBZ.vorVols = []
             self.getVoidsRelaxed()
         else:
             for io, point in enumerate(self.outPoints):
@@ -770,14 +718,16 @@ class voidWeight():
                         self.voids.volume += joMP.volume
                         self.voids.volumes.append(joMP.volume)
                         self.voids.mesh.append(joMP.center)
-        print 'Total volume Vor cells plus voids:',vMPs+self.voids.volume,'vs IBZ volume', self.IBZ.volume 
-        self.facetsManyFacetsMathFile(self.IBZ,allMPfacets,'IBZmesh') 
+        vMPs = sum(self.IBZ.vorVols)
+        vVoids = self.voids.volume
+        print 'Vor vols',vMPs
+        print 'Void vols',vVoids
+        print 'Total volume Vor cells plus voids:',vMPs+vVoids,'vs IBZ volume', self.IBZ.volume 
         self.facetsManyFacetsMathFile(self.IBZ,self.voids.facets,'voids')                     
-        if not areEqual(vMPs+self.voids.volume, self.IBZ.volume, volCheck*self.IBZ.volume):
+        if not areEqual(vMPs + vVoids, self.IBZ.volume, volCheck*self.IBZ.volume):
             sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
         #find distances of each void point to IBZ mesh points and their symmetry partners.    
         #find symmetry parterns (expandedMesh), which includes themselves
-#         self.rCutoff = 3.0*self.rpacking
         expandedMesh = []
         expandediIBZz = []
         for iIBZ,point in enumerate(self.IBZ.mesh):
