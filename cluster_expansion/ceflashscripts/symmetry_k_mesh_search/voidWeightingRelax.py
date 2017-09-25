@@ -479,7 +479,7 @@ class voidWeight():
         self.writeBounds()
 #         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
-        self.facetsMeshMathFile(self.IBZ,self.IBZ.mesh,'IBZmeshInit',None,self.rpacking)
+        self.facetsPointsMathFile(self.IBZ,self.IBZ.mesh,'IBZmeshInit',None,self.rpacking)
         self.nKmax = 150
         self.nKmin = 2
         if self.nKmin < len(self.IBZ.mesh) <= self.nKmax:
@@ -531,7 +531,7 @@ class voidWeight():
         return cell       
     
     def getVoid(self,void,uvec,d):
-#         self.facetsMeshMathFile(self.IBZ,bordersFacet+allRemoved,'bordersFacet',None,self.rpacking/10)
+#         self.facetsPointsMathFile(self.IBZ,bordersFacet+allRemoved,'bordersFacet',None,self.rpacking/10)
         #Remove any planes that don't contain fpoints
         temp = [[],[]]
         for ip,uvec in enumerate(void.bounds[0]):
@@ -544,6 +544,8 @@ class voidWeight():
                     temp = addPlane(uvec,ro,temp,self.eps)
                     self.planesInsideMathFile(temp,'plane0',1.3)
                     break
+            else:
+                print 'plane with no points',ip,uvec,ro
         void.bounds = temp
         self.planesInsideMathFile(void.bounds,'void',1.3)
         void = getFacetsPoints(void,False,self.eps)
@@ -572,12 +574,13 @@ class voidWeight():
                         if ifp == 0:
                             'pause'
                         pointCell = self.shiftCell(pointCell,-point) # for cutting, we must have pointCell with origin at the point
+                        pointCell0 = deepcopy(pointCell)
                         newfpoint = pointCell.fpoints[ifp]                       
 #                         ###testing
 # #                         void.fpoints = pointCell.fpoints
 #                         uvec = void.bounds[0][0];ro= void.bounds[1][0]
 #                         self.onePlanePointsMathFile(uvec,ro,void.fpoints,'Blue',0.3*self.rpacking,'void',.8)
-#                         self.planesInsideMathFile(void.bounds,'pointCell.bounds',1.3)
+                        self.planesInsideMathFile(pointCell.bounds,'pointCell.bounds',1.3)
 #                         for ip,fpoint in  enumerate(void.fpoints):
 #                             if onPlane(fpoint,uvec,ro,self.eps):
 #                                 print 'True'
@@ -586,21 +589,25 @@ class voidWeight():
                         uvec = newfpoint/norm(newfpoint)
                         ro = self.rmaxMP
                         void = cell()
-                        void.bounds = pointCell.bounds #Will add/subtract planes later                        
-                        void.bounds = addPlane(uvec,ro,void.bounds,self.eps)                        
-                        self.facetsMathFile(pointCell,'pointCell0')
-                        pointCell,allRemoved,bordersFacet  = self.cutCell(uvec,ro,pointCell,self.eps) 
+                        void.bounds = deepcopy(pointCell.bounds) #Will add/subtract planes later                        
+                        void.bounds = addPlane(uvec,ro,void.bounds,self.eps)
+#                         self.planesInsideMathFile(void.bounds,'void.bounds',1.3)                        
+#                         self.facetsMathFile(pointCell,'pointCell')
+#                         self.planesInsideMathFile(pointCell.bounds,'pointCell.bounds',1.3)
+                        pointCell,allRemoved,bordersFacet  = self.cutCell(uvec,ro,pointCell0,self.eps) 
                         if len(allRemoved)>1:
                             print; print 'Hey, you need to recut with a u that points toward the sum of allRemoved.';print                                             
-                        self.facetsMathFile(pointCell,'pointCell0Cut')
+                        self.facetsMathFile(pointCell,'pointCellCut')
+                        self.planesInsideMathFile(pointCell.bounds,'pointCellCut.bounds',1.3)
+                        self.planesInsideMathFile(void.bounds,'void.bounds',1.3)
                         void.fpoints = allRemoved + bordersFacet
                         void.center = sum(void.fpoints)/len(void.fpoints)
                         ###testing
 #                         for ip in range(len(void.bounds[0])):
 #                             uvec = void.bounds[0][ip];ro= void.bounds[1][ip]
                         self.planesPointsMathFile(void.bounds,void.fpoints,'Blue',0.3*self.rpacking,'void_{}'.format(iv),.8)
-                        self.facetsMeshMathFile(void,void.fpoints,'void','Blue',self.rpacking/10)
-                        self.planesInsideMathFile(void.bounds,'pointCell.bounds',1.3)
+                        self.facetsPointsMathFile(void,void.fpoints,'void','Blue',self.rpacking/10)
+#                         self.planesInsideMathFile(void.bounds,'pointCell.bounds',1.3)
 #                         for ip,fpoint in  enumerate(void.fpoints):
 #                             if onPlane(fpoint,uvec,ro,self.eps):
 #                                 print 'True'
@@ -682,7 +689,7 @@ class voidWeight():
                             ibzMP,dummy1,dummy2 = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
                 allMPfacets.append(ibzMP.facets)
                 self.IBZ.vorVols.append(ibzMP.volume)               
-#         self.facetsMeshVCMathFile(self.IBZ,allMPfacets,'IBZMesh')
+#         self.facetsManyFacetsMathFile(self.IBZ,allMPfacets,'IBZMesh')
         vMPs = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
         meanV = mean(self.IBZ.vorVols)
@@ -728,8 +735,8 @@ class voidWeight():
                         self.voids.volumes.append(joMP.volume)
                         self.voids.mesh.append(joMP.center)
         print 'Total volume Vor cells plus voids:',vMPs+self.voids.volume,'vs IBZ volume', self.IBZ.volume 
-        self.facetsMeshVCMathFile(self.IBZ,allMPfacets,'IBZmesh') 
-        self.facetsMeshVCMathFile(self.IBZ,self.voids.facets,'voids')                     
+        self.facetsManyFacetsMathFile(self.IBZ,allMPfacets,'IBZmesh') 
+        self.facetsManyFacetsMathFile(self.IBZ,self.voids.facets,'voids')                     
         if not areEqual(vMPs+self.voids.volume, self.IBZ.volume, volCheck*self.IBZ.volume):
             sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
         #find distances of each void point to IBZ mesh points and their symmetry partners.    
@@ -755,8 +762,8 @@ class voidWeight():
                                     tempPoints.append(transPoint)
             expandedMesh += tempPoints  
             expandediIBZz += [iIBZ]*len(tempPoints)             
-            self.facetsMeshMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None,self.rpacking)
-        self.facetsMeshMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None,self.rpacking)
+            self.facetsPointsMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None,self.rpacking)
+        self.facetsPointsMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None,self.rpacking)
         # Divide the volume of each void and add it to the volume of each mesh point, 
         # according to how close expandedMesh points (that are partners of the mesh point) 
         # is to the void point      
@@ -766,7 +773,7 @@ class voidWeight():
                 'pause'
 #             closePoints = self.fourPointsVoid(vpoint,expandedMesh,expandediIBZz)
             closePoints = self.NPointsNearVoid(N,vpoint,expandedMesh,expandediIBZz)
-            self.facetsMeshOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
+            self.facetsPointsOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
             dweights = self.distrVoidWeightsNPoints(N,vpoint,closePoints)
             print iv,'Sum of dweights',sum(dweights),dweights
             if not areEqual(sum(dweights),1.0,0.01):
@@ -800,7 +807,7 @@ class voidWeight():
         icount = 0
         tempPoints = []
         tempiIBZs = []
-        self.facetsMeshOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
+        self.facetsPointsOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
         while icount < N: #so that we retry points that were skipped earlier
             for iExp, evec in enumerate(expandedMesh):
                 if not among(evec,tempPoints,self.tooClose*self.rpacking): #Ignores clusters of points that are very close by symmetry
@@ -968,7 +975,7 @@ class voidWeight():
                     for i, site in enumerate(sites0):
                         sites[i] = dot(Rmat,site)        
                     IBZ,nInside,outPoints = self.fillMesh(cubicLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
-#                     self.facetsMeshMathFile(IBZ,IBZ.mesh'IBZinit_{}'.format(isearch),None)
+#                     self.facetsPointsMathFile(IBZ,IBZ.mesh'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
                     if self.initSrch == 'lowE':
@@ -1068,7 +1075,7 @@ class voidWeight():
         ''' '''
 #         print 'Relaxation is blocked!!!'
         self.relaxMesh()
-        self.facetsMeshMathFile(self.IBZ,self.IBZ.mesh,'IBZmesh',None,self.rpacking)
+        self.facetsPointsMathFile(self.IBZ,self.IBZ.mesh,'IBZmesh',None,self.rpacking)
         return
 
     def relaxMesh(self):
@@ -1252,7 +1259,7 @@ class voidWeight():
         else:
             return trimSmall(real(uvec))                   
 
-    def cutCell(self,u,ro,cell,eps):
+    def cutCell(self,u,ro,cell0,eps):
         '''Cell is cut about an arbitrary plane given by normal u and plane distance from 
         origin ro.  Facets that intersect the plane are cut, 
         and only the portion on one side is kept.  The intersection points
@@ -1263,6 +1270,7 @@ class voidWeight():
         bounds'''
         allRemoved = [] #points that are cut out
         bordersFacet = [] #new facet from the points of cut facets     
+        cell = deepcopy(cell0)
         ftemp = deepcopy(cell.facets)    
         for ifac, facet in enumerate(cell.facets):
             newfacet = []
@@ -1327,7 +1335,8 @@ class voidWeight():
 #                 print 'bordersfacet'
                 ftemp.append(orderAngle(bordersFacet,eps))
             cell.facets = ftemp
-            cell.fpoints = flatVecsList(cell.facets,eps) 
+            cell.fpoints = flatVecsList(cell.facets,eps)
+            cell.bounds = addPlane(u,ro,cell.bounds,eps)
             if len(cell.fpoints)== 0:
                 cell.volume = 0
             else:
@@ -1542,12 +1551,12 @@ class voidWeight():
         '''Output for Mathematica graphics drawing BZ facets'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += ';\nShow[s]' 
+        strOut += ';\nShow[s,ImageSize->Large]' 
 #         strOut += '}];'
         writefile(strOut,'facets_{}.m'.format(tag))     
             
-    def facetsMeshMathFile(self,cell,points,tag,color,radius):
-        '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point'''
+    def facetsPointsMathFile(self,cell,points,tag,color,radius):
+        '''Output for Mathematica graphics drawing BZ facets and spheres at each  point'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
         strOut += ';\n p=Graphics3D[{'
@@ -1558,11 +1567,11 @@ class voidWeight():
             strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(radius)
             if ipoint < len(points) -1:
                 strOut += ','
-        strOut += '}];\nShow[s,p]'
+        strOut += '}];\nShow[s,p,ImageSize->Large]'
         writefile(strOut,'mesh_{}.m'.format(tag))   
         
         
-    def facetsMeshOneUnique(self,cell,others,unique,tag,color):
+    def facetsPointsOneUnique(self,cell,others,unique,tag,color):
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point, coloring one uniquely'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
@@ -1575,10 +1584,10 @@ class voidWeight():
         strOut += '}];\n'
         strOut += 'q=Graphics3D[{'
         strOut += color + ',Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(unique[0],unique[1],unique[2])+ '},'+'{}]'.format(self.rpacking)
-        strOut += '}];\nShow[s,p,q]'
+        strOut += '}];\nShow[s,p,q,ImageSize->Large]'
         writefile(strOut,'mesh_{}.m'.format(tag))         
               
-    def facetsMeshVCMathFile(self,IBZ,allMeshFacets,tag):
+    def facetsManyFacetsMathFile(self,IBZ,allMeshFacets,tag):
         '''Output for Mathematica graphics drawing the facets of each mesh point
         cell, as well as the borders of the IBZ'''
         strOut = ''
@@ -1593,7 +1602,7 @@ class voidWeight():
             showCommand += 'v{}'.format(i)
             if i < len(allMeshFacets)-1:
                 showCommand += ','
-        showCommand += ']'
+        showCommand += ',ImageSize->Large]'
 #         strOut+=';'
         strOut+=showCommand
         writefile(strOut,'facets_{}.m'.format(tag))
@@ -1607,57 +1616,59 @@ class voidWeight():
             if iu < len(bounds[0])-1:
                 strOut += '&&'
         rangeStr = '-{}, {}'.format(range,range)
-        strOut += ', {x,' + rangeStr + '}, {y,' + rangeStr + '}, {z,' + rangeStr + '},PlotStyle -> Opacity[0.3]];\n'
-        strOut += 'Show[r]'
-        writefile(strOut,'planes_{}.m'.format(tag))
+        strOut += ', {x,' + rangeStr + '}, {y,' + rangeStr + '}, {z,' + rangeStr + '},PlotStyle -> Opacity[0.3],Axes -> True, AxesLabel -> {"x", "y", "z"}];\n'
+        strOut += 'Show[r,ImageSize->Large]'
+        writefile(strOut,'planesInside_{}.m'.format(tag))
         
     def onePlaneMathFile(self,uvec,ro,tag,range):
-        ''''''
+        '''Plot one plane'''
         rangeStr = '-{}, {}'.format(range,range)
         strOut = 'r=Plot3D['
         if not areEqual(uvec[2],0,self.eps): #  in [[0,1,2],[1,2],[0,2]]:
-            strOut += '-{}x-{}y+{}'.format(uvec[0]/uvec[2],uvec[1]/uvec[2],ro/uvec[2]) 
+            strOut += '-({}x+{}y)+{}'.format(uvec[0]/uvec[2],uvec[1]/uvec[2],ro/uvec[2]) 
             strOut += ', {x,' + rangeStr + '}, {y,' + rangeStr 
         elif not areEqual(uvec[1],0,self.eps):
-            strOut += '-{}x-{}z+{}'.format(uvec[0]/uvec[1],uvec[2]/uvec[1],ro/uvec[1]) 
+            strOut += '-({}x+{}z)+{}'.format(uvec[0]/uvec[1],uvec[2]/uvec[1],ro/uvec[1]) 
             strOut += ', {x,' + rangeStr + '}, {z,' + rangeStr 
         strOut += '}, PlotStyle -> Opacity[0.3], Axes -> True, AxesLabel -> {"x", "y", "z"}];\n'
-        strOut += 'Show[r]'
+        strOut += 'Show[r,ImageSize->Large]'
         writefile(strOut,'planeOne_{}.m'.format(tag))
 
        
-    def onePlanePointsMathFile(self,uvec,ro,points,color,radius,tag,range):
-        rangeStr = '-{}, {}'.format(range,range)
-        strOut = 'r=Plot3D['
-        if not areEqual(uvec[2],0,self.eps): #  in [[0,1,2],[1,2],[0,2]]:
-            strOut += '-{}x-{}y+{}'.format(uvec[0]/uvec[2],uvec[1]/uvec[2],ro/uvec[2]) 
-            strOut += ', {x,' + rangeStr + '}, {y,' + rangeStr 
-        elif not areEqual(uvec[1],0,self.eps):
-            strOut += '-{}x-{}z+{}'.format(uvec[0]/uvec[1],uvec[2]/uvec[1],ro/uvec[1]) 
-            strOut += ', {x,' + rangeStr + '}, {z,' + rangeStr 
-        strOut += '}, PlotStyle -> Opacity[0.3], Axes -> True, AxesLabel -> {"x", "y", "z"}];\n'
-        strOut += 'p=Graphics3D[{'
-        list(trimSmall(array(points)))
-        for ipoint,point in enumerate(list(trimSmall(array(points)))):
-            if color != None:
-                strOut += '{},'.format(color)
-            strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(radius)
-            if ipoint < len(points) -1:
-                strOut += ','
-        strOut += '}, Axes -> True, AxesLabel -> {"x", "y", "z"}];\nShow[p,r,ImageSize->Full]'        
-        writefile(strOut,'planePoints_{}.m'.format(tag))
+#     def onePlanePointsMathFile(self,uvec,ro,points,color,radius,tag,range):
+#         '''Plot one full plane, with spheres at points locatioins'''
+#         rangeStr = '-{}, {}'.format(range,range)
+#         strOut = 'r=Plot3D['
+#         if not areEqual(uvec[2],0,self.eps): #  in [[0,1,2],[1,2],[0,2]]:
+#             strOut += '-({}x+{}y)+{}'.format(uvec[0]/uvec[2],uvec[1]/uvec[2],ro/uvec[2]) 
+#             strOut += ', {x,' + rangeStr + '}, {y,' + rangeStr 
+#         elif not areEqual(uvec[1],0,self.eps):
+#             strOut += '-({}x+{}z)+{}'.format(uvec[0]/uvec[1],uvec[2]/uvec[1],ro/uvec[1]) 
+#             strOut += ', {x,' + rangeStr + '}, {z,' + rangeStr 
+#         strOut += '}, PlotStyle -> Opacity[0.3], Axes -> True, AxesLabel -> {"x", "y", "z"}];\n'
+#         strOut += 'p=Graphics3D[{'
+#         list(trimSmall(array(points)))
+#         for ipoint,point in enumerate(list(trimSmall(array(points)))):
+#             if color != None:
+#                 strOut += '{},'.format(color)
+#             strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(radius)
+#             if ipoint < len(points) -1:
+#                 strOut += ','
+#         strOut += '}, Axes -> True, AxesLabel -> {"x", "y", "z"}];\nShow[p,r,ImageSize->Large]'        
+#         writefile(strOut,'planePoints_{}.m'.format(tag))
         
     def planesPointsMathFile(self,bounds,points,color,radius,tag,range):
+        '''Plot several full planes, with spheres at points locatioins'''
         rangeStr = '-{}, {}'.format(range,range)
         strOut = 'r = {'
         for iu, uvec in enumerate(bounds[0]):
             strOut += 'Plot3D['
             ro = bounds[1][iu]
             if not areEqual(uvec[2],0,self.eps): #  in [[0,1,2],[1,2],[0,2]]:
-                strOut += '-{}x-{}y+{}'.format(uvec[0]/uvec[2],uvec[1]/uvec[2],ro/uvec[2]) 
+                strOut += '-({}x+{}y)+{}'.format(uvec[0]/uvec[2],uvec[1]/uvec[2],ro/uvec[2]) 
                 strOut += ', {x,' + rangeStr + '}, {y,' + rangeStr
             elif not areEqual(uvec[1],0,self.eps):
-                strOut += '-{}x-{}z+{}'.format(uvec[0]/uvec[1],uvec[2]/uvec[1],ro/uvec[1]) 
+                strOut += '-({}x+{}z)+{}'.format(uvec[0]/uvec[1],uvec[2]/uvec[1],ro/uvec[1]) 
                 strOut += ', {x,' + rangeStr + '}, {z,' + rangeStr 
             strOut += '}, PlotStyle -> Opacity[0.3], Axes -> True, AxesLabel -> {"x", "y", "z"}]'
             if iu < len(bounds[0]) -1:
@@ -1671,7 +1682,7 @@ class voidWeight():
             strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(radius)
             if ipoint < len(points) -1:
                 strOut += ','
-        strOut += '}, Axes -> True, AxesLabel -> {"x", "y", "z"}];\nShow[p,r,ImageSize->Full]'        
+        strOut += '}, Axes -> True, AxesLabel -> {"x", "y", "z"}];\nShow[p,r,ImageSize->Large]'        
         writefile(strOut,'planesPoints_{}.m'.format(tag))
             
     def writeBounds(self):
