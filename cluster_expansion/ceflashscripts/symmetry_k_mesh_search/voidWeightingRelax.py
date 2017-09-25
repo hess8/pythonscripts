@@ -402,14 +402,15 @@ def getBoundsFacets(cell,eps,rpacking = None):
         cell.bounds[1].append(ro)
     return cell
 
-def shiftPlane(u,ro,pvec):
+def shiftPlane(u,ro,pvec,eps):
     '''When changing to a new origin by adding a constant shift pvec to each position in the cell,
     the planes (which were defined vs a point in the cell, perhaps its center), will have 
     a new distance ro from the new origin and a possibly flipped u vector'''
     dup = dot(u,pvec)
-    roNew = abs(ro + dup)
-    if dup <0:
-        uNew = -u 
+    roNew = ro + dup
+    if roNew < 0 - eps:
+        uNew = -u
+        roNew = -roNew 
     else:
         uNew = u
     return uNew, roNew
@@ -521,7 +522,7 @@ class voidWeight():
         as well.'''
         temp = [[],[]]
         for ip,uvec in enumerate(cell.bounds[0]):
-            uNew,roNew = shiftPlane(uvec,cell.bounds[1][ip],shiftVec)
+            uNew,roNew = shiftPlane(uvec,cell.bounds[1][ip],shiftVec,self.eps)
             temp[0].append(uNew); temp[1].append(roNew)
         cell.bounds = temp
         for i in range(len(cell.facets)):
@@ -531,13 +532,12 @@ class voidWeight():
         return cell       
     
     def getVoid(self,void,uvec,d):
-#         self.facetsPointsMathFile(self.IBZ,bordersFacet+allRemoved,'bordersFacet',None,self.rpacking/10)
         #Remove any planes that don't contain fpoints
         temp = [[],[]]
-        for ip,uvec in enumerate(void.bounds[0]):
-            ro = void.bounds[1][ip]
+        for ib,uvec in enumerate(void.bounds[0]):
+            ro = void.bounds[1][ib]
             for ip,vfpoint in enumerate(void.fpoints):
-#                 print 'vfpoint',ip,vfpoint,uvec,ro,onPlane(vfpoint,uvec,ro,self.eps)
+                print 'vfpoint',ip,vfpoint,uvec,ro,dot(vfpoint,uvec),onPlane(vfpoint,uvec,ro,self.eps)
 #                 onePlanePointsMathFile(self,uvec,ro,points,color,tag,range)
 #                 self.onePlanePointsMathFile(uvec,ro,void.fpoints,'Blue',0.5*self.rpacking,'void',.8)
                 if onPlane(vfpoint,uvec,ro,self.eps):
@@ -545,7 +545,7 @@ class voidWeight():
                     self.planesInsideMathFile(temp,'plane0',1.3)
                     break
             else:
-                print 'plane with no points',ip,uvec,ro
+                print 'plane with no points',ib,uvec,ro
         void.bounds = temp
         self.planesInsideMathFile(void.bounds,'void',1.3)
         void = getFacetsPoints(void,False,self.eps)
@@ -563,6 +563,16 @@ class voidWeight():
         iv = -1
         for i,point in enumerate(deepcopy(self.IBZ.mesh)):            
             pointCell = self.IBZ.vorCells[i]
+            
+            
+
+            
+            
+            
+            
+            
+            
+            
             needsCut = True
             print 'mesh point',point
             while needsCut:
@@ -574,9 +584,34 @@ class voidWeight():
                         if ifp == 0:
                             'pause'
                         pointCell = self.shiftCell(pointCell,-point) # for cutting, we must have pointCell with origin at the point
+
+
+                        #Testing
+                        temp = [[],[]]
+                        for ib,uvec in enumerate(pointCell.bounds[0]):
+                            ro = pointCell.bounds[1][ib]
+                            for ip,vfpoint in enumerate(pointCell.fpoints):
+                                print 'vfpoint',ip,vfpoint,uvec,ro,dot(vfpoint,uvec),onPlane(vfpoint,uvec,ro,self.eps)
+                #                 onePlanePointsMathFile(self,uvec,ro,points,color,tag,range)
+                #                 self.onePlanePointsMathFile(uvec,ro,void.fpoints,'Blue',0.5*self.rpacking,'void',.8)
+                                if onPlane(vfpoint,uvec,ro,self.eps):
+                                    print 'plane with points',ib
+                                    temp = addPlane(uvec,ro,temp,self.eps)
+                                    self.planesInsideMathFile(temp,'plane0',1.3)
+                                    break
+                            else:
+                                print 'plane with no points',ib,uvec,ro
+                        #end Testing            
+                        
+                        
+                        
+                        
                         pointCell0 = deepcopy(pointCell)
                         newfpoint = pointCell.fpoints[ifp]                       
 #                         ###testing
+
+                   
+
 # #                         void.fpoints = pointCell.fpoints
 #                         uvec = void.bounds[0][0];ro= void.bounds[1][0]
 #                         self.onePlanePointsMathFile(uvec,ro,void.fpoints,'Blue',0.3*self.rpacking,'void',.8)
@@ -606,16 +641,17 @@ class voidWeight():
 #                         for ip in range(len(void.bounds[0])):
 #                             uvec = void.bounds[0][ip];ro= void.bounds[1][ip]
                         self.planesPointsMathFile(void.bounds,void.fpoints,'Blue',0.3*self.rpacking,'void_{}'.format(iv),.8)
-                        self.facetsPointsMathFile(void,void.fpoints,'void','Blue',self.rpacking/10)
+                        self.facetsPointsMathFile(pointCell,void.fpoints,'void.fpoints','Blue',self.rpacking/10)
 #                         self.planesInsideMathFile(void.bounds,'pointCell.bounds',1.3)
 #                         for ip,fpoint in  enumerate(void.fpoints):
 #                             if onPlane(fpoint,uvec,ro,self.eps):
 #                                 print 'True'
                         ###end testing 
-#                         void = self.shiftCell(void,-void.center)                       
+#                         void = self.shiftCell(void,-void.center)  
+                                          
                         void = self.getVoid(void,uvec,d)
                         pointCell = self.shiftCell(pointCell,point) #shift back to 
-                        self.voids = self.shiftCell(self.voids,point)
+                        void = self.shiftCell(void,point)
                         self.voids.facets.append(void.facets)
                         self.voids.mesh.append(void.center)
                         self.voids.vorCells.append(void)
@@ -1568,7 +1604,7 @@ class voidWeight():
             if ipoint < len(points) -1:
                 strOut += ','
         strOut += '}];\nShow[s,p,ImageSize->Large]'
-        writefile(strOut,'mesh_{}.m'.format(tag))   
+        writefile(strOut,'facetsPoints_{}.m'.format(tag))   
         
         
     def facetsPointsOneUnique(self,cell,others,unique,tag,color):
@@ -1585,7 +1621,7 @@ class voidWeight():
         strOut += 'q=Graphics3D[{'
         strOut += color + ',Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(unique[0],unique[1],unique[2])+ '},'+'{}]'.format(self.rpacking)
         strOut += '}];\nShow[s,p,q,ImageSize->Large]'
-        writefile(strOut,'mesh_{}.m'.format(tag))         
+        writefile(strOut,'facetsPointsUnique__{}.m'.format(tag))         
               
     def facetsManyFacetsMathFile(self,IBZ,allMeshFacets,tag):
         '''Output for Mathematica graphics drawing the facets of each mesh point
@@ -1605,7 +1641,7 @@ class voidWeight():
         showCommand += ',ImageSize->Large]'
 #         strOut+=';'
         strOut+=showCommand
-        writefile(strOut,'facets_{}.m'.format(tag))
+        writefile(strOut,'facetsMany_{}.m'.format(tag))
        
     def planesInsideMathFile(self,bounds,tag,range,):
         '''NOTE: This is only good if the origin lies inside the bounds.  Otherwise
