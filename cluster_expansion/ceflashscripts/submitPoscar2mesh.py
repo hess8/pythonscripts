@@ -45,3 +45,6 @@ if statusOK:
     writefile([],'OK')  
 elif os.path.exists('OK'):
     os.system('rm OK')
+    os.system('rm OK')
+    
+    
