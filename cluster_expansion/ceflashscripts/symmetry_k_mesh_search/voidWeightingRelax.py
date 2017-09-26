@@ -464,8 +464,8 @@ class voidWeight():
             self.wallFactor = float(params[10]) #1.0  #probably needs to be bigger than interFactor by about the average number of nearest neighbors
             self.wallOffset = float(params[11]) #0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
             self.interFactor = 1.0        
-            self.df = 1.00 * self.ravg #inter-point force scale distance
-            self.dw = 0.5 * self.df        
+        self.df = 1.00 * self.ravg #inter-point force scale distance
+        self.dw = 0.5 * self.df        
         self.initSrch = 'lowE'
         eps = self.ravg/300
         self.eps = eps
@@ -778,10 +778,12 @@ class voidWeight():
         for i, weight in enumerate(self.IBZ.weights):
             print i, weight
         print 'Sum', sum(self.IBZ.weights) 
-        if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,self.eps*self.nops):
+        if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,volCheck*self.nTargetIBZ*self.nops):
             print 'Weights sum correctly'
+        elif self.useVoids or self.relax:
+            sys.exit('Stop: Weights do not sum to nTargetIBZ * nops')     
         else:
-            sys.exit('Stop: Weights do not sum to nTargetIBZ * nops')            
+            print 'As expected with no relaxation or voids, these weights do not sum to integer * nops' 
         return
     
     def NPointsNearVoid(self,N,vpoint,expandedMesh,expandediIBZz):
