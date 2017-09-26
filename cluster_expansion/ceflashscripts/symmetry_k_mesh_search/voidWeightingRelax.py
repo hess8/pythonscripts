@@ -929,13 +929,13 @@ class voidWeight():
         cubicLVs0 = cubicLVs
         nShift = 5
 #         
-#         nTh = 10
-#         nPh = 20
+        nTh = 10
+        nPh = 20
         
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-        nTh = 3
-        nPh = 3
+#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+#         nTh = 3
+#         nPh = 3
 # 
 
 

@@ -35,13 +35,16 @@ def getVCmesh(dir,targetNmesh,meshtype,params) :
 # os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/19SepFullWeights/bestRun/Si_/bcc_6')
 os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17/r0/Si_/bcc_6')
 
-ntarget = 10
+ntarget = 5
 type = 'bcc'
 paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','NvoidClosePoints','vwPower','wallPower',  'relax' 'interPower', 'wallFactor' , 'wallOffset']
-params =         ['0.5',       '1',   '2.0',      '1.0',     '0.5',       '8'      ,    '1.5' ,     '6.0' ,        '0',       '3.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.50
-#1.69 [ 0.   2.5  1.   0.5]] avg nDone 19.0
+params =         ['0.5',       '1',   '3',       '1.0',      '0.5',       '8'      ,        '1.5' ,     '6.0' ,        '0',       '3.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.50
+#  ['0.5',       '3',     '1.0',     '0.5',       '8'      ,    '1.5'] 
 statusOK,nops = getVCmesh(os.getcwd(),ntarget,type,params) 
 if statusOK:
     writefile([],'OK')  
 elif os.path.exists('OK'):
     os.system('rm OK')
+    
+    
+    
