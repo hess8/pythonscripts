@@ -23,7 +23,7 @@ import voidWeighting, analyzeNks
 #***************************************
 #*************  Settings ***************
 maindir = os.getcwd()
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/13SepFullWeights'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/25SepvoidsRelaxed'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/Sitest'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
@@ -312,8 +312,7 @@ Silicon:
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0    
     '''
-    
-    paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
+    paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','NvoidClosePoints','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
 #     print '\twallPower equals power'
@@ -327,22 +326,29 @@ Silicon:
 #     params4 =     [ 0] #wallOffset
 #     params5 =     [0.5, 1.0] #dw
 
-# 
-#     params0 =     [ 0.0 ]   #wallClose
-#     params1 =     [ 2.0 ]   #rcutoff
-#     params2 =     [ 0.5 ]   #tooClose
-#     params3 =     [ 0.25 ]  #tooPlanar
-#     params4 =     [ 2 ]  #NvoidPoints
-#     params5 =     [ 2.0 ]  #vwPower
+# params =         ['0.5',       '3',     '1.0',     '0.5',       '8'      ,    '1.5' ,  '6.0' ,   'relax',       '3.0',       '0.5',       '0.0']  
+    params0 =     [ 0.5 ]   #wallClose
+    params1 =     [ 0 ]   #useVoids
+    params2 =     [ 3.0 ]   #rcutoff
+    params3 =     [ 1.0 ]   #tooClose
+    params4 =     [ 0.5 ]  #tooPlanar
+    params5 =     [ 8   ]  #NvoidClosePoints
+    params6 =     [ 2.0 ]  #vwPower
+    params7 =     [ 3.0 ]   #wallPower
+    params8 =     [ 1.0]   #relax (boolean)
+    params9 =     [ 6.0 ]  #interPower
+    params10 =     [ 0.5 ]  #wallFactor
+    params11 =    [ 0.0 ]  #wallOffset
 
 
-# 
-    params0 =     [ 0.0,0.5 ]   #wallClose
-    params1 =     [ 2.0,2.5,3.0]   #rcutoff
-    params2 =     [ 0.5,1.0,1.5 ]   #tooClose
-    params3 =     [ 0.25,0.5,1.0 ]  #tooPlanar
-    params4 =     [ 2,3,5,7,9 ]  #NvoidPoints
-    params5 =     [ 1.0,2.0,3.0 ]  #vwPower
+
+#params =         ['0.5',       '3',     '1.0',     '0.5',       '8'      ,    '1.5' ,  '6.0' ,   'relax',       '3.0',       '0.5',       '0.0']  
+#     params0 =     [ 0.0,0.5 ]   #wallClose
+#     params1 =     [ 2.0,2.5,3.0]   #rcutoff
+#     params2 =     [ 0.5,1.0,1.5 ]   #tooClose
+#     params3 =     [ 0.25,0.5,1.0 ]  #tooPlanar
+#     params4 =     [ 2,3,5,7,9 ]  #NvoidPoints
+#     params5 =     [ 1.0,2.0,3.0 ]  #vwPower
 
 
 # [ 0.    2.    0.5   0.25  2.    2.  ]
@@ -350,8 +356,10 @@ Silicon:
 #     params5 =  [0.1]
 #     params5 =  [float(sys.argv[1])]
     nP =len(paramLabels)
-    nPsets = len(params0)*len(params1)*len(params2)*len(params3)*len(params4)*len(params5) #* other len's
-    print 'Will run {} parameter sets'.format(nPsets)
+    nPsets = len(params0)*len(params1)*len(params2)*len(params3)*len(params4)*len(params5)\
+                    *len(params6)*len(params7)*len(params8)*len(params9)*len(params10)*len(params11)
+                     #* other len's
+    print 'Will run {} parameter sets, with {} parameters'.format(nPsets,nP)
     print 'Initial packing is {}'.format(type) 
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
     iset = 0
@@ -378,16 +386,22 @@ Silicon:
                 for p3 in params3:
                     for p4 in params4:
                         for p5 in params5: 
-                            if nP ==1: 
-                                all[iset]['params']  =  p0
-                            else:
-                                params = [p0,p1,p2,p3,p4,p5]  
-#                                 params = [p0,p1,p2,p3]              
-                                all[iset]['params'] = params
-                            iset += 1
+                            for p6 in params6: 
+                                for p7 in params7: 
+                                    for p8 in params8: 
+                                        for p9 in params9: 
+                                            for p10 in params10: 
+                                                for p11 in params11:
+                                                    if nP ==1: 
+                                                        all[iset]['params']  =  p0
+                                                    else:
+                                                        params = [p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11]  
+                        #                                 params = [p0,p1,p2,p3]              
+                                                        all[iset]['params'] = params
+                                                    iset += 1
     #['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
     summary = open('{}/summaryGrid.csv'.format(maindir),'w')
-    summary.write('iset,cost,avgDone,wallClose,rcutoff,tooClose,tooPlanar,NvoidPoints,vwPower\n')
+    summary.write('iset,cost,avgDone,wallClose,useVoids,rcutoff,tooClose,tooPlanar,NvoidPoints,vwPower,wallPower,relax,interPower,wallFactor,wallOffset\n')
     toAnalyze = []
     iwait = 0
     minCost = 100
@@ -459,8 +473,8 @@ Silicon:
                         print 'vs. min cost {}: {:6.2f} {} avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
                         ps = all[ioldSet]['params']
                          #['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
-                        summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
-                                                    ps[0],ps[1],ps[2],ps[3],ps[4],ps[5]))
+                        summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
+                                                    ps[0],ps[1],ps[2],ps[3],ps[4],ps[5],ps[6],ps[7],ps[8],ps[9],ps[10],ps[11]))
                         summary.flush()
                         toAnalyze.remove(ir)
                         isetsDone.append(ioldSet) 
