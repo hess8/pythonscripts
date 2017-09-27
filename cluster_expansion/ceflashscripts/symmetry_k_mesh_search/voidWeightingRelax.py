@@ -7,7 +7,7 @@ from numpy import (mod,dot,cross,transpose, rint,floor,ceil,zeros,array,sqrt,
                    average,std,amax,amin,int32,sort,count_nonzero,arctan2,
                    delete,mean,square,argmax,argmin,insert,s_,concatenate,all,
                    trace,where,real,allclose,sign,pi,imag,identity,argsort,
-                   cos,sin,log)
+                   cos,arccos,sin,log)
 # from scipy.optimize import fmin_cg
 from scipy.spatial import Delaunay as delaunay, Voronoi as sci_voronoi, ConvexHull as convexH
 from numpy.linalg import inv, norm, det, eig
@@ -553,9 +553,9 @@ class voidWeight():
         void = getFacetsPoints(void,False,self.eps)
 #         void.center = sum(void.fpoints)/len(void.fpoints)
         void.volume = convexH(void.fpoints).volume
-        print 'bounds',len(void.bounds[0]),void.bounds
-        print 'facets',len(void.facets),void.facets
-        print 'volume',void.volume;print
+#         print 'bounds',len(void.bounds[0]),void.bounds
+#         print 'facets',len(void.facets),void.facets
+#         print 'volume',void.volume;print
         return void           
         
     def getVoidsRelaxed(self):
@@ -568,13 +568,13 @@ class voidWeight():
         for i,point in enumerate(deepcopy(self.IBZ.mesh)):            
             pointCell = self.IBZ.vorCells[i]
             needsCut = True
-            print 'mesh point',point
+#             print 'mesh point',point
             while needsCut:
                 for ifp, fpoint in enumerate(pointCell.fpoints): 
                     d = norm(fpoint-point)
                     if d > self.rmaxMP and among(fpoint,self.IBZ.fpoints,self.eps): # for "among" test we must have pointCell with origin at IBZ origin. 
                         iv += 1
-                        print 'vertex point',ifp,fpoint,d
+#                         print 'vertex point',ifp,fpoint,d
                         if ifp == 0:
                             'pause'
                         pointCell = self.shiftCell(pointCell,-point) # for cutting, we must have pointCell with origin at the point                                                
@@ -586,28 +586,24 @@ class voidWeight():
                         void.bounds = deepcopy(pointCell.bounds) #Will add/subtract planes later                        
                         void.bounds = addPlane(uvec,ro,void.bounds,self.eps)
                         toRemove = []
-                        toRemoveOld = ['dummy']
+                        toRemoveOld = ['']
                         while toRemove != toRemoveOld:
                             toRemoveOld = toRemove
                             if len(toRemove)>0:
                                 sumPts = sum([pointCell.fpoints[ir] for ir in toRemove])
-                                print 'old uvec',uvec,
                                 uvec = sumPts/norm(sumPts)
-                                print 'new uvec',uvec
                             toRemove = self.checkRemove(uvec,ro,pointCell0,self.eps)
-                        pointCell,allRemoved,bordersFacet  = self.cutCell(uvec,ro,pointCell0,self.eps)                                                 
-                        
-                        if len(allRemoved)>1:
-                            print; print 'Hey, you need to recut with a u that points toward the sum of allRemoved.';print                                             
+                        pointCell,allRemoved,bordersFacet  = self.cutCell(uvec,ro,pointCell0,self.eps)                                                                                           
                         self.facetsMathFile(pointCell,'pointCellCut')
-                        self.planesInsideMathFile(pointCell.bounds,'pointCellCut.bounds',1.3)
-                        self.planesInsideMathFile(void.bounds,'void.bounds',1.3)
+#                         self.planesInsideMathFile(pointCell.bounds,'pointCellCut.bounds',1.3)
+#                         self.planesInsideMathFile(void.bounds,'void.bounds',1.3)
                         void.fpoints = allRemoved + bordersFacet
                         void.center = sum(void.fpoints)/len(void.fpoints)
-                        self.planesPointsMathFile(void.bounds,void.fpoints,'Blue',0.3*self.rpacking,'void_{}'.format(iv),.8)
-                        self.facetsPointsMathFile(pointCell,void.fpoints,'void.fpoints','Blue',self.rpacking/10)
+#                         self.planesPointsMathFile(void.bounds,void.fpoints,'Blue',0.3*self.rpacking,'void_{}'.format(iv),.8)
+#                         self.facetsPointsMathFile(pointCell,void.fpoints,'void.fpoints','Blue',self.rpacking/10)
                         void = self.getVoid(void,uvec,d)
                         void = self.shiftCell(void,point)
+                        self.facetsMathFile(void,'void_{}'.format(len(self.voids.mesh)))
                         allVoidsFacets.append(void.facets)     
                         self.voids.facets.append(void.facets)
                         self.voids.mesh.append(void.center)
@@ -749,8 +745,8 @@ class voidWeight():
                 for iop in range(self.nops):
                     op = self.symops[:,:,iop]
                     symPoint = dot(op,point)
-                    tempPoints = addVec(symPoint,tempPoints,self.eps)
-    #                 addVec(symPoint,BZpartners,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
+#                     tempPoints = addVec(symPoint,tempPoints,self.eps)
+                    tempPoints = addVec(symPoint,tempPoints,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
                 for BZpoint in deepcopy(tempPoints):
                     for i in [-1,0,1]:
                         for j in [-1,0,1]:
@@ -758,8 +754,8 @@ class voidWeight():
                                 if not i==j==k==0:
                                     transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
             #                         print 'transpoint',transPoint
-                                    if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking):
-                                        tempPoints.append(transPoint)
+                                    if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking): #not too far away from the BZ boundaries
+                                        tempPoints = addVec(transPoint,tempPoints,2.0*self.rpacking) 
                 expandedMesh += tempPoints  
                 expandediIBZz += [iIBZ]*len(tempPoints)             
                 self.facetsPointsMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None,self.rpacking)
@@ -767,11 +763,12 @@ class voidWeight():
             # Divide the volume of each void and add it to the volume of each mesh point, 
             # according to how close expandedMesh points (that are partners of the mesh point) 
             # is to the void point      
-            N = self.NvoidClosePoints
+#             N = self.NvoidClosePoints
+            rvCutoff = 4.0*self.rpacking
             for iv, vpoint in enumerate(self.voids.mesh):
-                closePoints = self.NPointsNearVoid(N,vpoint,expandedMesh,expandediIBZz)
+                closePoints = self.NPointsNearVoid(rvCutoff,vpoint,expandedMesh,expandediIBZz)
                 self.facetsPointsOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
-                dweights = self.distrVoidWeightsNPoints(N,vpoint,closePoints)
+                dweights = self.distrVoidWeightsNPoints(len(closePoints),vpoint,closePoints)
                 print iv,'Sum of dweights',sum(dweights),dweights
                 if not areEqual(sum(dweights),1.0,0.01):
                     sys.exit('Stop.  dweights do not sum to 1')
@@ -796,57 +793,79 @@ class voidWeight():
             print 'As expected with no relaxation or voids, these weights do not sum to integer * nops' 
         return
     
-    def NPointsNearVoid(self,N,vpoint,expandedMesh,expandediIBZz):
-        '''Find N partner points close to the void center that are not within 
-        2*rpacking of each other, and are not close to coplanar'''
+    def NPointsNearVoid(self,rvCutoff,vpoint,expandedMesh,expandediIBZz):
+        '''Find N expandedMesh points close to the void center than meet criteria'''
 #         allPoints = zeros(l,dtype = [('vec', '3float'),('iIBZ', 'int')])
         mags = [norm(vpoint-vec) for vec in expandedMesh]
         order = argsort(array(mags))
         mags = array(deepcopy(mags))[order]
         expandedMesh = array(deepcopy(expandedMesh))[order]
         expandediIBZz = array(deepcopy(expandediIBZz))[order]
-        closePoints = zeros(N,dtype = [('vec', '3float'),('iIBZ', 'int')]) 
-        icount = 0
+        
         tempPoints = []
         tempiIBZs = []
+#         ntemp = 0
 #         self.facetsPointsOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
-        while icount < N: #so that we retry points that were skipped earlier
-            for iExp, evec in enumerate(expandedMesh):
-                if not among(evec,tempPoints,self.tooClose*self.rpacking): #Ignores clusters of points that are very close by symmetry
-                    if icount == 1:
-                       if dot(evec-vpoint,tempPoints[0]-vpoint) > 0:
-                            continue #skip this one
-                    elif icount == 2:
-                        tSum = tempPoints[0] + tempPoints[1]
-                        if dot(evec-vpoint,tSum-vpoint) > 0:  #need to  have at least one point on the "other side"
-                            continue #skip this one
-                    elif icount == 3: #make sure this is not coplanar with the previous 3
-                        plane = plane3pts(tempPoints,self.eps) 
-    #                     if onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):
-                        tSum = tempPoints[0] + tempPoints[1] + tempPoints[2]
-                        if dot(evec-vpoint,tSum-vpoint) > 0 or  onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):  #need to  have at least one point on the "other side"
-                            continue #skip this one
-                    elif icount != 0:
-                        tSum = zeros(3)
-                        for i in range(icount):
-                            tSum += tempPoints[i]
-                        if dot(evec-vpoint,tSum-vpoint) > 0:
-                            continue      
-                    tempPoints.append(evec)
-                    tempiIBZs.append(expandediIBZz[iExp])
-                    print 'added point',iExp,'at distance',mags[iExp], 'iIBZ',expandediIBZz[iExp]
-                    icount += 1
-                    break
-        for ic in range(N):
+#         while ntemp < N: #so that we retry points that were skipped earlier
+        for iExp, evec in enumerate(expandedMesh):
+#             tooClose = False
+#             enorm = norm(evec)
+#             minAngle = pi/(len(tempPoints) + 2)**3
+# #             ntemp = len(tempPoints)
+#             if len(tempPoints) > 0:
+#                 #evec must be a minimum angle (which depends on ntemp) away from the others, so we don't overcount a region in the weights. 
+#                 for ip,tpoint in enumerate(tempPoints):
+#                     print 'angular',arccos(dot(tpoint,evec)/enorm/norm(tpoint)),minAngle
+#                     if not allclose(evec,tpoint) and arccos(dot(tpoint,evec)/enorm/norm(tpoint)) < minAngle:
+#                         tooClose = True
+#                         break
+                
+#                 if not among(evec,tempPoints,self.tooClose*self.rpacking): #Ignores clusters of points that are very close by symmetry
+                                
+                    #
+#                     if icount == 1:
+#                        if dot(evec-vpoint,tempPoints[0]-vpoint) > 0: #go to the other "side"
+#                             continue #skip this one
+#                     elif icount == 2:
+#                         tSum = tempPoints[0] + tempPoints[1]
+#                         if dot(evec-vpoint,tSum-vpoint) > 0:  ##go to the other "side" of tsum
+#                             continue #skip this one
+#                     elif icount == 3: #make sure this is not coplanar with the previous 3
+#                         plane = plane3pts(tempPoints,self.eps) 
+#     #                     if onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):
+#                         tSum = tempPoints[0] + tempPoints[1] + tempPoints[2]
+#                         if dot(evec-vpoint,tSum-vpoint) > 0 or  onPlane(evec,plane[0],plane[1],self.tooPlanar*self.rpacking):  #need to  have at least one point on the "other side"
+#                             continue #skip this one
+#                     elif icount != 0:
+#                         tSum = zeros(3)
+#                         for i in range(icount):
+#                             tSum += tempPoints[i]
+#                         if dot(evec-vpoint,tSum-vpoint) > 0:
+#                             continue      
+                    
+                        #choose the point with the lowest energy vs the other points:
+            if  mags[iExp] <= rvCutoff:      
+                tempPoints.append(evec)
+                tempiIBZs.append(expandediIBZz[iExp])           
+                        
+                        
+#             if not tooClose:        
+#                 tempPoints.append(evec)
+#                 tempiIBZs.append(expandediIBZz[iExp])
+#                 print 'added point',iExp,'at distance',mags[iExp], 'iIBZ',expandediIBZz[iExp]
+#             if len(tempPoints) == N:
+#                 break                 
+        closePoints = zeros(len(tempPoints),dtype = [('vec', '3float'),('iIBZ', 'int')]) 
+        for ic in range(len(tempPoints)):
             closePoints[ic]['vec'] = tempPoints[ic]
             closePoints[ic]['iIBZ'] = tempiIBZs[ic]
         return closePoints
         
     def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
         '''
-        Analogous to the 2Points routine above. The weights are the given by the distances (Ls) from
+        The weights are the given by the distances (Ls) from
         the origin to the corners of a polygon formed by the N points. Inital weight
-        of the point i the sum of all the other Ls besides i. 
+        of the point i: the sum of all the other Ls besides i. 
         '''
         dweights = zeros(N,dtype=float)
         Ls = [norm(closePoint-vpoint)**self.vweightPower for closePoint in closePoints['vec']]
@@ -938,14 +957,14 @@ class voidWeight():
         '''Test an entire grid of init values'''
         cubicLVs0 = cubicLVs
         nShift = 5
-#         
-        nTh = 10
-        nPh = 20
+# #         
+#         nTh = 10
+#         nPh = 20
         
-#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-#         nTh = 3
-#         nPh = 3
+        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+        nTh = 3
+        nPh = 3
 # 
 
 

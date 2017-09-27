@@ -333,7 +333,7 @@ Silicon:
     params3 =     [ 1.0 ]   #tooClose
     params4 =     [ 0.5 ]  #tooPlanar
     params5 =     [ 8   ]  #NvoidClosePoints
-    params6 =     [ 2.0 ]  #vwPower
+    params6 =     [ 3.0 ]  #vwPower
     params7 =     [ 3.0 ]   #wallPower
     params8 =     [ 1 ]   #relax (boolean)
     params9 =     [ 6.0 ]  #interPower
