@@ -335,12 +335,16 @@ Silicon:
     params5 =     [ 8   ]  #NvoidClosePoints
     params6 =     [ 2.0 ]  #vwPower
     params7 =     [ 3.0 ]   #wallPower
-    params8 =     [ 0 ]   #relax (boolean)
+    params8 =     [ 1 ]   #relax (boolean)
     params9 =     [ 6.0 ]  #interPower
     params10 =     [ 0.5 ]  #wallFactor
     params11 =    [ 0.0 ]  #wallOffset
 
-
+    '''Summary of one-set tests:
+        no relax no voids: 2.31 cost
+        no relax +  voids: 1.86
+        relax            : 1.50
+        relax    +  voids: 1.65  (why is this worse?) '''           
 #params =         ['0.5',       '3',     '1.0',     '0.5',       '8'      ,    '1.5' ,  '6.0' ,   'relax',       '3.0',       '0.5',       '0.0']  
 #     params0 =     [ 0.0,0.5 ]   #wallClose
 #     params1 =     [ 2.0,2.5,3.0]   #rcutoff

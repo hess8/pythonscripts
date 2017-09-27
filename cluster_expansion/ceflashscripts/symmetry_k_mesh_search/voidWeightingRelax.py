@@ -585,6 +585,16 @@ class voidWeight():
                         void = cell()
                         void.bounds = deepcopy(pointCell.bounds) #Will add/subtract planes later                        
                         void.bounds = addPlane(uvec,ro,void.bounds,self.eps)
+                        toRemove = []
+                        toRemoveOld = ['dummy']
+                        while toRemove != toRemoveOld:
+                            toRemoveOld = toRemove
+                            if len(toRemove)>0:
+                                sumPts = sum([pointCell.fpoints[ir] for ir in toRemove])
+                                print 'old uvec',uvec,
+                                uvec = sumPts/norm(sumPts)
+                                print 'new uvec',uvec
+                            toRemove = self.checkRemove(uvec,ro,pointCell0,self.eps)
                         pointCell,allRemoved,bordersFacet  = self.cutCell(uvec,ro,pointCell0,self.eps)                                                 
                         
                         if len(allRemoved)>1:
@@ -799,7 +809,7 @@ class voidWeight():
         icount = 0
         tempPoints = []
         tempiIBZs = []
-        self.facetsPointsOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
+#         self.facetsPointsOneUnique(self.IBZ,expandedMesh[:20],vpoint,'vclosest20','Red')
         while icount < N: #so that we retry points that were skipped earlier
             for iExp, evec in enumerate(expandedMesh):
                 if not among(evec,tempPoints,self.tooClose*self.rpacking): #Ignores clusters of points that are very close by symmetry
@@ -1250,6 +1260,15 @@ class voidWeight():
             return -trimSmall(real(uvec))
         else:
             return trimSmall(real(uvec))                   
+
+    def checkRemove(self,u,ro,cell0,eps):
+        '''Determine which points will be removed by cutting'''
+        toRemove = []
+        for ip,point in enumerate(cell0.fpoints):
+            pu = dot(u,point)
+            if pu > ro + eps:
+                toRemove.append(ip)
+        return toRemove
 
     def cutCell(self,u,ro,cell0,eps):
         '''Cell is cut about an arbitrary plane given by normal u and plane distance from 
