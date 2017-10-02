@@ -312,7 +312,7 @@ Silicon:
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0    
     '''
-    paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','NvoidClosePoints','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
+    paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
 #     print '\twallPower equals power'
@@ -326,25 +326,58 @@ Silicon:
 #     params4 =     [ 0] #wallOffset
 #     params5 =     [0.5, 1.0] #dw
 
-# params =         ['0.5',       '3',     '1.0',     '0.5',       '8'      ,    '1.5' ,  '6.0' ,   'relax',       '3.0',       '0.5',       '0.0']  
+#     params0 =     [ 0.0]   #wallClose
+#     params1 =     [ 1 ]   #useVoids
+#     params2 =     [ 3.0]   #rcutoff
+#     params3 =     [ -1 ]   #tooClose
+#     params4 =     [ -1 ]  #tooPlanar
+#     params5 =     [  3.0 ]   #rvCutoff
+#     params6 =     [ 3.0 ]  #vwPower
+#     params7 =     [ 3.0 ]   #wallPower
+#     params8 =     [ 1 ]   #relax (boolean)
+#     params9 =     [ 6.0 ]  #interPower
+#     params10 =     [ 0.5 ]  #wallFactor
+#     params11 =    [ 0.0 ]  #wallOffset
+    
+#     
+#     params0 =     [ 0.5 ]   #wallClose
+#     params1 =     [ 0 ]   #useVoids
+#     params2 =     [ 2.5,3.0,3.5 ]   #rcutoff
+#     params3 =     [ -1 ]   #tooClose
+#     params4 =     [ -1 ]  #tooPlanar
+#     params5 =     [  3.0,4.0  ]   #rvCutoff
+#     params6 =     [ 1.0,2.0,3.0 ]  #vwPower
+#     params7 =     [ 2,0,3.0 ]   #wallPower
+#     params8 =     [ 1 ]   #relax (boolean)
+#     params9 =     [ 4.0,6.0 ]  #interPower
+#     params10 =     [ 0.5,1.0 ]  #wallFactor
+#     params11 =    [ 0.0 ]  #wallOffset
+# 
     params0 =     [ 0.5 ]   #wallClose
     params1 =     [ 1 ]   #useVoids
     params2 =     [ 3.0 ]   #rcutoff
-    params3 =     [ 1.0 ]   #tooClose
-    params4 =     [ 0.5 ]  #tooPlanar
-    params5 =     [ 8   ]  #NvoidClosePoints
-    params6 =     [ 3.0 ]  #vwPower
+    params3 =     [ -1 ]   #tooClose
+    params4 =     [ -1 ]  #tooPlanar
+    params5 =     [ 4.0  ]   #rvCutoff
+    params6 =     [ 2.0]  #vwPower
     params7 =     [ 3.0 ]   #wallPower
     params8 =     [ 1 ]   #relax (boolean)
     params9 =     [ 6.0 ]  #interPower
-    params10 =     [ 0.5 ]  #wallFactor
+    params10 =    [ 0.5 ]  #wallFactor
     params11 =    [ 0.0 ]  #wallOffset
+
+
 
     '''Summary of one-set tests:
         no relax no voids: 2.31 cost
         no relax +  voids: 1.86
-        relax            : 1.50
-        relax    +  voids: 1.65  (why is this worse?) '''           
+        relax            : 1.50 (but only with 3x3 search: else 1.68)
+        relax    +  voids: 1.40 [ 0.5  1.   2.5 -1.  -1.   4.   3.   3.   1.   6.   0.5  0. ] avg nDone 15.0  (but only with 3x3 search: else 1.66)
+                           1.49 [ 0.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0. ] avg nDone 19.0  with fine angle search
+        '''
+        
+#           cost for set 0:   1.46 [ 0.5  1.   2.5 -1.  -1.   3.   1.   3.   1.   6.   0.5  0. ] avg nDone 16.0        
+                  
 #params =         ['0.5',       '3',     '1.0',     '0.5',       '8'      ,    '1.5' ,  '6.0' ,   'relax',       '3.0',       '0.5',       '0.0']  
 #     params0 =     [ 0.0,0.5 ]   #wallClose
 #     params1 =     [ 2.0,2.5,3.0]   #rcutoff
@@ -366,7 +399,7 @@ Silicon:
     print 'Initial packing is {}'.format(type) 
     all = zeros(nPsets,dtype = [('cost','float'),('params','{}float'.format(nP))])
     iset = 0
-    nmaxDirs = 100
+    nmaxDirs = 1000
     if nPsets > nmaxDirs:
         reuseSlots =  True
         nRunSlots = nmaxDirs
@@ -403,8 +436,11 @@ Silicon:
                                                         all[iset]['params'] = params
                                                     iset += 1
     #['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
+    paramString = ''
+    for param in paramLabels:
+        paramString += param + ','
     summary = open('{}/summaryGrid.csv'.format(maindir),'w')
-    summary.write('iset,cost,avgDone,wallClose,useVoids,rcutoff,tooClose,tooPlanar,NvoidPoints,vwPower,wallPower,relax,interPower,wallFactor,wallOffset\n')
+    summary.write('iset,cost,avgDone,{}\n'.format(paramString))
     toAnalyze = []
     iwait = 0
     minCost = 100

@@ -87,8 +87,8 @@ testfile = 'POSCAR'
 #          '/fslhome/bch/cluster_expansion/vcmesh/vary_off075']
 
 paths = [ 
-# '/fslhome/bch/cluster_expansion/vcmesh/mt_fcc',
-        '/fslhome/bch/cluster_expansion/vcmesh/mt_grid17Aug/bestRun' ]
+        '/fslhome/bch/cluster_expansion/vcmesh/mt_grid02OctR/r0',
+        '/fslhome/bch/cluster_expansion/vcmesh/mt_grid02OctRV/r0' ]
 # ,
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_cub',
 #           '/fslhome/bch/cluster_expansion/vcmesh/mt_fo10']
@@ -119,8 +119,8 @@ paths = [
 # paths = ['/fslhome/bch/cluster_expransion/vcmesh/test','/fslhome/bch/cluster_expansion/mpmesh/semicond']
 
 # extpaths = ['/bluehome/bch/fsl_groups/fslg_datamining/Mueller']
-extpaths = ['/bluehome/bch/fsl_groups/fslg_datamining/Hess']
-# extpath = None
+# extpaths = ['/bluehome/bch/fsl_groups/fslg_datamining/Hess']
+extpaths = None
 useSym = False
 coloring = 'method'
 # coloring = 'indiv'

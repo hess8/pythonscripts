@@ -15,6 +15,7 @@ from numpy.random import rand
 from copy import copy,deepcopy
 from sched import scheduler
 from itertools import chain, combinations, permutations
+from ctypes import byref, cdll, c_double, c_int, c_bool
 from matplotlib.pyplot import (subplots,savefig,imshow,close,plot,title,xlabel,
                                ylabel,figure,show,scatter,triplot)
 import matplotlib.image as mpimg
@@ -415,6 +416,36 @@ def shiftPlane(u,ro,pvec,eps):
         uNew = u
     return uNew, roNew
 
+def mink_reduce(a,eps):
+    """Reduce the basis to the most orthogonal set.
+       A Minkowski-reduced (via a "greedy algorithm basis) """
+#        utilslib =  cdll.LoadLibrary('/Users/hart/codes/celib/trunk/libutils.so')
+#    utilslib =  cdll.LoadLibrary('/fslhome/bch/cluster_expansion/theuncle/celib/trunk/libutils.so')
+    utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
+#     utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
+
+    ared =((c_double * 3) *3)()
+#    mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_ 
+    mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_     
+    mink(byref(load_ctypes_3x3_double(a)),byref(ared),byref(c_double(eps)))
+    ared2 = unload_ctypes_3x3_double(ared)   
+    return ared2
+
+def load_ctypes_3x3_double(IN):
+    """Make a 3x3 array into the right thing for ctypes"""
+    a = ((c_double * 3) *3)()
+    for i in range(3):
+        for j in range(3):
+            a[i][j] = c_double(IN[i,j])
+    return a
+
+def unload_ctypes_3x3_double(OUT):
+    """Take a ctypes array and load it into a 3x3 python list"""
+    a = zeros((3,3))
+    for i in range(3):
+        for j in range(3):
+            a[i][j] = OUT[i][j]
+    return a
 class cell():
     def __init__(self):
         self.bounds = [[],[]] #planes, written as normals and distances from origin [u's] , [ro's]
@@ -441,7 +472,7 @@ class voidWeight():
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
             self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))
-        self.B = B
+        self.B = mink_reduce(B,1e-4)
 #         print '\nB (Recip lattice vectors as columns',B
 #         print 'method',method
         vol = abs(det(B))
@@ -452,9 +483,9 @@ class voidWeight():
         self.wallClose = float(params[0])
         self.useVoids = bool(int(float(params[1])))
         self.rcutoff = float(params[2])
-        self.tooClose = float(params[3])
-        self.tooPlanar = float(params[4])
-        self.NvoidClosePoints = int(float(params[5]))
+#         self.tooClose = float(params[3])
+#         self.tooPlanar = float(params[4])
+        self.rvCutoff = float(params[5])
         self.vweightPower = float(params[6])
         self.wallPower = float(params[7]) #6.0
 #         self.relax = params[7].lower() in ['relax','true','yes']
@@ -666,6 +697,7 @@ class voidWeight():
                 pointCell = getVorCell(boundVecs,pointCell,'point',eps)
                 #shift origin of cell points to IBZ origin, and adjust bounds to reflect the change
                 pointCell = self.shiftCell(pointCell,point)
+                allMPfacets.append(pointCell.facets)
                 self.IBZ.vorCells.append(deepcopy(pointCell))
                 self.IBZ.vorVols.append(pointCell.volume)
                 self.IBZ.weights.append(pointCell.volume)
@@ -764,7 +796,7 @@ class voidWeight():
             # according to how close expandedMesh points (that are partners of the mesh point) 
             # is to the void point      
 #             N = self.NvoidClosePoints
-            rvCutoff = 4.0*self.rpacking
+            rvCutoff = self.rvCutoff*self.rpacking
             for iv, vpoint in enumerate(self.voids.mesh):
                 closePoints = self.NPointsNearVoid(rvCutoff,vpoint,expandedMesh,expandediIBZz)
                 self.facetsPointsOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
@@ -869,13 +901,15 @@ class voidWeight():
         '''
         dweights = zeros(N,dtype=float)
         Ls = [norm(closePoint-vpoint)**self.vweightPower for closePoint in closePoints['vec']]
-        sumLs = sum(Ls)
-        for i in range(N):
-            if i<N-1:
-                dweights[i] = sum(Ls[:i] + Ls[i+1:])
-            else:
-                dweights[i] = sum(Ls[:i])
-        return dweights/(N-1)/sumLs  
+        if len(dweights) == 1:
+            return [1.0]
+        else:
+            for i in range(N):
+                if i<N-1:
+                    dweights[i] = sum(Ls[:i] + Ls[i+1:])
+                else:
+                    dweights[i] = sum(Ls[:i])
+            return dweights/(N-1)/sum(Ls) 
               
     def prepMP(self,kpoint):
         mpCell = deepcopy(self.MP)
@@ -958,13 +992,13 @@ class voidWeight():
         cubicLVs0 = cubicLVs
         nShift = 5
 # #         
-#         nTh = 10
-#         nPh = 20
+        nTh = 9
+        nPh = 21
         
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-        nTh = 3
-        nPh = 3
+#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+#         nTh = 3
+#         nPh = 3
 # 
 
 
@@ -1121,7 +1155,7 @@ class voidWeight():
                     print '\nri,ro,u, dot(ri,u),d'
                     print ri,ro,u, dot(ri,u), d 
                     sys.exit('Error. Point {} in energy() is not in the IBZ.'.format(i+1))
-                etot += dw/abs(-wp+1)*(d/dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+                etot += 1/abs(-wp+1)*(d/dw)**(-wp+1)#Dimensionless. Both F and E can't be dimensionless unless we make the positions dimensionless.
         return etot
     def minSteepest(self,x0,eps):
         ''' Steepest descent works better in tests than sophisticated methods such as 
@@ -1219,8 +1253,8 @@ class voidWeight():
                     print '\nri,ro,u, dot(ri,u),d'
                     print ri,ro,u, dot(ri,u), d 
                     sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(i+1))
-                fmag = wallfact*(d/self.dw)**(-wp)  #dimensionless
-                etot += wallfact*self.dw/abs(-wp+1)*(d/self.dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+                fmag = 1/self.dw*wallfact*(d/self.dw)**(-wp)  # Units of 1/length
+                etot += wallfact/abs(-wp+1)*(d/self.dw)**(-wp+1)#dimensionless . Both F and E can't be dimensionless unless we make the positions dimensionless.
                 self.forces[i] += -u*fmag
                 self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudesrce',-u*fmag,fmag
             #vertext pull forces
@@ -1233,9 +1267,9 @@ class voidWeight():
                 if i!=j:
                     d = norm(ri-rj)
 #                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
-                    self.forces[i] += interfact*(d/self.df)**(-p)*(ri-rj)/d
+                    self.forces[i] += 1/self.df*interfact*(d/self.df)**(-p)*(ri-rj)/d
                     if j>i: #don't overcount
-                        etot += interfact*self.df/abs(-p+1)*(d/self.df)**(-p+1)
+                        etot += interfact*abs(-p+1)*(d/self.df)**(-p+1) #dimensionless .
 #         for i,fac in enumerate(self.facets):
 #             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
 #             self.wallPress[i] = self.wallForce[i]/area
