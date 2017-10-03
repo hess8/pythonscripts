@@ -39,10 +39,9 @@ os.chdir('/fslhome/bch/cluster_expansion/vcmesh/test/r0/Al_1/bcc_5')
 
 ntarget = 5
 type = 'bcc'
-<<<<<<< HEAD
-paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
-params =         ['0.5',       '1',         '3.0',       '-1',      '-1',       '4.0'   ,  '2.0' ,     '3.0' ,     '1',       '6.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.50
 
+paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
+params =         ['0.0',       '1',         '3.0',       '-1',      '-1',       '4.0'   ,  '2.0' ,     '3.0' ,     '1',       '6.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
 '''    params0 =     [ 0.5 ]   #wallClose
     params1 =     [ 1 ]   #useVoids
     params2 =     [ 3.0 ]   #rcutoff
@@ -57,11 +56,7 @@ params =         ['0.5',       '1',         '3.0',       '-1',      '-1',       
     params11 =    [ 0.0 ]  #wallOffset'''
 
 #         1.00   1.00   3.00  -1.00  -1.00   3.00   3.00   3.00   1.00   6.00   0.50   0.00 > out
-=======
-paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','NvoidClosePoints','vwPower','wallPower',  'relax' 'interPower', 'wallFactor' , 'wallOffset']
-params =         ['0.5',       '1',   '3',       '1.0',      '0.5',       '8'      ,        '2.0' ,     '6.0' ,        '1',       '3.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.50
-#  ['0.5',       '3',     '1.0',     '0.5',       '8'      ,    '1.5'] 
->>>>>>> 3f6d1561040b799f220851f582a60dc346d1c84c
+
 statusOK,nops = getVCmesh(os.getcwd(),ntarget,type,params) 
 if statusOK:
     writefile([],'OK')  

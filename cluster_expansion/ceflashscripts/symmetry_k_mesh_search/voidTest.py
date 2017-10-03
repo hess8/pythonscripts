@@ -24,7 +24,7 @@ import voidWeighting, analyzeNks
 #*************  Settings ***************
 maindir = os.getcwd()
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/25SepvoidsRelaxed'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/Sitest'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
@@ -324,51 +324,37 @@ Silicon:
 #     params2 =     [ 0.1,0.3,1.0] #wallfactor
 #     params3 =     [ 0.05] #wallClose
 #     params4 =     [ 0] #wallOffset
-#     params5 =     [0.5, 1.0] #dw
-
-#     params0 =     [ 0.0]   #wallClose
-#     params1 =     [ 1 ]   #useVoids
-#     params2 =     [ 3.0]   #rcutoff
+#     params5 =     [0.5, 1.0] #dw   
+#     
+#     params0 =     [ 0.5 ]   #wallClose
+#     params1 =     [ 0 ]   #useVoids
+#     params2 =     [ 2.5,3.0,3.5 ]   #rcutoff
 #     params3 =     [ -1 ]   #tooClose
 #     params4 =     [ -1 ]  #tooPlanar
-#     params5 =     [  3.0 ]   #rvCutoff
-#     params6 =     [ 3.0 ]  #vwPower
-#     params7 =     [ 3.0 ]   #wallPower
+#     params5 =     [  3.0,4.0  ]   #rvCutoff
+#     params6 =     [ 1.0,2.0,3.0 ]  #vwPower
+#     params7 =     [ 2,0,3.0 ]   #wallPower
 #     params8 =     [ 1 ]   #relax (boolean)
-#     params9 =     [ 6.0 ]  #interPower
-#     params10 =     [ 0.5 ]  #wallFactor
+#     params9 =     [ 4.0,6.0 ]  #interPower
+#     params10 =     [ 0.5,1.0 ]  #wallFactor
 #     params11 =    [ 0.0 ]  #wallOffset
-    
-#     
+# # 
     params0 =     [ 0.5 ]   #wallClose
-    params1 =     [ 0 ]   #useVoids
-    params2 =     [ 2.5,3.0,3.5 ]   #rcutoff
+    params1 =     [ 1 ]   #useVoids
+    params2 =     [ 3.0 ]   #rcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
-    params5 =     [  3.0,4.0  ]   #rvCutoff
-    params6 =     [ 1.0,2.0,3.0 ]  #vwPower
-    params7 =     [ 2,0,3.0 ]   #wallPower
+    params5 =     [ 4.0  ]   #rvCutoff
+    params6 =     [ 2.0]  #vwPower
+    params7 =     [ 3.0 ]   #wallPower
     params8 =     [ 1 ]   #relax (boolean)
-    params9 =     [ 4.0,6.0 ]  #interPower
-    params10 =     [ 0.5,1.0 ]  #wallFactor
+    params9 =     [ 6.0 ]  #interPower
+    params10 =    [ 0.5 ]  #wallFactor
     params11 =    [ 0.0 ]  #wallOffset
-# # 
-#     params0 =     [ 0.5 ]   #wallClose
-#     params1 =     [ 1 ]   #useVoids
-#     params2 =     [ 3.0 ]   #rcutoff
-#     params3 =     [ -1 ]   #tooClose
-#     params4 =     [ -1 ]  #tooPlanar
-#     params5 =     [ 4.0  ]   #rvCutoff
-#     params6 =     [ 2.0]  #vwPower
-#     params7 =     [ 3.0 ]   #wallPower
-#     params8 =     [ 1 ]   #relax (boolean)
-#     params9 =     [ 6.0 ]  #interPower
-#     params10 =    [ 0.5 ]  #wallFactor
-#     params11 =    [ 0.0 ]  #wallOffset
 
 
 
-    '''Summary of one-set tests:
+    '''Si Summary of one-set tests:
         no relax no voids: 2.31 cost
         no relax +  voids: 1.86
         relax            : 1.50 (but only with 3x3 search: else 1.68)

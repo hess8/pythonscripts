@@ -473,9 +473,10 @@ class voidWeight():
 
 #         self.A = transpose(_minkowski_reduce_basis(transpose(A),1e-4))
 #         self.B = 2*pi*transpose(inv(self.A))        
-        self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4))
-        self.A = 1/2.0/pi*inv(transpose(B))
-        
+#         self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4))
+#         self.A = 1/2.0/pi*inv(transpose(B))
+        self.B = B
+        self.A = A
         
         [symopsList, fracsList] = get_spaceGroup(transpose(self.A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
@@ -805,11 +806,7 @@ class voidWeight():
             # according to how close expandedMesh points (that are partners of the mesh point) 
             # is to the void point      
 #             N = self.NvoidClosePoints
-<<<<<<< HEAD
             rvCutoff = self.rvCutoff*self.rpacking
-=======
-            rvCutoff = 4.0*self.rpacking
->>>>>>> 3f6d1561040b799f220851f582a60dc346d1c84c
             for iv, vpoint in enumerate(self.voids.mesh):
                 closePoints = self.NPointsNearVoid(rvCutoff,vpoint,expandedMesh,expandediIBZz)
                 self.facetsPointsOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
@@ -1005,18 +1002,13 @@ class voidWeight():
         cubicLVs0 = cubicLVs
         nShift = 5
 # #         
-<<<<<<< HEAD
         nTh = 9
         nPh = 21
-=======
-#         nTh = 10
-#         nPh = 20
->>>>>>> 3f6d1561040b799f220851f582a60dc346d1c84c
         
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-        nTh = 3
-        nPh = 3
+#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+#         nTh = 3
+#         nPh = 3
 # 
 
 
