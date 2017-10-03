@@ -26,10 +26,11 @@ from scipy.spatial import Voronoi
 from timeit import default_timer as timer
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
+sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/phonon-enumeration/phenum')
 sys.path.append('/fslhome/bch/graphener/graphener')
 
 from symmetry import get_lattice_pointGroup, get_spaceGroup #these have vectors as ROWS
-
+from vector_utils import _minkowski_reduce_basis
 def readfile(filepath):
     file1 = open(filepath,'r')
     lines = file1.readlines()
@@ -416,20 +417,20 @@ def shiftPlane(u,ro,pvec,eps):
         uNew = u
     return uNew, roNew
 
-def mink_reduce(a,eps):
-    """Reduce the basis to the most orthogonal set.
-       A Minkowski-reduced (via a "greedy algorithm basis) """
-#        utilslib =  cdll.LoadLibrary('/Users/hart/codes/celib/trunk/libutils.so')
-#    utilslib =  cdll.LoadLibrary('/fslhome/bch/cluster_expansion/theuncle/celib/trunk/libutils.so')
-    utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
-#     utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
-
-    ared =((c_double * 3) *3)()
-#    mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_ 
-    mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_     
-    mink(byref(load_ctypes_3x3_double(a)),byref(ared),byref(c_double(eps)))
-    ared2 = unload_ctypes_3x3_double(ared)   
-    return ared2
+# def mink_reduce(a,eps):
+#     """Reduce the basis to the most orthogonal set.
+#        A Minkowski-reduced (via a "greedy algorithm basis) """
+# #        utilslib =  cdll.LoadLibrary('/Users/hart/codes/celib/trunk/libutils.so')
+# #    utilslib =  cdll.LoadLibrary('/fslhome/bch/cluster_expansion/theuncle/celib/trunk/libutils.so')
+#     utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
+# #     utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
+# 
+#     ared =((c_double * 3) *3)()
+# #    mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_ 
+#     mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_     
+#     mink(byref(load_ctypes_3x3_double(a)),byref(ared),byref(c_double(eps)))
+#     ared2 = unload_ctypes_3x3_double(ared)   
+#     return ared2
 
 def load_ctypes_3x3_double(IN):
     """Make a 3x3 array into the right thing for ctypes"""
@@ -466,16 +467,24 @@ class voidWeight():
     from numpy.random import rand, uniform
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
-        startTime = timer() 
-        [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
+        startTime = timer()
+#         self.B = mink_reduce(B,1e-4) 
+#         self.A = 1/2.0/pi*inv(transpose(B))
+
+#         self.A = transpose(_minkowski_reduce_basis(transpose(A),1e-4))
+#         self.B = 2*pi*transpose(inv(self.A))        
+        self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4))
+        self.A = 1/2.0/pi*inv(transpose(B))
+        
+        
+        [symopsList, fracsList] = get_spaceGroup(transpose(self.A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
             self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))
-        self.B = mink_reduce(B,1e-4)
 #         print '\nB (Recip lattice vectors as columns',B
 #         print 'method',method
-        vol = abs(det(B))
+        vol = abs(det(self.B))
         IBZvol = vol/float(self.nops)
 #         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
