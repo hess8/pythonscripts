@@ -452,9 +452,9 @@ class voidWeight():
         self.wallClose = float(params[0])
         self.useVoids = bool(int(float(params[1])))
         self.rcutoff = float(params[2])
-        self.tooClose = float(params[3])
-        self.tooPlanar = float(params[4])
-        self.NvoidClosePoints = int(float(params[5]))
+#         self.tooClose = float(params[3])
+#         self.tooPlanar = float(params[4])
+        self.rvCutoff = float(params[5])
         self.vweightPower = float(params[6])
         self.wallPower = float(params[7]) #6.0
 #         self.relax = params[7].lower() in ['relax','true','yes']
@@ -666,6 +666,7 @@ class voidWeight():
                 pointCell = getVorCell(boundVecs,pointCell,'point',eps)
                 #shift origin of cell points to IBZ origin, and adjust bounds to reflect the change
                 pointCell = self.shiftCell(pointCell,point)
+                allMPfacets.append(pointCell.facets)
                 self.IBZ.vorCells.append(deepcopy(pointCell))
                 self.IBZ.vorVols.append(pointCell.volume)
                 self.IBZ.weights.append(pointCell.volume)
@@ -764,7 +765,7 @@ class voidWeight():
             # according to how close expandedMesh points (that are partners of the mesh point) 
             # is to the void point      
 #             N = self.NvoidClosePoints
-            rvCutoff = 4.0*self.rpacking
+            rvCutoff = self.rvCutoff*self.rpacking
             for iv, vpoint in enumerate(self.voids.mesh):
                 closePoints = self.NPointsNearVoid(rvCutoff,vpoint,expandedMesh,expandediIBZz)
                 self.facetsPointsOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
@@ -869,13 +870,15 @@ class voidWeight():
         '''
         dweights = zeros(N,dtype=float)
         Ls = [norm(closePoint-vpoint)**self.vweightPower for closePoint in closePoints['vec']]
-        sumLs = sum(Ls)
-        for i in range(N):
-            if i<N-1:
-                dweights[i] = sum(Ls[:i] + Ls[i+1:])
-            else:
-                dweights[i] = sum(Ls[:i])
-        return dweights/(N-1)/sumLs  
+        if len(dweights) == 1:
+            return [1.0]
+        else:
+            for i in range(N):
+                if i<N-1:
+                    dweights[i] = sum(Ls[:i] + Ls[i+1:])
+                else:
+                    dweights[i] = sum(Ls[:i])
+            return dweights/(N-1)/sum(Ls) 
               
     def prepMP(self,kpoint):
         mpCell = deepcopy(self.MP)
