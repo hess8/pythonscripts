@@ -805,7 +805,11 @@ class voidWeight():
             # according to how close expandedMesh points (that are partners of the mesh point) 
             # is to the void point      
 #             N = self.NvoidClosePoints
+<<<<<<< HEAD
             rvCutoff = self.rvCutoff*self.rpacking
+=======
+            rvCutoff = 4.0*self.rpacking
+>>>>>>> 3f6d1561040b799f220851f582a60dc346d1c84c
             for iv, vpoint in enumerate(self.voids.mesh):
                 closePoints = self.NPointsNearVoid(rvCutoff,vpoint,expandedMesh,expandediIBZz)
                 self.facetsPointsOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
@@ -1001,13 +1005,18 @@ class voidWeight():
         cubicLVs0 = cubicLVs
         nShift = 5
 # #         
+<<<<<<< HEAD
         nTh = 9
         nPh = 21
+=======
+#         nTh = 10
+#         nPh = 20
+>>>>>>> 3f6d1561040b799f220851f582a60dc346d1c84c
         
-#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-#         nTh = 3
-#         nPh = 3
+        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+        nTh = 3
+        nPh = 3
 # 
 
 
