@@ -473,7 +473,7 @@ class voidWeight():
 
 #         self.A = transpose(_minkowski_reduce_basis(transpose(A),1e-4))
 #         self.B = 2*pi*transpose(inv(self.A))        
-#         self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4))
+        self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4))
 #         self.A = 1/2.0/pi*inv(transpose(B))
         self.B = B
         self.A = A
