@@ -95,7 +95,7 @@ def directFromCart(Lvs,cartvec):
     Then D = inv(transpose(LV)) * C'''
     return dot(inv((Lvs)), cartvec)
     
-def cartFromDirect(self,Lvs,dirvec): 
+def cartFromDirect(Lvs,dirvec): 
     '''Assumes lattice vectors are in **columns** in LVs.
     Then C = transpose(LV) * D, because Cx = L1xD1 + L2xD2 + L3xD3, etc, 
     which is top row of transpose(LV) dot D, or the first matrix multiplication 
@@ -416,37 +416,7 @@ def shiftPlane(u,ro,pvec,eps):
     else:
         uNew = u
     return uNew, roNew
-
-# def mink_reduce(a,eps):
-#     """Reduce the basis to the most orthogonal set.
-#        A Minkowski-reduced (via a "greedy algorithm basis) """
-# #        utilslib =  cdll.LoadLibrary('/Users/hart/codes/celib/trunk/libutils.so')
-# #    utilslib =  cdll.LoadLibrary('/fslhome/bch/cluster_expansion/theuncle/celib/trunk/libutils.so')
-#     utilslib =  cdll.LoadLibrary('/fslhome/bch/vaspfiles/src/hesslib/hesslib.so')
-# #     utilslib =  cdll.LoadLibrary('/home/hessb/research/pythonscriptsRep/pythonscripts/hesslib/hesslib.so')  
-# 
-#     ared =((c_double * 3) *3)()
-# #    mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_ 
-#     mink = utilslib.vector_matrix_utilities_mp_minkowski_reduce_basis_     
-#     mink(byref(load_ctypes_3x3_double(a)),byref(ared),byref(c_double(eps)))
-#     ared2 = unload_ctypes_3x3_double(ared)   
-#     return ared2
-
-def load_ctypes_3x3_double(IN):
-    """Make a 3x3 array into the right thing for ctypes"""
-    a = ((c_double * 3) *3)()
-    for i in range(3):
-        for j in range(3):
-            a[i][j] = c_double(IN[i,j])
-    return a
-
-def unload_ctypes_3x3_double(OUT):
-    """Take a ctypes array and load it into a 3x3 python list"""
-    a = zeros((3,3))
-    for i in range(3):
-        for j in range(3):
-            a[i][j] = OUT[i][j]
-    return a
+ 
 class cell():
     def __init__(self):
         self.bounds = [[],[]] #planes, written as normals and distances from origin [u's] , [ro's]
@@ -468,16 +438,21 @@ class voidWeight():
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
         startTime = timer()
-#         self.B = mink_reduce(B,1e-4) 
-#         self.A = 1/2.0/pi*inv(transpose(B))
-
-#         self.A = transpose(_minkowski_reduce_basis(transpose(A),1e-4))
-#         self.B = 2*pi*transpose(inv(self.A))        
-        self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4))
-#         self.A = 1/2.0/pi*inv(transpose(B))
-        self.B = B
-        self.A = A
-        
+        self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4)) 
+        self.A = trimSmall(inv(1/2.0/pi*transpose(self.B)))
+        self.B = trimSmall(2*pi*transpose(inv(self.A)))        
+        plines = readfile('POSCAR')
+        normedLVs = self.A/float(plines[1])
+        plines[2] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,0],normedLVs[1,0],normedLVs[2,0])
+        plines[3] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,1],normedLVs[1,1],normedLVs[2,1])
+        plines[4] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,2],normedLVs[1,2],normedLVs[2,2])
+        os.system('cp POSCAR POSCARpremink')
+        writefile(plines,'POSCAR')
+        temp = deepcopy(aPos)
+        for i in range(len(aPos[0,:])):
+            posC = cartFromDirect(A, aPos[:,i])
+            temp[:,i] = directFromCart(self.A, posC)
+        aPos = temp
         [symopsList, fracsList] = get_spaceGroup(transpose(self.A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
@@ -903,6 +878,19 @@ class voidWeight():
             closePoints[ic]['iIBZ'] = tempiIBZs[ic]
         return closePoints
         
+#     def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
+#         '''
+#         The weights are given by 1/L, where L is the distance of the mesh point to the void center'''
+#         dweights = zeros(N,dtype=float)
+#         Ls = [norm(closePoint-vpoint)**self.vweightPower for closePoint in closePoints['vec']]
+#         if len(dweights) == 1:
+#             return [1.0]
+#         else:
+#             for i in range(N):
+#                 dweights[i] = 1/Ls[i]   
+#             return dweights/sum(dweights) 
+
+    
     def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
         '''
         The weights are the given by the distances (Ls) from
@@ -1002,14 +990,14 @@ class voidWeight():
         cubicLVs0 = cubicLVs
         nShift = 5
 #         
-        nTh = 9
-        nPh = 21
+#         nTh = 9
+#         nPh = 21
         
-#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-#         nTh = 3
-#         nPh = 3
-# 
+        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+        nTh = 3
+        nPh = 3
+#  
 
 
         shiftDiv = 0.5*sqrt(3)/float(nShift)

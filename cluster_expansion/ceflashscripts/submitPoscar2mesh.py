@@ -33,15 +33,15 @@ def getVCmesh(dir,targetNmesh,meshtype,params) :
     return statusOK,nops
 #script:
 # os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/19SepFullWeights/bestRun/Si_/bcc_6')
-# os.chdir('/fslhome/bch/cluster_expansion/vcmesh/test/r0/Si_/bcc_5')
-os.chdir('/fslhome/bch/cluster_expansion/vcmesh/test/r0/Al_1/bcc_5')
+os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP/r0/Si_/bcc_5')
+# os.chdir('/fslhome/bch/cluster_expansion/vcmesh/test/r0/Al_1/bcc_5')
 # os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/28SepRelaxVoidsFine/r2/Si_/bcc_13')
 
 ntarget = 5
 type = 'bcc'
 
 paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
-params =         ['0.0',       '1',         '3.0',       '-1',      '-1',       '4.0'   ,  '2.0' ,     '3.0' ,     '1',       '6.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
+params =         ['0.0',       '1',         '3.0',       '-1',      '-1',       '4.0'   ,  '3.0' ,     '3.0' ,     '1',       '6.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
 '''    params0 =     [ 0.5 ]   #wallClose
     params1 =     [ 1 ]   #useVoids
     params2 =     [ 3.0 ]   #rcutoff
