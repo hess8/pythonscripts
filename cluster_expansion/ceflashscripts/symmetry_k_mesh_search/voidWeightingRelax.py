@@ -15,6 +15,7 @@ from numpy.random import rand
 from copy import copy,deepcopy
 from sched import scheduler
 from itertools import chain, combinations, permutations
+from ctypes import byref, cdll, c_double, c_int, c_bool
 from matplotlib.pyplot import (subplots,savefig,imshow,close,plot,title,xlabel,
                                ylabel,figure,show,scatter,triplot)
 import matplotlib.image as mpimg
@@ -25,10 +26,11 @@ from scipy.spatial import Voronoi
 from timeit import default_timer as timer
 
 sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts')
+sys.path.append('/bluehome2/bch/pythonscripts/cluster_expansion/ceflashscripts/phonon-enumeration/phenum')
 sys.path.append('/fslhome/bch/graphener/graphener')
 
 from symmetry import get_lattice_pointGroup, get_spaceGroup #these have vectors as ROWS
-
+from vector_utils import _minkowski_reduce_basis
 def readfile(filepath):
     file1 = open(filepath,'r')
     lines = file1.readlines()
@@ -435,16 +437,25 @@ class voidWeight():
     from numpy.random import rand, uniform
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
-        startTime = timer() 
-        [symopsList, fracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
+        startTime = timer()
+#         self.B = mink_reduce(B,1e-4) 
+#         self.A = 1/2.0/pi*inv(transpose(B))
+
+#         self.A = transpose(_minkowski_reduce_basis(transpose(A),1e-4))
+#         self.B = 2*pi*transpose(inv(self.A))        
+        self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4))
+#         self.A = 1/2.0/pi*inv(transpose(B))
+        self.B = B
+        self.A = A
+        
+        [symopsList, fracsList] = get_spaceGroup(transpose(self.A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
             self.symops[:,:,iop] = trimSmall(array(symopsList[iop]))
-        self.B = B
 #         print '\nB (Recip lattice vectors as columns',B
 #         print 'method',method
-        vol = abs(det(B))
+        vol = abs(det(self.B))
         IBZvol = vol/float(self.nops)
 #         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
@@ -965,12 +976,12 @@ class voidWeight():
           
 #         nTh = 10
 #         nPh = 20
-         
+        
         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
         nTh = 3
         nPh = 3
- 
+# 
 
 
         shiftDiv = 0.5*sqrt(3)/float(nShift)
@@ -1126,7 +1137,7 @@ class voidWeight():
                     print '\nri,ro,u, dot(ri,u),d'
                     print ri,ro,u, dot(ri,u), d 
                     sys.exit('Error. Point {} in energy() is not in the IBZ.'.format(i+1))
-                etot += dw/abs(-wp+1)*(d/dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+                etot += 1/abs(-wp+1)*(d/dw)**(-wp+1)#Dimensionless. Both F and E can't be dimensionless unless we make the positions dimensionless.
         return etot
     def minSteepest(self,x0,eps):
         ''' Steepest descent works better in tests than sophisticated methods such as 
@@ -1224,8 +1235,8 @@ class voidWeight():
                     print '\nri,ro,u, dot(ri,u),d'
                     print ri,ro,u, dot(ri,u), d 
                     sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(i+1))
-                fmag = wallfact*(d/self.dw)**(-wp)  #dimensionless
-                etot += wallfact*self.dw/abs(-wp+1)*(d/self.dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
+                fmag = 1/self.dw*wallfact*(d/self.dw)**(-wp)  # Units of 1/length
+                etot += wallfact/abs(-wp+1)*(d/self.dw)**(-wp+1)#dimensionless . Both F and E can't be dimensionless unless we make the positions dimensionless.
                 self.forces[i] += -u*fmag
                 self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudesrce',-u*fmag,fmag
             #vertext pull forces
@@ -1238,9 +1249,9 @@ class voidWeight():
                 if i!=j:
                     d = norm(ri-rj)
 #                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
-                    self.forces[i] += interfact*(d/self.df)**(-p)*(ri-rj)/d
+                    self.forces[i] += 1/self.df*interfact*(d/self.df)**(-p)*(ri-rj)/d
                     if j>i: #don't overcount
-                        etot += interfact*self.df/abs(-p+1)*(d/self.df)**(-p+1)
+                        etot += interfact*abs(-p+1)*(d/self.df)**(-p+1) #dimensionless .
 #         for i,fac in enumerate(self.facets):
 #             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
 #             self.wallPress[i] = self.wallForce[i]/area
