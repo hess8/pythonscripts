@@ -312,7 +312,7 @@ Silicon:
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0    
     '''
-    paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','NvoidClosePoints','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
+    paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
 #     print '\twallPower equals power'
@@ -332,7 +332,7 @@ Silicon:
     params2 =     [ 3.0 ]   #rcutoff
     params3 =     [ 1.0 ]   #tooClose
     params4 =     [ 0.5 ]  #tooPlanar
-    params5 =     [ 8   ]  #NvoidClosePoints
+    params5 =     [ 4.0   ]  #rvCutoff
     params6 =     [ 3.0 ]  #vwPower
     params7 =     [ 3.0 ]   #wallPower
     params8 =     [ 1 ]   #relax (boolean)
