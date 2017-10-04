@@ -452,9 +452,9 @@ class voidWeight():
         self.wallClose = float(params[0])
         self.useVoids = bool(int(float(params[1])))
         self.rcutoff = float(params[2])
-        self.tooClose = float(params[3])
-        self.tooPlanar = float(params[4])
-        self.NvoidClosePoints = int(float(params[5]))
+#         self.tooClose = float(params[3])
+#         self.tooPlanar = float(params[4])
+        self.rvCutoff = float(params[5])
         self.vweightPower = float(params[6])
         self.wallPower = float(params[7]) #6.0
 #         self.relax = params[7].lower() in ['relax','true','yes']
@@ -666,6 +666,7 @@ class voidWeight():
                 pointCell = getVorCell(boundVecs,pointCell,'point',eps)
                 #shift origin of cell points to IBZ origin, and adjust bounds to reflect the change
                 pointCell = self.shiftCell(pointCell,point)
+                allMPfacets.append(pointCell.facets)
                 self.IBZ.vorCells.append(deepcopy(pointCell))
                 self.IBZ.vorVols.append(pointCell.volume)
                 self.IBZ.weights.append(pointCell.volume)
@@ -957,10 +958,13 @@ class voidWeight():
         '''Test an entire grid of init values'''
         cubicLVs0 = cubicLVs
         nShift = 5
+
+
+
           
 #         nTh = 10
 #         nPh = 20
-#         
+         
         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
         nTh = 3
