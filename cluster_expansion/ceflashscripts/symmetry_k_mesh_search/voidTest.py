@@ -24,7 +24,7 @@ import voidWeighting, analyzeNks
 #*************  Settings ***************
 maindir = os.getcwd()
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/25SepvoidsRelaxed'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/Sitest'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
@@ -339,19 +339,18 @@ Silicon:
 #     params10 =     [ 0.5,1.0 ]  #wallFactor
 #     params11 =    [ 0.0 ]  #wallOffset
 # # 
-    params0 =     [ 0.0 ]   #wallClose
+    params0 =     [ 0.5 ]   #wallClose
     params1 =     [ 1 ]   #useVoids
     params2 =     [ 3.0 ]   #rcutoff
-    params3 =     [ -1 ]   #tooClose
-    params4 =     [ -1 ]  #tooPlanar
-    params5 =     [ 3.0  ]   #rvCutoff
-    params6 =     [ 3.0]  #vwPower
+    params3 =     [ 1.0 ]   #tooClose
+    params4 =     [ 0.5 ]  #tooPlanar
+    params5 =     [ 4.0   ]  #rvCutoff
+    params6 =     [ 3.0 ]  #vwPower
     params7 =     [ 3.0 ]   #wallPower
     params8 =     [ 1 ]   #relax (boolean)
     params9 =     [ 6.0 ]  #interPower
-    params10 =    [ 0.5 ]  #wallFactor
+    params10 =     [ 0.5 ]  #wallFactor
     params11 =    [ 0.0 ]  #wallOffset
-
 
 
     '''Si Summary of one-set tests:
