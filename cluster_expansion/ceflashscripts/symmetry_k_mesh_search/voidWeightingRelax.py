@@ -703,16 +703,16 @@ class voidWeight():
         vMPs = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
         meanV = mean(self.IBZ.vorVols)
-        volCheck = 0.01
+        self.volCheck = 0.01
         volDiff = vMPs - self.IBZ.volume        
         volDiffRel = volDiff/self.IBZ.volume
         print 'Total volume of point Vor cells',vMPs,'vs IBZ volume', self.IBZ.volume
         if self.relax:
             print 'Relative volume error', volDiffRel,'Abs volume error', volDiff, 'Std dev/mean',stdev/meanV
-            if not areEqual(vMPs, self.IBZ.volume, volCheck*self.IBZ.volume):
+            if not areEqual(vMPs, self.IBZ.volume, self.volCheck*self.IBZ.volume):
                 sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
             else:
-                print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)  
+                print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(self.volCheck)  
         else:
             print 'Relative volume in MP Vor cells', -volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
        
@@ -751,7 +751,7 @@ class voidWeight():
             print 'Void vols',vVoids
             print 'Total volume Vor cells plus voids:',vMPs+vVoids,'vs IBZ volume', self.IBZ.volume 
             self.facetsManyFacetsMathFile(self.IBZ,self.voids.facets,'voids')                     
-            if not areEqual(vMPs + vVoids, self.IBZ.volume, volCheck*self.IBZ.volume):
+            if not areEqual(vMPs + vVoids, self.IBZ.volume, self.volCheck*self.IBZ.volume):
                 sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
             #find distances of each void point to IBZ mesh points and their symmetry partners.    
             #find symmetry parterns (expandedMesh), which includes themselves
@@ -786,7 +786,7 @@ class voidWeight():
                 closePoints = self.NPointsNearVoid(rvCutoff,vpoint,expandedMesh,expandediIBZz)
                 self.facetsPointsOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
 #                 dweights = self.distrVoidWeightsNPoints(len(closePoints),vpoint,closePoints)
-                dweights = self.distrVoidWeightsNatNeigh(len(closePoints),vpoint,closePoints)
+                dweights = self.distrVoidWeightsNatNeigh(len(closePoints),vpoint,iv,closePoints)
                 print iv,'Sum of dweights',sum(dweights),dweights
                 if not areEqual(sum(dweights),1.0,0.01):
                     sys.exit('Stop.  dweights do not sum to 1')
@@ -795,7 +795,7 @@ class voidWeight():
                     self.IBZ.weights[closePoints[iw]['iIBZ']] += self.voids.volumes[iv] * weight             
             wtot = sum(self.IBZ.weights)
             print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
-            if not areEqual(wtot, self.IBZ.volume, volCheck*self.IBZ.volume):
+            if not areEqual(wtot, self.IBZ.volume, self.volCheck*self.IBZ.volume):
                 sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
         #normalize the seights so that a full interior point gets weight nops of symmetry
         self.IBZ.weights =  array(self.IBZ.weights)/self.MP.volume * self.nops
@@ -803,7 +803,7 @@ class voidWeight():
         for i, weight in enumerate(self.IBZ.weights):
             print i, weight
         print 'Sum', sum(self.IBZ.weights) 
-        if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,volCheck*self.nTargetIBZ*self.nops):
+        if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,self.volCheck*self.nTargetIBZ*self.nops):
             print 'Weights sum correctly'
         elif self.useVoids or self.relax:
             sys.exit('Stop: Weights do not sum to nTargetIBZ * nops')     
@@ -906,19 +906,20 @@ class voidWeight():
 #                     dweights[i] = sum(Ls[:i])
 #             return dweights/(N-1)/sum(Ls) 
 
-    def distrVoidWeightsNatNeigh(self,N,vpoint,closePoints):
+    def distrVoidWeightsNatNeigh(self,N,vpoint,iv,closePoints):
         '''Use natural neighbor interpolation (see wikipedia)
         1.  Calculate the vorcell volumes of the closePoints bounded by a cube
         of size 2*rcutoff
         2. Add the vpoint to the list and again calculate the vcell volumes.  
         Find losses of each of the closePoint vcell volumes.  These are the weights'''
+        cubemax = self.rcutoff * self.rpacking
         boundVecsCube = zeros(len(closePoints) + 6 - 1,dtype = [('uvec', '3float'),('mag', 'float')]) 
-        boundVecsCube[0]['uvec'] = array([1,0,0]); boundVecsCube[0]['mag'] = self.rcutoff;
-        boundVecsCube[1]['uvec'] = array([-1,0,0]);boundVecsCube[1]['mag'] = self.rcutoff;
-        boundVecsCube[2]['uvec'] = array([0,1,0]); boundVecsCube[2]['mag'] = self.rcutoff;
-        boundVecsCube[3]['uvec'] = array([0,-1,0]);boundVecsCube[3]['mag'] = self.rcutoff;
-        boundVecsCube[4]['uvec'] = array([0,0,1]); boundVecsCube[4]['mag'] = self.rcutoff;
-        boundVecsCube[5]['uvec'] = array([0,0,-1]);boundVecsCube[5]['mag'] = self.rcutoff;
+        boundVecsCube[0]['uvec'] = array([1,0,0]); boundVecsCube[0]['mag'] = cubemax
+        boundVecsCube[1]['uvec'] = array([-1,0,0]);boundVecsCube[1]['mag'] = cubemax
+        boundVecsCube[2]['uvec'] = array([0,1,0]); boundVecsCube[2]['mag'] = cubemax
+        boundVecsCube[3]['uvec'] = array([0,-1,0]);boundVecsCube[3]['mag'] = cubemax
+        boundVecsCube[4]['uvec'] = array([0,0,1]); boundVecsCube[4]['mag'] = cubemax
+        boundVecsCube[5]['uvec'] = array([0,0,-1]);boundVecsCube[5]['mag'] = cubemax
         closeVols = []
         for ic, cpoint in enumerate(closePoints['vec']):
             #Get the voronoi cell volume
@@ -934,9 +935,11 @@ class voidWeight():
             vcell = cell()
             vcell = getVorCell(boundVecs,vcell,'point',self.eps)
             closeVols.append(vcell.volume)
+        if not areEqual(sum(closeVols),(2*cubemax)**3,self.volCheck*(2*cubemax)**3):
+            sys.exit('Stop: closePoints vor cells volume {} does not equal the cube volume {}'.format(sum(closeVols),(2*cubemax)**3))        
         closeVols2 = []
         boundVecsCube2 = zeros(len(closePoints) + 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
-        boundVecsCube2[:6] = boundVecsCube
+        boundVecsCube2[:6] = boundVecsCube[:6]
         for ic, cpoint in enumerate(closePoints['vec']):
             #Get the voronoi cell volume
             boundVecs = boundVecsCube2
@@ -954,13 +957,20 @@ class voidWeight():
             boundVecs[jc+6+1]['mag'] = mag
             vcell = cell()
             vcell = getVorCell(boundVecs,vcell,'point',self.eps)
-            closeVols2.append(vcell.volume)    
-        
-        
-        return    
-        
-        
-              
+            closeVols2.append(vcell.volume)
+        dVols = []
+        for ic in range(len(closePoints['vec'])):  
+            dV = closeVols[ic] - array(closeVols2)[ic] 
+            if dV > 0: 
+                dVols.append(dV)
+            elif dV > 0 - self.eps:
+                dVols.append(0.0)
+            else:
+                sys.exit('Stop: dVols {} has negative element: {}'.format(ic,dV))
+        if not areEqual(sum(dVols),self.voids.volumes[iv],self.volCheck*self.voids.volumes[iv]):
+            sys.exit('Stop: dVols total volume, {} is different from ')
+        return  dVols/sum(dVols) 
+    
     def prepMP(self,kpoint):
         mpCell = deepcopy(self.MP)
         for ifac, facet in enumerate(self.MP.facets):
