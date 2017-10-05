@@ -785,7 +785,8 @@ class voidWeight():
             for iv, vpoint in enumerate(self.voids.mesh):
                 closePoints = self.NPointsNearVoid(rvCutoff,vpoint,expandedMesh,expandediIBZz)
                 self.facetsPointsOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
-                dweights = self.distrVoidWeightsNPoints(len(closePoints),vpoint,closePoints)
+#                 dweights = self.distrVoidWeightsNPoints(len(closePoints),vpoint,closePoints)
+                dweights = self.distrVoidWeightsNatNeigh(len(closePoints),vpoint,closePoints)
                 print iv,'Sum of dweights',sum(dweights),dweights
                 if not areEqual(sum(dweights),1.0,0.01):
                     sys.exit('Stop.  dweights do not sum to 1')
@@ -911,16 +912,52 @@ class voidWeight():
         of size 2*rcutoff
         2. Add the vpoint to the list and again calculate the vcell volumes.  
         Find losses of each of the closePoint vcell volumes.  These are the weights'''
-        boundVecs = zeros(len(closePoints)+ 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
-        boundVecs[0][uvec] = array([1,0,0]);boundVecs[0][mag] = self.rcutoff;
-        for j, jpoint in enumerate(neighs):
-            vec = (jpoint - point)/2
+        boundVecsCube = zeros(len(closePoints) + 6 - 1,dtype = [('uvec', '3float'),('mag', 'float')]) 
+        boundVecsCube[0]['uvec'] = array([1,0,0]); boundVecsCube[0]['mag'] = self.rcutoff;
+        boundVecsCube[1]['uvec'] = array([-1,0,0]);boundVecsCube[1]['mag'] = self.rcutoff;
+        boundVecsCube[2]['uvec'] = array([0,1,0]); boundVecsCube[2]['mag'] = self.rcutoff;
+        boundVecsCube[3]['uvec'] = array([0,-1,0]);boundVecsCube[3]['mag'] = self.rcutoff;
+        boundVecsCube[4]['uvec'] = array([0,0,1]); boundVecsCube[4]['mag'] = self.rcutoff;
+        boundVecsCube[5]['uvec'] = array([0,0,-1]);boundVecsCube[5]['mag'] = self.rcutoff;
+        closeVols = []
+        for ic, cpoint in enumerate(closePoints['vec']):
+            #Get the voronoi cell volume
+            boundVecs = boundVecsCube
+            temp = deepcopy(list(closePoints['vec']))
+            temp.pop(ic)
+            for jc,jcpoint in enumerate(temp):
+                vec = (array(jcpoint) - cpoint)/2
+                mag = norm(vec)
+                boundVecs[jc+6]['uvec'] = vec/mag
+                boundVecs[jc+6]['mag'] = mag
+                boundVecs.sort(order = 'mag') 
+            vcell = cell()
+            vcell = getVorCell(boundVecs,vcell,'point',self.eps)
+            closeVols.append(vcell.volume)
+        closeVols2 = []
+        boundVecsCube2 = zeros(len(closePoints) + 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
+        boundVecsCube2[:6] = boundVecsCube
+        for ic, cpoint in enumerate(closePoints['vec']):
+            #Get the voronoi cell volume
+            boundVecs = boundVecsCube2
+            temp = deepcopy(list(closePoints['vec']))
+            temp.pop(ic)
+            for jc,jcpoint in enumerate(temp):
+                vec = (array(jcpoint) - cpoint)/2
+                mag = norm(vec)
+                boundVecs[jc+6]['uvec'] = vec/mag
+                boundVecs[jc+6]['mag'] = mag
+                boundVecs.sort(order = 'mag') 
+            vvec = (vpoint - cpoint)/2
             mag = norm(vec)
-            boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
-            boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
-        boundVecs.sort(order = 'mag') 
-        pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+            boundVecs[jc+6+1]['uvec'] = vec/mag
+            boundVecs[jc+6+1]['mag'] = mag
+            vcell = cell()
+            vcell = getVorCell(boundVecs,vcell,'point',self.eps)
+            closeVols2.append(vcell.volume)    
         
+        
+        return    
         
         
               
@@ -1005,13 +1042,13 @@ class voidWeight():
         cubicLVs0 = cubicLVs
         nShift = 5
 #         
-        nTh = 9
-        nPh = 21
+#         nTh = 9
+#         nPh = 21
         
-#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-#         nTh = 3
-#         nPh = 3
+        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+        nTh = 3
+        nPh = 3
 # #  
 
 
