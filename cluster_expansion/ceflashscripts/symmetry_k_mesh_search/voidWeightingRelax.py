@@ -878,36 +878,51 @@ class voidWeight():
             closePoints[ic]['iIBZ'] = tempiIBZs[ic]
         return closePoints
         
+    def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
+        '''The weights are given by 1/L, where L is the distance**p of the mesh point to the void center'''
+        dweights = zeros(N,dtype=float)
+        Ls = [norm(closePoint-vpoint)**self.vweightPower for closePoint in closePoints['vec']]
+        for i in range(N):
+            dweights[i] = 1/Ls[i]   
+        return dweights/sum(dweights) 
+
+    
 #     def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
 #         '''
-#         The weights are given by 1/L, where L is the distance of the mesh point to the void center'''
+#         The weights are the given by the distances (Ls) from
+#         the origin to the corners of a polygon formed by the N points. Inital weight
+#         of the point i: the sum of all the other Ls besides i. 
+#         '''
 #         dweights = zeros(N,dtype=float)
 #         Ls = [norm(closePoint-vpoint)**self.vweightPower for closePoint in closePoints['vec']]
 #         if len(dweights) == 1:
 #             return [1.0]
 #         else:
 #             for i in range(N):
-#                 dweights[i] = 1/Ls[i]   
-#             return dweights/sum(dweights) 
+#                 if i<N-1:
+#                     dweights[i] = sum(Ls[:i] + Ls[i+1:])
+#                 else:
+#                     dweights[i] = sum(Ls[:i])
+#             return dweights/(N-1)/sum(Ls) 
 
-    
-    def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
-        '''
-        The weights are the given by the distances (Ls) from
-        the origin to the corners of a polygon formed by the N points. Inital weight
-        of the point i: the sum of all the other Ls besides i. 
-        '''
-        dweights = zeros(N,dtype=float)
-        Ls = [norm(closePoint-vpoint)**self.vweightPower for closePoint in closePoints['vec']]
-        if len(dweights) == 1:
-            return [1.0]
-        else:
-            for i in range(N):
-                if i<N-1:
-                    dweights[i] = sum(Ls[:i] + Ls[i+1:])
-                else:
-                    dweights[i] = sum(Ls[:i])
-            return dweights/(N-1)/sum(Ls) 
+    def distrVoidWeightsNatNeigh(self,N,vpoint,closePoints):
+        '''Use natural neighbor interpolation (see wikipedia)
+        1.  Calculate the vorcell volumes of the closePoints bounded by a cube
+        of size 2*rcutoff
+        2. Add the vpoint to the list and again calculate the vcell volumes.  
+        Find losses of each of the closePoint vcell volumes.  These are the weights'''
+        boundVecs = zeros(len(closePoints)+ 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
+        boundVecs[0][uvec] = array([1,0,0]);boundVecs[0][mag] = self.rcutoff;
+        for j, jpoint in enumerate(neighs):
+            vec = (jpoint - point)/2
+            mag = norm(vec)
+            boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
+            boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
+        boundVecs.sort(order = 'mag') 
+        pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+        
+        
+        
               
     def prepMP(self,kpoint):
         mpCell = deepcopy(self.MP)

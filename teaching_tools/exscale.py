@@ -39,7 +39,7 @@ maxscore = amax(data2['exscore'])
 for i,line in enumerate(data2['exscore']):
     oldscore = data2[i]['exscore']
     temp = oldscore*100/maxscore 
-    data2[i]['newscore'] = temp + ptsAdd *(tanh((100.0-temp)/wtanh))
+    data2[i]['newscore'] = temp + ptsAdd *(tanh((100.0-temp)/wtanh)) * (tanh((temp-0.0)/wtanh))
     print data[i]['name'] , data2[i]['exscore'], data2[i]['newscore']
 print 'Old max:', maxscore
 print 'Old min:', minscore

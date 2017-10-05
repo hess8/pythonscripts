@@ -345,7 +345,7 @@ Silicon:
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
     params5 =     [ 4.0   ]  #rvCutoff
-    params6 =     [ 3.0 ]  #vwPower
+    params6 =     [ 1,1.5,2.0,2.5,4.0,5.0,6.0]  #vwPower
     params7 =     [ 3.0 ]   #wallPower
     params8 =     [ 1 ]   #relax (boolean)
     params9 =     [ 6.0 ]  #interPower
