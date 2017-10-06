@@ -405,7 +405,7 @@ def getBoundsFacets(cell,eps,rpacking = None):
     return cell
 
 def shiftPlane(u,ro,pvec,eps):
-    '''When changing to a new origin by adding a constant shift pvec to each position in the cell,
+    '''When changing to a new origin by **adding a constant shift pvec** to each position in the cell,
     the planes (which were defined vs a point in the cell, perhaps its center), will have 
     a new distance ro from the new origin and a possibly flipped u vector'''
     dup = dot(u,pvec)
@@ -912,7 +912,7 @@ class voidWeight():
         of size 2*rcutoff
         2. Add the vpoint to the list and again calculate the vcell volumes.  
         Find losses of each of the closePoint vcell volumes.  These are the weights'''
-        cubemax = self.rcutoff * self.rpacking
+        cubemax = self.rcutoff *self.rpacking
         boundVecsCube = zeros(len(closePoints) + 6 - 1,dtype = [('uvec', '3float'),('mag', 'float')]) 
         boundVecsCube[0]['uvec'] = array([1,0,0]); boundVecsCube[0]['mag'] = cubemax
         boundVecsCube[1]['uvec'] = array([-1,0,0]);boundVecsCube[1]['mag'] = cubemax
@@ -921,9 +921,12 @@ class voidWeight():
         boundVecsCube[4]['uvec'] = array([0,0,1]); boundVecsCube[4]['mag'] = cubemax
         boundVecsCube[5]['uvec'] = array([0,0,-1]);boundVecsCube[5]['mag'] = cubemax
         closeVols = []
+        boundVecs = boundVecsCube
         for ic, cpoint in enumerate(closePoints['vec']):
             #Get the voronoi cell volume
-            boundVecs = boundVecsCube
+            for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
+                ro = boundVecsCube[ip]['mag']
+                boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,-(cpoint-vpoint),self.eps)
             temp = deepcopy(list(closePoints['vec']))
             temp.pop(ic)
             for jc,jcpoint in enumerate(temp):
@@ -938,11 +941,12 @@ class voidWeight():
         if not areEqual(sum(closeVols),(2*cubemax)**3,self.volCheck*(2*cubemax)**3):
             sys.exit('Stop: closePoints vor cells volume {} does not equal the cube volume {}'.format(sum(closeVols),(2*cubemax)**3))        
         closeVols2 = []
-        boundVecsCube2 = zeros(len(closePoints) + 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
-        boundVecsCube2[:6] = boundVecsCube[:6]
+        boundVecs = zeros(len(closePoints) + 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
         for ic, cpoint in enumerate(closePoints['vec']):
             #Get the voronoi cell volume
-            boundVecs = boundVecsCube2
+            for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
+                ro = boundVecsCube[ip]['mag']
+                boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,-(cpoint-vpoint),self.eps)
             temp = deepcopy(list(closePoints['vec']))
             temp.pop(ic)
             for jc,jcpoint in enumerate(temp):
