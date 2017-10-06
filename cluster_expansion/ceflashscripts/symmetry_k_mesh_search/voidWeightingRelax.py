@@ -921,6 +921,7 @@ class voidWeight():
         boundVecsCube[4]['uvec'] = array([0,0,1]); boundVecsCube[4]['mag'] = cubemax
         boundVecsCube[5]['uvec'] = array([0,0,-1]);boundVecsCube[5]['mag'] = cubemax
         closeVols = []
+        closeVols2 = []
         boundVecs = deepcopy(boundVecsCube)
         for ic, cpoint in enumerate(closePoints['vec']):
             #Get the voronoi cell volume
@@ -938,30 +939,35 @@ class voidWeight():
             vcell = cell()
             vcell = getVorCell(boundVecs,vcell,'point',self.eps)
             closeVols.append(vcell.volume)
+            #cut the cell with the new half-distance plane to vpoint
+            vvec = (vpoint - cpoint)/2
+            mag = norm(vvec)
+            uvec = vvec/mag
+            vcell2,dummy,dummy = self.cutCell(uvec,mag,vcell,self.eps)
+            closeVols2.append(convexH(vcell2.fpoints).volume)
         if not areEqual(sum(closeVols),(2*cubemax)**3,self.volCheck*(2*cubemax)**3):
             sys.exit('Stop: closePoints vor cells volume {} does not equal the cube volume {}'.format(sum(closeVols),(2*cubemax)**3))        
-        closeVols2 = []
-        boundVecs = zeros(len(closePoints) + 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
-        for ic, cpoint in enumerate(closePoints['vec']):
-            #Get the voronoi cell volume
-            for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
-                ro = boundVecsCube[ip]['mag']
-                boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,-(cpoint-vpoint),self.eps)
-            temp = deepcopy(list(closePoints['vec']))
-            temp.pop(ic)
-            for jc,jcpoint in enumerate(temp):
-                vec = (array(jcpoint) - cpoint)/2
-                mag = norm(vec)
-                boundVecs[jc+6]['uvec'] = vec/mag
-                boundVecs[jc+6]['mag'] = mag
-                boundVecs.sort(order = 'mag') 
-            vvec = (vpoint - cpoint)/2
-            mag = norm(vec)
-            boundVecs[jc+6+1]['uvec'] = vec/mag
-            boundVecs[jc+6+1]['mag'] = mag
-            vcell = cell()
-            vcell = getVorCell(boundVecs,vcell,'point',self.eps)
-            closeVols2.append(vcell.volume)
+#         boundVecs = zeros(len(closePoints) + 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
+#         for ic, cpoint in enumerate(closePoints['vec']):
+#             #Get the voronoi cell volume
+#             for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
+#                 ro = boundVecsCube[ip]['mag']
+#                 boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,-(cpoint-vpoint),self.eps)
+#             otherCpoints = deepcopy(list(closePoints['vec']))
+#             otherCpoints.pop(ic)
+#             for jc,jcpoint in enumerate(otherCpoints):
+#                 vec = (array(jcpoint) - cpoint)/2
+#                 mag = norm(vec)
+#                 boundVecs[jc+6]['uvec'] = vec/mag
+#                 boundVecs[jc+6]['mag'] = mag 
+#             vvec = (vpoint - cpoint)/2
+#             mag = norm(vvec)
+#             boundVecs[jc+6+1]['uvec'] = vvec/mag
+#             boundVecs[jc+6+1]['mag'] = mag
+#             boundVecs.sort(order = 'mag')
+#             vcell = cell()
+#             vcell = getVorCell(boundVecs,vcell,'point',self.eps)
+#             closeVols2.append(vcell.volume)
         dVols = []
         for ic in range(len(closePoints['vec'])):  
             dV = closeVols[ic] - array(closeVols2)[ic] 
@@ -972,7 +978,7 @@ class voidWeight():
             else:
                 sys.exit('Stop: dVols {} has negative element: {}'.format(ic,dV))
         if not areEqual(sum(dVols),self.voids.volumes[iv],self.volCheck*self.voids.volumes[iv]):
-            sys.exit('Stop: dVols total volume, {} is different from void volume{}'.format(sum(dVols),self.voids.volumes[iv]))
+            sys.exit('Stop: dVols total volume, {}, is different from void volume {}'.format(sum(dVols),self.voids.volumes[iv]))
         return  dVols/sum(dVols) 
     
     def prepMP(self,kpoint):
