@@ -950,27 +950,6 @@ class voidWeight():
                 closeVols2.append(convexH(vcell2.fpoints).volume)
         if not areEqual(sum(closeVols),(2*cubemax)**3,self.volCheck*(2*cubemax)**3):
             sys.exit('Stop: closePoints vor cells volume {} does not equal the cube volume {}'.format(sum(closeVols),(2*cubemax)**3))        
-#         boundVecs = zeros(len(closePoints) + 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
-#         for ic, cpoint in enumerate(closePoints['vec']):
-#             #Get the voronoi cell volume
-#             for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
-#                 ro = boundVecsCube[ip]['mag']
-#                 boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,-(cpoint-vpoint),self.eps)
-#             otherCpoints = deepcopy(list(closePoints['vec']))
-#             otherCpoints.pop(ic)
-#             for jc,jcpoint in enumerate(otherCpoints):
-#                 vec = (array(jcpoint) - cpoint)/2
-#                 mag = norm(vec)
-#                 boundVecs[jc+6]['uvec'] = vec/mag
-#                 boundVecs[jc+6]['mag'] = mag 
-#             vvec = (vpoint - cpoint)/2
-#             mag = norm(vvec)
-#             boundVecs[jc+6+1]['uvec'] = vvec/mag
-#             boundVecs[jc+6+1]['mag'] = mag
-#             boundVecs.sort(order = 'mag')
-#             vcell = cell()
-#             vcell = getVorCell(boundVecs,vcell,'point',self.eps)
-#             closeVols2.append(vcell.volume)
         dVols = []
         for ic in range(len(closePoints['vec'])):  
             dV = closeVols[ic] - array(closeVols2)[ic] 
@@ -980,9 +959,9 @@ class voidWeight():
                 dVols.append(0.0)
             else:
                 sys.exit('Stop: dVols {} has negative element: {}'.format(ic,dV))
-        '''Note: the dVols do not equal the void volume.  They are simply a method for weighting the (smaller) void volume'''
-#         if not areEqual(sum(dVols),self.voids.volumes[iv],self.volCheck*self.voids.volumes[iv]):
-#             sys.exit('Stop: dVols total volume, {}, is different from void volume {}'.format(sum(dVols),self.voids.volumes[iv]))
+        '''Note: the dVols do not equal the void volume.  They are simply a method for weighting the (smaller) void volume.
+        They should equal the volume of a vornoi cell centered at the void point'''
+
         return  dVols/sum(dVols) 
     
     def prepMP(self,kpoint):
@@ -1066,13 +1045,13 @@ class voidWeight():
         cubicLVs0 = cubicLVs
         nShift = 5
 #         
-#         nTh = 9
-#         nPh = 21
+        nTh = 9
+        nPh = 21
 
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-        nTh = 3
-        nPh = 3
+#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+#         nTh = 3
+#         nPh = 3
  
         shiftDiv = 0.5*sqrt(3)/float(nShift)
         thDiv = 90/float(nTh) #deg
