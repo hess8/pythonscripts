@@ -535,9 +535,10 @@ class voidWeight():
         writefile(['nops: {}\n'.format(self.nops),\
                    'IBZvolCut: {}\n'.format(self.IBZvolCut),\
                    'IBZvol: {}\n'.format(self.IBZ.volume)],'sym.out')
-    def shiftCell(self,cell,shiftVec):
+    def shiftCell(self,cell0,shiftVec):
         '''Returns cell points with shiftVec added, and the bounds are shifted
         as well.'''
+        cell = deepcopy(cell0)
         temp = [[],[]]
         for ip,uvec in enumerate(cell.bounds[0]):
             uNew,roNew = shiftPlane(uvec,cell.bounds[1][ip],shiftVec,self.eps)
@@ -634,8 +635,8 @@ class voidWeight():
             allMPfacets.append(pointCell.facets)
             self.IBZ.vorVols.append(pointCell.volume)
             self.IBZ.weights.append(pointCell.volume)
-        self.facetsManyFacetsMathFile(self.IBZ,allMPfacets,'IBZmeshAfterVoidCuts')
-        self.facetsManyFacetsMathFile(self.IBZ,allVoidsFacets,'allVoids')             
+        self.manyFacetsMathFile(self.IBZ,allMPfacets,'IBZmeshAfterVoidCuts')
+        self.manyFacetsMathFile(self.IBZ,allVoidsFacets,'allVoids')             
         return
 
     def weightPoints(self,eps):
@@ -695,11 +696,11 @@ class voidWeight():
                         d = ro - dot(uvec,fpoint)
                         if d < self.rmaxMP:
                             cut = True                                     
-                            ibzMP,dummy1,dummy2 = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
+                            ibzMP,allRemoved,bordersFacet  = self.cutCell(uvec,ro,ibzMP,eps) # we always keep the part that is "inside", opposite u
                 allMPfacets.append(ibzMP.facets)
                 self.IBZ.vorVols.append(ibzMP.volume)
                 self.IBZ.weights.append(ibzMP.volume)               
-        self.facetsManyFacetsMathFile(self.IBZ,allMPfacets,'IBZMesh')
+        self.manyFacetsMathFile(self.IBZ,allMPfacets,'IBZMesh')
         vMPs = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
         meanV = mean(self.IBZ.vorVols)
@@ -738,7 +739,7 @@ class voidWeight():
                                 ro = self.IBZ.bounds[1][iplane]
                                 d = ro - dot(uvec,fpoint)
                                 if d < self.rmaxMP:                                    
-                                    joMP,dummy1,dummy2 = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u                 
+                                    joMP,allRemoved,bordersFacet = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u                 
         #                             print 'Surf point vol', point, joMP.volume
                         if joMP.volume > self.eps**3:
                             self.voids.facets.append(joMP.facets)
@@ -750,7 +751,7 @@ class voidWeight():
             print 'Vor vols',vMPs
             print 'Void vols',vVoids
             print 'Total volume Vor cells plus voids:',vMPs+vVoids,'vs IBZ volume', self.IBZ.volume 
-            self.facetsManyFacetsMathFile(self.IBZ,self.voids.facets,'voids')                     
+            self.manyFacetsMathFile(self.IBZ,self.voids.facets,'voids')                     
             if not areEqual(vMPs + vVoids, self.IBZ.volume, self.volCheck*self.IBZ.volume):
                 sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
             #find distances of each void point to IBZ mesh points and their symmetry partners.    
@@ -924,27 +925,29 @@ class voidWeight():
         closeVols2 = []
         boundVecs = deepcopy(boundVecsCube)
         for ic, cpoint in enumerate(closePoints['vec']):
-            #Get the voronoi cell volume
-            for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
-                ro = boundVecsCube[ip]['mag']
-                boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,-(cpoint-vpoint),self.eps)
-            otherCpoints = deepcopy(list(closePoints['vec']))
-            otherCpoints.pop(ic)
-            for jc,jcpoint in enumerate(otherCpoints):
-                vec = (array(jcpoint) - cpoint)/2
-                mag = norm(vec)
-                boundVecs[jc+6]['uvec'] = vec/mag
-                boundVecs[jc+6]['mag'] = mag
-            boundVecs.sort(order = 'mag') 
-            vcell = cell()
-            vcell = getVorCell(boundVecs,vcell,'point',self.eps)
-            closeVols.append(vcell.volume)
-            #cut the cell with the new half-distance plane to vpoint
-            vvec = (vpoint - cpoint)/2
-            mag = norm(vvec)
-            uvec = vvec/mag
-            vcell2,dummy,dummy = self.cutCell(uvec,mag,vcell,self.eps)
-            closeVols2.append(convexH(vcell2.fpoints).volume)
+                #Get the voronoi cell volume
+                for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
+                    ro = boundVecsCube[ip]['mag']
+                    boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,-(cpoint-vpoint),self.eps)
+                otherCpoints = deepcopy(list(closePoints['vec']))
+                otherCpoints.pop(ic)
+                for jc,jcpoint in enumerate(otherCpoints):
+                    vec = (array(jcpoint) - cpoint)/2
+                    mag = norm(vec)
+                    boundVecs[jc+6]['uvec'] = vec/mag
+                    boundVecs[jc+6]['mag'] = mag
+                boundVecs.sort(order = 'mag') 
+                vcell = cell()
+                vcell = getVorCell(boundVecs,vcell,'point',self.eps)
+                closeVols.append(vcell.volume)
+                #cut the cell with the new half-distance plane to vpoint
+                vvec = (vpoint - cpoint)/2
+                mag = norm(vvec)
+                uvec = vvec/mag
+                self.manyFacetsMathFile(self.IBZ,[self.shiftCell(deepcopy(vcell),cpoint).facets],'v{}cp{}vor'.format(iv,ic))
+                vcell2,allRemoved,bordersFacet = self.cutCell(uvec,mag,vcell,self.eps)
+                self.manyFacetsMathFile(self.IBZ,[self.shiftCell(deepcopy(vcell2),cpoint).facets],'v{}cp{}vor2'.format(iv,ic))
+                closeVols2.append(convexH(vcell2.fpoints).volume)
         if not areEqual(sum(closeVols),(2*cubemax)**3,self.volCheck*(2*cubemax)**3):
             sys.exit('Stop: closePoints vor cells volume {} does not equal the cube volume {}'.format(sum(closeVols),(2*cubemax)**3))        
 #         boundVecs = zeros(len(closePoints) + 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
@@ -977,8 +980,9 @@ class voidWeight():
                 dVols.append(0.0)
             else:
                 sys.exit('Stop: dVols {} has negative element: {}'.format(ic,dV))
-        if not areEqual(sum(dVols),self.voids.volumes[iv],self.volCheck*self.voids.volumes[iv]):
-            sys.exit('Stop: dVols total volume, {}, is different from void volume {}'.format(sum(dVols),self.voids.volumes[iv]))
+        '''Note: the dVols do not equal the void volume.  They are simply a method for weighting the (smaller) void volume'''
+#         if not areEqual(sum(dVols),self.voids.volumes[iv],self.volCheck*self.voids.volumes[iv]):
+#             sys.exit('Stop: dVols total volume, {}, is different from void volume {}'.format(sum(dVols),self.voids.volumes[iv]))
         return  dVols/sum(dVols) 
     
     def prepMP(self,kpoint):
@@ -1478,9 +1482,6 @@ class voidWeight():
                 except:
                      cell.volume = 0                          
         return cell,allRemoved,bordersFacet    
-#         else:
-#             cell.volume = 0
-#             return cell
 
     def getIBZ(self,BZ,eps):
         '''
@@ -1569,7 +1570,7 @@ class voidWeight():
             evec = evecs[:,where(areEqual(evals,-1.0,eps))[0][0]]
             u1 = self.choose111(evec,eps) 
             print 'reflection u1',u1
-            BZ,dummy1,dummy2 = self.cutCell(u1,0.0,BZ,eps)
+            BZ,allRemoved,bordersFacet = self.cutCell(u1,0.0,BZ,eps)
             self.testCuts(BZ,oldBZ,oldIBZvolCut,'refl_{}'.format(iop),eps)
             if areEqual(self.IBZvolCut,self.nops,1e-2): return BZ
         print '\nRotation ops:'
@@ -1601,14 +1602,14 @@ class voidWeight():
                     tempvec = cross(evec,pnto)
                     u1 = self.choose111(tempvec/norm(tempvec),eps)
 #                         print 'u1',u1
-                    BZ,dummy1,dummy2 = self.cutCell(u1,0.0,BZ,eps)
+                    BZ,allRemoved,bordersFacet = self.cutCell(u1,0.0,BZ,eps)
                     tempvec = cross(evec,pntp)/norm(cross(evec,pntp))#2nd cut plane for roation
                     if not allclose(tempvec,-u1,atol=eps): #don't cut again if this is a Pi rotation
                         if abs(dot(tempvec, array([1,1,1])))>eps:
                             u2 = self.choose111(tempvec/norm(tempvec),eps)
                         else:
                             u2 = -dot(op,u1)
-                        BZ,dummy1,dummy2 = self.cutCell(u2,0.0,BZ,eps)                        
+                        BZ,allRemoved,bordersFacet = self.cutCell(u2,0.0,BZ,eps)                        
                     if self.testCuts(BZ,oldBZ,oldIBZvolCut,'rot_{}'.format(iop),eps):
                         break 
             if areEqual(self.IBZvolCut,self.nops,1e-2): return BZ 
@@ -1619,7 +1620,7 @@ class voidWeight():
             anyDups,point1,point2 = makesDups(array([[-1,0,0],[0,-1,0],[0,0,-1]]),BZ,eps)
             if anyDups:
                 u1 = self.choose111(point1/norm(point1),eps)
-                BZ,dummy1,dummy2 = self.cutCell(u1,0.0,BZ,eps)
+                BZ,allRemoved,bordersFacet  = self.cutCell(u1,0.0,BZ,eps)
                 print 'Inversion', u1
                 self.testCuts(BZ,oldBZ,oldIBZvolCut,'inv',eps)
                 BZ.fpoints = flatVecsList(cell.facets,eps)
@@ -1719,7 +1720,7 @@ class voidWeight():
         strOut += '}];\nShow[s,p,q,ImageSize->Large]'
         writefile(strOut,'facetsPointsUnique__{}.m'.format(tag))         
               
-    def facetsManyFacetsMathFile(self,IBZ,allMeshFacets,tag):
+    def manyFacetsMathFile(self,IBZ,allMeshFacets,tag):
         '''Output for Mathematica graphics drawing the facets of each mesh point
         cell, as well as the borders of the IBZ'''
         strOut = ''
