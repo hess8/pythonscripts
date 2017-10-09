@@ -487,7 +487,7 @@ class voidWeight():
         self.eps = eps
 #         self.initSrch = None
 #         self.initSrch = 'target'
-        self.nTargetIBZ = targetNmesh; print 'targets are for IBZ, not full BZ'
+        self.nTargetIBZ = targetNmesh
         self.path = path      
         self.BZ = cell() #instance
         self.BZ.volume = vol
@@ -757,7 +757,7 @@ class voidWeight():
             #find distances of each void point to IBZ mesh points and their symmetry partners.    
             #find symmetry parterns (expandedMesh), which includes themselves
             expandedMesh = []
-            expandediIBZz = []
+            expandediIBZs = []
             for iIBZ,point in enumerate(self.IBZ.mesh):
                 tempPoints = [point]
                 for iop in range(self.nops):
@@ -775,7 +775,7 @@ class voidWeight():
                                     if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking): #not too far away from the BZ boundaries
                                         tempPoints = addVec(transPoint,tempPoints,2.0*self.rpacking) 
                 expandedMesh += tempPoints  
-                expandediIBZz += [iIBZ]*len(tempPoints)             
+                expandediIBZs += [iIBZ]*len(tempPoints)             
                 self.facetsPointsMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None,self.rpacking)
             self.facetsPointsMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None,self.rpacking)
             # Divide the volume of each void and add it to the volume of each mesh point, 
@@ -784,8 +784,8 @@ class voidWeight():
 #             N = self.NvoidClosePoints
             rvCutoff = self.rvCutoff*self.rpacking
             for iv, vpoint in enumerate(self.voids.mesh):
-                closePoints = self.NPointsNearVoid(rvCutoff,vpoint,expandedMesh,expandediIBZz)
-                self.facetsPointsOneUnique(self.IBZ,closePoints[:]['vec'],vpoint,'vclose_{}'.format(iv),'Red')
+                closePoints = self.NPointsNearVoid(rvCutoff,vpoint,expandedMesh,expandediIBZs)
+                self.facetsPointsOneUnique(self.IBZ,closePoints['vec'],vpoint,'vclose_{}'.format(iv),'Red')
 #                 dweights = self.distrVoidWeightsNPoints(len(closePoints),vpoint,closePoints)
                 dweights = self.distrVoidWeightsNatNeigh(len(closePoints),vpoint,iv,closePoints)
                 print iv,'Sum of dweights',sum(dweights),dweights
@@ -812,14 +812,14 @@ class voidWeight():
             print 'As expected with no relaxation or voids, these weights do not sum to integer * nops' 
         return
     
-    def NPointsNearVoid(self,rvCutoff,vpoint,expandedMesh,expandediIBZz):
+    def NPointsNearVoid(self,rvCutoff,vpoint,expandedMesh,expandediIBZs):
         '''Find N expandedMesh points close to the void center than meet criteria'''
 #         allPoints = zeros(l,dtype = [('vec', '3float'),('iIBZ', 'int')])
         mags = [norm(vpoint-vec) for vec in expandedMesh]
         order = argsort(array(mags))
         mags = array(deepcopy(mags))[order]
         expandedMesh = array(deepcopy(expandedMesh))[order]
-        expandediIBZz = array(deepcopy(expandediIBZz))[order]
+        expandediIBZs = array(deepcopy(expandediIBZs))[order]
         
         tempPoints = []
         tempiIBZs = []
@@ -865,13 +865,13 @@ class voidWeight():
                         #choose the point with the lowest energy vs the other points:
             if  mags[iExp] <= rvCutoff:      
                 tempPoints.append(evec)
-                tempiIBZs.append(expandediIBZz[iExp])           
+                tempiIBZs.append(expandediIBZs[iExp])           
                         
                         
 #             if not tooClose:        
 #                 tempPoints.append(evec)
-#                 tempiIBZs.append(expandediIBZz[iExp])
-#                 print 'added point',iExp,'at distance',mags[iExp], 'iIBZ',expandediIBZz[iExp]
+#                 tempiIBZs.append(expandediIBZs[iExp])
+#                 print 'added point',iExp,'at distance',mags[iExp], 'iIBZ',expandediIBZs[iExp]
 #             if len(tempPoints) == N:
 #                 break                 
         closePoints = zeros(len(tempPoints),dtype = [('vec', '3float'),('iIBZ', 'int')]) 
@@ -880,13 +880,13 @@ class voidWeight():
             closePoints[ic]['iIBZ'] = tempiIBZs[ic]
         return closePoints
         
-    def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
-        '''The weights are given by 1/L, where L is the distance**p of the mesh point to the void center'''
-        dweights = zeros(N,dtype=float)
-        Ls = [norm(closePoint-vpoint)**self.vweightPower for closePoint in closePoints['vec']]
-        for i in range(N):
-            dweights[i] = 1/Ls[i]   
-        return dweights/sum(dweights) 
+#     def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
+#         '''The weights are given by 1/L, where L is the distance**p of the mesh point to the void center'''
+#         dweights = zeros(N,dtype=float)
+#         Ls = [norm(closePoint-vpoint)**self.vweightPower for closePoint in closePoints['vec']]
+#         for i in range(N):
+#             dweights[i] = 1/Ls[i]   
+#         return dweights/sum(dweights) 
 
     
 #     def distrVoidWeightsNPoints(self,N,vpoint,closePoints):
@@ -922,68 +922,68 @@ class voidWeight():
         boundVecsCube[4]['uvec'] = array([0,0,1]); boundVecsCube[4]['mag'] = cubemax
         boundVecsCube[5]['uvec'] = array([0,0,-1]);boundVecsCube[5]['mag'] = cubemax
         closeVols = []
-        closeVols2 = []
+#         closeVols2 = []
+        dVols = []
         boundVecs = deepcopy(boundVecsCube)
+        self.manyFacetsMathFile(self.IBZ,[self.voids.vorCells[iv].facets],'void{}'.format(iv))
         for ic, cpoint in enumerate(closePoints['vec']):
                 #Get the voronoi cell volume
                 for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
                     ro = boundVecsCube[ip]['mag']
-                    boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,-(cpoint-vpoint),self.eps)
+                    boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,vpoint-cpoint,self.eps)
                 otherCpoints = deepcopy(list(closePoints['vec']))
                 otherCpoints.pop(ic)
                 for jc,jcpoint in enumerate(otherCpoints):
                     vec = (array(jcpoint) - cpoint)/2
                     mag = norm(vec)
+                    uvec = vec/mag
+#                     print jc, 'uvec',uvec,jcpoint,cpoint
                     boundVecs[jc+6]['uvec'] = vec/mag
                     boundVecs[jc+6]['mag'] = mag
                 boundVecs.sort(order = 'mag') 
-                vcell = cell()
-                vcell = getVorCell(boundVecs,vcell,'point',self.eps)
-                closeVols.append(vcell.volume)
-                #cut the cell with the new half-distance plane to vpoint
-                vvec = (vpoint - cpoint)/2
-                mag = norm(vvec)
-                uvec = vvec/mag
-                self.manyFacetsMathFile(self.IBZ,[self.shiftCell(deepcopy(vcell),cpoint).facets],'v{}cp{}vor'.format(iv,ic))
-                vcell2,allRemoved,bordersFacet = self.cutCell(uvec,mag,vcell,self.eps)
-                self.manyFacetsMathFile(self.IBZ,[self.shiftCell(deepcopy(vcell2),cpoint).facets],'v{}cp{}vor2'.format(iv,ic))
-                closeVols2.append(convexH(vcell2.fpoints).volume)
+                ccell = cell()
+                ccell = getVorCell(boundVecs,ccell,'point',self.eps)
+                closeVols.append(ccell.volume)
+                self.manyFacetsMathFile(self.IBZ,[self.shiftCell(deepcopy(ccell),cpoint).facets],'v{}cp{}vor'.format(iv,ic))
+                #cut the void with the ccell boundaries
+                tempVoid = self.shiftCell(deepcopy(self.voids.vorCells[iv]),-cpoint)
+                
+                
+                #check to see if the void volume overlaps with the closepoint vorcell:
+                overlap = False; allInside = False
+                for point in tempVoid.fpoints:
+                    if not isOutside(point,ccell.bounds,self.eps):
+                        overlap = True
+                        break                   
+                if overlap:
+#                     print 'iv,ic',iv,ic
+#                     self.manyFacetsMathFile(self.IBZ,[self.shiftCell(deepcopy(ccell),cpoint).facets],'v{}cp{}vor'.format(iv,ic))
+                    for ib, uvec in enumerate(ccell.bounds[0]):
+                        ro = ccell.bounds[1][ib]
+                        tempVoid,allRemoved,bordersFacet = self.cutCell(uvec,ro,tempVoid,self.eps)
+                    if len(tempVoid.facets)>3:
+                        dVols.append(convexH(tempVoid.fpoints).volume)
+                        self.manyFacetsMathFile(self.IBZ,[tempVoid.facets],'tempVoid2')  
+                    else:
+                        dVols.append(0.0)               
+#                     closeVols2.append(convexH(ccell2.fpoints).volume)
+                else:
+                    dVols.append(0.0)
+#                     closeVols2.append(ccell.volume)
         if not areEqual(sum(closeVols),(2*cubemax)**3,self.volCheck*(2*cubemax)**3):
             sys.exit('Stop: closePoints vor cells volume {} does not equal the cube volume {}'.format(sum(closeVols),(2*cubemax)**3))        
-#         boundVecs = zeros(len(closePoints) + 6,dtype = [('uvec', '3float'),('mag', 'float')]) 
-#         for ic, cpoint in enumerate(closePoints['vec']):
-#             #Get the voronoi cell volume
-#             for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
-#                 ro = boundVecsCube[ip]['mag']
-#                 boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,-(cpoint-vpoint),self.eps)
-#             otherCpoints = deepcopy(list(closePoints['vec']))
-#             otherCpoints.pop(ic)
-#             for jc,jcpoint in enumerate(otherCpoints):
-#                 vec = (array(jcpoint) - cpoint)/2
-#                 mag = norm(vec)
-#                 boundVecs[jc+6]['uvec'] = vec/mag
-#                 boundVecs[jc+6]['mag'] = mag 
-#             vvec = (vpoint - cpoint)/2
-#             mag = norm(vvec)
-#             boundVecs[jc+6+1]['uvec'] = vvec/mag
-#             boundVecs[jc+6+1]['mag'] = mag
-#             boundVecs.sort(order = 'mag')
-#             vcell = cell()
-#             vcell = getVorCell(boundVecs,vcell,'point',self.eps)
-#             closeVols2.append(vcell.volume)
-        dVols = []
-        for ic in range(len(closePoints['vec'])):  
-            dV = closeVols[ic] - array(closeVols2)[ic] 
-            if dV > 0: 
-                dVols.append(dV)
-            elif dV > 0 - self.eps:
-                dVols.append(0.0)
-            else:
-                sys.exit('Stop: dVols {} has negative element: {}'.format(ic,dV))
-        '''Note: the dVols do not equal the void volume.  They are simply a method for weighting the (smaller) void volume'''
-#         if not areEqual(sum(dVols),self.voids.volumes[iv],self.volCheck*self.voids.volumes[iv]):
-#             sys.exit('Stop: dVols total volume, {}, is different from void volume {}'.format(sum(dVols),self.voids.volumes[iv]))
-        return  dVols/sum(dVols) 
+       
+#         for ic in range(len(closePoints['vec'])):  
+#             dV = closeVols[ic] - array(closeVols2)[ic] 
+#             if dV > 0: 
+#                 dVols.append(dV)
+#             elif dV > 0 - self.eps:
+#                 dVols.append(0.0)
+#             else:
+#                 sys.exit('Stop: dVols {} has negative element: {}'.format(ic,dV))
+        if not areEqual(sum(dVols),self.voids.volumes[iv],self.volCheck*self.voids.volumes[iv]):
+            sys.exit('Stop: dVols total volume, {}, is different from void volume {}'.format(sum(dVols),self.voids.volumes[iv]))
+        return  array(dVols)/sum(dVols) 
     
     def prepMP(self,kpoint):
         mpCell = deepcopy(self.MP)
