@@ -358,7 +358,7 @@ Silicon:
         relax    +  voids: 1.40 [ 0.5  1.   2.5 -1.  -1.   4.   3.   3.   1.   6.   0.5  0. ] avg nDone 15.0  (but only with 3x3 search: else 1.66)
                            1.49 [ 0.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0. ] avg nDone 19.0  with fine angle search
 
-       All metals 10/8/17: 1.72 [ 0.5  1.   3.  -1.  -1.   4.  -1.   3.   1.   6.   0.5  0. ] avg nDone 13.9885057471 (only 20 min run), with n omink reduction
+       All metals 10/8/17: 1.72 [ 0.5  1.   3.  -1.  -1.   4.  -1.   3.   1.   6.   0.5  0. ] avg nDone 13.9885057471 (only 20 min run), with no mink reduction
         '''
         
 #           cost for set 0:   1.46 [ 0.5  1.   2.5 -1.  -1.   3.   1.   3.   1.   6.   0.5  0. ] avg nDone 16.0        
