@@ -338,7 +338,7 @@ Silicon:
 #     params11 =    [ 0.0 ]  #wallOffset
 # # 
     params0 =     [ 0.5 ]   #wallClose
-    params1 =     [ 1 ]   #useVoids
+    params1 =     [ 0 ]   #useVoids
     params2 =     [ 3.0 ]   #rcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar

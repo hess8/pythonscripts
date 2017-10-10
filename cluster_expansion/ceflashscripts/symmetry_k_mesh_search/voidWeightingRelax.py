@@ -470,7 +470,6 @@ class voidWeight():
 #         print 'method',method
         vol = abs(det(self.B))
         IBZvol = vol/float(self.nops)
-#         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidClosePoints','vweightPower']
         self.wallClose = float(params[0])
@@ -490,7 +489,8 @@ class voidWeight():
             self.interFactor = 1.0        
         self.df = 1.00 * self.ravg #inter-point force scale distance
         self.dw = 0.5 * self.df        
-        self.initSrch = 'lowE'
+#         self.initSrch = 'lowE'
+        self.initSrch = None
         eps = self.ravg/300
         self.eps = eps
 #         self.initSrch = None
@@ -520,7 +520,7 @@ class voidWeight():
             print 'Elapsed time:{:8.3f}'.format(endTime-startTime)
             return OK,self.nops
         else: 
-            print 'Limiting nK to {},{}'.format(self.nKmin,self.nKmax)
+            print 'Stop: {} is outside of nK limits of {},{}'.format(len(self.IBZ.mesh),self.nKmin,self.nKmax)
             OK = False
             endTime = timer()
             print 'Elapsed time:{:8.3f}'.format(endTime-startTime)
@@ -932,7 +932,8 @@ class voidWeight():
         closeVols = []
         closeVols2 = []
         boundVecs = deepcopy(boundVecsCube)
-        for ic, cpoint in enumerate(closePoints['vec']):
+        allFacets = []
+        for ic, cpoint in enumerate(closePoints['vec']):                
                 #Get the voronoi cell volume
                 for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
                     ro = boundVecsCube[ip]['mag']
@@ -956,6 +957,8 @@ class voidWeight():
                 vcell2,allRemoved,bordersFacet = self.cutCell(uvec,mag,vcell,self.eps)
                 self.manyFacetsMathFile(self.IBZ,[self.shiftCell(deepcopy(vcell2),cpoint).facets],'v{}cp{}vor2'.format(iv,ic))
                 closeVols2.append(convexH(vcell2.fpoints).volume)
+                allFacets.append(self.shiftCell(deepcopy(vcell2),cpoint).facets)
+        self.manyFacetsMathFile(self.IBZ,allFacets,'cpointsCut_v{}'.format(iv))
         if not areEqual(sum(closeVols),(2*cubemax)**3,self.volCheck*(2*cubemax)**3):
             sys.exit('Stop: closePoints vor cells volume {} does not equal the cube volume {}'.format(sum(closeVols),(2*cubemax)**3))        
         dVols = []
@@ -1023,22 +1026,21 @@ class voidWeight():
                 array([[1,0,0], [0,cos(theta),-sin(theta)],[0, sin(theta), cos(theta)]]),
                 array([[cos(phi),-sin(phi),0],[sin(phi), cos(phi),0],[0,0,1],]) )
             cubicLVs = dot(Rmat,cubicLVs)
-            if type == 'fcc':    
-                sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
-                         1/2.0*(cubicLVs[:,0]+cubicLVs[:,2]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1])]
-                self.meshPrimLVs = transpose(array(sites[1:]))
-            elif type == 'bcc':
-                sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
-                self.meshPrimLVs = transpose(array([array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
-                            array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
-                            array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]))
-            elif type == 'cub':
-                sites = [array([0, 0 , 0])]
-                self.meshPrimLVs = cubicLVs        
+        if type == 'fcc':    
+            sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
+                     1/2.0*(cubicLVs[:,0]+cubicLVs[:,2]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1])]
+            self.meshPrimLVs = transpose(array(sites[1:]))
+        elif type == 'bcc':
+            sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
+            self.meshPrimLVs = transpose(array([array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
+                        array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
+                        array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]))
+        elif type == 'cub':
+            sites = [array([0, 0 , 0])]
+            self.meshPrimLVs = cubicLVs        
         else:
             shift = array([1,1,1])/8.0 * aKcubConv
-            self.IBZ,self.outPoints = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
-
+            self.IBZ, nInside, self.outPoints = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
 
         MPbraggVecs = getBraggVecs(self.meshPrimLVs)
         self.MP = cell()
@@ -1046,20 +1048,19 @@ class voidWeight():
         self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
         self.rmaxMP = max([norm(point) for point in self.MP.fpoints])
         self.Vsphere = 4/3.0*pi*self.rpacking**3        
-        #Search over shift and rotation to find the most possible points inside
 
     def searchInitMesh(self,cubicLVs,aKcubConv,sites):
         '''Test an entire grid of init values'''
         cubicLVs0 = cubicLVs
         nShift = 5
 #         
-#         nTh = 9
-#         nPh = 21
+        nTh = 9
+        nPh = 21
 
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-        nTh = 3
-        nPh = 3
+#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+#         print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+#         nTh = 3
+#         nPh = 3
  
         shiftDiv = 0.5*sqrt(3)/float(nShift)
         thDiv = 90/float(nTh) #deg
