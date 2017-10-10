@@ -305,8 +305,6 @@ Silicon:
     MPs + void weights with assigning all void weight to three nearest points:
                                 1.81 [ 0.   2.5  1.   0.1] avg nDone 19.0  
     
-    MPs + void weights with 4-d plane fitting 15Sep17, so this is *slightly better* than init search and full voronoi cell volumes, no relaxation
-                              1.74 But some Nks failed with infinite or negative weights!!!!
     1.69 [ 0.   2.5  1.   0.5]] avg nDone 19.0
     
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
@@ -359,6 +357,8 @@ Silicon:
         relax            : 1.50 (but only with 3x3 search: else 1.68)
         relax    +  voids: 1.40 [ 0.5  1.   2.5 -1.  -1.   4.   3.   3.   1.   6.   0.5  0. ] avg nDone 15.0  (but only with 3x3 search: else 1.66)
                            1.49 [ 0.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0. ] avg nDone 19.0  with fine angle search
+
+       All metals 10/8/17: 1.72 [ 0.5  1.   3.  -1.  -1.   4.  -1.   3.   1.   6.   0.5  0. ] avg nDone 13.9885057471 (only 20 min run), with n omink reduction
         '''
         
 #           cost for set 0:   1.46 [ 0.5  1.   2.5 -1.  -1.   3.   1.   3.   1.   6.   0.5  0. ] avg nDone 16.0        

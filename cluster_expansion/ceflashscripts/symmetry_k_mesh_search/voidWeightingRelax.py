@@ -438,21 +438,29 @@ class voidWeight():
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
         startTime = timer()
-        self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4)) 
-        self.A = trimSmall(inv(1/2.0/pi*transpose(self.B)))
-        self.B = trimSmall(2*pi*transpose(inv(self.A)))        
-        plines = readfile('POSCAR')
-        normedLVs = self.A/float(plines[1])
-        plines[2] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,0],normedLVs[1,0],normedLVs[2,0])
-        plines[3] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,1],normedLVs[1,1],normedLVs[2,1])
-        plines[4] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,2],normedLVs[1,2],normedLVs[2,2])
-        os.system('cp POSCAR POSCARpremink')
-        writefile(plines,'POSCAR')
-        temp = deepcopy(aPos)
-        for i in range(len(aPos[0,:])):
-            posC = cartFromDirect(A, aPos[:,i])
-            temp[:,i] = directFromCart(self.A, posC)
-        aPos = temp
+        
+        
+#         self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4)) 
+#         self.A = trimSmall(inv(1/2.0/pi*transpose(self.B)))
+#         self.B = trimSmall(2*pi*transpose(inv(self.A)))       
+#         plines = readfile('POSCAR')
+#         normedLVs = self.A/float(plines[1])
+#         plines[2] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,0],normedLVs[1,0],normedLVs[2,0])
+#         plines[3] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,1],normedLVs[1,1],normedLVs[2,1])
+#         plines[4] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,2],normedLVs[1,2],normedLVs[2,2])
+#         os.system('cp POSCAR POSCARpremink')
+#         writefile(plines,'POSCAR')
+#         temp = deepcopy(aPos)
+#         for i in range(len(aPos[0,:])):
+#             posC = cartFromDirect(A, aPos[:,i])
+#             temp[:,i] = directFromCart(self.A, posC)
+#         aPos = temp
+        
+        self.B = B
+        self.A = A         
+        
+        
+        
         [symopsList, fracsList] = get_spaceGroup(transpose(self.A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
