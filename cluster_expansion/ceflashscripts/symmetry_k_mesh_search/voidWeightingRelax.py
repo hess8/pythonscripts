@@ -482,7 +482,8 @@ class voidWeight():
             self.interFactor = 1.0        
         self.df = 1.00 * self.ravg #inter-point force scale distance
         self.dw = 0.5 * self.df        
-        self.initSrch = 'lowE'
+#         self.initSrch = 'lowE'
+        self.initSrch = None
         eps = self.ravg/300
         self.eps = eps
 #         self.initSrch = None
@@ -1028,32 +1029,14 @@ class voidWeight():
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubic.')
-
-        if self.initSrch is not None:
-            self.IBZ,self.outPoints = self.searchInitMesh(cubicLVs,aKcubConv,sites) 
-            [shift,theta,phi] = self.IBZ.details
-            Rmat = dot(
-                array([[1,0,0], [0,cos(theta),-sin(theta)],[0, sin(theta), cos(theta)]]),
-                array([[cos(phi),-sin(phi),0],[sin(phi), cos(phi),0],[0,0,1],]) )
-            cubicLVs = dot(Rmat,cubicLVs)
-            if type == 'fcc':    
-                sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
-                         1/2.0*(cubicLVs[:,0]+cubicLVs[:,2]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1])]
-                self.meshPrimLVs = transpose(array(sites[1:]))
-            elif type == 'bcc':
-                sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
-                self.meshPrimLVs = transpose(array([array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
-                            array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
-                            array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]))
-            elif type == 'cub':
-                sites = [array([0, 0 , 0])]
-                self.meshPrimLVs = cubicLVs        
-        else:
-            shift = array([1,1,1])/8.0 * aKcubConv
-            self.IBZ,self.outPoints = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
-
-
-        MPbraggVecs = getBraggVecs(self.meshPrimLVs)
+        self.IBZ,self.outPoints = self.searchInitMesh(cubicLVs,type,aKcubConv,sites) 
+        [shift,theta,phi] = self.IBZ.details
+        Rmat = dot(
+            array([[1,0,0], [0,cos(theta),-sin(theta)],[0, sin(theta), cos(theta)]]),
+            array([[cos(phi),-sin(phi),0],[sin(phi), cos(phi),0],[0,0,1],]) )
+        cubicLVs = dot(Rmat,cubicLVs)
+        meshPrimLVs = self.getMeshPrimLVs(cubicLVs,type)
+        MPbraggVecs = getBraggVecs(meshPrimLVs)
         self.MP = cell()
         self.MP.volume = self.IBZ.volume/self.nTargetIBZ
         self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
@@ -1061,26 +1044,46 @@ class voidWeight():
         self.Vsphere = 4/3.0*pi*self.rpacking**3        
         #Search over shift and rotation to find the most possible points inside
 
-    def searchInitMesh(self,cubicLVs,aKcubConv,sites):
-        '''Test an entire grid of init values'''
-        cubicLVs0 = cubicLVs
-        nShift = 5
-#         
-#         nTh = 9
-#         nPh = 21
+    def getMeshPrimLVs(self,cubicLVs,type):
+        if type == 'fcc':    
+            sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
+                     1/2.0*(cubicLVs[:,0]+cubicLVs[:,2]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1])]
+            meshPrimLVs = transpose(array(sites[1:]))
+        elif type == 'bcc':
+            sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
+            meshPrimLVs = transpose(array([array(-1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])),\
+                        array(1/2.0*(cubicLVs[:,0]-cubicLVs[:,1]+cubicLVs[:,2])),\
+                        array(1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]-cubicLVs[:,2]))]))
+        elif type == 'cub':
+            sites = [array([0, 0 , 0])]
+            meshPrimLVs = cubicLVs
+        return meshPrimLVs      
 
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-        print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-        nTh = 3
-        nPh = 3
- 
-        shiftDiv = 0.5*sqrt(3)/float(nShift)
-        thDiv = 90/float(nTh) #deg
-        phDiv = 180/float(nPh)
-        shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(nShift)]
-        thetas = [i*thDiv for i in range(nTh)]
-        phis = [i*phDiv for i in range(nPh)]
-        nKeep = 0
+
+    def searchInitMesh(self,cubicLVs,type,aKcubConv,sites):
+        '''Test an entire grid of init values'''
+        meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
+        if self.initSrch is None:
+            shifts = [array([1,1,1])*self.ravg/8.0]
+            thetas = [0.0]
+            phis = [0.0]
+        else:  
+            nShift = 5
+    #         
+    #         nTh = 9
+    #         nPh = 21
+    
+            print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+            print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+            nTh = 3
+            nPh = 3
+     
+            shiftDiv = 0.5*sqrt(3)/float(nShift)
+            thDiv = 90/float(nTh) #deg
+            phDiv = 180/float(nPh)
+            shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(nShift)]
+            thetas = [i*thDiv for i in range(nTh)]
+            phis = [i*phDiv for i in range(nPh)]
         bestEner = 1e10
         closestLog = 10
         isearch = 0
@@ -1088,7 +1091,6 @@ class voidWeight():
         IBZ = deepcopy(self.IBZ)
         bestIBZ = deepcopy(self.IBZ)
         sites0 = deepcopy(sites)
-
         for shift in shifts:
 #             print 'shift',shift
             for theta in thetas:
@@ -1097,11 +1099,10 @@ class voidWeight():
                     Rmat = dot(
                         array([[1,0,0], [0,cos(theta),-sin(theta)],[0, sin(theta), cos(theta)]]),
                         array([[cos(phi),-sin(phi),0],[sin(phi), cos(phi),0],[0,0,1],]) )
-                      
-                    cubicLVs = dot(Rmat,cubicLVs0)
+                    meshPrimLVs = dot(Rmat,meshPrimLVs0)
                     for i, site in enumerate(sites0):
                         sites[i] = dot(Rmat,site)        
-                    IBZ,nInside,outPoints = self.fillMesh(cubicLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
+                    IBZ,nInside,outPoints = self.fillMesh(meshPrimLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
 #                     self.facetsPointsMathFile(IBZ,IBZ.mesh'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
@@ -1151,7 +1152,7 @@ class voidWeight():
                         besti = isearch
                         print 'Step {}: Nmax {}'.format(isearch,bestN), shift, theta, phi
                     elif not self.initSrch in ['highE','lowE','max']:
-                        closeLog = abs(log(nInside/(self.nTargetIBZ)))
+                        closeLog = abs(log(nInside/float(self.nTargetIBZ)))
                         if closeLog < closestLog:
                             closestLog = closeLog
                             bestOutside = outPoints
@@ -1164,7 +1165,7 @@ class voidWeight():
             print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.nTargetIBZ)
         return bestIBZ,bestOutside
         
-    def fillMesh(self,cubicLVs,IBZ,shift,aKcubConv,sites):
+    def fillMesh(self,meshPrimLVs,IBZ,shift,aKcubConv,sites):
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -1172,7 +1173,7 @@ class voidWeight():
             projs = []
             for point in IBZ.fpoints:
                 shifted = point + shift
-                projs.append(dot(cubicLVs[:,i],shifted)/aKcubConv**2)
+                projs.append(dot(meshPrimLVs[:,i],shifted)/aKcubConv**2)
             intMaxs.append(int(ceil(max(projs)))+2) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
             intMins.append(int(floor(min(projs)))-1)#optimize: Is -1 required?       
         #Create the cubic mesh inside the irreducible BZ
@@ -1183,16 +1184,20 @@ class voidWeight():
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
-                    lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
+                    lvec = i*meshPrimLVs[:,0]+j*meshPrimLVs[:,1]+k*meshPrimLVs[:,2]
                     for site in sites:
                         ik+=1
                         kpoint = lvec + shift + site
+                        
 #                         if isOutside(kpoint,IBZ.bounds,self.eps):
 #                             outPoints.append(kpoint)
 #                         else:
 #                             nInside += 1
 #                             IBZ.mesh.append(kpoint) 
-                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):
+                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking)\
+                        and not among(kpoint,IBZ.mesh,self.eps): #This is a nonprimitive lattice (no among)
+#                         if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):
+                            print 'kpoint',i,j,k,kpoint,lvec, shift, site
                             nInside += 1
                             IBZ.mesh.append(kpoint) 
                         else:
@@ -1244,6 +1249,7 @@ class voidWeight():
         minstep = 0.00000001
         xold = x0
         xnew = x0
+        currPoints = x0.reshape((len(self.IBZ.mesh),3))
         fold,gold = self.enerGrad(xold)
         gnew = gold
         fnew = fold
@@ -1337,7 +1343,9 @@ class voidWeight():
 #            inter-point forces
             for j, rj in enumerate(IBZvecs):
                 if i!=j:
+                    
                     d = norm(ri-rj)
+                    print 'j',j,d,self.df
 #                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
                     self.forces[i] += 1/self.df*interfact*(d/self.df)**(-p)*(ri-rj)/d
                     if j>i: #don't overcount
