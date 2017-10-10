@@ -438,21 +438,29 @@ class voidWeight():
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
         startTime = timer()
-        self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4)) 
-        self.A = trimSmall(inv(1/2.0/pi*transpose(self.B)))
-        self.B = trimSmall(2*pi*transpose(inv(self.A)))        
-        plines = readfile('POSCAR')
-        normedLVs = self.A/float(plines[1])
-        plines[2] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,0],normedLVs[1,0],normedLVs[2,0])
-        plines[3] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,1],normedLVs[1,1],normedLVs[2,1])
-        plines[4] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,2],normedLVs[1,2],normedLVs[2,2])
-        os.system('cp POSCAR POSCARpremink')
-        writefile(plines,'POSCAR')
-        temp = deepcopy(aPos)
-        for i in range(len(aPos[0,:])):
-            posC = cartFromDirect(A, aPos[:,i])
-            temp[:,i] = directFromCart(self.A, posC)
-        aPos = temp
+        
+        
+#         self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4)) 
+#         self.A = trimSmall(inv(1/2.0/pi*transpose(self.B)))
+#         self.B = trimSmall(2*pi*transpose(inv(self.A)))       
+#         plines = readfile('POSCAR')
+#         normedLVs = self.A/float(plines[1])
+#         plines[2] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,0],normedLVs[1,0],normedLVs[2,0])
+#         plines[3] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,1],normedLVs[1,1],normedLVs[2,1])
+#         plines[4] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,2],normedLVs[1,2],normedLVs[2,2])
+#         os.system('cp POSCAR POSCARpremink')
+#         writefile(plines,'POSCAR')
+#         temp = deepcopy(aPos)
+#         for i in range(len(aPos[0,:])):
+#             posC = cartFromDirect(A, aPos[:,i])
+#             temp[:,i] = directFromCart(self.A, posC)
+#         aPos = temp
+        
+        self.B = B
+        self.A = A         
+        
+        
+        
         [symopsList, fracsList] = get_spaceGroup(transpose(self.A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
@@ -462,7 +470,6 @@ class voidWeight():
 #         print 'method',method
         vol = abs(det(self.B))
         IBZvol = vol/float(self.nops)
-#         self.ravg = (vol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
         paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidClosePoints','vweightPower']
         self.wallClose = float(params[0])
@@ -488,7 +495,7 @@ class voidWeight():
         self.eps = eps
 #         self.initSrch = None
 #         self.initSrch = 'target'
-        self.nTargetIBZ = targetNmesh
+        self.nTargetIBZ = targetNmesh; print 'targets are for IBZ, not full BZ'
         self.path = path      
         self.BZ = cell() #instance
         self.BZ.volume = vol
@@ -513,7 +520,7 @@ class voidWeight():
             print 'Elapsed time:{:8.3f}'.format(endTime-startTime)
             return OK,self.nops
         else: 
-            print 'Limiting nK to {},{}'.format(self.nKmin,self.nKmax)
+            print 'Stop: {} is outside of nK limits of {},{}'.format(len(self.IBZ.mesh),self.nKmin,self.nKmax)
             OK = False
             endTime = timer()
             print 'Elapsed time:{:8.3f}'.format(endTime-startTime)
@@ -907,13 +914,69 @@ class voidWeight():
 #                 else:
 #                     dweights[i] = sum(Ls[:i])
 #             return dweights/(N-1)/sum(Ls) 
-
     def distrVoidWeightsNatNeigh(self,N,vpoint,iv,closePoints):
         '''Use natural neighbor interpolation (see Wikipedia)
         1.  Calculate the vorcell volumes of the closePoints bounded by a cube
         of size 2*rcutoff
         2. Add the vpoint to the list and again calculate the vcell volumes.  
         Find losses of each of the closePoint vcell volumes.  These are the weights'''
+        cubemax = self.rvCutoff*self.rpacking
+        boundVecsCube = zeros(len(closePoints) + 6 - 1,dtype = [('uvec', '3float'),('mag', 'float')]) 
+        boundVecsCube[0]['uvec'] = array([1,0,0]); boundVecsCube[0]['mag'] = cubemax
+        boundVecsCube[1]['uvec'] = array([-1,0,0]);boundVecsCube[1]['mag'] = cubemax
+        boundVecsCube[2]['uvec'] = array([0,1,0]); boundVecsCube[2]['mag'] = cubemax
+        boundVecsCube[3]['uvec'] = array([0,-1,0]);boundVecsCube[3]['mag'] = cubemax
+        boundVecsCube[4]['uvec'] = array([0,0,1]); boundVecsCube[4]['mag'] = cubemax
+        boundVecsCube[5]['uvec'] = array([0,0,-1]);boundVecsCube[5]['mag'] = cubemax
+        closeVols = []
+        closeVols2 = []
+        boundVecs = deepcopy(boundVecsCube)
+        allFacets = []
+        for ic, cpoint in enumerate(closePoints['vec']):                
+                #Get the voronoi cell volume
+                for ip,uvec in enumerate(boundVecsCube[:6]['uvec']):
+                    ro = boundVecsCube[ip]['mag']
+                    boundVecs[ip]['uvec'], boundVecs[ip]['mag'] = shiftPlane(uvec,ro,-(cpoint-vpoint),self.eps)
+                otherCpoints = deepcopy(list(closePoints['vec']))
+                otherCpoints.pop(ic)
+                for jc,jcpoint in enumerate(otherCpoints):
+                    vec = (array(jcpoint) - cpoint)/2
+                    mag = norm(vec)
+                    boundVecs[jc+6]['uvec'] = vec/mag
+                    boundVecs[jc+6]['mag'] = mag
+                boundVecs.sort(order = 'mag') 
+                vcell = cell()
+                vcell = getVorCell(boundVecs,vcell,'point',self.eps)
+                closeVols.append(vcell.volume)
+                #cut the cell with the new half-distance plane to vpoint
+                vvec = (vpoint - cpoint)/2
+                mag = norm(vvec)
+                uvec = vvec/mag
+                self.manyFacetsMathFile(self.IBZ,[self.shiftCell(deepcopy(vcell),cpoint).facets],'v{}cp{}vor'.format(iv,ic))
+                vcell2,allRemoved,bordersFacet = self.cutCell(uvec,mag,vcell,self.eps)
+                self.manyFacetsMathFile(self.IBZ,[self.shiftCell(deepcopy(vcell2),cpoint).facets],'v{}cp{}vor2'.format(iv,ic))
+                closeVols2.append(convexH(vcell2.fpoints).volume)
+                allFacets.append(self.shiftCell(deepcopy(vcell2),cpoint).facets)
+        self.manyFacetsMathFile(self.IBZ,allFacets,'cpointsCut_v{}'.format(iv))
+        if not areEqual(sum(closeVols),(2*cubemax)**3,self.volCheck*(2*cubemax)**3):
+            sys.exit('Stop: closePoints vor cells volume {} does not equal the cube volume {}'.format(sum(closeVols),(2*cubemax)**3))        
+        dVols = []
+        for ic in range(len(closePoints['vec'])):  
+            dV = closeVols[ic] - array(closeVols2)[ic] 
+            if dV > 0: 
+                dVols.append(dV)
+            elif dV > 0 - self.eps:
+                dVols.append(0.0)
+            else:
+                sys.exit('Stop: dVols {} has negative element: {}'.format(ic,dV))
+        '''Note: the dVols do not equal the void volume.  They are simply a method for weighting the (smaller) void volume.
+        They should equal the volume of a vornoi cell centered at the void point'''
+
+        return  dVols/sum(dVols) 
+
+
+    def distrVoidWeightsCutVoidsClose(self,N,vpoint,iv,closePoints):
+        '''This version cuts void by all closePoint voronoi cell planes.'''
         cubemax = self.rvCutoff*self.rpacking
         boundVecsCube = zeros(len(closePoints) + 6 - 1,dtype = [('uvec', '3float'),('mag', 'float')]) 
         boundVecsCube[0]['uvec'] = array([1,0,0]); boundVecsCube[0]['mag'] = cubemax
@@ -1343,9 +1406,7 @@ class voidWeight():
 #            inter-point forces
             for j, rj in enumerate(IBZvecs):
                 if i!=j:
-                    
                     d = norm(ri-rj)
-                    print 'j',j,d,self.df
 #                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
                     self.forces[i] += 1/self.df*interfact*(d/self.df)**(-p)*(ri-rj)/d
                     if j>i: #don't overcount
