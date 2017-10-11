@@ -31,7 +31,7 @@ def getVCmesh(dir,targetNmesh,meshtype,params) :
     return statusOK,nops
 
 #script:
-os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP/r0/Si_/bcc_8')
+os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP/r0/Si_/bcc_5')
 
 ntarget = 5
 type = 'bcc'

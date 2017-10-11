@@ -505,9 +505,11 @@ class dynamicPack():
         self.IBZ.weights = []
         for ip,point in enumerate(self.IBZ.mesh):
             print ip,
+            print 'point',point
             pointCell = cell()
             neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
-#             print 'neighLbls',neighLbls
+            for i in range(len(neighs)):
+                print 'neigh',i,neighs[i],neighLbls[i]
             boundVecs = zeros(len(neighs)+ len(self.IBZ.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')]) 
             for iw, u in enumerate(self.IBZ.bounds[0]):    
                 ro = self.IBZ.bounds[1][iw]
@@ -522,7 +524,10 @@ class dynamicPack():
                 boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
                 boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
             boundVecs.sort(order = 'mag') 
+            for i in range(len(boundVecs)):
+                print 'boundVec',i,boundVecs[i]['uvec'],boundVecs[i]['mag']            
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+            print i,'volume',pointCell.volume
             self.IBZ.weights.append(pointCell.volume)
              
             #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
