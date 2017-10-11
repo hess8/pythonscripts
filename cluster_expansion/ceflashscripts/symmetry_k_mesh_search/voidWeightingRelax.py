@@ -669,9 +669,10 @@ class voidWeight():
         allMPfacets = []
 #         surfPoints = []
         self.IBZ.weights = []
-        all
         for ip,point in enumerate(self.IBZ.mesh):
-            print ip,
+            print 'point',ip,point
+        for ip,point in enumerate(self.IBZ.mesh):
+            print; print ip,
             print 'point',point
             if self.relax:
                 pointCell = cell()
