@@ -1446,8 +1446,8 @@ class voidWeight():
                     print '\nri,ro,u, dot(ri,u),d'
                     print ri,ro,u, dot(ri,u), d 
                     sys.exit('Error. Point {} in enerGrad is not in the IBZ.'.format(i+1))
-                fmag = 1/self.dw*wallfact*(d/self.dw)**(-wp)  # Units of 1/length
-                etot += wallfact/abs(-wp+1)*(d/self.dw)**(-wp+1)#dimensionless . Both F and E can't be dimensionless unless we make the positions dimensionless.
+                fmag = wallfact*(d/self.dw)**(-wp)  #dimensionless
+                etot += wallfact*self.dw/abs(-wp+1)*(d/self.dw)**(-wp+1)#Units of length. Both F and E can't be dimensionless unless we make the positions dimensionless.
                 self.forces[i] += -u*fmag
                 self.wallForce[iw] += fmag #since forces are normal to plane, we sum the magnitudesrce',-u*fmag,fmag
             #vertext pull forces
@@ -1460,9 +1460,9 @@ class voidWeight():
                 if i!=j:
                     d = norm(ri-rj)
 #                     print 'Inter d,f', d,interfact*(d/self.df)**(-p)*(ri-rj)/d
-                    self.forces[i] += 1/self.df*interfact*(d/self.df)**(-p)*(ri-rj)/d
+                    self.forces[i] += interfact*(d/self.df)**(-p)*(ri-rj)/d
                     if j>i: #don't overcount
-                        etot += interfact*abs(-p+1)*(d/self.df)**(-p+1) #dimensionless .
+                        etot += interfact*self.df/abs(-p+1)*(d/self.df)**(-p+1)
 #         for i,fac in enumerate(self.facets):
 #             area = convexH(planar3dTo2d(fac,self.eps)).volume  # for 2d problems, the "volume" returned is the area, and the "area" is the perimeter
 #             self.wallPress[i] = self.wallForce[i]/area

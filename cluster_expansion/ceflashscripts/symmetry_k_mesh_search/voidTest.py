@@ -339,17 +339,17 @@ Silicon:
 #     params10 =     [ 0.5,1.0 ]  #wallFactor
 #     params11 =    [ 0.0 ]  #wallOffset
 # #  0.5  1.   3.  -1.  -1.   4.   4.   3.   1.   6.   0.5  0. 
-    params0 =     [ 0 ]   #wallClose
+    params0 =     [ 0.05 ]   #wallClose
     params1 =     [ 0 ]   #useVoids
     params2 =     [ 3.0 ]   #rcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
     params5 =     [ 4.0   ]  #rvCutoff
     params6 =     [ -1 ]  #vwPower
-    params7 =     [ 3.0 ]   #wallPower
+    params7 =     [ 2.0 ]   #wallPower
     params8 =     [ 1 ]   #relax (boolean)
-    params9 =     [ 6.0 ]  #interPower
-    params10 =     [ 0.5 ]  #wallFactor
+    params9 =     [ 5.0 ]  #interPower
+    params10 =     [ 1.3 ]  #wallFactor
     params11 =    [ 0.0 ]  #wallOffset
 
 
@@ -360,6 +360,14 @@ Silicon:
         relax    +  voids: 1.40 [ 0.5  1.   2.5 -1.  -1.   4.   3.   3.   1.   6.   0.5  0. ] avg nDone 15.0  (but only with 3x3 search: else 1.66)
                            1.49 [ 0.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0. ] avg nDone 19.0  with fine angle search
         '''
+ 
+    '''Best Si 1.00:  
+    params0 =     [ 5.0 ] 
+    params1 =     [ 2.0 ]#wallPower
+    params2 =     [ 1.3 ] #wallfactor   
+    params3 =     [ 0.05] #wallClose    
+    params4 =     [ 0.0 ] #wallOffset    
+    params5 =     [ 0.5 ] #dw'''
         
 #           cost for set 0:   1.46 [ 0.5  1.   2.5 -1.  -1.   3.   1.   3.   1.   6.   0.5  0. ] avg nDone 16.0        
                   

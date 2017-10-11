@@ -43,7 +43,7 @@ type = 'bcc'
 paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
 params =         ['0.05',       '0',         '3.0',       '-1',      '-1',       '4.0'   ,  '3.0' ,     '2.0' ,     '1',       '5.0',    '1.3',      '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
 
-'''Best Si:  
+'''Best Si from master branch:  
 params0 =     [ 5.0 ] 
 params1 =     [ 2.0 ]#wallPower
 params2 =     [ 1.3 ] #wallfactor   
