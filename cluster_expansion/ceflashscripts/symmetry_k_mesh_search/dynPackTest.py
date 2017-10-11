@@ -45,7 +45,7 @@ import dynamicPacking7, analyzeNks
 #*************  Settings ***************
 maindir = os.getcwd()
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrec'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
@@ -298,7 +298,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     params0 =     [ 5.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
     params1 =     [ 2.0 ]   #wallPower
     params2 =     [ 1.3 ] #wallfactor
-    params3 =     [ 0.05, 0.1, 0.2,0.5,1.0 ] #wallClose
+    params3 =     [ 0.05] #wallClose
     params4 =     [ 0.0 ] #wallOffset
     params5 =     [ 0.5 ] #dw
     
