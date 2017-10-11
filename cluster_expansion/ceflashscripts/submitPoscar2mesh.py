@@ -41,7 +41,7 @@ ntarget = 5
 type = 'bcc'
 
 paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
-params =         ['0.0',       '1',         '3.0',       '-1',      '-1',       '4.0'   ,  '3.0' ,     '3.0' ,     '1',       '6.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
+params =         ['0.0',       '0',         '3.0',       '-1',      '-1',       '4.0'   ,  '3.0' ,     '3.0' ,     '1',       '6.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
 '''    params0 =     [ 0.5 ]   #wallClose
     params1 =     [ 1 ]   #useVoids
     params2 =     [ 3.0 ]   #rcutoff

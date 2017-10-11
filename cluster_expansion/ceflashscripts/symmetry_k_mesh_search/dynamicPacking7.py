@@ -584,31 +584,31 @@ class dynamicPack():
                     triples.append(triple)
                     break
         #Define basis vectors for cubic lattice:
-#         if len(triples)>0:
-#             print 'At least one triplet of orthogonal plane normals found:',triples[0]
-#             if len(triples)>1: #find the one with most total vector length
-#                 sums = zeros(len(triples))
-#                 for it, triple in enumerate(triples):
-#                     for i in range(3):
-#                         sums[it] += norm(triple[i])
-#                 triples = [triple for (sum1,triple) in sorted(zip(sums,triples),key = lambda x: x[0])] #sorted by lowest sum  
-#             for i in range(3):
-#                 vec = triples[-1][i]
-#                 cubicLVs[:,i] = vec/norm(vec)
-#         elif len(pairs)>0:
-#             print 'At least one pair of orthogonal plane normals found:', pairs[0]
-#             if len(pairs)>1:
-#                 sums = zeros(len(pairs))
-#                 for ip, pair in enumerate(pairs):
-#                     for i in range(2):
-#                         sums[ip] += norm(pairs[i])
-#                 pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
-#             for i in range(2):        
-#                 vec = pairs[-1][i]
-#                 cubicLVs[:,i] = vec/norm(vec)
-#             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
-#         else:
-#             print 'no orthogonal plane normals pairs found.'
+        if len(triples)>0:
+            print 'At least one triplet of orthogonal plane normals found:',triples[0]
+            if len(triples)>1: #find the one with most total vector length
+                sums = zeros(len(triples))
+                for it, triple in enumerate(triples):
+                    for i in range(3):
+                        sums[it] += norm(triple[i])
+                triples = [triple for (sum1,triple) in sorted(zip(sums,triples),key = lambda x: x[0])] #sorted by lowest sum  
+            for i in range(3):
+                vec = triples[-1][i]
+                cubicLVs[:,i] = vec/norm(vec)
+        elif len(pairs)>0:
+            print 'At least one pair of orthogonal plane normals found:', pairs[0]
+            if len(pairs)>1:
+                sums = zeros(len(pairs))
+                for ip, pair in enumerate(pairs):
+                    for i in range(2):
+                        sums[ip] += norm(pairs[i])
+                pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
+            for i in range(2):        
+                vec = pairs[-1][i]
+                cubicLVs[:,i] = vec/norm(vec)
+            cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
+        else:
+            print 'no orthogonal plane normals pairs found.'
         if type == 'fcc':    
             volKcubConv = det(self.B)/self.nTarget*4/float(self.nops)
             aKcubConv = volKcubConv**(1/3.0)

@@ -721,7 +721,7 @@ class voidWeight():
             if not areEqual(vMPs, self.IBZ.volume, self.volCheck*self.IBZ.volume):
                 sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
             else:
-                print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(self.volCheck)  
+                print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume'.format(self.volCheck)  
         else:
             print 'Relative volume in MP Vor cells', -volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
        
@@ -1130,11 +1130,57 @@ class voidWeight():
             shifts = [array([1,1,1])*self.ravg/8.0]
             thetas = [0.0]
             phis = [0.0]
+            #test facet points for orthogonality
+            rs = []
+            pairs = []
+            triples = []
+            uvecs = self.IBZ.bounds[0]
+            for i in range(len(uvecs)):
+                if areEqual(norm(uvecs[i]),0.0,self.eps): break
+                rs.append(norm(uvecs[i]))
+                for j in range(i,len(uvecs)):
+                    if areEqual(norm(uvecs[j]),0.0,self.eps): break
+                    if areEqual(dot(uvecs[i],uvecs[j]),0.0,self.eps):
+                        pairs.append([uvecs[i],uvecs[j]])
+            for ip,pair in enumerate(pairs):
+                for i in range(len(uvecs)):
+                    if areEqual(norm(uvecs[i]),0.0,self.eps): break
+                    if areEqual(dot(pair[0],uvecs[i]),0.0,self.eps) and areEqual(dot(pair[1],uvecs[i]),0.0,self.eps):
+                        triple = deepcopy(pair)
+                        triple.append(uvecs[i])
+                        triples.append(triple)
+                        break
+            #Define basis vectors for cubic lattice:
+            if len(triples)>0:
+                print 'At least one triplet of orthogonal plane normals found:',triples[0]
+                if len(triples)>1: #find the one with most total vector length
+                    sums = zeros(len(triples))
+                    for it, triple in enumerate(triples):
+                        for i in range(3):
+                            sums[it] += norm(triple[i])
+                    triples = [triple for (sum1,triple) in sorted(zip(sums,triples),key = lambda x: x[0])] #sorted by lowest sum  
+                for i in range(3):
+                    vec = triples[-1][i]
+                    cubicLVs[:,i] = vec/norm(vec)*aKcubConv
+            elif len(pairs)>0:
+                print 'At least one pair of orthogonal plane normals found:', pairs[0]
+                if len(pairs)>1:
+                    sums = zeros(len(pairs))
+                    for ip, pair in enumerate(pairs):
+                        for i in range(2):
+                            sums[ip] += norm(pairs[i])
+                    pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
+                for i in range(2):        
+                    vec = pairs[-1][i]
+                    cubicLVs[:,i] = vec/norm(vec)*aKcubConv
+                cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
+            else:
+                print 'no orthogonal plane normals pairs found.'
         else:  
             nShift = 5
     #         
-    #         nTh = 9
-    #         nPh = 21
+#             nTh = 9
+#             nPh = 21
     
             print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
             print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
@@ -1225,7 +1271,7 @@ class voidWeight():
         if self.initSrch == 'max':
             print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
         elif not self.initSrch in ['lowE','max']:
-            print 'nInside {} is closest to adjusted target N {}'.format(bestN,self.nTargetIBZ)
+            print 'nInside {} is closest to target N {}'.format(bestN,self.nTargetIBZ)
         return bestIBZ,bestOutside
         
     def fillMesh(self,meshPrimLVs,IBZ,shift,aKcubConv,sites):
@@ -1260,7 +1306,7 @@ class voidWeight():
                         if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking)\
                         and not among(kpoint,IBZ.mesh,self.eps): #This is a nonprimitive lattice (no among)
 #                         if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):
-                            print 'kpoint',i,j,k,kpoint,lvec, shift, site
+#                             print 'kpoint',i,j,k,kpoint,lvec, shift, site
                             nInside += 1
                             IBZ.mesh.append(kpoint) 
                         else:
