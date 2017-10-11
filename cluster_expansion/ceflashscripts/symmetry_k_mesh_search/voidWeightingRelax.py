@@ -690,9 +690,9 @@ class voidWeight():
                     mag = norm(vec)
                     boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
                     boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
+                boundVecs.sort(order = 'mag') 
                 for i in range(len(boundVecs)):
                     print 'boundVec',i,boundVecs[i]['uvec'],boundVecs[i]['mag']
-                boundVecs.sort(order = 'mag') 
                 pointCell = getVorCell(boundVecs,pointCell,'point',eps)
                 #shift origin of cell points to IBZ origin, and adjust bounds to reflect the change
                 pointCell = self.shiftCell(pointCell,point)
