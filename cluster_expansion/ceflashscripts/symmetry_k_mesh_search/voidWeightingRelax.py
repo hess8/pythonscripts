@@ -1092,7 +1092,7 @@ class voidWeight():
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubic.')
-        self.IBZ,self.outPoints = self.searchInitMesh(cubicLVs,type,aKcubConv,sites) 
+        self.IBZ,self.outPoints,cubicLVs = self.searchInitMesh(cubicLVs,type,aKcubConv,sites) 
         [shift,theta,phi] = self.IBZ.details
         Rmat = dot(
             array([[1,0,0], [0,cos(theta),-sin(theta)],[0, sin(theta), cos(theta)]]),
@@ -1101,8 +1101,10 @@ class voidWeight():
         meshPrimLVs = self.getMeshPrimLVs(cubicLVs,type)
         MPbraggVecs = getBraggVecs(meshPrimLVs)
         self.MP = cell()
-        self.MP.volume = self.IBZ.volume/self.nTargetIBZ
+        MPvolume = self.IBZ.volume/self.nTargetIBZ
         self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
+        if not areEqual(self.MP.volume,MPvolume,eps):
+            sys.exit('Stop.  MP vor cell does not have the correct volume')
         self.rmaxMP = max([norm(point) for point in self.MP.fpoints])
         self.Vsphere = 4/3.0*pi*self.rpacking**3        
         #Search over shift and rotation to find the most possible points inside
@@ -1125,7 +1127,7 @@ class voidWeight():
 
     def searchInitMesh(self,cubicLVs,type,aKcubConv,sites):
         '''Test an entire grid of init values'''
-        meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
+        
         if self.initSrch is None:
             shifts = [array([1,1,1])*self.ravg/8.0]
             thetas = [0.0]
@@ -1161,7 +1163,7 @@ class voidWeight():
                     triples = [triple for (sum1,triple) in sorted(zip(sums,triples),key = lambda x: x[0])] #sorted by lowest sum  
                 for i in range(3):
                     vec = triples[-1][i]
-                    cubicLVs[:,i] = vec/norm(vec)*aKcubConv
+                    cubicLVs[:,i] = vec/norm(vec)
             elif len(pairs)>0:
                 print 'At least one pair of orthogonal plane normals found:', pairs[0]
                 if len(pairs)>1:
@@ -1172,11 +1174,14 @@ class voidWeight():
                     pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
                 for i in range(2):        
                     vec = pairs[-1][i]
-                    cubicLVs[:,i] = vec/norm(vec)*aKcubConv
-                cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
+                    cubicLVs[:,i] = vec/norm(vec)
+                cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])             
             else:
                 print 'no orthogonal plane normals pairs found.'
+            cubicLVs = cubicLVs*aKcubConv
+            meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
         else:  
+            meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
             nShift = 5
     #         
 #             nTh = 9
@@ -1272,7 +1277,7 @@ class voidWeight():
             print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
         elif not self.initSrch in ['lowE','max']:
             print 'nInside {} is closest to target N {}'.format(bestN,self.nTargetIBZ)
-        return bestIBZ,bestOutside
+        return bestIBZ,bestOutside,cubicLVs
         
     def fillMesh(self,meshPrimLVs,IBZ,shift,aKcubConv,sites):
         #Find the extremes in each cubLV direction:
