@@ -300,7 +300,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     params2 =     [ 1.3 ] #wallfactor
     params3 =     [ 0.05] #wallClose
     params4 =     [ 0.0 ] #wallOffset
-    params5 =     [ 0.5 ] #dw
+    params5 =     [ 0.5 ] #dw 
     
 
     '''Si:     1.00 [ 5.    2.    1.3   0.05  0.    0.5 ]] avg nDone 18.0
