@@ -1185,8 +1185,8 @@ class voidWeight():
             meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
             nShift = 5
     #         
-            nTh = 9
-            nPh = 21
+            nTh = 10
+            nPh = 20
     
 #             print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
 #             print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
