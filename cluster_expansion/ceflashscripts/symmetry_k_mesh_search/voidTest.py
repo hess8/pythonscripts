@@ -321,7 +321,7 @@ Silicon:
 # #  
 #     params0 =     [ 4.0,6.0 ]   #['power','wallPower','wallfactor','wallClose','wallOffset','dw' ]
 #     params1 =     [ 2.0,4.0]   #wallPower
-#     params2 =     [ 0.1,0.3,1.0] #wallfactor
+#     params2 =     [ 0.1,0.3,1.0] #wallfactor 
 #     params3 =     [ 0.05] #wallClose
 #     params4 =     [ 0] #wallOffset
 #     params5 =     [0.5, 1.0] #dw   
