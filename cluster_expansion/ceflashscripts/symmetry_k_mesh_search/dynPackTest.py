@@ -45,7 +45,7 @@ import dynamicPacking7, analyzeNks
 #*************  Settings ***************
 maindir = os.getcwd()
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_Sigrid2Sep17'
-maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_lowPrand'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
