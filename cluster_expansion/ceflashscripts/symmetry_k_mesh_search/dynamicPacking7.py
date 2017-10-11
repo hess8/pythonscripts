@@ -350,7 +350,7 @@ def getVorCell(boundPlanesVecs,cell,type,eps):
         #get any intersections between these planes
 #         cell.fpoints = getInterscPoints(cell.bounds,eps)
         checkNext,boundsLabels,cell = newBounds(boundPlanesVecs,boundsLabels,group,cell,type,eps)
-        if type in ['BZ','MP'] and not checkNext: break
+        if type == 'BZ' and not checkNext: break
     cell = getFacetsPoints(cell,eps)
     cell.fpoints = flatVecsList(cell.facets,eps)
     cell.center = sum(cell.fpoints)/len(cell.fpoints)
@@ -412,7 +412,6 @@ class cell():
         self.center = None #body center of cell
         self.mesh = None #centers of each voronoi cell, or kpoints
         self.weights = None
-        self.vorVols = []
     
 class dynamicPack(): 
     ''''''
@@ -447,14 +446,13 @@ class dynamicPack():
 #        self.shift =  array([1,1,1])/8.0 #array([1/10,0,0])
         eps = self.ravg/300
         self.eps = eps
-        self.meshEnergy = 0.0
         self.searchInitFactor = 0.0
         self.initSrch = 'max'
 #         self.initSrch = None
 #         self.initSrch = 'target'
         self.nTarget = int(self.initFactor*targetNmesh)
         self.path = path      
-        print 'Number of desired points in full BZ:', targetNmesh, 'with initial packing', meshtype
+        print 'Number of desired points in full BZ:', targetNmesh
         BZ = cell() #instance
         BZ.volume = vol
         braggVecs = getBraggVecs(self.B)
@@ -506,10 +504,14 @@ class dynamicPack():
         allMPfacets = []
         self.IBZ.weights = []
         for ip,point in enumerate(self.IBZ.mesh):
-            print ip,
+            print 'point',ip,point
+        for ip,point in enumerate(self.IBZ.mesh):
+            print; print ip,
+            print 'point',point
             pointCell = cell()
             neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
-#             print 'neighLbls',neighLbls
+            for i in range(len(neighs)):
+                print 'neigh',i,neighs[i],neighLbls[i]
             boundVecs = zeros(len(neighs)+ len(self.IBZ.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')]) 
             for iw, u in enumerate(self.IBZ.bounds[0]):    
                 ro = self.IBZ.bounds[1][iw]
@@ -524,9 +526,11 @@ class dynamicPack():
                 boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
                 boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
             boundVecs.sort(order = 'mag') 
+            for i in range(len(boundVecs)):
+                print 'boundVec',i,boundVecs[i]['uvec'],boundVecs[i]['mag']
             pointCell = getVorCell(boundVecs,pointCell,'point',eps)
+            print i,'volume',pointCell.volume
             self.IBZ.weights.append(pointCell.volume)
-            self.IBZ.vorVols.append(pointCell.volume)
              
             #For completeness,could update pointCell.center and pointCell.fpoints.  For brevity, we don't do this. 
  
@@ -534,9 +538,9 @@ class dynamicPack():
  
         print
         self.facetsMeshVCMathFile(self.IBZ,allMPfacets)
-        wtot = sum(self.IBZ.vorVols)
-        stdev = std(self.IBZ.vorVols)
-        meanV = mean(self.IBZ.vorVols)
+        wtot = sum(self.IBZ.weights)
+        stdev = std(self.IBZ.weights)
+        meanV = mean(self.IBZ.weights)
         volCheck = 0.1
         volErr = wtot - self.IBZ.volume        
         volErrRel = volErr/self.IBZ.volume
@@ -547,7 +551,8 @@ class dynamicPack():
 #             print 'Total volume of point Vor cells',wtot,'vs IBZ volume', self.IBZ.volume
             sys.exit('Stop: point Voronoi cells do not sum to the IBZ volume.')
         else:
-            print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)  
+            print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume OK'.format(volCheck)
+        self.IBZ.weights = self.IBZ.weights/self.ravg**3 #to scale them to order(1).  
         pf = len(self.IBZ.mesh)*4/3.0*pi*(self.rpacking)**3/self.IBZ.volume
         print 'Packing fraction (can be >1 from points near boundary', pf
         meshDet = open('../meshDetails.csv','a')
@@ -555,7 +560,6 @@ class dynamicPack():
         meshDet.write('{},{},{:6.3f},{:6.3f},{:6.3f}\n'.format(self.nTarget,N,stdev/meanV,self.meshEnergy/float(N),pf))
         meshDet.flush()
         meshDet.close()
-        self.redistrWghts()
         
     def meshInitCubic(self,type,eps):
         '''Add a cubic mesh to the interior, . If any 2 or 3 of the facet planes are 
@@ -584,31 +588,31 @@ class dynamicPack():
                     triples.append(triple)
                     break
         #Define basis vectors for cubic lattice:
-        if len(triples)>0:
-            print 'At least one triplet of orthogonal plane normals found:',triples[0]
-            if len(triples)>1: #find the one with most total vector length
-                sums = zeros(len(triples))
-                for it, triple in enumerate(triples):
-                    for i in range(3):
-                        sums[it] += norm(triple[i])
-                triples = [triple for (sum1,triple) in sorted(zip(sums,triples),key = lambda x: x[0])] #sorted by lowest sum  
-            for i in range(3):
-                vec = triples[-1][i]
-                cubicLVs[:,i] = vec/norm(vec)
-        elif len(pairs)>0:
-            print 'At least one pair of orthogonal plane normals found:', pairs[0]
-            if len(pairs)>1:
-                sums = zeros(len(pairs))
-                for ip, pair in enumerate(pairs):
-                    for i in range(2):
-                        sums[ip] += norm(pairs[i])
-                pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
-            for i in range(2):        
-                vec = pairs[-1][i]
-                cubicLVs[:,i] = vec/norm(vec)
-            cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
-        else:
-            print 'no orthogonal plane normals pairs found.'
+#         if len(triples)>0:
+#             print 'At least one triplet of orthogonal plane normals found:',triples[0]
+#             if len(triples)>1: #find the one with most total vector length
+#                 sums = zeros(len(triples))
+#                 for it, triple in enumerate(triples):
+#                     for i in range(3):
+#                         sums[it] += norm(triple[i])
+#                 triples = [triple for (sum1,triple) in sorted(zip(sums,triples),key = lambda x: x[0])] #sorted by lowest sum  
+#             for i in range(3):
+#                 vec = triples[-1][i]
+#                 cubicLVs[:,i] = vec/norm(vec)
+#         elif len(pairs)>0:
+#             print 'At least one pair of orthogonal plane normals found:', pairs[0]
+#             if len(pairs)>1:
+#                 sums = zeros(len(pairs))
+#                 for ip, pair in enumerate(pairs):
+#                     for i in range(2):
+#                         sums[ip] += norm(pairs[i])
+#                 pairs = [pair for (sum1,pair) in sorted(zip(sums,pairs),key = lambda x: x[0])] #sorted by lowest sum    
+#             for i in range(2):        
+#                 vec = pairs[-1][i]
+#                 cubicLVs[:,i] = vec/norm(vec)
+#             cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])
+#         else:
+#             print 'no orthogonal plane normals pairs found.'
         if type == 'fcc':    
             volKcubConv = det(self.B)/self.nTarget*4/float(self.nops)
             aKcubConv = volKcubConv**(1/3.0)
@@ -638,13 +642,6 @@ class dynamicPack():
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubic.')
-       
-        
-        MPbraggVecs = getBraggVecs(primLVs)
-        MP = cell()
-        MP = getVorCell(MPbraggVecs,MP,'MP',eps)
-        MP.volume = convexH(MP.fpoints).volume
-        self.MPvol = MP.volume 
         if self.initSrch is not None:
             self.IBZ = self.searchNmax(cubicLVs,aKcubConv,sites) 
         else:
@@ -721,6 +718,7 @@ class dynamicPack():
             intMins.append(int(floor(min(projs)))-1)#optimize: Is -1 required?       
         #Create the cubic mesh inside the irreducible BZ
         IBZ.mesh = []
+        IBZ.weights = []
         nInside = 0         
         ik = 0       
         for i in range(intMins[0],intMaxs[0]):
@@ -738,10 +736,9 @@ class dynamicPack():
 
     def dynamic(self,eps):
         ''' '''
-        self.facetsMeshMathFile(self.IBZ,'IBZmeshInit',None) 
-        print 'Relaxation is blocked!!!'
-#         self.relax()
-#         self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
+        self.facetsMeshMathFile(self.IBZ,'IBZmeshInit',None)
+        self.relax()
+        self.facetsMeshMathFile(self.IBZ,'IBZmesh',None)
         return
 
     def relax(self):
