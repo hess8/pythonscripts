@@ -33,29 +33,23 @@ def getVCmesh(dir,targetNmesh,meshtype,params) :
     return statusOK,nops
 #script:
 # os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/10OctRnosearchPerp/r0/Si_/bcc_6')
-os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP/r0/Si_/bcc_6')
+os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP/r0/Si_/bcc_5')
 # os.chdir('/fslhome/bch/cluster_expansion/vcmesh/test/r0/Al_1/bcc_5')
 # os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/28SepRelaxVoidsFine/r2/Si_/bcc_13')
  
-ntarget = 10
+ntarget = 5
 type = 'bcc'
 
 paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
-params =         ['0.0',       '0',         '3.0',       '-1',      '-1',       '4.0'   ,  '3.0' ,     '3.0' ,     '1',       '6.0',       '0.5',       '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
-'''    params0 =     [ 0.5 ]   #wallClose
-    params1 =     [ 1 ]   #useVoids
-    params2 =     [ 3.0 ]   #rcutoff
-    params3 =     [ -1 ]   #tooClose
-    params4 =     [ -1 ]  #tooPlanar
-    params5 =     [ 4.0  ]   #rvCutoff
-    params6 =     [ 2.0]  #vwPower
-    params7 =     [ 3.0 ]   #wallPower
-    params8 =     [ 1 ]   #relax (boolean)
-    params9 =     [ 6.0 ]  #interPower
-    params10 =    [ 0.5 ]  #wallFactor
-    params11 =    [ 0.0 ]  #wallOffset'''
+params =         ['0.05',       '0',         '3.0',       '-1',      '-1',       '4.0'   ,  '3.0' ,     '2.0' ,     '1',       '5.0',    '1.3',      '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
 
-#         1.00   1.00   3.00  -1.00  -1.00   3.00   3.00   3.00   1.00   6.00   0.50   0.00 > out
+'''Best Si:  
+params0 =     [ 5.0 ] 
+params1 =     [ 2.0 ]#wallPower
+params2 =     [ 1.3 ] #wallfactor   
+params3 =     [ 0.05] #wallClose    
+params4 =     [ 0.0 ] #wallOffset    
+params5 =     [ 0.5 ] #dw'''
 
 statusOK,nops = getVCmesh(os.getcwd(),ntarget,type,params) 
 if statusOK:

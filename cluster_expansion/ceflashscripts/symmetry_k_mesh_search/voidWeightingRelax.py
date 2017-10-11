@@ -471,7 +471,7 @@ class voidWeight():
         vol = abs(det(self.B))
         IBZvol = vol/float(self.nops)
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
-        paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar','NvoidClosePoints','vweightPower']
+        paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
         self.wallClose = float(params[0])
         self.useVoids = bool(int(float(params[1])))
         self.rcutoff = float(params[2])
@@ -489,8 +489,8 @@ class voidWeight():
             self.interFactor = 1.0        
         self.df = 1.00 * self.ravg #inter-point force scale distance
         self.dw = 0.5 * self.df        
-#         self.initSrch = 'lowE'
-        self.initSrch = None
+        self.initSrch = 'max'
+#         self.initSrch = None
         eps = self.ravg/300
         self.eps = eps
 #         self.initSrch = None
@@ -1102,6 +1102,7 @@ class voidWeight():
         MPbraggVecs = getBraggVecs(meshPrimLVs)
         self.MP = cell()
         MPvolume = self.IBZ.volume/self.nTargetIBZ
+        self.MP.volume = MPvolume
         self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
         if not areEqual(self.MP.volume,MPvolume,eps):
             sys.exit('Stop.  MP vor cell does not have the correct volume')
@@ -1184,13 +1185,13 @@ class voidWeight():
             meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
             nShift = 5
     #         
-#             nTh = 9
-#             nPh = 21
+            nTh = 9
+            nPh = 21
     
-            print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
-            print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
-            nTh = 3
-            nPh = 3
+#             print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
+#             print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             
+#             nTh = 3
+#             nPh = 3
      
             shiftDiv = 0.5*sqrt(3)/float(nShift)
             thDiv = 90/float(nTh) #deg
