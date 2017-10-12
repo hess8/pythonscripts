@@ -440,24 +440,48 @@ class voidWeight():
         startTime = timer()
         
         
-#         self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4)) 
-#         self.A = trimSmall(inv(1/2.0/pi*transpose(self.B)))
-#         self.B = trimSmall(2*pi*transpose(inv(self.A)))       
-#         plines = readfile('POSCAR')
-#         normedLVs = self.A/float(plines[1])
-#         plines[2] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,0],normedLVs[1,0],normedLVs[2,0])
-#         plines[3] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,1],normedLVs[1,1],normedLVs[2,1])
-#         plines[4] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,2],normedLVs[1,2],normedLVs[2,2])
-#         os.system('cp POSCAR POSCARpremink')
-#         writefile(plines,'POSCAR')
-#         temp = deepcopy(aPos)
-#         for i in range(len(aPos[0,:])):
-#             posC = cartFromDirect(A, aPos[:,i])
-#             temp[:,i] = directFromCart(self.A, posC)
-#         aPos = temp
+        self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4)) 
+        self.A = trimSmall(inv(1/2.0/pi*transpose(self.B)))
+        self.B = trimSmall(2*pi*transpose(inv(self.A))) 
+        print 'original A:\t'; print A 
+        print 'new A:\t';print self.A
+        print 'original B'; print B
+        print 'new B:\t';print self.B
+        print 'original aPos'; print aPos
+        print 'cartesian apos'
+        for i in range(len(aPos[0,:])):
+            posC = cartFromDirect(A, aPos[:,i])
+            print posC        
+              
+        plines = readfile('POSCAR')
+        normedLVs = self.A/float(plines[1])
+        plines[2] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,0],normedLVs[1,0],normedLVs[2,0])
+        plines[3] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,1],normedLVs[1,1],normedLVs[2,1])
+        plines[4] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,2],normedLVs[1,2],normedLVs[2,2])
+        os.system('cp POSCAR POSCARpremink')
         
-        self.B = B
-        self.A = A         
+        if postype.lower()[0] == 'd':
+            temp = deepcopy(aPos)
+            for i in range(len(aPos[0,:])):
+                posC = cartFromDirect(A, aPos[:,i])
+                temp[:,i] = directFromCart(self.A, posC)
+            aPos = temp
+            print 'new aPos'; print aPos
+            print 'check cartesian apos'
+            for i in range(len(aPos[0,:])):
+                print cartFromDirect(A, aPos[:,i])
+        if postype.lower()[0] == 'd': #must rewrite positions in terms of new lattice
+            if plines[5][0].isdigit():
+                ipos = 6
+            else:
+                ipos = 7
+            for i in range(len(aPos[0,:])):
+                plines[ipos + i] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(aPos[0,i],aPos[1,i],aPos[2,i])
+        writefile(plines,'POSCAR')
+        
+        
+#         self.B = B
+#         self.A = A         
         
         
         
