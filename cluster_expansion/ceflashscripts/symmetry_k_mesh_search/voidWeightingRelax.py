@@ -102,6 +102,11 @@ def cartFromDirect(Lvs,dirvec):
     operation'''
     return dot(Lvs, transpose(dirvec))
 
+def orthdef(latt): 
+    '''Orthogonality defect''' #columns as vectors
+    od = norm(latt[:,0])*norm(latt[:,1])*norm(latt[:,2])/det(latt)
+    return abs(od)
+
 def threePlaneIntersect(uRows,mags):  
     '''This routine is for three planes that will intersect at only one point, 
     as borders of facets, as we have for the Voronoi cell boundaries. 
@@ -450,9 +455,14 @@ class voidWeight():
         print 'original aPos'; print aPos
         print 'cartesian apos'
         for i in range(len(aPos[0,:])):
-            posC = cartFromDirect(A, aPos[:,i])
-            print posC        
-              
+            posC = trimSmall(cartFromDirect(A, aPos[:,i]))
+            print posC
+        orthdefect0 = orthdef(B) 
+        orthdefect1 = orthdef(B)
+        print 'orignal orth defect',orthdefect0
+        print 'new orth defect',orthdefect1
+        if  abs(orthdefect1) >  abs(orthdefect0) + 1e-4:
+            sys.exit('Stop: orthogonality defect {} is greater than the original {}'.format(orthdefect0,orthdefec1))   
         plines = readfile('POSCAR')
         normedLVs = self.A/float(plines[1])
         plines[2] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(normedLVs[0,0],normedLVs[1,0],normedLVs[2,0])
@@ -469,8 +479,7 @@ class voidWeight():
             print 'new aPos'; print aPos
             print 'check cartesian apos'
             for i in range(len(aPos[0,:])):
-                print cartFromDirect(A, aPos[:,i])
-        if postype.lower()[0] == 'd': #must rewrite positions in terms of new lattice
+                print trimSmall(cartFromDirect(self.A, aPos[:,i]))
             if plines[5][0].isdigit():
                 ipos = 6
             else:
@@ -478,13 +487,10 @@ class voidWeight():
             for i in range(len(aPos[0,:])):
                 plines[ipos + i] = '{:12.8f} {:12.8f} {:12.8f}\n'.format(aPos[0,i],aPos[1,i],aPos[2,i])
         writefile(plines,'POSCAR')
-        
-        
+
 #         self.B = B
 #         self.A = A         
-        
-        
-        
+    
         [symopsList, fracsList] = get_spaceGroup(transpose(self.A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
@@ -622,11 +628,9 @@ class voidWeight():
             while needsCut:
                 for ifp, fpoint in enumerate(pointCell.fpoints): 
                     d = norm(fpoint-point)
-                    if d > self.rmaxMP and among(fpoint,self.IBZ.fpoints,self.eps): # for "among" test we must have pointCell with origin at IBZ origin. 
+                    if d > self.rmaxMP and among(fpoint,self.IBZ.fpoints,self.eps): # Surface test.  For "among" test we must have pointCell with origin at IBZ origin. 
                         iv += 1
-#                         print 'vertex point',ifp,fpoint,d
-                        if ifp == 0:
-                            'pause'
+                        #don't try to take the shifing out of this loop.
                         pointCell = self.shiftCell(pointCell,-point) # for cutting, we must have pointCell with origin at the point                                                
                         pointCell0 = deepcopy(pointCell)
                         newfpoint = pointCell.fpoints[ifp]                       
@@ -756,36 +760,35 @@ class voidWeight():
                 print 'Point Voronoi cells volumes sum OK to within factor of {} of IBZ volume'.format(self.volCheck)  
         else:
             print 'Relative volume in MP Vor cells', -volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
-       
         if self.useVoids:
-            #find void centers, which are portions of points on the original packing lattice
-    #         that lie outside the IBZ 
+            #find void centers.   
             self.voids = cell()
             self.voids.volume = 0.0
             if self.relax:
                 self.IBZ.weights = []
                 self.IBZ.vorVols = []
                 self.getVoidsRelaxed()
-            else:
+            else: # Because we have a lattice, voids are portions of vorcells whose centers are outside the IBZ
+    #         that lie outside the IBZ
                 for io, point in enumerate(self.outPoints):
                     ds = []
                     for iplane,u in enumerate(self.IBZ.bounds[0]):
                         ro = self.IBZ.bounds[1][iplane]
                         ds.append(dot(u,point) - ro)
                     if min(ds) < 2*self.rmaxMP: #candidate to host an IBZ void: it's "just outside"
-                        joMP = self.prepMP(point) # point just outside the IBZ on the mesh lattice
-                        for fpoint in joMP.fpoints:
+                        justOutsideMP = self.prepMP(point) # point just outside the IBZ on the mesh lattice
+                        for fpoint in justOutsideMP.fpoints:
                             for iplane, uvec in enumerate(self.IBZ.bounds[0]):
                                 ro = self.IBZ.bounds[1][iplane]
                                 d = ro - dot(uvec,fpoint)
                                 if d < self.rmaxMP:                                    
-                                    joMP,allRemoved,bordersFacet = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u                 
-        #                             print 'Surf point vol', point, joMP.volume
-                        if joMP.volume > self.eps**3:
-                            self.voids.facets.append(joMP.facets)
-                            self.voids.volume += joMP.volume
-                            self.voids.volumes.append(joMP.volume)
-                            self.voids.mesh.append(joMP.center)
+                                    justOutsideMP,allRemoved,bordersFacet = self.cutCell(uvec,ro,justOutsideMP,eps) # we always keep the part that is "inside", opposite u                 
+        #                             print 'Surf point vol', point, justOutsideMP.volume
+                        if justOutsideMP.volume > self.eps**3:
+                            self.voids.facets.append(justOutsideMP.facets)
+                            self.voids.volume += justOutsideMP.volume
+                            self.voids.volumes.append(justOutsideMP.volume)
+                            self.voids.mesh.append(justOutsideMP.center)
             vMPs = sum(self.IBZ.vorVols)
             vVoids = self.voids.volume
             print 'Vor vols',vMPs
@@ -795,7 +798,7 @@ class voidWeight():
             if not areEqual(vMPs + vVoids, self.IBZ.volume, self.volCheck*self.IBZ.volume):
                 sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
             #find distances of each void point to IBZ mesh points and their symmetry partners.    
-            #find symmetry parterns (expandedMesh), which includes themselves
+            #find symmetry parterns of a all IBZ points (expandedMesh), which includesthe points themselves.
             expandedMesh = []
             expandediIBZs = []
             for iIBZ,point in enumerate(self.IBZ.mesh):
@@ -804,7 +807,7 @@ class voidWeight():
                     op = self.symops[:,:,iop]
                     symPoint = dot(op,point)
 #                     tempPoints = addVec(symPoint,tempPoints,self.eps)
-                    tempPoints = addVec(symPoint,tempPoints,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
+                    tempPoints = addVec(symPoint,tempPoints,0.5*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
                 for BZpoint in deepcopy(tempPoints):
                     for i in [-1,0,1]:
                         for j in [-1,0,1]:
@@ -812,9 +815,9 @@ class voidWeight():
                                 if not i==j==k==0:
                                     transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
             #                         print 'transpoint',transPoint
-                                    if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking): #not too far away from the BZ boundaries
-                                        tempPoints = addVec(transPoint,tempPoints,2.0*self.rpacking) 
-                expandedMesh += tempPoints  
+                                    if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking): #not too far away from the IBZ boundaries
+                                        tempPoints = addVec(transPoint,tempPoints,0.5*self.rpacking) 
+                expandedMesh += tempPoints
                 expandediIBZs += [iIBZ]*len(tempPoints)             
                 self.facetsPointsMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None,self.rpacking)
             self.facetsPointsMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None,self.rpacking)
@@ -903,7 +906,7 @@ class voidWeight():
 #                             continue      
                     
                         #choose the point with the lowest energy vs the other points:
-            if  mags[iExp] <= rvCutoff:      
+            if  mags[iExp] <= rvCutoff and not among(evec,tempPoints,2.0*self.rpacking):      
                 tempPoints.append(evec)
                 tempiIBZs.append(expandediIBZs[iExp])           
                         
