@@ -489,7 +489,8 @@ class voidWeight():
             self.interFactor = 1.0        
         self.df = 1.00 * self.ravg #inter-point force scale distance
         self.dw = 0.5 * self.df        
-        self.initSrch = 'max'
+        self.initSrch = 'lowE'
+#         self.initSrch = 'max'
 #         self.initSrch = None
         eps = self.ravg/300
         self.eps = eps
@@ -669,16 +670,16 @@ class voidWeight():
         allMPfacets = []
 #         surfPoints = []
         self.IBZ.weights = []
+#         for ip,point in enumerate(self.IBZ.mesh):
+#             print 'point',ip,point
         for ip,point in enumerate(self.IBZ.mesh):
-            print 'point',ip,point
-        for ip,point in enumerate(self.IBZ.mesh):
-            print; print ip,
-            print 'point',point
+            print ip,
+#             print 'point',point
             if self.relax:
                 pointCell = cell()
                 neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
-                for i in range(len(neighs)):
-                    print 'neigh',i,neighs[i],neighLbls[i]
+#                 for i in range(len(neighs)):
+#                     print 'neigh',i,neighs[i],neighLbls[i]
     #             print 'neighLbls',neighLbls
                 boundVecs = zeros(len(neighs)+ len(self.IBZ.bounds[0]),dtype = [('uvec', '3float'),('mag', 'float')]) 
                 for iw, u in enumerate(self.IBZ.bounds[0]):    
@@ -692,8 +693,8 @@ class voidWeight():
                     boundVecs[j+len(self.IBZ.bounds[0])]['uvec'] = vec/mag
                     boundVecs[j+len(self.IBZ.bounds[0])]['mag'] = mag
                 boundVecs.sort(order = 'mag') 
-                for i in range(len(boundVecs)):
-                    print 'boundVec',i,boundVecs[i]['uvec'],boundVecs[i]['mag']
+#                 for i in range(len(boundVecs)):
+#                     print 'boundVec',i,boundVecs[i]['uvec'],boundVecs[i]['mag']
                 pointCell = getVorCell(boundVecs,pointCell,'point',eps)
                 #shift origin of cell points to IBZ origin, and adjust bounds to reflect the change
                 pointCell = self.shiftCell(pointCell,point)
@@ -701,7 +702,7 @@ class voidWeight():
                 self.IBZ.vorCells.append(deepcopy(pointCell))
                 self.IBZ.vorVols.append(pointCell.volume)
                 self.IBZ.weights.append(pointCell.volume)
-                print i,'volume',pointCell.volume
+#                 print i,'volume',pointCell.volume
             else:
                 ibzMP = self.prepMP(point)
                 for fpoint in ibzMP.fpoints:
@@ -1193,7 +1194,7 @@ class voidWeight():
             nShift = 5
     #         
             nTh = 10
-            nPh = 20
+            nPh = 10
     
 #             print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!' 
 #             print '!!!!!!!!!!!!!!Using only 3x3 angle search!!!!!!!!!!!!!!'             

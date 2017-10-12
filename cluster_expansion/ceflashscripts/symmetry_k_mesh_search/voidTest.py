@@ -312,7 +312,7 @@ Silicon:
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0    
     '''
-    paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
+    paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']#,'dw']
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
 #     print '\twallPower equals power'
@@ -340,7 +340,7 @@ Silicon:
 #     params11 =    [ 0.0 ]  #wallOffset
 # #  0.5  1.   3.  -1.  -1.   4.   4.   3.   1.   6.   0.5  0. 
     params0 =     [ 0.05 ]   #wallClose
-    params1 =     [ 0 ]   #useVoids
+    params1 =     [ 1 ]   #useVoids
     params2 =     [ 3.0 ]   #rcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
@@ -351,6 +351,7 @@ Silicon:
     params9 =     [ 5.0 ]  #interPower
     params10 =     [ 1.3 ]  #wallFactor
     params11 =    [ 0.0 ]  #wallOffset
+#     params12 =    [ 0.5 ]  #dw
 
 
     '''Si Summary of one-set tests:
@@ -421,13 +422,14 @@ Silicon:
                                         for p9 in params9: 
                                             for p10 in params10: 
                                                 for p11 in params11:
-                                                    if nP ==1: 
-                                                        all[iset]['params']  =  p0
-                                                    else:
-                                                        params = [p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11]  
-                        #                                 params = [p0,p1,p2,p3]              
-                                                        all[iset]['params'] = params
-                                                    iset += 1
+#                                                     for p12 in params12:
+                                                        if nP ==1: 
+                                                            all[iset]['params']  =  p0
+                                                        else:
+                                                            params = [p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11]  
+                            #                                 params = [p0,p1,p2,p3]              
+                                                            all[iset]['params'] = params
+                                                        iset += 1
     #['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
     paramString = ''
     for param in paramLabels:
