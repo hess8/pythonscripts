@@ -807,7 +807,7 @@ class voidWeight():
                     op = self.symops[:,:,iop]
                     symPoint = dot(op,point)
 #                     tempPoints = addVec(symPoint,tempPoints,self.eps)
-                    tempPoints = addVec(symPoint,tempPoints,0.5*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
+                    tempPoints = addVec(symPoint,tempPoints,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
                 for BZpoint in deepcopy(tempPoints):
                     for i in [-1,0,1]:
                         for j in [-1,0,1]:
@@ -816,7 +816,7 @@ class voidWeight():
                                     transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
             #                         print 'transpoint',transPoint
                                     if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking): #not too far away from the IBZ boundaries
-                                        tempPoints = addVec(transPoint,tempPoints,0.5*self.rpacking) 
+                                        tempPoints = addVec(transPoint,tempPoints,2.0*self.rpacking) 
                 expandedMesh += tempPoints
                 expandediIBZs += [iIBZ]*len(tempPoints)             
                 self.facetsPointsMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None,self.rpacking)
@@ -906,7 +906,7 @@ class voidWeight():
 #                             continue      
                     
                         #choose the point with the lowest energy vs the other points:
-            if  mags[iExp] <= rvCutoff and not among(evec,tempPoints,2.0*self.rpacking):      
+            if  mags[iExp] <= rvCutoff:# and not among(evec,tempPoints,2.0*self.rpacking):      
                 tempPoints.append(evec)
                 tempiIBZs.append(expandediIBZs[iExp])           
                         
