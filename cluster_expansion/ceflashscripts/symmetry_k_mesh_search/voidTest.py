@@ -99,7 +99,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=0:20:00\n')
+    jobFile.write('#SBATCH --time=0:40:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=1G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -341,10 +341,10 @@ Silicon:
 # #  0.5  1.   3.  -1.  -1.   4.   4.   3.   1.   6.   0.5  0. 
     params0 =     [ 0.05 ]   #wallClose
     params1 =     [ 1 ]   #useVoids
-    params2 =     [ 3.0 ]   #rcutoff
+    params2 =     [ 5.0 ]   #rcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
-    params5 =     [ 4.0   ]  #rvCutoff
+    params5 =     [ 5.0   ]  #rvCutoff
     params6 =     [ -1 ]  #vwPower
     params7 =     [ 2.0 ]   #wallPower
     params8 =     [ 1 ]   #relax (boolean)
