@@ -44,8 +44,8 @@ def writekpts_vasp_pf(path,K,pf,Nmesh):
 def writekpts_vasp_M(path,B,M,K):
     '''write out kpoints file with IBZKPTS format.  This will specify all the kpoints and their weights. 
     No shift is allowed for now'''
-    #Fill a 1st brilloun zone with mesh points.  We will choose the 1st BZ to be that given by the parallepiped of (B0, B1, B2)
-    #Since B = KM.  The first column of M determines the first column of B (B0) We run trial mesh points over a grid made by the maximum and minimum values of columns of M and the three directions 
+    #Fill a 1st brilluion one with mesh points.  We will choose the 1st BZ to be that given by the parallepiped of (B0, B1, B2)
+    #Since B = KM,the first column of M determines the first column of B (B0) We run trial mesh points over a grid made by the maximum and minimum values of columns of M and the three directions 
     # of K.  The first row of M  gives the first k direction (first column of K)
     eps = 1e-4
     Kv = K.vecs
@@ -111,7 +111,6 @@ def writekpts_vasp_M(path,B,M,K):
     kptssymm[:,0] = kpts[:,0]
     weights[0] = 1
     nksymm = 1
-    
     for i in range(1,npts):
         kB = trimSmall(dot(inv(Bv),transpose(kpts[:,i])))
 #        if areEqual(kB[0],0.5) or  areEqual(kB[1],0.5) or areEqual(kB[2],0.5)  :

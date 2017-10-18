@@ -33,15 +33,15 @@ def getVCmesh(dir,targetNmesh,meshtype,params) :
     return statusOK,nops
 #script:
 # os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/10OctRnosearchPerp/r0/Si_/bcc_6')
-# os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP/r0/Si_/bcc_5')
-os.chdir('/fslhome/bch/cluster_expansion/vcmesh/12OctNatNeighMink3metals/r0/Cu_10/bcc_5')
+os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP/r0/Si_/bcc_5')
+# os.chdir('/fslhome/bch/cluster_expansion/vcmesh/12OctNatNeighMink3metals/r0/Cu_10/bcc_5')
 # os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/28SepRelaxVoidsFine/r2/Si_/bcc_13')
  
 ntarget = 5
 type = 'bcc'
 
-paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
-params =         ['0.05',       '1',         '4.0',       '-1',      '-1',       '4.0'   ,  '3.0' ,     '2.0' ,     '1',       '5.0',    '1.3',      '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
+paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset','projection']
+params =         ['0.05',       '1',         '4.0',       '-1',      '-1',       '4.0'   ,  '3.0' ,     '2.0' ,     '1',       '5.0',    '1.3',      '0.0'     , '1.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
 
 '''Best Si from master branch:  
 params0 =     [ 5.0 ] 
