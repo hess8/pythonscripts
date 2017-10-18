@@ -350,7 +350,7 @@ Silicon:
     params8 =     [ 0 ]   #relax (boolean)
     params9 =     [ 5.0 ]  #interPower
     params10 =     [ 1.3 ]  #wallFactor
-    params11 =    [ 0.0 ]  #wallOffset
+    params11 =    [ 0.05 ]  #wallOffset
     params12 =    [ 1 ]  #latticeProj
 #     params12 =    [ 0.5 ]  #dw
 

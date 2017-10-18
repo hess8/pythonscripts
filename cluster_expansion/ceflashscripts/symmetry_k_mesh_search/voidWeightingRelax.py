@@ -709,34 +709,34 @@ class voidWeight():
         allMPfacets = []
 #         surfPoints = []
         self.IBZ.weights = []
-#         for ip,point in enumerate(self.IBZ.mesh):
-# #             print 'point',ip,point
-#         if self.projection:
-#                 #weight simply by symmetry partners in IBZ
-#                 for iIBZ,point in enumerate(self.IBZ.mesh):
-#                     weight = 0
-#                     for iop in range(self.nops):
-#                         op = self.symops[:,:,iop]
-#                         symPoint = dot(op,point)
-#                         if isInside(symPoint,self.BZ.bounds,eps):
-#                             weight += 1
-#                     self.IBZ.weights.append(weight)
-#                 print 'Weights:'
-#                 for i, weight in enumerate(self.IBZ.weights):
-#                     print i, weight
-#                 print 'Sum', sum(self.IBZ.weights) 
-# #                 if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,self.volCheck*self.nTargetIBZ*self.nops):
-# #                     print 'Weights sum correctly'
-# #                 else:
-# #                     sys.exit('Stop: Weights do not sum to nTargetIBZ * nops')          
-#                 return
-#         else:
-        if True:
+        if self.projection:
+                #weight simply by symmetry partners in IBZ
+            for iIBZ,point in enumerate(self.IBZ.mesh):
+                symPartners = []  
+                weight = 0
+                for iop in range(self.nops):
+                    op = self.symops[:,:,iop]
+                    symPoint = dot(op,point)
+                    if isInside(symPoint,self.BZ.bounds,eps) and not among(symPoint,symPartners,eps):
+                        symPartners.append(symPoint)
+                        weight += 1
+                self.IBZ.weights.append(weight)
+            print 'Weights:'
+            for i, weight in enumerate(self.IBZ.weights):
+                print i, weight
+            print 'Sum', sum(self.IBZ.weights) 
+#                 if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,self.nTargetIBZ*self.nops):
+#                     print 'Weights sum correctly'
+#                 else:
+#                     sys.exit('Stop: Weights do not sum to nTargetIBZ * nops')          
+            return
+        else:
+#         if True:
             for ip,point in enumerate(self.IBZ.mesh):
                 print ip,
     #             print 'point',point
-                
-                if self.relax or self.projection:
+                if self.relax:
+#                 if self.relax or self.projection:
                     pointCell = cell()
                     neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
     #                 for i in range(len(neighs)):
@@ -1174,16 +1174,16 @@ class voidWeight():
             meshPrimLVs = dot(self.B,inv(Mmat))
             self.IBZ,self.outPoints,cubicLVs = self.searchInitMesh(cubicLVs,type,aKcubConv,sites,True)
             print 'final shift',self.IBZ.details[0] 
-        #else:
-        MPbraggVecs = getBraggVecs(meshPrimLVs)
-        self.MP = cell()
-        MPvolume = self.IBZ.volume/self.nTargetIBZ
-        self.MP.volume = MPvolume
-        self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
-        if not areEqual(self.MP.volume,MPvolume,eps):
-            sys.exit('Stop.  MP vor cell does not have the correct volume')
-        self.rmaxMP = max([norm(point) for point in self.MP.fpoints])
-        self.Vsphere = 4/3.0*pi*self.rpacking**3        
+        else:
+            MPbraggVecs = getBraggVecs(meshPrimLVs)
+            self.MP = cell()
+            MPvolume = self.IBZ.volume/self.nTargetIBZ
+            self.MP.volume = MPvolume
+            self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
+            if not areEqual(self.MP.volume,MPvolume,eps):
+                sys.exit('Stop.  MP vor cell does not have the correct volume')
+            self.rmaxMP = max([norm(point) for point in self.MP.fpoints])
+            self.Vsphere = 4/3.0*pi*self.rpacking**3        
         #Search over shift and rotation to find the most possible points inside
 
     def getMeshPrimLVs(self,cubicLVs,type):
@@ -1310,9 +1310,7 @@ class voidWeight():
                             bestIBZ.details = [shift,theta,phi]
                             besti = isearch  
 #                             self.facetsPointsMathFile(bestIBZ,bestIBZ.mesh,'bestMesh',None,self.rpacking)
-                            print 'Step {}: \tbestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi 
-                             
-                          
+                            print 'Step {}: \tbestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi                           
                         elif nInside == bestN and nInside > 0:                        
                             ener = self.energy(IBZ.mesh)/nInside
                             if ener < bestEner:
@@ -1902,7 +1900,7 @@ class voidWeight():
         '''Output for Mathematica graphics drawing BZ facets and spheres at each  point'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += ';\np =Graphics3D[{'
+        strOut += ';\np = Graphics3D[{'
         list(trimSmall(array(points)))
         for ipoint,point in enumerate(list(trimSmall(array(points)))):
             if color != None:
@@ -1918,14 +1916,14 @@ class voidWeight():
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point, coloring one uniquely'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += ';\np=Graphics3D[{'
+        strOut += ';\np = Graphics3D[{'
         list(trimSmall(array(unique)))
         for ipoint,point in enumerate(list(trimSmall(array(others)))):
             strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
             if ipoint < len(others) -1:
                 strOut += ','
         strOut += '}];\n'
-        strOut += 'q=Graphics3D[{'
+        strOut += 'q= Graphics3D[{'
         strOut += color + ',Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(unique[0],unique[1],unique[2])+ '},'+'{}]'.format(self.rpacking)
         strOut += '}];\nShow[s,p,q,ImageSize->Large]'
         writefile(strOut,'facetsPointsUnique__{}.m'.format(tag))         
@@ -1989,7 +1987,7 @@ class voidWeight():
 #             strOut += '-({}x+{}z)+{}'.format(uvec[0]/uvec[1],uvec[2]/uvec[1],ro/uvec[1]) 
 #             strOut += ', {x,' + rangeStr + '}, {z,' + rangeStr 
 #         strOut += '}, PlotStyle -> Opacity[0.3], Axes -> True, AxesLabel -> {"x", "y", "z"}];\n'
-#         strOut += 'p=Graphics3D[{'
+#         strOut += 'p = Graphics3D[{'
 #         list(trimSmall(array(points)))
 #         for ipoint,point in enumerate(list(trimSmall(array(points)))):
 #             if color != None:
@@ -2017,7 +2015,7 @@ class voidWeight():
             if iu < len(bounds[0]) -1:
                 strOut += ','               
         strOut += '};\n'
-        strOut += 'p=Graphics3D[{'
+        strOut += 'p = Graphics3D[{'
         list(trimSmall(array(points)))
         for ipoint,point in enumerate(list(trimSmall(array(points)))):
             if color != None:
