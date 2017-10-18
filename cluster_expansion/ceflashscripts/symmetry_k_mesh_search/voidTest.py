@@ -99,7 +99,7 @@ def writeJob(path,ntarget,type,params):
     jobName = '{}.{}'.format(path[-12:],runFolder)
     jobFile = open('{}/job'.format(path),'w')   
     jobFile.write("#!/bin/bash\n\n")
-    jobFile.write('#SBATCH --time=0:40:00\n')
+    jobFile.write('#SBATCH --time=0:20:00\n')
     jobFile.write("#SBATCH --ntasks=8\n")
     jobFile.write("#SBATCH --mem-per-cpu=1G\n")
     jobFile.write("#SBATCH --job-name={}\n".format(jobName)) 
@@ -312,7 +312,7 @@ Silicon:
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0    
     '''
-    paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']#,'dw']
+    paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset','projection']#,'dw']
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
 #     print '\twallPower equals power'
@@ -339,18 +339,19 @@ Silicon:
 #     params10 =     [ 0.5,1.0 ]  #wallFactor
 #     params11 =    [ 0.0 ]  #wallOffset
 # #  0.5  1.   3.  -1.  -1.   4.   4.   3.   1.   6.   0.5  0. 
-    params0 =     [ 0.05 ]   #wallClose
-    params1 =     [ 1 ]   #useVoids
+    params0 =     [ 0.00 ]   #wallClose
+    params1 =     [ 0 ]   #useVoids
     params2 =     [ 5.0 ]   #rcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
     params5 =     [ 5.0   ]  #rvCutoff
     params6 =     [ -1 ]  #vwPower
     params7 =     [ 2.0 ]   #wallPower
-    params8 =     [ 1 ]   #relax (boolean)
+    params8 =     [ 0 ]   #relax (boolean)
     params9 =     [ 5.0 ]  #interPower
     params10 =     [ 1.3 ]  #wallFactor
     params11 =    [ 0.0 ]  #wallOffset
+    params12 =    [ 1 ]  #latticeProj
 #     params12 =    [ 0.5 ]  #dw
 
 
@@ -387,7 +388,8 @@ Silicon:
 #     params5 =  [float(sys.argv[1])]
     nP =len(paramLabels)
     nPsets = len(params0)*len(params1)*len(params2)*len(params3)*len(params4)*len(params5)\
-                    *len(params6)*len(params7)*len(params8)*len(params9)*len(params10)*len(params11)
+                    *len(params6)*len(params7)*len(params8)*len(params9)*len(params10)*len(params11)\
+                    *len(params12)
                      #* other len's
     print 'Will run {} parameter sets, with {} parameters'.format(nPsets,nP)
     print 'Initial packing is {}'.format(type) 
@@ -422,11 +424,11 @@ Silicon:
                                         for p9 in params9: 
                                             for p10 in params10: 
                                                 for p11 in params11:
-#                                                     for p12 in params12:
+                                                    for p12 in params12:
                                                         if nP ==1: 
                                                             all[iset]['params']  =  p0
                                                         else:
-                                                            params = [p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11]  
+                                                            params = [p0,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12]  
                             #                                 params = [p0,p1,p2,p3]              
                                                             all[iset]['params'] = params
                                                         iset += 1

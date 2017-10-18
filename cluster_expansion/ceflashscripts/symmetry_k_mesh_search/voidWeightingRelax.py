@@ -442,8 +442,9 @@ class voidWeight():
     from numpy.random import rand, uniform
         
     def pack(self,A,B,totatoms,aTypes,postype,aPos,targetNmesh,meshtype,path,params):
-        startTime = timer()
-        
+        startTime = timer()                
+        [origsymopsList, origfracsList] = get_spaceGroup(transpose(A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
+        print 'original symops:',len(origsymopsList)
         
         self.B = transpose(_minkowski_reduce_basis(transpose(B),1e-4)) 
         self.A = trimSmall(inv(1/2.0/pi*transpose(self.B)))
@@ -490,8 +491,13 @@ class voidWeight():
 
 #         self.B = B
 #         self.A = A         
+
+
+
     
         [symopsList, fracsList] = get_spaceGroup(transpose(self.A),aTypes,transpose(aPos),1e-3,postype.lower()[0] == 'd')
+        
+        
         self.nops = len(symopsList)
         self.symops = zeros((3,3,self.nops),dtype = float)
         for iop in range(len(symopsList)):
@@ -523,7 +529,7 @@ class voidWeight():
         self.dw = 0.5 * self.df   
         if self.projection:
             self.relax = False
-            self.voids = False
+            self.useVoids = False
         self.initSrch = 'lowE'
 #         self.initSrch = 'max'
 #         self.initSrch = None
@@ -704,32 +710,33 @@ class voidWeight():
 #         surfPoints = []
         self.IBZ.weights = []
 #         for ip,point in enumerate(self.IBZ.mesh):
-#             print 'point',ip,point
-        if self.projection:
-                #weight simply by symmetry partners in IBZ
-                for iIBZ,point in enumerate(self.IBZ.mesh):
-                    weight = 0
-                    for iop in range(self.nops):
-                        op = self.symops[:,:,iop]
-                        symPoint = dot(op,point)
-                        if isInside(symPoint,self.BZ.bounds,eps):
-                            self.weight += 1
-                    self.IBZ.weights.append(weight)
-                print 'Weights:'
-                for i, weight in enumerate(self.IBZ.weights):
-                    print i, weight
-                print 'Sum', sum(self.IBZ.weights) 
-                if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,self.volCheck*self.nTargetIBZ*self.nops):
-                    print 'Weights sum correctly'
-                else:
-                    sys.exit('Stop: Weights do not sum to nTargetIBZ * nops')          
-                return
-        else:
+# #             print 'point',ip,point
+#         if self.projection:
+#                 #weight simply by symmetry partners in IBZ
+#                 for iIBZ,point in enumerate(self.IBZ.mesh):
+#                     weight = 0
+#                     for iop in range(self.nops):
+#                         op = self.symops[:,:,iop]
+#                         symPoint = dot(op,point)
+#                         if isInside(symPoint,self.BZ.bounds,eps):
+#                             weight += 1
+#                     self.IBZ.weights.append(weight)
+#                 print 'Weights:'
+#                 for i, weight in enumerate(self.IBZ.weights):
+#                     print i, weight
+#                 print 'Sum', sum(self.IBZ.weights) 
+# #                 if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,self.volCheck*self.nTargetIBZ*self.nops):
+# #                     print 'Weights sum correctly'
+# #                 else:
+# #                     sys.exit('Stop: Weights do not sum to nTargetIBZ * nops')          
+#                 return
+#         else:
+        if True:
             for ip,point in enumerate(self.IBZ.mesh):
                 print ip,
     #             print 'point',point
                 
-                if self.relax:
+                if self.relax or self.projection:
                     pointCell = cell()
                     neighs,neighLbls = self.getNeighbors(point,self.IBZ,eps)
     #                 for i in range(len(neighs)):
@@ -1161,20 +1168,22 @@ class voidWeight():
         cubicLVs = dot(Rmat,cubicLVs)
         meshPrimLVs = self.getMeshPrimLVs(cubicLVs,type)
         if self.projection: #nearest lattice from nearest integer projection 
+            print 'first shift',shift
             Mmat = rint(dot(inv(meshPrimLVs),self.B))
             print 'mmat'; print Mmat
             meshPrimLVs = dot(self.B,inv(Mmat))
-            self.IBZ,self.outPoints,cubicLVs = self.searchInitMesh(cubicLVs,type,aKcubConv,sites,True) 
-        else:
-            MPbraggVecs = getBraggVecs(meshPrimLVs)
-            self.MP = cell()
-            MPvolume = self.IBZ.volume/self.nTargetIBZ
-            self.MP.volume = MPvolume
-            self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
-            if not areEqual(self.MP.volume,MPvolume,eps):
-                sys.exit('Stop.  MP vor cell does not have the correct volume')
-            self.rmaxMP = max([norm(point) for point in self.MP.fpoints])
-            self.Vsphere = 4/3.0*pi*self.rpacking**3        
+            self.IBZ,self.outPoints,cubicLVs = self.searchInitMesh(cubicLVs,type,aKcubConv,sites,True)
+            print 'final shift',self.IBZ.details[0] 
+        #else:
+        MPbraggVecs = getBraggVecs(meshPrimLVs)
+        self.MP = cell()
+        MPvolume = self.IBZ.volume/self.nTargetIBZ
+        self.MP.volume = MPvolume
+        self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
+        if not areEqual(self.MP.volume,MPvolume,eps):
+            sys.exit('Stop.  MP vor cell does not have the correct volume')
+        self.rmaxMP = max([norm(point) for point in self.MP.fpoints])
+        self.Vsphere = 4/3.0*pi*self.rpacking**3        
         #Search over shift and rotation to find the most possible points inside
 
     def getMeshPrimLVs(self,cubicLVs,type):
@@ -1192,7 +1201,7 @@ class voidWeight():
             meshPrimLVs = cubicLVs
         return meshPrimLVs      
 
-    def searchInitMesh(self,cubicLVs,type,aKcubConv,sites,fixAngles):
+    def searchInitMesh(self,cubicLVs,type,aKcubConv,sites,final):
         '''Test an entire grid of init values'''
         if self.initSrch is None:
             shifts = [array([1,1,1])*self.ravg/8.0]
@@ -1248,13 +1257,15 @@ class voidWeight():
             meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
         else:  
             meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
-            nShift = 5
-            shiftDiv = 0.5*sqrt(3)/float(nShift)
-            shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(nShift)]
-            if fixAngles:
+
+            if final:
                 thetas = [0.0]
-                phis = [0.0]                
+                phis = [0.0] 
+                shifts = [[0,0,0]]               
             else:
+                nShift = 5
+                shiftDiv = 0.5*sqrt(3)/float(nShift)
+                shifts = [i*shiftDiv*self.ravg*array([1,1,1]) for i in range(nShift)]
                 nTh = 10
                 nPh = 10
                 
@@ -1285,7 +1296,7 @@ class voidWeight():
                     meshPrimLVs = dot(Rmat,meshPrimLVs0)
                     for i, site in enumerate(sites0):
                         sites[i] = dot(Rmat,site)        
-                    IBZ,nInside,outPoints = self.fillMesh(meshPrimLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
+                    IBZ,nInside,outPoints = self.fillMesh(meshPrimLVs,IBZ,dot(Rmat,shift),aKcubConv,sites,final)
 #                     self.facetsPointsMathFile(IBZ,IBZ.mesh'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
@@ -1297,7 +1308,11 @@ class voidWeight():
                             bestOutside = outPoints
                             bestIBZ = deepcopy(IBZ)
                             bestIBZ.details = [shift,theta,phi]
-                            besti = isearch                            
+                            besti = isearch  
+#                             self.facetsPointsMathFile(bestIBZ,bestIBZ.mesh,'bestMesh',None,self.rpacking)
+                            print 'Step {}: \tbestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi 
+                             
+                          
                         elif nInside == bestN and nInside > 0:                        
                             ener = self.energy(IBZ.mesh)/nInside
                             if ener < bestEner:
@@ -1316,7 +1331,8 @@ class voidWeight():
                             bestOutside = outPoints
                             bestIBZ = deepcopy(IBZ)
                             bestIBZ.details = [shift,theta,phi]
-                            besti = isearch                            
+                            besti = isearch 
+                            print 'Step {}: \tbestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi                            
                         elif nInside == bestN and nInside > 0:                        
                             ener = self.energy(IBZ.mesh)/nInside
                             if ener > bestEner:
@@ -1348,7 +1364,7 @@ class voidWeight():
             print 'nInside {} is closest to target N {}'.format(bestN,self.nTargetIBZ)
         return bestIBZ,bestOutside,cubicLVs
         
-    def fillMesh(self,meshPrimLVs,IBZ,shift,aKcubConv,sites):
+    def fillMesh(self,meshPrimLVs,IBZ,shift,aKcubConv,sites,final):
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -1377,15 +1393,20 @@ class voidWeight():
 #                         else:
 #                             nInside += 1
 #                             IBZ.mesh.append(kpoint) 
-                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking)\
+                        keep = False
+                        if final and not isOutside(kpoint,IBZ.bounds,self.eps)\
+                            and not among(kpoint,IBZ.mesh,self.eps): #This is a nonprimitive lattice (no among)
+                            keep = True      
+                        elif isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking)\
                         and not among(kpoint,IBZ.mesh,self.eps): #This is a nonprimitive lattice (no among)
-#                         if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):
-#                             print 'kpoint',i,j,k,kpoint,lvec, shift, site
+                            keep = True
+                        if keep:
                             nInside += 1
                             IBZ.mesh.append(kpoint) 
                         else:
                             outPoints.append(kpoint)
         return IBZ,nInside,outPoints
+    
     def dynamic(self,eps):
         ''' '''
 #         print 'Relaxation is blocked!!!'
@@ -1410,8 +1431,8 @@ class voidWeight():
             #wall forces
             for iw, u in enumerate(self.IBZ.bounds[0]):
                 ro = self.IBZ.bounds[1][iw]
-                d = ro-dot(ri,u) #distance from plane to ri offset factor allows points to move closer to walls. 
-                if d<0:
+                d = ro-dot(ri,u)+ self.wallOffset*self.dw
+                if d<0-self.eps:
                     print '\nri,ro,u, dot(ri,u),d'
                     print ri,ro,u, dot(ri,u), d 
                     sys.exit('Error. Point {} in energy() is not in the IBZ.'.format(i+1))
