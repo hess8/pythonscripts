@@ -519,11 +519,11 @@ class voidWeight():
 #         self.relax = params[7].lower() in ['relax','true','yes']
         self.relax = bool(int(float(params[8])))
 
-        if self.relax:
-            self.interPower = float(params[9]) #6.0
-            self.wallFactor = float(params[10]) #1.0  #probably needs to be bigger than interFactor by about the average number of nearest neighbors
-            self.wallOffset = float(params[11]) #0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
-            self.interFactor = 1.0        
+#         if self.relax:
+        self.interPower = float(params[9]) #6.0
+        self.wallFactor = float(params[10]) #1.0  #probably needs to be bigger than interFactor by about the average number of nearest neighbors
+        self.wallOffset = float(params[11]) #0.5 #back off wall forces and energies by a distance that is a fraction of dw. 
+        self.interFactor = 1.0        
         self.projection = bool(int(float(params[12])))
         self.df = 1.00 * self.ravg #inter-point force scale distance
         self.dw = 0.5 * self.df   
@@ -725,10 +725,10 @@ class voidWeight():
             for i, weight in enumerate(self.IBZ.weights):
                 print i, weight
             print 'Sum', sum(self.IBZ.weights) 
-#                 if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,self.nTargetIBZ*self.nops):
-#                     print 'Weights sum correctly'
-#                 else:
-#                     sys.exit('Stop: Weights do not sum to nTargetIBZ * nops')          
+#             if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,self.nTargetIBZ*self.nops):
+#                 print 'Weights sum correctly'
+#             else:
+#                 sys.exit('Stop: Weights do not sum to nTargetIBZ * nops')          
             return
         else:
 #         if True:
@@ -1168,6 +1168,7 @@ class voidWeight():
         cubicLVs = dot(Rmat,cubicLVs)
         meshPrimLVs = self.getMeshPrimLVs(cubicLVs,type)
         if self.projection: #nearest lattice from nearest integer projection 
+            self.facetsPointsMathFile(self.IBZ,self.IBZ.mesh,'IBZmeshPreProj',None,self.rpacking)
             print 'first shift',shift
             Mmat = rint(dot(inv(meshPrimLVs),self.B))
             print 'mmat'; print Mmat
