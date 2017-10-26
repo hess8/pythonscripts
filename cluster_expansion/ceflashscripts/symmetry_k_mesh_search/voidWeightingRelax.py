@@ -306,7 +306,7 @@ def getFacetsPoints(cell,checkOutside,eps):
 
 def isInside(vec,bounds,eps,extra = 0):
     '''Inside means on opposite side of the plane vs its normal vector.  Extra shifts the test plane
-    outward, for an expanded inside volume'''
+    outward, for an expanded volume'''
     inside = zeros(len(bounds[0]),dtype = bool)
     for iplane, uvec in enumerate(bounds[0]):
         if dot(vec,uvec) - extra < bounds[1][iplane] - eps: #point is inside this plane
@@ -734,7 +734,7 @@ class voidWeight():
             print 'Relative volume in MP Vor cells', -volDiffRel,'Abs volume difference', volDiff, 'Std dev/mean',stdev/meanV
        
         if self.useVoids:
-            #find void centers, which are portions of points on the original packing lattice
+            #find void centers, which are portions of vorcells inside the BZ, whose centers are points on the original packing lattice
     #         that lie outside the IBZ 
             self.voids = cell()
             self.voids.volume = 0.0
@@ -743,25 +743,35 @@ class voidWeight():
                 self.IBZ.vorVols = []
                 self.getVoidsRelaxed()
             else:
+#                 testfpoints = []
                 for io, point in enumerate(self.outPoints):
-                    ds = []
-                    for iplane,u in enumerate(self.IBZ.bounds[0]):
-                        ro = self.IBZ.bounds[1][iplane]
-                        ds.append(dot(u,point) - ro)
-                    if min(ds) < 2*self.rmaxMP: #candidate to host an IBZ void: it's "just outside"
-                        joMP = self.prepMP(point) # point just outside the IBZ on the mesh lattice
+                    print 'io',io,point
+                    joMP = self.prepMP(point) # point just outside the IBZ on the mesh lattice
+                    needsCut = True
+        #             print 'mesh point',point
+                    count = 0
+                    while needsCut:
+                        count += 1
+                        print 'count',count
                         for fpoint in joMP.fpoints:
-                            for iplane, uvec in enumerate(self.IBZ.bounds[0]):
-                                ro = self.IBZ.bounds[1][iplane]
-                                d = ro - dot(uvec,fpoint)
-                                if d < self.rmaxMP:                                    
-                                    joMP,allRemoved,bordersFacet = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u                 
-        #                             print 'Surf point vol', point, joMP.volume
-                        if joMP.volume > self.eps**3:
-                            self.voids.facets.append(joMP.facets)
-                            self.voids.volume += joMP.volume
-                            self.voids.volumes.append(joMP.volume)
-                            self.voids.mesh.append(joMP.center)
+                            break2 = False
+                            if isOutside(fpoint,self.IBZ.bounds,eps): #cut it with every plane in range:
+                                print 'fpoint',fpoint, 'isOutside'
+                                for iplane, uvec in enumerate(self.IBZ.bounds[0]):
+                                    ro = self.IBZ.bounds[1][iplane]
+#                                     d = ro - dot(uvec,fpoint) 
+#                                     if d < 2*self.rmaxMP:                                          
+                                    joMP,allRemoved,bordersFacet = self.cutCell(uvec,ro,joMP,eps) # we always keep the part that is "inside", opposite u                  
+                                break2 = True
+                            if break2:
+                                break # test only one point at a tume
+                        else: 
+                            if joMP.volume > self.eps**3:
+                                self.voids.facets.append(joMP.facets)
+                                self.voids.volume += joMP.volume
+                                self.voids.volumes.append(joMP.volume)
+                                self.voids.mesh.append(joMP.center)
+                            needsCut = False
             vMPs = sum(self.IBZ.vorVols)
             vVoids = self.voids.volume
             print 'Vor vols',vMPs
@@ -1287,8 +1297,8 @@ class voidWeight():
         elif not self.initSrch in ['lowE','max']:
             print 'nInside {} is closest to target N {}'.format(bestN,self.nTargetIBZ)
         return bestIBZ,bestOutside,cubicLVs
-        
-    def fillMesh(self,meshPrimLVs,IBZ,shift,aKcubConv,sites):
+
+    def fillMesh(self,cubicLVs,IBZ,shift,aKcubConv,sites):
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
@@ -1296,8 +1306,8 @@ class voidWeight():
             projs = []
             for point in IBZ.fpoints:
                 shifted = point + shift
-                projs.append(dot(meshPrimLVs[:,i],shifted)/aKcubConv**2)
-            intMaxs.append(int(ceil(max(projs)))+2) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
+                projs.append(dot(cubicLVs[:,i],shifted)/aKcubConv**2)
+            intMaxs.append(int(ceil(max(projs)))+0) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
             intMins.append(int(floor(min(projs)))-1)#optimize: Is -1 required?       
         #Create the cubic mesh inside the irreducible BZ
         IBZ.mesh = []
@@ -1307,23 +1317,14 @@ class voidWeight():
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
-                    lvec = i*meshPrimLVs[:,0]+j*meshPrimLVs[:,1]+k*meshPrimLVs[:,2]
+                    lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for site in sites:
                         ik+=1
                         kpoint = lvec + shift + site
-                        
-#                         if isOutside(kpoint,IBZ.bounds,self.eps):
-#                             outPoints.append(kpoint)
-#                         else:
-#                             nInside += 1
-#                             IBZ.mesh.append(kpoint) 
-                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking)\
-                        and not among(kpoint,IBZ.mesh,self.eps): #This is a nonprimitive lattice (no among)
-#                         if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):
-#                             print 'kpoint',i,j,k,kpoint,lvec, shift, site
+                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
-                            IBZ.mesh.append(kpoint) 
-                        else:
+                            IBZ.mesh.append(kpoint)
+                        elif isInside(kpoint,IBZ.bounds,self.eps,2*self.rmaxMP):
                             outPoints.append(kpoint)
         return IBZ,nInside,outPoints
     def dynamic(self,eps):
@@ -1574,7 +1575,7 @@ class voidWeight():
                         allRemoved = addVec(facet[i],allRemoved,eps)
                     elif sgn == 0.0:
                         bordersFacet = addVec(facet[i],bordersFacet,eps)         
-        if len(allRemoved)>0:
+        if len(allRemoved)>0: #remove any facets with removed points
             ftemp2 = deepcopy(ftemp)
             for i2, facet in enumerate(ftemp):
                 nextbreak = False
@@ -1587,7 +1588,7 @@ class voidWeight():
                     if nextbreak:
                         break
             ftemp = []
-            for i2, facet in enumerate(ftemp2):
+            for i2, facet in enumerate(ftemp2): #remove empty facet places
                 if len(facet)> 0:
                    ftemp.append(facet)
             #Add any points that are in the cut plane into bordersFacet.  Some may not be in facets with cuts. 
