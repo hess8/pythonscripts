@@ -306,7 +306,7 @@ def getFacetsPoints(cell,checkOutside,eps):
 
 def isInside(vec,bounds,eps,extra = 0):
     '''Inside means on opposite side of the plane vs its normal vector.  Extra shifts the test plane
-    outward, for an expanded inside volume'''
+    outward, for an expanded volume'''
     inside = zeros(len(bounds[0]),dtype = bool)
     for iplane, uvec in enumerate(bounds[0]):
         if dot(vec,uvec) - extra < bounds[1][iplane] - eps: #point is inside this plane
@@ -1083,25 +1083,34 @@ class voidWeight():
         Here we simply choose a Monkhorst Pack mesh for testing
         
         '''
+        lattType = 'bcc' #for silicon monkhorst pack, must use bcc
+        nMonkhorst = rint((self.nTargetIBZ*self.nops)**(1/3.0))
+        print "nMonkhorst",nMonkhorst
+        meshPrimLVs = self.B/nMonkhorst
+        print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
+        print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
+        print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
+        print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
+        
         a = 1.0
         cubicLVs = identity(3)
-        if type == 'fcc':    
-            volKcubConv = self.IBZ.volume/self.nTargetIBZ*4
+        if lattType == 'fcc':    
+            volKcubConv = self.BZ.volume/(nMonkhorst**3)*4
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
                      1/2.0*(cubicLVs[:,0]+cubicLVs[:,2]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1])]
             self.rpacking = 1/2.0/sqrt(2)*aKcubConv
             pf = 4*4/3.0*pi*(1/2.0/sqrt(2))**3  #0.74
-        elif type == 'bcc':
-            volKcubConv = self.IBZ.volume/self.nTargetIBZ*2
+        elif lattType == 'bcc':
+            volKcubConv = self.BZ.volume/(nMonkhorst**3)*2
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
             self.rpacking = sqrt(3)/4.0*aKcubConv
             pf = 2*4/3.0*pi*(sqrt(3)/4.0)**3 #0.68
-        elif type == 'cub':
-            volKcubConv = self.IBZ.volume/self.nTargetIBZ
+        elif lattType == 'cub':
+            volKcubConv = self.BZ.volume/(nMonkhorst**3)
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0])]
@@ -1110,27 +1119,19 @@ class voidWeight():
         else:
             sys.exit('stop. Type error in meshCubic.')
 
-        nMonkhorst = rint((self.nTargetIBZ*self.nops)**(1/3.0))
-#         self.nTargetIBZ = rint(nMonkhorst**3/self.nops)  
-        print "nMonkhorst",nMonkhorst
-        meshPrimLVs = self.B/nMonkhorst
-        print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
-        print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
-        print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
-        print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
+
 
         MPbraggVecs = getBraggVecs(meshPrimLVs)
         self.MP = cell()
         MPvolume = self.BZ.volume/(nMonkhorst**3)
-        sites = [0,0,0]
         self.MP.volume = MPvolume  #initialize
         self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
         if not areEqual(self.MP.volume,MPvolume,eps):
             sys.exit('Stop.  MP vor cell does not have the correct volume')
         self.rmaxMP = max([norm(point) for point in self.MP.fpoints]) 
-        self.rpacking = min([norm(meshPrimLVs[:,0]),norm(meshPrimLVs[:,1]),norm(meshPrimLVs[:,2])])/2.0
+#         self.rpacking = min([norm(meshPrimLVs[:,0]),norm(meshPrimLVs[:,1]),norm(meshPrimLVs[:,2])])/2.0
         shift = array([0.4,0.4,0.4])*self.rpacking
-        self.IBZ,nInside,self.outPoints = self.fillMesh(meshPrimLVs,self.IBZ,shift,aKcubConv,sites)
+        self.IBZ,nInside,self.outPoints = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
         self.facetsPointsMathFile(self.IBZ, self.outPoints,'outpoits', None, self.rpacking/4)
         return
 
@@ -1303,20 +1304,18 @@ class voidWeight():
         elif not self.initSrch in ['lowE','max']:
             print 'nInside {} is closest to target N {}'.format(bestN,self.nTargetIBZ)
         return bestIBZ,bestOutside,cubicLVs
-        
-    def fillMesh(self,meshPrimLVs,IBZ,shift,aKcubConv,sites):
+
+    def fillMesh(self,cubicLVs,IBZ,shift,aKcubConv,sites):
         #Find the extremes in each cubLV direction:
         intMaxs = [] #factors of aKcubConv
         intMins = []
         for i in range(3):
-            normLV = norm(meshPrimLVs[:,i])
             projs = []
             for point in IBZ.fpoints:
                 shifted = point + shift
-                projs.append(dot(meshPrimLVs[:,i],shifted)/(normLV**2))
-#                 projs.append(dot(meshPrimLVs[:,i],shifted)/aKcubConv**2)
-            intMaxs.append(int(ceil(max(projs)))) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
-            intMins.append(int(floor(min(projs))))#optimize: Is -1 required?       
+                projs.append(dot(cubicLVs[:,i],shifted)/aKcubConv**2)
+            intMaxs.append(int(ceil(max(projs)))+0) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
+            intMins.append(int(floor(min(projs)))-1)#optimize: Is -1 required?       
         #Create the cubic mesh inside the irreducible BZ
         IBZ.mesh = []
         outPoints = []
@@ -1325,29 +1324,63 @@ class voidWeight():
         for i in range(intMins[0],intMaxs[0]):
             for j in range(intMins[1],intMaxs[1]):
                 for k in range(intMins[2],intMaxs[2]):
-                    lvec = i*meshPrimLVs[:,0]+j*meshPrimLVs[:,1]+k*meshPrimLVs[:,2]
+                    lvec = i*cubicLVs[:,0]+j*cubicLVs[:,1]+k*cubicLVs[:,2]
                     for site in sites:
                         ik+=1
                         kpoint = lvec + shift + site
-                        ##
-#                         if isOutside(kpoint,IBZ.bounds,self.eps):
-#                             outPoints.append(kpoint)
-#                         else:
-#                             nInside += 1
-#                             IBZ.mesh.append(kpoint) 
-                        ##   
-                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):
-                            IBZ.mesh = addVec(kpoint,IBZ.mesh,self.eps) #This is a nonprimitive lattice (no among)
-#                         if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):
-#                             print 'kpoint',i,j,k,kpoint,lvec, shift, site
+                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
-#                         elif isInside(kpoint,IBZ.bounds,self.eps,-2*self.rmaxMP):
-#                             outPoints = addVec(kpoint,outPoints,self.eps)
-                        else:
-                            outPoints = addVec(kpoint,outPoints,self.eps)
-                       ##  
-                            
+                            IBZ.mesh.append(kpoint)
+                        elif isInside(kpoint,IBZ.bounds,self.eps,2*self.rmaxMP):
+                            outPoints.append(kpoint)
+                             
+#         print 'Points inside', nInside
         return IBZ,nInside,outPoints
+        
+#     def fillMesh(self,meshPrimLVs,IBZ,shift,aKcubConv,sites):
+#         #Find the extremes in each cubLV direction:
+#         intMaxs = [] #factors of aKcubConv
+#         intMins = []
+#         for i in range(3):
+#             normLV = norm(meshPrimLVs[:,i])
+#             projs = []
+#             for point in IBZ.fpoints:
+#                 shifted = point + shift
+#                 projs.append(dot(meshPrimLVs[:,i],shifted)/(normLV**2))
+# #                 projs.append(dot(meshPrimLVs[:,i],shifted)/aKcubConv**2)
+#             intMaxs.append(int(ceil(max(projs)))) #optimize: Why is +2 required with shift of 1/2,1/2,1/2 on cubic?
+#             intMins.append(int(floor(min(projs))))#optimize: Is -1 required?       
+#         #Create the cubic mesh inside the irreducible BZ
+#         IBZ.mesh = []
+#         outPoints = []
+#         nInside = 0         
+#         ik = 0       
+#         for i in range(intMins[0],intMaxs[0]):
+#             for j in range(intMins[1],intMaxs[1]):
+#                 for k in range(intMins[2],intMaxs[2]):
+#                     lvec = i*meshPrimLVs[:,0]+j*meshPrimLVs[:,1]+k*meshPrimLVs[:,2]
+#                     for site in sites:
+#                         ik+=1
+#                         kpoint = lvec + shift + site
+#                         ##
+# #                         if isOutside(kpoint,IBZ.bounds,self.eps):
+# #                             outPoints.append(kpoint)
+# #                         else:
+# #                             nInside += 1
+# #                             IBZ.mesh.append(kpoint) 
+#                         ##   
+#                         if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):
+#                             IBZ.mesh = addVec(kpoint,IBZ.mesh,self.eps) #This is a nonprimitive lattice (no among)
+# #                         if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):
+# #                             print 'kpoint',i,j,k,kpoint,lvec, shift, site
+#                             nInside += 1
+# #                         elif isInside(kpoint,IBZ.bounds,self.eps,-2*self.rmaxMP):
+# #                             outPoints = addVec(kpoint,outPoints,self.eps)
+#                         else:
+#                             outPoints = addVec(kpoint,outPoints,self.eps)
+#                        ##  
+#                             
+#         return IBZ,nInside,outPoints
     def dynamic(self,eps):
         ''' '''
 #         print 'Relaxation is blocked!!!'
