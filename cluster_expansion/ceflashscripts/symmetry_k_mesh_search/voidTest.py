@@ -65,7 +65,7 @@ maindir = os.getcwd()
 #maindir default is os.getcwd()
 poscarsDir = '{}/0-info/POSCARS'.format(maindir)
 vaspinputdir = '{}/0-info/vaspinput'.format(maindir)
-type = 'bcc'
+type = 'fcc'
 # search = 'grad'
 # search = 'rand'
 search = 'all'
@@ -340,14 +340,14 @@ Silicon:
 #     params11 =    [ 0.0 ]  #wallOffset
 # #  0.5  1.   3.  -1.  -1.   4.   4.   3.   1.   6.   0.5  0. 
     params0 =     [ 0.05 ]   #wallClose
-    params1 =     [ 1 ]   #useVoids
+    params1 =     [ 0 ]   #useVoids
     params2 =     [ 3.0 ]   #rcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
     params5 =     [ 4.0   ]  #rvCutoff
     params6 =     [ -1 ]  #vwPower
     params7 =     [ 2.0 ]   #wallPower
-    params8 =     [ 1 ]   #relax (boolean)
+    params8 =     [ 0 ]   #relax (boolean)
     params9 =     [ 5.0 ]  #interPower
     params10 =     [ 1.3 ]  #wallFactor
     params11 =    [ 0.0 ]  #wallOffset
