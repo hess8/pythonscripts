@@ -748,18 +748,12 @@ class voidWeight():
             else:
 #                 testfpoints = []
                 for io, point in enumerate(self.outPoints):
-                    print 'io',io,point
                     joMP = self.prepMP(point) # point just outside the IBZ on the mesh lattice
                     needsCut = True
-        #             print 'mesh point',point
-                    count = 0
                     while needsCut:
-                        count += 1
-                        print 'count',count
                         for fpoint in joMP.fpoints:
                             break2 = False
                             if isOutside(fpoint,self.IBZ.bounds,eps): #cut it with every plane in range:
-                                print 'fpoint',fpoint, 'isOutside'
                                 for iplane, uvec in enumerate(self.IBZ.bounds[0]):
                                     ro = self.IBZ.bounds[1][iplane]
 #                                     d = ro - dot(uvec,fpoint) 
@@ -838,10 +832,10 @@ class voidWeight():
         for i, weight in enumerate(self.IBZ.weights):
             print i, weight
         print 'Sum', sum(self.IBZ.weights) 
-        if areEqual(sum(self.IBZ.weights),self.nTargetIBZ*self.nops,self.volCheck*self.nTargetIBZ*self.nops):
+        if areEqual(sum(self.IBZ.weights),self.nMonkhorst**3,self.volCheck*self.nTargetIBZ*self.nops):
             print 'Weights sum correctly'
         elif self.useVoids or self.relax:
-            sys.exit('Stop: Weights do not sum to nTargetIBZ * nops')     
+            sys.exit('Stop: Weights do not sum to nMonkhorst**3')     
         else:
             print 'As expected with no relaxation or voids, these weights do not sum to integer * nops' 
         return
@@ -1095,9 +1089,9 @@ class voidWeight():
         
         '''
         lattType = 'bcc' #for silicon monkhorst pack, must use bcc
-        nMonkhorst = rint((self.nTargetIBZ*self.nops)**(1/3.0))
-        print "nMonkhorst",nMonkhorst
-        meshPrimLVs = self.B/nMonkhorst
+        self.nMonkhorst = rint((self.nTargetIBZ*self.nops)**(1/3.0))
+        print "self.nMonkhorst",self.nMonkhorst
+        meshPrimLVs = self.B/self.nMonkhorst
         print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
         print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
         print '!!!!!!!!!!!!!!!!!!! Forcing mesh to be nxnxn Monkhorst Pack'
@@ -1106,7 +1100,7 @@ class voidWeight():
         a = 1.0
         cubicLVs = identity(3)
         if lattType == 'fcc':    
-            volKcubConv = self.BZ.volume/(nMonkhorst**3)*4
+            volKcubConv = self.BZ.volume/(self.nMonkhorst**3)*4
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,1]+cubicLVs[:,2]),\
@@ -1114,14 +1108,14 @@ class voidWeight():
             self.rpacking = 1/2.0/sqrt(2)*aKcubConv
             pf = 4*4/3.0*pi*(1/2.0/sqrt(2))**3  #0.74
         elif lattType == 'bcc':
-            volKcubConv = self.BZ.volume/(nMonkhorst**3)*2
+            volKcubConv = self.BZ.volume/(self.nMonkhorst**3)*2
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0]), 1/2.0*(cubicLVs[:,0]+cubicLVs[:,1]+cubicLVs[:,2])]
             self.rpacking = sqrt(3)/4.0*aKcubConv
             pf = 2*4/3.0*pi*(sqrt(3)/4.0)**3 #0.68
         elif lattType == 'cub':
-            volKcubConv = self.BZ.volume/(nMonkhorst**3)
+            volKcubConv = self.BZ.volume/(self.nMonkhorst**3)
             aKcubConv = volKcubConv**(1/3.0)
             cubicLVs = cubicLVs * aKcubConv
             sites = [array([0, 0 , 0])]
@@ -1134,7 +1128,7 @@ class voidWeight():
 
         MPbraggVecs = getBraggVecs(meshPrimLVs)
         self.MP = cell()
-        MPvolume = self.BZ.volume/(nMonkhorst**3)
+        MPvolume = self.BZ.volume/(self.nMonkhorst**3)
         self.MP.volume = MPvolume  #initialize
         self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
         if not areEqual(self.MP.volume,MPvolume,eps):

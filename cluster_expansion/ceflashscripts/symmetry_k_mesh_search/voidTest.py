@@ -24,7 +24,7 @@ import voidWeighting, analyzeNks
 #*************  Settings ***************
 maindir = os.getcwd()
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/25SepvoidsRelaxed'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/siLP'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/Sitest'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
@@ -340,11 +340,11 @@ Silicon:
 #     params11 =    [ 0.0 ]  #wallOffset
 # #  0.5  1.   3.  -1.  -1.   4.   4.   3.   1.   6.   0.5  0. 
     params0 =     [ 0.05 ]   #wallClose
-    params1 =     [ 0 ]   #useVoids
+    params1 =     [ 1 ]   #useVoids
     params2 =     [ 3.0 ]   #rcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
-    params5 =     [ 4.0   ]  #rvCutoff
+    params5 =     [ 5.0   ]  #rvCutoff
     params6 =     [ -1 ]  #vwPower
     params7 =     [ 2.0 ]   #wallPower
     params8 =     [ 0 ]   #relax (boolean)
@@ -352,7 +352,6 @@ Silicon:
     params10 =     [ 1.3 ]  #wallFactor
     params11 =    [ 0.0 ]  #wallOffset
 #     params12 =    [ 0.5 ]  #dw
-
 
     '''Si Summary of one-set tests:
         no relax no voids: 2.31 cost
