@@ -1149,7 +1149,7 @@ class voidWeight():
         '''Test an entire grid of init values'''
         
         if self.initSrch is None:
-            shifts = [array([1,1,1])*self.ravg/8.0]
+            shifts = [array([0,0,0])] #shift = 0.5*(cubicLVs[:,0] + cubicLVs[:,1] + cubicLVs[:,2]) 
             thetas = [0.0]
             phis = [0.0]
             #test facet points for orthogonality
@@ -1203,7 +1203,7 @@ class voidWeight():
         else:  
             meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
             nShift = 5
-    #         
+    #shift = 0.5*(cubicLVs[:,0] + cubicLVs[:,1] + cubicLVs[:,2])          
             nTh = 10
             nPh = 10
     
