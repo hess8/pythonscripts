@@ -309,21 +309,20 @@ def isInside(vec,bounds,eps,extra = 0):
     outward, for an expanded volume'''
     inside = zeros(len(bounds[0]),dtype = bool)
     for iplane, uvec in enumerate(bounds[0]):
-        if dot(vec,uvec) - extra < bounds[1][iplane] - eps: #point is inside this plane
+        if dot(vec,uvec) < bounds[1][iplane] + extra - eps: #point is inside this plane
             inside[iplane] = True
     return all(inside)
 
-def isOutside(vec,boundaries,eps):
-    for iplane, uvec in enumerate(boundaries[0]): 
-        pvec = uvec*boundaries[1][iplane]           
-        if dot(vec,uvec) > boundaries[1][iplane] + eps: #point is outside this plane
-            return True
-    return False
+def isOutside(vec,bounds,eps,extra = 0):
+    outside = zeros(len(bounds[0]),dtype = bool)
+    for iplane, uvec in enumerate(bounds[0]):           
+        if dot(vec,uvec) > bounds[1][iplane] + extra + eps: #point is outside this plane
+            outside[iplane] = True  #have to check all planes if want to use "not isOutside"
+    return any(outside)
 
-# def isJustOutside(vec,boundaries,dmax,eps):
-#     for iplane, uvec in enumerate(boundaries[0]): 
-#         pvec = uvec*boundaries[1][iplane]           
-#         if  boundaries[1][iplane] + eps < dot(vec,uvec) < boundaries[1][iplane] + dmax + eps: #point is outside this plane
+# def isJustOutside(vec,bounds,dmax,eps):
+#     for iplane, uvec in enumerate(bounds[0]):           
+#         if  bounds[1][iplane] + eps < dot(vec,uvec) < bounds[1][iplane] + dmax + eps: #point is outside this plane
 #             return True
 #     return False
 
@@ -717,8 +716,8 @@ class voidWeight():
                 allMPfacets.append(ibzMP.facets)
                 self.IBZ.vorVols.append(ibzMP.volume)
                 self.IBZ.weights.append(ibzMP.volume) 
-                print 'i',ibzMP.volume,self.MP.volume,self.MP.volume/ibzMP.volume;testw += ibzMP.volume/self.MP.volume
-        print 'testw',testw
+#                 print 'i',ibzMP.volume,self.MP.volume,self.MP.volume/ibzMP.volume;testw += ibzMP.volume/self.MP.volume
+#         print 'testw',testw
         self.manyFacetsMathFile(self.IBZ,allMPfacets,'IBZMesh')
         vMPs = sum(self.IBZ.vorVols)
         stdev = std(self.IBZ.vorVols)
@@ -786,24 +785,31 @@ class voidWeight():
             #find symmetry parterns (expandedMesh), which includes themselves
             expandedMesh = []
             expandediIBZs = []
-            for iIBZ,point in enumerate(self.IBZ.mesh):
+            for iIBZ,point in enumerate(self.IBZ.mesh): #fill the BZ
                 tempPoints = [point]
                 for iop in range(self.nops):
                     op = self.symops[:,:,iop]
-                    symPoint = dot(op,point)
-#                     tempPoints = addVec(symPoint,tempPoints,self.eps)
-                    tempPoints = addVec(symPoint,tempPoints,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
+                    symPoint = dot(op,point) 
+                    tempPoints = addVec(symPoint,tempPoints,2.0*(self.rpacking - eps))  #skip points that would make tight clusters where the centers differ by less than rpacking 
+ 
                 for BZpoint in deepcopy(tempPoints):
+#                     for i in [-2-1,0,1,2]:
+#                         for j in [-2-1,0,1,2]:
+#                             for k in [-2-1,0,1,2]:
                     for i in [-1,0,1]:
                         for j in [-1,0,1]:
                             for k in [-1,0,1]:
                                 if not i==j==k==0:
                                     transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
-            #                         print 'transpoint',transPoint
-                                    if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking): #not too far away from the BZ boundaries
-                                        tempPoints = addVec(transPoint,tempPoints,2.0*self.rpacking) 
-                expandedMesh += tempPoints  
-                expandediIBZs += [iIBZ]*len(tempPoints)             
+                                    tempPoints = addVec(transPoint,tempPoints,self.eps) #don't try to test closeness here to other points
+                tempPoints2 = [] #now remove all points that are not within the cutoff.  
+                for point in tempPoints:
+                    if isInside(point,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking): #not too far away from the BZ boundaries
+#                     if norm(point - self.IBZ.center) <= self.rcutoff*self.rpacking: #not too far away from the BZ boundaries
+
+                        tempPoints2.append(point)
+                expandedMesh += tempPoints2  
+                expandediIBZs += [iIBZ]*len(tempPoints2)             
                 self.facetsPointsMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None,self.rpacking)
             self.facetsPointsMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None,self.rpacking)
             # Divide the volume of each void and add it to the volume of each mesh point, 
@@ -1135,7 +1141,8 @@ class voidWeight():
             sys.exit('Stop.  MP vor cell does not have the correct volume')
         self.rmaxMP = max([norm(point) for point in self.MP.fpoints]) 
 #         self.rpacking = min([norm(meshPrimLVs[:,0]),norm(meshPrimLVs[:,1]),norm(meshPrimLVs[:,2])])/2.0
-        shift = array([0.4,0.4,0.4])*self.rpacking
+#         shift = array([0.5,0.5,0.5])*self.rpacking
+        shift = 0.5*(cubicLVs[:,0] + cubicLVs[:,1] + cubicLVs[:,2]) 
         self.IBZ,nInside,self.outPoints = self.fillMesh(cubicLVs,self.IBZ,shift,aKcubConv,sites)
         self.facetsPointsMathFile(self.IBZ, self.outPoints,'outpoits', None, self.rpacking/4)
         return
@@ -1333,10 +1340,15 @@ class voidWeight():
                     for site in sites:
                         ik+=1
                         kpoint = lvec + shift + site
-                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
+#                         if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
+#                             nInside += 1
+#                             IBZ.mesh.append(kpoint)
+#                         elif isInside(kpoint,IBZ.bounds,self.eps,2*self.rmaxMP):
+#                             outPoints.append(kpoint)
+                        if not isOutside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
                             IBZ.mesh.append(kpoint)
-                        elif isInside(kpoint,IBZ.bounds,self.eps,2*self.rmaxMP):
+                        elif not isOutside(kpoint,IBZ.bounds,self.eps,2*self.rmaxMP):
                             outPoints.append(kpoint)
                              
 #         print 'Points inside', nInside
@@ -1881,12 +1893,12 @@ class voidWeight():
         '''Output for Mathematica graphics drawing BZ facets and spheres at each  point'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += ';\n p=Graphics3D[{'
+        strOut += ';\np = Graphics3D[{Opacity[0.2],'
         list(trimSmall(array(points)))
         for ipoint,point in enumerate(list(trimSmall(array(points)))):
             if color != None:
                 strOut += '{},'.format(color)
-            strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(radius)
+            strOut += 'Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(radius)
             if ipoint < len(points) -1:
                 strOut += ','
         strOut += '}];\nShow[s,p,ImageSize->Large]'
@@ -1897,15 +1909,15 @@ class voidWeight():
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point, coloring one uniquely'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += ';\np=Graphics3D[{'
+        strOut += ';\np = Graphics3D[{Opacity[0.7],'
         list(trimSmall(array(unique)))
         for ipoint,point in enumerate(list(trimSmall(array(others)))):
-            strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
+            strOut += 'Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
             if ipoint < len(others) -1:
                 strOut += ','
         strOut += '}];\n'
-        strOut += 'q=Graphics3D[{'
-        strOut += color + ',Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(unique[0],unique[1],unique[2])+ '},'+'{}]'.format(self.rpacking)
+        strOut += 'q=Graphics3D[{Opacity[0.7],'
+        strOut += color + 'Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(unique[0],unique[1],unique[2])+ '},'+'{}]'.format(self.rpacking)
         strOut += '}];\nShow[s,p,q,ImageSize->Large]'
         writefile(strOut,'facetsPointsUnique__{}.m'.format(tag))         
               
