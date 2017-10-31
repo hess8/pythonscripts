@@ -788,20 +788,21 @@ class voidWeight():
                 tempPoints = [point]
                 for iop in range(self.nops):
                     op = self.symops[:,:,iop]
-                    symPoint = dot(op,point)
-#                     tempPoints = addVec(symPoint,tempPoints,self.eps)
-                    tempPoints = addVec(symPoint,tempPoints,2.0*self.rpacking)  #skip points that would make tight clusters where the centers differ by less than rpacking 
+                    symPoint = dot(op,point) 
+                    tempPoints = addVec(symPoint,tempPoints,2.0*(self.rpacking - eps))  #skip points that would make tight clusters where the centers differ by less than rpacking 
                 for BZpoint in deepcopy(tempPoints):
                     for i in [-1,0,1]:
                         for j in [-1,0,1]:
                             for k in [-1,0,1]:
                                 if not i==j==k==0:
                                     transPoint = BZpoint + i*self.B[0] + j*self.B[1] + k*self.B[2]
-            #                         print 'transpoint',transPoint
-                                    if isInside(transPoint,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking): #not too far away from the BZ boundaries
-                                        tempPoints = addVec(transPoint,tempPoints,2.0*self.rpacking) 
-                expandedMesh += tempPoints  
-                expandediIBZs += [iIBZ]*len(tempPoints)             
+                                    tempPoints = addVec(transPoint,tempPoints,self.eps) #don't try to test closeness here to other points
+                tempPoints2 = [] #now remove all points that are not within the cutoff.  
+                for point in tempPoints:
+                    if isInside(point,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking): #not too far away from the BZ boundaries
+                        tempPoints2.append(point)
+                expandedMesh += tempPoints2  
+                expandediIBZs += [iIBZ]*len(tempPoints2)             
                 self.facetsPointsMathFile(self.IBZ,tempPoints,'expmesh_{}'.format(iIBZ),None,self.rpacking)
             self.facetsPointsMathFile(self.IBZ,expandedMesh,'expmesh_all'.format(iIBZ),None,self.rpacking)
             # Divide the volume of each void and add it to the volume of each mesh point, 
