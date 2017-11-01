@@ -309,16 +309,16 @@ def isInside(vec,bounds,eps,extra = 0):
     outward, for an expanded volume'''
     inside = zeros(len(bounds[0]),dtype = bool)
     for iplane, uvec in enumerate(bounds[0]):
-        if dot(vec,uvec) - extra < bounds[1][iplane] - eps: #point is inside this plane
+        if dot(vec,uvec) < bounds[1][iplane] + extra - eps: #point is inside this plane
             inside[iplane] = True
     return all(inside)
 
-def isOutside(vec,boundaries,eps):
-    for iplane, uvec in enumerate(boundaries[0]): 
-        pvec = uvec*boundaries[1][iplane]           
-        if dot(vec,uvec) > boundaries[1][iplane] + eps: #point is outside this plane
-            return True
-    return False
+def isOutside(vec,bounds,eps,extra = 0):
+    outside = zeros(len(bounds[0]),dtype = bool)
+    for iplane, uvec in enumerate(bounds[0]):           
+        if dot(vec,uvec) > bounds[1][iplane] + extra + eps: #point is outside this plane
+            outside[iplane] = True  #have to check all planes if want to use "not isOutside"
+    return any(outside)
 
 # def isJustOutside(vec,boundaries,dmax,eps):
 #     for iplane, uvec in enumerate(boundaries[0]): 
@@ -1823,31 +1823,31 @@ class voidWeight():
         '''Output for Mathematica graphics drawing BZ facets and spheres at each  point'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += ';\n p=Graphics3D[{'
+        strOut += ';\np = Graphics3D[{Opacity[0.2],'
         list(trimSmall(array(points)))
         for ipoint,point in enumerate(list(trimSmall(array(points)))):
             if color != None:
                 strOut += '{},'.format(color)
-            strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(radius)
+            strOut += 'Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(radius)
             if ipoint < len(points) -1:
                 strOut += ','
         strOut += '}];\nShow[s,p,ImageSize->Large]'
         writefile(strOut,'facetsPoints_{}.m'.format(tag))   
         
         
-    def facetsPointsOneUnique(self,cell,others,unique,tag,color):
+    def facetsPointsOneUnique(self,cell,others,unique,tag,color='Blue'):
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point, coloring one uniquely'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += ';\np=Graphics3D[{'
+        strOut += ';\np = Graphics3D[{Opacity[0.3],'
         list(trimSmall(array(unique)))
         for ipoint,point in enumerate(list(trimSmall(array(others)))):
-            strOut += 'Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
+            strOut += 'Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
             if ipoint < len(others) -1:
                 strOut += ','
         strOut += '}];\n'
-        strOut += 'q=Graphics3D[{'
-        strOut += color + ',Opacity[0.7],Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(unique[0],unique[1],unique[2])+ '},'+'{}]'.format(self.rpacking)
+        strOut += 'q=Graphics3D[{Opacity[0.7],'
+        strOut += color + ',Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(unique[0],unique[1],unique[2])+ '},'+'{}]'.format(self.rpacking)
         strOut += '}];\nShow[s,p,q,ImageSize->Large]'
         writefile(strOut,'facetsPointsUnique__{}.m'.format(tag))         
               
