@@ -832,7 +832,7 @@ class voidWeight():
             print 'Total volume in reweighted IBZ MPs:',wtot,'vs IBZ volume', self.IBZ.volume                       
             if not areEqual(wtot, self.IBZ.volume, self.volCheck*self.IBZ.volume):
                 sys.exit('Stop: point Voronoi cells plus voids do not sum to the IBZ volume.') 
-        #normalize the seights so that a full interior point gets weight nops of symmetry
+        #reweight so that a full interior point gets weight nops of symmetry
         self.IBZ.weights =  array(self.IBZ.weights)/self.MP.volume * self.nops
         print 'Weights:'
         for i, weight in enumerate(self.IBZ.weights):
@@ -1905,11 +1905,11 @@ class voidWeight():
         writefile(strOut,'facetsPoints_{}.m'.format(tag))   
         
         
-    def facetsPointsOneUnique(self,cell,others,unique,tag,color):
+    def facetsPointsOneUnique(self,cell,others,unique,tag,color='Blue'):
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point, coloring one uniquely'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += ';\np = Graphics3D[{Opacity[0.7],'
+        strOut += ';\np = Graphics3D[{Opacity[0.3],'
         list(trimSmall(array(unique)))
         for ipoint,point in enumerate(list(trimSmall(array(others)))):
             strOut += 'Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
@@ -1917,7 +1917,7 @@ class voidWeight():
                 strOut += ','
         strOut += '}];\n'
         strOut += 'q=Graphics3D[{Opacity[0.7],'
-        strOut += color + 'Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(unique[0],unique[1],unique[2])+ '},'+'{}]'.format(self.rpacking)
+        strOut += color + ',Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(unique[0],unique[1],unique[2])+ '},'+'{}]'.format(self.rpacking)
         strOut += '}];\nShow[s,p,q,ImageSize->Large]'
         writefile(strOut,'facetsPointsUnique__{}.m'.format(tag))         
               

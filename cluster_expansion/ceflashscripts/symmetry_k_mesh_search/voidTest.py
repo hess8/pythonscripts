@@ -344,7 +344,7 @@ Silicon:
     params2 =     [ 3.0 ]   #rcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
-    params5 =     [ 5.0   ]  #rvCutoff
+    params5 =     [ 4.0   ]  #rvCutoff
     params6 =     [ -1 ]  #vwPower
     params7 =     [ 2.0 ]   #wallPower
     params8 =     [ 0 ]   #relax (boolean)
