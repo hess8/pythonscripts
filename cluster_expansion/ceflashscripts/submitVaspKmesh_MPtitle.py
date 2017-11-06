@@ -42,8 +42,8 @@ def writekpts_vasp_n(path,n,type):
     kpointsfile.append('0 \n') 
     kpointsfile.append('Gamma \n')
     kpointsfile.append('{} {} {}\n'.format(n,n,n))  
-    kpointsfile.append('0.5 0.5 0.5\n' ) #shift
-#     kpointsfile.append('0.0 0.0 0.0\n' ) #shift
+#     kpointsfile.append('0.5 0.5 0.5\n' ) #shift
+    kpointsfile.append('0.0 0.0 0.0\n' ) #shift
     file1.writelines(kpointsfile) 
     file1.close()
     return 
@@ -106,9 +106,9 @@ def createRunDir(path,n,type):
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestNoMoveFCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestComm/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1DP0.5offset/'
-maindir = '/fslhome/bch/cluster_expansion/mpmesh/scond_mp'
-poscarsDir = '/fslhome/bch/cluster_expansion/mpmesh/scond_mp/0-info/POSCARS'
-vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/scond_mp/0-info/vaspinput/'
+maindir = '/fslhome/bch/cluster_expansion/mpmesh/si_mp'
+poscarsDir = '/fslhome/bch/cluster_expansion/mpmesh/si_mp/0-info/POSCARS'
+vaspinputdir = '/fslhome/bch/cluster_expansion/mpmesh/si_mp/0-info/vaspinput/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/f1059DP/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrBCC/'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/cu.pt.ntest/cubicTestRedistrFCC/'
@@ -151,7 +151,7 @@ for dir in dirs:
 #            subprocess.call(['cp','POSCAR.orig','POSCAR'])
 #            subprocess.call(['sbatch', 'vaspjob'])
 
-            for n in range(2,31,1):#23
+            for n in range(4,8,1):#23
                 print 
                 print '==============================================' 
                 print 'Base {} in Monkhorst Pack k submitVasp (target = n^3)'.format(n)

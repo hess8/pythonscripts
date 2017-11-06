@@ -500,13 +500,25 @@ class voidWeight():
         self.BZ = cell() #instance
         self.BZ.volume = vol
         braggVecs = getBraggVecs(self.B)
+        for i,uvec in enumerate(braggVecs['uvec']):
+            vec = uvec*braggVecs[i]['mag']
+            print 'BV',vec, 'direct', directFromCart(self.B,vec)
+#         rtest = cartFromDirect(self.B,array([0.285714285714,   0.714285714286,   0.428571428571]))
+#         print 'rtest',rtest
+#         for iop in range(self.nops):
+#             newr =  dot(self.symops[:,:,iop],rtest)
+#             print directFromCart(self.B,newr)
+            
         self.BZ = getVorCell(braggVecs,self.BZ,'BZ',eps)
+         
         self.facetsMathFile(self.BZ,'BZ') 
         self.IBZ = self.getIBZ(deepcopy(self.BZ),eps) #now irreducible BZ
         self.writeBounds()
 #         self.facetsMathFile(self.IBZ,'IBZ') 
         self.meshInitCubic(meshtype,eps)
         self.facetsPointsMathFile(self.IBZ,self.IBZ.mesh,'IBZmeshInit',None,self.rpacking)
+        for i,point in enumerate(self.IBZ.mesh):
+            print 'point',i,point,'direct:',directFromCart(self.B,point)
         self.nKmax = 150
         self.nKmin = 2
         if self.nKmin < len(self.IBZ.mesh) <= self.nKmax:
@@ -767,7 +779,10 @@ class voidWeight():
                                 self.voids.volume += joMP.volume
                                 self.voids.volumes.append(joMP.volume)
                                 self.voids.mesh.append(joMP.center)
+                                print 'partner',indexIBZ(point)
+                                print 'void',joMP.center,joMP.volume/self.MP.volume * self.nops
                             needsCut = False
+                            
 
 #                             for ip, point in enumerate(joMP.fpoints):
 #                                     addVec(point,testfpoints,self.eps)
