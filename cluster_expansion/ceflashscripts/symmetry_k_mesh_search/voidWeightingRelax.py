@@ -1111,21 +1111,22 @@ class voidWeight():
             pf = 4/3.0*pi*(1/2.0)**3 #0.52
         else:
             sys.exit('stop. Type error in meshCubic.')
-        self.IBZ,self.outPoints,cubicLVs = self.searchInitMesh(cubicLVs,type,aKcubConv,sites) 
-        [shift,theta,phi] = self.IBZ.details
-        Rmat = dot(
-            array([[1,0,0], [0,cos(theta),-sin(theta)],[0, sin(theta), cos(theta)]]),
-            array([[cos(phi),-sin(phi),0],[sin(phi), cos(phi),0],[0,0,1],]) )
-        cubicLVs = dot(Rmat,cubicLVs)
         meshPrimLVs = self.getMeshPrimLVs(cubicLVs,type)
         MPbraggVecs = getBraggVecs(meshPrimLVs)
-        self.MP = cell()
         MPvolume = self.IBZ.volume/self.nTargetIBZ
+        self.MP = cell()
         self.MP.volume = MPvolume
         self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
         if not areEqual(self.MP.volume,MPvolume,eps):
             sys.exit('Stop.  MP vor cell does not have the correct volume')
         self.rmaxMP = max([norm(point) for point in self.MP.fpoints])
+        self.IBZ,self.outPoints,meshPrimLVs = self.searchInitMesh(cubicLVs,type,aKcubConv,sites) 
+        MPbraggVecs = getBraggVecs(meshPrimLVs)
+        self.MP = cell()
+        self.MP.volume = MPvolume
+        self.MP = getVorCell(MPbraggVecs,self.MP,'MP',eps)
+        if not areEqual(self.MP.volume,MPvolume,eps):
+            sys.exit('Stop.  MP vor cell does not have the correct volume')
         self.Vsphere = 4/3.0*pi*self.rpacking**3        
         #Search over shift and rotation to find the most possible points inside
 
@@ -1202,7 +1203,7 @@ class voidWeight():
             meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
         else:  
             meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
-            nShift = 5
+            nShift = 1
     #shift = 0.5*(cubicLVs[:,0] + cubicLVs[:,1] + cubicLVs[:,2])          
             nTh = 10
             nPh = 10
@@ -1248,6 +1249,7 @@ class voidWeight():
                             bestOutside = outPoints
                             bestIBZ = deepcopy(IBZ)
                             bestIBZ.details = [shift,theta,phi]
+                            bestMeshPrimLVs = deepcopy(meshPrimLVs)
                             besti = isearch                            
                         elif nInside == bestN and nInside > 0:                        
                             ener = self.energy(IBZ.mesh)/nInside
@@ -1257,6 +1259,7 @@ class voidWeight():
                                 bestOutside = outPoints
                                 bestIBZ = deepcopy(IBZ)
                                 bestIBZ.details = [shift,theta,phi]
+                                bestMeshPrimLVs = deepcopy(meshPrimLVs)
                                 besti = isearch
                                 print 'Step {}: \tbestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi  
                     elif self.initSrch == 'highE':
@@ -1267,6 +1270,7 @@ class voidWeight():
                             bestOutside = outPoints
                             bestIBZ = deepcopy(IBZ)
                             bestIBZ.details = [shift,theta,phi]
+                            bestMeshPrimLVs = deepcopy(meshPrimLVs)
                             besti = isearch                            
                         elif nInside == bestN and nInside > 0:                        
                             ener = self.energy(IBZ.mesh)/nInside
@@ -1276,6 +1280,7 @@ class voidWeight():
                                 bestOutside = outPoints
                                 bestIBZ = deepcopy(IBZ)
                                 bestIBZ.details = [shift,theta,phi]
+                                bestMeshPrimLVs = deepcopy(meshPrimLVs)
                                 besti = isearch
                                 print 'Step {}: \tbestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi    
                     elif self.initSrch == 'max' and nInside >= bestN :
@@ -1283,6 +1288,7 @@ class voidWeight():
                         bestOutside = outPoints
                         bestIBZ = deepcopy(IBZ)
                         bestIBZ.details = [shift,theta,phi]
+                        bestMeshPrimLVs = deepcopy(meshPrimLVs)
                         besti = isearch
                         print 'Step {}: Nmax {}'.format(isearch,bestN), shift, theta, phi
                     elif not self.initSrch in ['highE','lowE','max']:
@@ -1293,11 +1299,12 @@ class voidWeight():
                             bestN = nInside
                             bestIBZ = deepcopy(IBZ)
                             bestIBZ.details = [shift,theta,phi]
+                            bestMeshPrimLVs = deepcopy(meshPrimLVs)
         if self.initSrch == 'max':
             print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
         elif not self.initSrch in ['lowE','max']:
             print 'nInside {} is closest to target N {}'.format(bestN,self.nTargetIBZ)
-        return bestIBZ,bestOutside,cubicLVs
+        return bestIBZ,bestOutside,bestMeshPrimLVs
 
     def fillMesh(self,cubicLVs,IBZ,shift,aKcubConv,sites):
         #Find the extremes in each cubLV direction:
@@ -1322,7 +1329,7 @@ class voidWeight():
                     for site in sites:
                         ik+=1
                         kpoint = lvec + shift + site
-                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
+                        if not isOutside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
                             IBZ.mesh.append(kpoint)
                         elif isInside(kpoint,IBZ.bounds,self.eps,2*self.rmaxMP):
@@ -1352,7 +1359,7 @@ class voidWeight():
             #wall forces
             for iw, u in enumerate(self.IBZ.bounds[0]):
                 ro = self.IBZ.bounds[1][iw]
-                d = ro-dot(ri,u) #distance from plane to ri offset factor allows points to move closer to walls. 
+                d = ro-dot(ri,u) + 2*self.eps #distance from plane to ri offset factor allows points to move closer to walls. 
                 if d<0:
                     print '\nri,ro,u, dot(ri,u),d'
                     print ri,ro,u, dot(ri,u), d 
