@@ -489,8 +489,8 @@ class voidWeight():
             self.interFactor = 1.0        
         self.df = 1.00 * self.ravg #inter-point force scale distance
         self.dw = 0.5 * self.df        
-        self.initSrch = 'lowE'
-#         self.initSrch = 'max'
+#         self.initSrch = 'lowE'
+        self.initSrch = 'maxN'
 #         self.initSrch = None
         eps = self.ravg/300
         self.eps = eps
@@ -1237,12 +1237,13 @@ class voidWeight():
                     meshPrimLVs = dot(Rmat,meshPrimLVs0)
                     for i, site in enumerate(sites0):
                         sites[i] = dot(Rmat,site)        
-                    IBZ,nInside,outPoints = self.fillMesh(meshPrimLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
+                    IBZ,nInside,outPoints = self.fillMesh(cubicLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
 #                     self.facetsPointsMathFile(IBZ,IBZ.mesh'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
                     if self.initSrch == 'lowE':
-                        if nInside > bestN and nInside > 0:
+#                         if nInside > bestN and nInside > 0:
+                        if nInside > bestN:
                             ener = self.energy(IBZ.mesh)/nInside
                             bestEner = ener
                             bestN = nInside
@@ -1283,7 +1284,7 @@ class voidWeight():
                                 bestMeshPrimLVs = deepcopy(meshPrimLVs)
                                 besti = isearch
                                 print 'Step {}: \tbestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi    
-                    elif self.initSrch == 'max' and nInside >= bestN :
+                    elif self.initSrch == 'maxN' and nInside >= bestN :
                         bestN = nInside
                         bestOutside = outPoints
                         bestIBZ = deepcopy(IBZ)
@@ -1291,7 +1292,7 @@ class voidWeight():
                         bestMeshPrimLVs = deepcopy(meshPrimLVs)
                         besti = isearch
                         print 'Step {}: Nmax {}'.format(isearch,bestN), shift, theta, phi
-                    elif not self.initSrch in ['highE','lowE','max']:
+                    elif not self.initSrch in ['highE','lowE','maxN']:
                         closeLog = abs(log(nInside/float(self.nTargetIBZ)))
                         if closeLog < closestLog:
                             closestLog = closeLog
@@ -1300,9 +1301,9 @@ class voidWeight():
                             bestIBZ = deepcopy(IBZ)
                             bestIBZ.details = [shift,theta,phi]
                             bestMeshPrimLVs = deepcopy(meshPrimLVs)
-        if self.initSrch == 'max':
+        if self.initSrch == 'maxN':
             print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
-        elif not self.initSrch in ['lowE','max']:
+        elif not self.initSrch in ['lowE','maxN']:
             print 'nInside {} is closest to target N {}'.format(bestN,self.nTargetIBZ)
         return bestIBZ,bestOutside,bestMeshPrimLVs
 
@@ -1329,12 +1330,15 @@ class voidWeight():
                     for site in sites:
                         ik+=1
                         kpoint = lvec + shift + site
+                        if allclose(kpoint,array([0,0,0]),self.eps):
+                            'pause'
                         if not isOutside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
                             IBZ.mesh.append(kpoint)
                         elif isInside(kpoint,IBZ.bounds,self.eps,2*self.rmaxMP):
                             outPoints.append(kpoint)
         return IBZ,nInside,outPoints
+    
     def dynamic(self,eps):
         ''' '''
 #         print 'Relaxation is blocked!!!'
@@ -1830,7 +1834,7 @@ class voidWeight():
         '''Output for Mathematica graphics drawing BZ facets and spheres at each  point'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += ';\np = Graphics3D[{Opacity[0.2],'
+        strOut += ';\np = Graphics3D[{Opacity[0.7],'
         list(trimSmall(array(points)))
         for ipoint,point in enumerate(list(trimSmall(array(points)))):
             if color != None:
@@ -1846,7 +1850,7 @@ class voidWeight():
         '''Output for Mathematica graphics drawing BZ facets and spheres at each mesh point, coloring one uniquely'''
         strOut = ''
         strOut = self.facetsMathToStr(strOut,cell,'s','True','Red'); 
-        strOut += ';\np = Graphics3D[{Opacity[0.3],'
+        strOut += ';\np = Graphics3D[{Opacity[0.5],'
         list(trimSmall(array(unique)))
         for ipoint,point in enumerate(list(trimSmall(array(others)))):
             strOut += 'Sphere[{' + '{:12.8f},{:12.8f},{:12.8f}'.format(point[0],point[1],point[2])+ '},'+'{}]'.format(self.rpacking)
@@ -1887,7 +1891,7 @@ class voidWeight():
             if iu < len(bounds[0])-1:
                 strOut += '&&'
         rangeStr = '-{}, {}'.format(range,range)
-        strOut += ', {x,' + rangeStr + '}, {y,' + rangeStr + '}, {z,' + rangeStr + '},PlotStyle -> Opacity[0.3],Axes -> True, AxesLabel -> {"x", "y", "z"}];\n'
+        strOut += ', {x,' + rangeStr + '}, {y,' + rangeStr + '}, {z,' + rangeStr + '},PlotStyle -> Opacity[0.7],Axes -> True, AxesLabel -> {"x", "y", "z"}];\n'
         strOut += 'Show[r,ImageSize->Large]'
         writefile(strOut,'planesInside_{}.m'.format(tag))
         
