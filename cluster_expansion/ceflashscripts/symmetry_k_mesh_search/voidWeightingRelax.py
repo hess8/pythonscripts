@@ -489,7 +489,7 @@ class voidWeight():
         self.df = 1.00 * self.ravg #inter-point force scale distance
         self.dw = 0.5 * self.df        
         self.initSrch = 'lowE'
-#         self.initSrch = 'max'
+#         self.initSrch = 'maxN'
 #         self.initSrch = None
         eps = self.ravg/300
         self.eps = eps
@@ -1182,7 +1182,7 @@ class voidWeight():
         '''Test an entire grid of init values'''
         
         if self.initSrch is None:
-            shifts = [array([1,1,1])*self.ravg/8.0]
+            shifts = [array([0,0,0])] #shift = 0.5*(cubicLVs[:,0] + cubicLVs[:,1] + cubicLVs[:,2]) 
             thetas = [0.0]
             phis = [0.0]
             #test facet points for orthogonality
@@ -1231,12 +1231,11 @@ class voidWeight():
                 cubicLVs[:,2] = cross(cubicLVs[:,0],cubicLVs[:,1])             
             else:
                 print 'no orthogonal plane normals pairs found.'
-            cubicLVs = cubicLVs*aKcubConv
-            meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
+            cubicLVs0 = cubicLVs*aKcubConv
         else:  
-            meshPrimLVs0 = self.getMeshPrimLVs(cubicLVs, type)
-            nShift = 5
-    #         
+            cubicLVs0 = cubicLVs
+            nShift = 1
+    #shift = 0.5*(cubicLVs[:,0] + cubicLVs[:,1] + cubicLVs[:,2])          
             nTh = 10
             nPh = 10
     
@@ -1266,21 +1265,23 @@ class voidWeight():
                     Rmat = dot(
                         array([[1,0,0], [0,cos(theta),-sin(theta)],[0, sin(theta), cos(theta)]]),
                         array([[cos(phi),-sin(phi),0],[sin(phi), cos(phi),0],[0,0,1],]) )
-                    meshPrimLVs = dot(Rmat,meshPrimLVs0)
+                    cubicLVs = dot(Rmat,cubicLVs0)
                     for i, site in enumerate(sites0):
                         sites[i] = dot(Rmat,site)        
-                    IBZ,nInside,outPoints = self.fillMesh(meshPrimLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
+                    IBZ,nInside,outPoints = self.fillMesh(cubicLVs,IBZ,dot(Rmat,shift),aKcubConv,sites)
 #                     self.facetsPointsMathFile(IBZ,IBZ.mesh'IBZinit_{}'.format(isearch),None)
 #                     print isearch,'theta,phi',theta,phi,'n',nInside
 #                     print 'nInside', nInside
                     if self.initSrch == 'lowE':
-                        if nInside > bestN and nInside > 0:
+#                         if nInside > bestN and nInside > 0:
+                        if nInside > bestN:
                             ener = self.energy(IBZ.mesh)/nInside
                             bestEner = ener
                             bestN = nInside
                             bestOutside = outPoints
                             bestIBZ = deepcopy(IBZ)
                             bestIBZ.details = [shift,theta,phi]
+                            bestcubicLVs = deepcopy(cubicLVs)
                             besti = isearch                            
                         elif nInside == bestN and nInside > 0:                        
                             ener = self.energy(IBZ.mesh)/nInside
@@ -1290,6 +1291,7 @@ class voidWeight():
                                 bestOutside = outPoints
                                 bestIBZ = deepcopy(IBZ)
                                 bestIBZ.details = [shift,theta,phi]
+                                bestcubicLVs = deepcopy(cubicLVs)
                                 besti = isearch
                                 print 'Step {}: \tbestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi  
                     elif self.initSrch == 'highE':
@@ -1300,6 +1302,7 @@ class voidWeight():
                             bestOutside = outPoints
                             bestIBZ = deepcopy(IBZ)
                             bestIBZ.details = [shift,theta,phi]
+                            bestcubicLVs = deepcopy(cubicLVs)
                             besti = isearch                            
                         elif nInside == bestN and nInside > 0:                        
                             ener = self.energy(IBZ.mesh)/nInside
@@ -1309,16 +1312,18 @@ class voidWeight():
                                 bestOutside = outPoints
                                 bestIBZ = deepcopy(IBZ)
                                 bestIBZ.details = [shift,theta,phi]
+                                bestcubicLVs = deepcopy(cubicLVs)
                                 besti = isearch
                                 print 'Step {}: \tbestN {}, with energy/point {:8.6f}'.format(isearch,bestN,ener), shift, theta, phi    
-                    elif self.initSrch == 'max' and nInside >= bestN :
+                    elif self.initSrch == 'maxN' and nInside >= bestN :
                         bestN = nInside
                         bestOutside = outPoints
                         bestIBZ = deepcopy(IBZ)
                         bestIBZ.details = [shift,theta,phi]
+                        bestcubicLVs = deepcopy(cubicLVs)
                         besti = isearch
                         print 'Step {}: Nmax {}'.format(isearch,bestN), shift, theta, phi
-                    elif not self.initSrch in ['highE','lowE','max']:
+                    elif not self.initSrch in ['highE','lowE','maxN']:
                         closeLog = abs(log(nInside/float(self.nTargetIBZ)))
                         if closeLog < closestLog:
                             closestLog = closeLog
@@ -1326,11 +1331,15 @@ class voidWeight():
                             bestN = nInside
                             bestIBZ = deepcopy(IBZ)
                             bestIBZ.details = [shift,theta,phi]
-        if self.initSrch == 'max':
+                            bestcubicLVs = deepcopy(cubicLVs)
+        if self.initSrch == 'maxN':
             print 'Maximum nInside {} (step {}) found vs target N {}'.format(bestN,besti,self.nTargetIBZ)
-        elif not self.initSrch in ['lowE','max']:
+        elif not self.initSrch in ['lowE','maxN']:
             print 'nInside {} is closest to target N {}'.format(bestN,self.nTargetIBZ)
         return bestIBZ,bestOutside,cubicLVs
+
+    def fillMesh(self,cubicLVs,IBZ,shift,aKcubConv,sites):
+        return bestIBZ,bestOutside,bestcubicLVs
 
     def fillMesh(self,cubicLVs,IBZ,shift,aKcubConv,sites):
         #Find the extremes in each cubLV direction:
