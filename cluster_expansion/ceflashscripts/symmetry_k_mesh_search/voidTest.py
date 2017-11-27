@@ -30,7 +30,7 @@ maindir = os.getcwd()
 
 
 ''' Silicon:
-    paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
+    paramLabels = ['wallClose','expMeshcutoff','tooClose','tooPlanar']
     MPs only, ignoring voids: 2.21 0.0] avg nDone 19.0
     MPs + void weights using only inside points
                               2.19 0.0] avg nDone 19.0  !progress!
@@ -54,12 +54,12 @@ maindir = os.getcwd()
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0
       
     Metals:
-    paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
+    paramLabels = ['wallClose','expMeshcutoff','tooClose','tooPlanar']
     Distribute to N points (5 was best) ,no relaxation:
                                 1.74 [ 0.5  2.   0.5  0.5  5.   3. ] avg nDone 11.3333333333  
                                 
                                 
-    ['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower', 'interPower', 'wallPower', 'wallFactor' , 'wallOffset']                                                 
+    ['wallClose','expMeshcutoff','tooClose','tooPlanar','NvoidPoints','vwPower', 'interPower', 'wallPower', 'wallFactor' , 'wallOffset']                                                 
    
 '''  
 #maindir default is os.getcwd()
@@ -286,7 +286,7 @@ def searchParamsAll(maindir,poscarsDir,vaspinputdir,nKtargets):
     '''Set up a N-dimensional grid of parameters, and run through all of it
 
 Silicon:
-    paramLabels = ['wallClose','rcutoff','tooClose','tooPlanar']
+    paramLabels = ['wallClose','expMeshcutoff','tooClose','tooPlanar']
     MPs only, ignoring voids: 2.21 0.0] avg nDone 19.0
     MPs + void weights using only inside points
                               2.19 0.0] avg nDone 19.0  !progress!
@@ -312,7 +312,7 @@ Silicon:
     !!! Compare to 1.81 using init search and full voronoi cell volumes, no relaxation
     !!! Compare to 1.21 with master: relaxed points 1.21 [ 6.    3.    0.5   0.05  0.    0.5 ]] avg nDone 19.0    
     '''
-    paramLabels = ['wallClose','useVoids','rcutoff','tooClose','tooPlanar','rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']#,'dw']
+    paramLabels = ['wallClose','useVoids','expMeshcutoff','tooClose','tooPlanar','closeToVoidCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']#,'dw']
     print 'Parameters in method'
     print'\t{}'.format(paramLabels)
 #     print '\twallPower equals power'
@@ -328,28 +328,28 @@ Silicon:
 #     
 #     params0 =     [ 0.5 ]   #wallClose
 #     params1 =     [ 0 ]   #useVoids
-#     params2 =     [ 2.5,3.0,3.5 ]   #rcutoff
+#     params2 =     [ 2.5,3.0,3.5 ]   #expMeshcutoff
 #     params3 =     [ -1 ]   #tooClose
 #     params4 =     [ -1 ]  #tooPlanar
-#     params5 =     [  3.0,4.0  ]   #rvCutoff
+#     params5 =     [  3.0,4.0  ]   #closeToVoidCutoff
 #     params6 =     [ 1.0,2.0,3.0 ]  #vwPower
 #     params7 =     [ 2,0,3.0 ]   #wallPower
 #     params8 =     [ 1 ]   #relax (boolean)
 #     params9 =     [ 4.0,6.0 ]  #interPower
 #     params10 =     [ 0.5,1.0 ]  #wallFactor
 #     params11 =    [ 0.0 ]  #wallOffset
-# paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
+# paramLabels = ['wallClose','useVoids',    'expMeshcutoff',  'tooClose','tooPlanar' 'closeToVoidCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
 # params =         ['0.00',       '0',         '2.0',       '-1',      '-1',       '4.0'   ,  '3.0' ,     '2.0' ,     '0',       '5.0',    '1.3',      '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
  
     params0 =     [ 0.00 ]   #wallClose
-    params1 =     [ 0 ]   #useVoids
-    params2 =     [ 2.0 ]   #rcutoff
+    params1 =     [ 0,1 ]   #useVoids
+    params2 =     [ 2.0,3.0 ]   #expMeshcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
-    params5 =     [ 4.0   ]  #rvCutoff
+    params5 =     [ 4.0   ]  #closeToVoidCutoff
     params6 =     [ -1 ]  #vwPower
     params7 =     [ 2.0 ]   #wallPower
-    params8 =     [ 1 ]   #relax (boolean)
+    params8 =     [ 0,1 ]   #relax (boolean)
     params9 =     [ 5.0 ]  #interPower
     params10 =     [ 1.3 ]  #wallFactor
     params11 =    [ 0.0 ]  #wallOffset
@@ -376,7 +376,7 @@ Silicon:
                   
 #params =         ['0.5',       '3',     '1.0',     '0.5',       '8'      ,    '1.5' ,  '6.0' ,   'relax',       '3.0',       '0.5',       '0.0']  
 #     params0 =     [ 0.0,0.5 ]   #wallClose
-#     params1 =     [ 2.0,2.5,3.0]   #rcutoff
+#     params1 =     [ 2.0,2.5,3.0]   #expMeshcutoff
 #     params2 =     [ 0.5,1.0,1.5 ]   #tooClose
 #     params3 =     [ 0.25,0.5,1.0 ]  #tooPlanar
 #     params4 =     [ 2,3,5,7,9 ]  #NvoidPoints
@@ -432,7 +432,7 @@ Silicon:
                             #                                 params = [p0,p1,p2,p3]              
                                                             all[iset]['params'] = params
                                                         iset += 1
-    #['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
+    #['wallClose','expMeshcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
     paramString = ''
     for param in paramLabels:
         paramString += param + ','
@@ -508,7 +508,7 @@ Silicon:
                         print 'cost for set {}: {:6.2f} {} avg nDone {}'.format(ioldSet,cost,all[ioldSet]['params'],avgnDone)
                         print 'vs. min cost {}: {:6.2f} {} avg nDone {}'.format(iminCost,minCost,bestParams,bestAvgNdone)
                         ps = all[ioldSet]['params']
-                         #['wallClose','rcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
+                         #['wallClose','expMeshcutoff','tooClose','tooPlanar','NvoidPoints','vwPower']
                         summary.write('{},{:6.3f},{:6.2f},{},{},{},{},{},{},{},{},{},{},{},{}\n'.format(ioldSet,cost,avgnDone,
                                                     ps[0],ps[1],ps[2],ps[3],ps[4],ps[5],ps[6],ps[7],ps[8],ps[9],ps[10],ps[11]))
                         summary.flush()

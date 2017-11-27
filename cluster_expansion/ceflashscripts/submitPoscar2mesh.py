@@ -40,7 +40,7 @@ os.chdir('/fslhome/bch/cluster_expansion/vcmesh/semiconductors/siLP2/bestRun/Si_
 ntarget = 6
 type = 'bcc'
 
-paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
+paramLabels = ['wallClose','useVoids',    'expMeshcutoff',  'tooClose','tooPlanar' 'closeToVoidCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
 params =         ['0.00',       '0',         '2.0',       '-1',      '-1',       '4.0'   ,  '-1' ,     '2.0' ,     '0',       '5.0',    '1.3',      '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
 
 '''Best Si from master branch:  

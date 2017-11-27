@@ -471,13 +471,13 @@ class voidWeight():
         vol = abs(det(self.B))
         IBZvol = vol/float(self.nops)
         self.ravg = (IBZvol/targetNmesh)**(1/3.0) #distance if mesh were cubic. 
-        paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
+        paramLabels = ['wallClose','useVoids',    'expMeshcutoff',  'tooClose','tooPlanar' 'closeToVoidCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
         self.wallClose = float(params[0])
         self.useVoids = bool(int(float(params[1])))
-        self.rcutoff = float(params[2])
+        self.expMeshcutoff = float(params[2])
 #         self.tooClose = float(params[3])
 #         self.tooPlanar = float(params[4])
-        self.rvCutoff = float(params[5])
+        self.closeToVoidCutoff = float(params[5])
         self.vweightPower = float(params[6])
         self.wallPower = float(params[7]) #6.0
 #         self.relax = params[7].lower() in ['relax','true','yes']
@@ -799,7 +799,7 @@ class voidWeight():
                                     tempPoints = addVec(transPoint,tempPoints,self.eps) #don't try to test closeness here to other points
                 tempPoints2 = [] #now remove all points that are not within the cutoff.  
                 for point in tempPoints:
-                    if isInside(point,self.IBZ.bounds,self.eps,self.rcutoff*self.rpacking): #not too far away from the BZ boundaries
+                    if isInside(point,self.IBZ.bounds,self.eps,self.expMeshcutoff*self.rpacking): #not too far away from the BZ boundaries
                         tempPoints2.append(point)
                 expandedMesh += tempPoints2  
                 expandediIBZs += [iIBZ]*len(tempPoints2)             
@@ -809,9 +809,9 @@ class voidWeight():
             # according to how close expandedMesh points (that are partners of the mesh point) 
             # is to the void point      
 #             N = self.NvoidClosePoints
-            rvCutoff = self.rvCutoff*self.rpacking
+            closeToVoidCutoff = self.closeToVoidCutoff*self.rpacking
             for iv, vpoint in enumerate(self.voids.mesh):
-                closePoints = self.NPointsNearVoid(rvCutoff,vpoint,expandedMesh,expandediIBZs)
+                closePoints = self.NPointsNearVoid(closeToVoidCutoff,vpoint,expandedMesh,expandediIBZs)
                 self.facetsPointsOneUnique(self.IBZ,closePoints['vec'],vpoint,'vclose_{}'.format(iv),'Red')
 #                 dweights = self.distrVoidWeightsNPoints(len(closePoints),vpoint,closePoints)
                 dweights = self.distrVoidWeightsNatNeigh(len(closePoints),vpoint,iv,closePoints)
@@ -839,7 +839,7 @@ class voidWeight():
             print 'As expected with no relaxation or voids, these weights do not sum to integer * nops' 
         return
     
-    def NPointsNearVoid(self,rvCutoff,vpoint,expandedMesh,expandediIBZs):
+    def NPointsNearVoid(self,closeToVoidCutoff,vpoint,expandedMesh,expandediIBZs):
         '''Find N expandedMesh points close to the void center than meet criteria'''
 #         allPoints = zeros(l,dtype = [('vec', '3float'),('iIBZ', 'int')])
         mags = [norm(vpoint-vec) for vec in expandedMesh]
@@ -890,7 +890,7 @@ class voidWeight():
 #                             continue      
                     
                         #choose the point with the lowest energy vs the other points:
-            if  mags[iExp] <= rvCutoff:      
+            if  mags[iExp] <= closeToVoidCutoff:      
                 tempPoints.append(evec)
                 tempiIBZs.append(expandediIBZs[iExp])           
                         
@@ -939,7 +939,7 @@ class voidWeight():
         of size 2*rcutoff
         2. Add the vpoint to the list and again calculate the vcell volumes.  
         Find losses of each of the closePoint vcell volumes.  These are the weights'''
-        cubemax = self.rvCutoff*self.rpacking
+        cubemax = self.closeToVoidCutoff*self.rpacking
         boundVecsCube = zeros(len(closePoints) + 6 - 1,dtype = [('uvec', '3float'),('mag', 'float')]) 
         boundVecsCube[0]['uvec'] = array([1,0,0]); boundVecsCube[0]['mag'] = cubemax
         boundVecsCube[1]['uvec'] = array([-1,0,0]);boundVecsCube[1]['mag'] = cubemax
@@ -996,7 +996,7 @@ class voidWeight():
 
     def distrVoidWeightsCutVoidsClose(self,N,vpoint,iv,closePoints):
         '''This version cuts void by all closePoint voronoi cell planes.'''
-        cubemax = self.rvCutoff*self.rpacking
+        cubemax = self.closeToVoidCutoff*self.rpacking
         boundVecsCube = zeros(len(closePoints) + 6 - 1,dtype = [('uvec', '3float'),('mag', 'float')]) 
         boundVecsCube[0]['uvec'] = array([1,0,0]); boundVecsCube[0]['mag'] = cubemax
         boundVecsCube[1]['uvec'] = array([-1,0,0]);boundVecsCube[1]['mag'] = cubemax
@@ -1332,7 +1332,8 @@ class voidWeight():
                         kpoint = lvec + shift + site
                         if allclose(kpoint,array([0,0,0]),self.eps):
                             'pause'
-                        if not isOutside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
+#                         if not isOutside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
+                        if isInside(kpoint,IBZ.bounds,self.eps,-self.wallClose*self.rpacking):  #Can't be closer than self.dw*self.wallClose to a wall
                             nInside += 1
                             IBZ.mesh.append(kpoint)
                         elif isInside(kpoint,IBZ.bounds,self.eps,2*self.rmaxMP):
