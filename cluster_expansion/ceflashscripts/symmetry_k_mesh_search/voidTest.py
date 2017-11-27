@@ -24,7 +24,7 @@ import voidWeighting, analyzeNks
 #*************  Settings ***************
 maindir = os.getcwd()
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/25SepvoidsRelaxed'
-# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/sc_SiLP'
+# maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/siLP2'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/semiconductors/Sitest'
 # maindir = '/fslhome/bch/cluster_expansion/vcmesh/mt_LPdw.1/'
 
@@ -338,10 +338,12 @@ Silicon:
 #     params9 =     [ 4.0,6.0 ]  #interPower
 #     params10 =     [ 0.5,1.0 ]  #wallFactor
 #     params11 =    [ 0.0 ]  #wallOffset
-# #  0.5  1.   3.  -1.  -1.   4.   4.   3.   1.   6.   0.5  0. 
-    params0 =     [ 0.05 ]   #wallClose
-    params1 =     [ 1 ]   #useVoids
-    params2 =     [ 3.0 ]   #rcutoff
+# paramLabels = ['wallClose','useVoids',    'rcutoff',  'tooClose','tooPlanar' 'rvCutoff','vwPower','wallPower','relax','interPower','wallFactor','wallOffset']
+# params =         ['0.00',       '0',         '2.0',       '-1',      '-1',       '4.0'   ,  '3.0' ,     '2.0' ,     '0',       '5.0',    '1.3',      '0.0']    #0.50   3.00   1.00   0.500.   1.   3.  -1.  -1.   3.   3.   3.   1.   6.   0.5  0.
+ 
+    params0 =     [ 0.00 ]   #wallClose
+    params1 =     [ 0 ]   #useVoids
+    params2 =     [ 2.0 ]   #rcutoff
     params3 =     [ -1 ]   #tooClose
     params4 =     [ -1 ]  #tooPlanar
     params5 =     [ 4.0   ]  #rvCutoff
