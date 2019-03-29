@@ -1,7 +1,0 @@
-   # This file  is an awk program that gets data from fireball output file
-   # for example using awk -f awk_fb ../fireball_runs/benzene/fb
-   
-      /previous/    { temp = $5 }      
-   END { 
-   print  temp 
-    }

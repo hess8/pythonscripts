@@ -1,8 +1,0 @@
-   # This file (awk_Eparts)  is an awk program that gets the lowest transition energy from Eparts.dat 
-      # for example using awk -f awk_Eparts ../fireball_runs/benzene/Eparts.dat
-   
-   #skip lines at the beginning
-   BEGIN  { istate = 15 ; fstate = 16; count = 0 ;lineskip = 2}   
-      / /    { count++; if (count==istate+lineskip) Ei = $2; 
-      			if (count==fstate+lineskip) Ef = $2 }      
-   END { print "Etrans " , Ef-Ei ; print Ef-Ei > "fbout" }

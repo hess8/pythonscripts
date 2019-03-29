@@ -1,6 +1,0 @@
-
-
-   /gap/  { gap = $3 }   
-   END { 
-   print  gap 
-    }

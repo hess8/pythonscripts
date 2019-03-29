@@ -27,8 +27,8 @@ data = zeros(len(exlines),dtype = [('name', 'S20'),('netid', 'S20'),('exscore', 
 for i,line in enumerate(exlines[1:]):
     info = line.strip().split(',')
     data[i]['name'] = line.split('"')[1]
-    data[i]['netid'] = info[3]
-    data[i]['exscore'] = info[5] 
+    data[i]['netid'] = info[0]
+    data[i]['exscore'] = info[3] 
            
 data2 = deepcopy(data[::-1]) #reversed
 
